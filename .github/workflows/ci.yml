@@ -52,6 +52,17 @@ jobs:
       - run: uv sync --locked
       - run: uv run pytest -m gold
 
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t bidwright:ci .
+      - name: The image holds no gold and no corpus spec
+        run: |
+          docker run --rm --entrypoint sh bidwright:ci -c \
+            'test ! -e /app/evals/gold && ! find /app -name spec.yaml | grep -q .'
+      - run: docker run --rm --network none --entrypoint pytest bidwright:ci -m "not gold" -p no:cacheprovider
+
   secrets:
     runs-on: ubuntu-latest
     steps:

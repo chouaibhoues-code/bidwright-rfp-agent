@@ -1,0 +1,68 @@
+# docker compose up -d starts the app and Phoenix. Profiles add the rest:
+#   docker compose run --rm demo     replay the recorded run, with no keys and no network
+#   docker compose run --rm test     the replay tests, with no keys and no network
+#   docker compose --profile eval run --rm eval score outputs/<run>
+#   docker compose --profile local up -d ollama
+# Only loopback ports are published. Keys come from .env and are never written here.
+name: bidwright
+
+x-image: &image
+  image: bidwright:0a
+  build: .
+
+services:
+  app:
+    <<: *image
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env for live runs}
+      GEMINI_PAID_API_KEY: ${GEMINI_PAID_API_KEY:-}
+      PHOENIX_ENDPOINT: http://phoenix:6006
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+    volumes:
+      - ./inputs:/app/inputs:ro
+      - ./config:/app/config:ro
+      - ./prompts:/app/prompts:ro
+      - ./outputs:/app/outputs
+    depends_on: [phoenix]
+
+  phoenix:
+    image: arizephoenix/phoenix:version-21.0.0
+    ports: ["127.0.0.1:6006:6006"]
+    volumes: [phoenix-data:/mnt/data]
+
+  eval:
+    <<: *image
+    profiles: [eval]
+    entrypoint: ["bidwright-eval"]
+    volumes:
+      - ./evals/corpus:/app/evals/corpus:ro
+      - ./evals/gold:/app/evals/gold:ro
+      - ./evals/results:/app/evals/results
+      - ./outputs:/app/outputs:ro
+
+  test:
+    <<: *image
+    profiles: [test]
+    network_mode: none
+    entrypoint: ["pytest", "-m", "not gold", "-p", "no:cacheprovider"]
+    volumes:
+      - ./tests/cassettes:/app/tests/cassettes:ro
+
+  demo:
+    <<: *image
+    profiles: [demo]
+    network_mode: none
+    command: ["demo"]
+    volumes:
+      - ./tests/cassettes:/app/tests/cassettes:ro
+      - ./outputs:/app/outputs
+
+  ollama:
+    image: ollama/ollama:0.40.13
+    profiles: [local]
+    ports: ["127.0.0.1:11434:11434"]
+    volumes: [ollama-models:/root/.ollama]
+
+volumes:
+  phoenix-data:
+  ollama-models:

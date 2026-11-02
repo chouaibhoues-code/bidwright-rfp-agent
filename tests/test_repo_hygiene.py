@@ -10,6 +10,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+pytestmark = pytest.mark.skipif(
+    not (ROOT / ".git").exists(), reason="not a git checkout, as inside the Docker image"
+)
 
 
 def _committable_files() -> list[Path]:
