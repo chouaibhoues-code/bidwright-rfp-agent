@@ -1,0 +1,35 @@
+# S-09: the 20 date_calc cases. Each must give exactly the expected result.
+# Weekdays: 2026-10-24 and 2026-12-05 are Saturdays, 2026-12-01 is a Tuesday, 2027-01-11 a Monday.
+# DST: the UK and the EU leave summer time on 2026-10-25 and enter it on 2027-03-28.
+
+# Plain additions and subtractions across month ends and 2028-02-29.
+- {args: {date: "2027-01-31", op: add, amount: 1, unit: months}, result: "2027-02-28"}
+- {args: {date: "2028-02-28", op: add, amount: 1, unit: days}, result: "2028-02-29"}
+- {args: {date: "2028-02-29", op: add, amount: 12, unit: months}, result: "2029-02-28"}
+- {args: {date: "2026-12-31", op: add, amount: 1, unit: days}, result: "2027-01-01"}
+- {args: {date: "2027-03-01", op: subtract, amount: 2, unit: weeks}, result: "2027-02-15"}
+
+# Business days across weekends.
+- {args: {date: "2026-12-04", op: add, amount: 1, unit: business_days}, result: "2026-12-07"}
+- {args: {date: "2026-12-04", op: add, amount: 5, unit: business_days}, result: "2026-12-11"}
+- {args: {date: "2026-12-07", op: subtract, amount: 1, unit: business_days}, result: "2026-12-04"}
+- {args: {date: "2027-01-05", op: diff, other_date: "2027-01-11", unit: business_days}, result: 4}
+
+# Deadlines in time zones, across the DST changes.
+- {args: {date: "2026-10-24T12:00", tz: Europe/London, op: add, amount: 1, unit: days}, result: "2026-10-25T12:00:00+00:00"}
+- {args: {date: "2027-03-27T12:00", tz: Europe/London, op: add, amount: 1, unit: days}, result: "2027-03-28T12:00:00+01:00"}
+- {args: {date: "2026-10-24T17:00", tz: Europe/Paris, op: add, amount: 2, unit: business_days}, result: "2026-10-27T17:00:00+01:00"}
+- {args: {date: "2026-12-01T12:00:00Z", tz: America/New_York, op: add, amount: 0, unit: days}, result: "2026-12-01T07:00:00-05:00"}
+
+# Day differences.
+- {args: {date: "2027-01-11", op: diff, other_date: "2027-02-28", unit: days}, result: 48}
+- {args: {date: "2026-11-03", op: diff, other_date: "2026-12-01", unit: days}, result: 28}
+- {args: {date: "2027-03-27T12:00", tz: Europe/London, op: diff, other_date: "2027-03-29T12:00", unit: days}, result: 2}
+
+# Weekday lookups.
+- {args: {date: "2026-12-01", op: weekday}, result: Tuesday}
+- {args: {date: "2027-01-11", op: weekday}, result: Monday}
+
+# Invalid inputs must fail cleanly.
+- {args: {date: "2027-02-30", op: add, amount: 1, unit: days}, status: FAILED}
+- {args: {date: "2027-01-11", op: add, amount: 1, unit: days, tz: Mars/Olympus}, status: FAILED}

@@ -1,0 +1,199 @@
+"""The 0a agent tools, `search_rfp` and `date_calc`, with their argument schemas.
+
+Each tool validates its arguments with a Pydantic model, and its JSON Schema, offered to the
+model, is generated from that same model. A tool never raises: it returns a typed
+`ToolResult` with status `OK`, `EMPTY` or `FAILED`. `ToolGateway` adds `DENIED`.
+"""
+
+import calendar
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
+from typing import Any, Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from bidwright.llm.types import ToolSpec
+from bidwright.retrieval import MAX_K, PassageIndex
+from bidwright.schemas import ToolResult
+
+NO_HOLIDAYS = "Business days skip Saturdays and Sundays only; public holidays are not considered."
+
+
+class SearchArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1, max_length=200, description="Plain search words.")
+    k: int = Field(default=5, ge=1, le=MAX_K, description="How many passages to return, 1 to 8.")
+
+
+class DateArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    date: str = Field(description="An ISO 8601 date, or a date and time.")
+    op: Literal["add", "subtract", "diff", "weekday"]
+    amount: int | None = Field(default=None, ge=0, description="Units to add or subtract.")
+    unit: Literal["days", "business_days", "weeks", "months"] = "days"
+    tz: str | None = Field(default=None, description="An IANA time zone, such as Europe/London.")
+    other_date: str | None = Field(default=None, description="The second date, for diff.")
+
+
+@dataclass(frozen=True)
+class Tool:
+    name: str
+    description: str
+    args_model: type[BaseModel]
+    run: Callable[[Any], ToolResult]
+
+    @property
+    def spec(self) -> ToolSpec:
+        return ToolSpec(self.name, self.description, parameters_schema(self.args_model))
+
+
+def parameters_schema(model: type[BaseModel]) -> dict[str, Any]:
+    """The model's JSON Schema without titles, keeping only its required fields required."""
+
+    def strip(node: Any) -> Any:
+        if isinstance(node, dict):
+            return {key: strip(value) for key, value in node.items() if key != "title"}
+        if isinstance(node, list):
+            return [strip(value) for value in node]
+        return node
+
+    return strip(model.model_json_schema())
+
+
+# --- search_rfp --------------------------------------------------------------------------
+
+
+def search_tool(index: PassageIndex) -> Tool:
+    def run(args: SearchArgs) -> ToolResult:
+        hits = index.search(args.query, args.k)
+        if not hits:
+            return ToolResult(status="EMPTY", data=[], reason="no passage matched the query")
+        data = [
+            {"src_id": h.src_id, "section_path": h.section_path, "text": h.text, "score": h.score}
+            for h in hits
+        ]
+        return ToolResult(status="OK", data=data)
+
+    return Tool(
+        name="search_rfp",
+        description=(
+            "Search the RFP's passages by words. Returns up to k passages, best first, each with"
+            " its SRC id, section path and text."
+        ),
+        args_model=SearchArgs,
+        run=run,
+    )
+
+
+# --- date_calc ---------------------------------------------------------------------------
+
+
+def date_tool() -> Tool:
+    return Tool(
+        name="date_calc",
+        description=(
+            "Date arithmetic. add or subtract an amount of days, business_days, weeks or months;"
+            " diff counts days or business days from date to other_date; weekday names the day."
+            " With tz, times are read and returned in that IANA time zone."
+        ),
+        args_model=DateArgs,
+        run=date_calc,
+    )
+
+
+def date_calc(args: DateArgs) -> ToolResult:
+    try:
+        zone = ZoneInfo(args.tz) if args.tz else None
+        moment = _parse(args.date, zone)
+        if args.op == "weekday":
+            name = calendar.day_name[_day(moment).weekday()]
+            return _ok(name, f"{_day(moment).isoformat()} is a {name}.")
+        if args.op == "diff":
+            if args.other_date is None:
+                return _failed("diff needs other_date")
+            return _diff(moment, _parse(args.other_date, zone), args.unit)
+        if args.amount is None:
+            return _failed(f"{args.op} needs amount")
+        sign = 1 if args.op == "add" else -1
+        result = _shift(moment, sign * args.amount, args.unit)
+        verb = "plus" if sign > 0 else "minus"
+        note = f" {NO_HOLIDAYS}" if args.unit == "business_days" else ""
+        text = f"{_iso(moment)} {verb} {args.amount} {args.unit} is {_iso(result)}.{note}"
+        return _ok(_iso(result), text)
+    except ZoneInfoNotFoundError:
+        return _failed(f"unknown time zone {args.tz!r}")
+    except (ValueError, OverflowError) as exc:
+        return _failed(str(exc))
+
+
+Moment = date | datetime
+
+
+def _parse(value: str, zone: ZoneInfo | None) -> Moment:
+    text = value.strip()
+    if "T" not in text and " " not in text:
+        return date.fromisoformat(text)
+    moment = datetime.fromisoformat(text)
+    if zone is None:
+        return moment
+    return moment.replace(tzinfo=zone) if moment.tzinfo is None else moment.astimezone(zone)
+
+
+def _day(moment: Moment) -> date:
+    return moment.date() if isinstance(moment, datetime) else moment
+
+
+def _iso(moment: Moment) -> str:
+    return moment.isoformat()
+
+
+def _shift(moment: Moment, amount: int, unit: str) -> Moment:
+    if unit == "days":
+        return moment + timedelta(days=amount)
+    if unit == "weeks":
+        return moment + timedelta(weeks=amount)
+    if unit == "months":
+        month_index = moment.month - 1 + amount
+        year, month = moment.year + month_index // 12, month_index % 12 + 1
+        last_day = calendar.monthrange(year, month)[1]
+        return moment.replace(year=year, month=month, day=min(moment.day, last_day))
+    step = 1 if amount >= 0 else -1
+    remaining = abs(amount)
+    while remaining:
+        moment = moment + timedelta(days=step)
+        if _day(moment).weekday() < 5:
+            remaining -= 1
+    return moment
+
+
+def _diff(first: Moment, second: Moment, unit: str) -> ToolResult:
+    start, end = _day(first), _day(second)
+    if unit == "business_days":
+        low, high = sorted((start, end))
+        count = sum(1 for n in range((high - low).days) if (low + timedelta(days=n)).weekday() < 5)
+        count = count if end >= start else -count
+        text = (
+            f"From {start.isoformat()} up to but not including {end.isoformat()}"
+            f" there are {count} business days. {NO_HOLIDAYS}"
+        )
+        return _ok(count, text)
+    days = (end - start).days
+    if unit == "weeks":
+        return _ok(
+            round(days / 7, 2), f"From {start} to {end} is {days} days, {days / 7:.2f} weeks."
+        )
+    if unit == "months":
+        return _failed("diff counts days, business_days or weeks, not months")
+    return _ok(days, f"From {start.isoformat()} to {end.isoformat()} is {days} calendar days.")
+
+
+def _ok(result: object, explanation: str) -> ToolResult:
+    return ToolResult(status="OK", data={"result": result, "explanation": explanation})
+
+
+def _failed(reason: str) -> ToolResult:
+    return ToolResult(status="FAILED", data=None, reason=reason)

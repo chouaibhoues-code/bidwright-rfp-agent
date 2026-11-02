@@ -1,0 +1,67 @@
+"""search_rfp over the development RFP's passages, and date_calc on the 20 S-09 cases."""
+
+from pathlib import Path
+from typing import Any
+
+import pytest
+import yaml
+
+from bidwright.ingest import ingest_pdf
+from bidwright.retrieval import PassageIndex, match_expression
+from bidwright.tools import NO_HOLIDAYS, DateArgs, SearchArgs, date_calc, date_tool, search_tool
+
+ROOT = Path(__file__).resolve().parents[1]
+CASES: list[dict[str, Any]] = yaml.safe_load(
+    (ROOT / "tests" / "data" / "s09_cases.yaml").read_text(encoding="utf-8")
+)
+
+
+@pytest.fixture(scope="module")
+def index(tmp_path_factory: pytest.TempPathFactory) -> PassageIndex:
+    result = ingest_pdf(ROOT / "inputs" / "dev" / "dev_rfp.pdf")
+    return PassageIndex.build(result.passages, tmp_path_factory.mktemp("run") / "search.sqlite")
+
+
+def test_s09_has_twenty_cases() -> None:
+    assert len(CASES) == 20
+
+
+@pytest.mark.parametrize("case", CASES, ids=[str(i + 1) for i in range(len(CASES))])
+def test_s09_date_calc(case: dict[str, Any]) -> None:
+    result = date_calc(DateArgs.model_validate(case["args"]))
+    if case.get("status") == "FAILED":
+        assert result.status == "FAILED" and result.reason
+        return
+    assert result.status == "OK", result.reason
+    assert result.data["result"] == case["result"]
+    if case["args"].get("unit") == "business_days":
+        assert NO_HOLIDAYS in result.data["explanation"]
+
+
+def test_search_finds_the_go_live_and_migration_passages(index: PassageIndex) -> None:
+    result = search_tool(index).run(SearchArgs(query="go-live migration deadline", k=5))
+    assert result.status == "OK"
+    texts = [hit["text"] for hit in result.data]
+    assert any("must be live for students" in text for text in texts)
+    assert any("should migrate the signed records" in text for text in texts)
+    scores = [hit["score"] for hit in result.data]
+    assert scores == sorted(scores, reverse=True)
+
+
+def test_search_caps_k_and_reports_empty(index: PassageIndex) -> None:
+    assert len(index.search("the", k=50)) <= 8
+    empty = search_tool(index).run(SearchArgs(query="kangaroo", k=3))
+    assert empty.status == "EMPTY" and empty.data == []
+
+
+def test_fts5_operators_in_queries_are_inert(index: PassageIndex) -> None:
+    assert match_expression('audit" OR NEAR(x y) *') == '"audit" OR "OR" OR "NEAR" OR "x" OR "y"'
+    assert index.search('records NOT audit "') != []
+    assert index.search("*** ---") == []
+
+
+def test_tool_specs_expose_only_required_fields_as_required() -> None:
+    schema = date_tool().spec.parameters
+    assert schema["required"] == ["date", "op"]
+    assert "title" not in schema and "title" not in schema["properties"]["op"]
+    assert search_tool.__name__ == "search_tool"

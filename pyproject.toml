@@ -13,6 +13,7 @@ dependencies = [
     "pdfplumber>=0.11,<1",
     "pydantic>=2.10,<3",
     "pyyaml>=6,<7",
+    "tzdata>=2025.1",
 ]
 
 [project.scripts]
