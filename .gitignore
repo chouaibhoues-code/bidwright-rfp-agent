@@ -1,0 +1,36 @@
+# Secrets: keys live in .env only
+.env
+.env.*
+!.env.example
+
+# Private material: research reports, review reports, defense notes, the assignment PDF
+private/
+
+# Run artifacts (committed sample outputs live in samples/)
+outputs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Node (the pinned sequential-thinking server, from Iteration 2)
+node_modules/
+
+# Local state
+*.sqlite
+*.sqlite-journal
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
