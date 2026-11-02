@@ -6,7 +6,8 @@ runs:
   hero:
     free:  {requests: 250, tokens: 2000000, active_minutes: 90}
 call:
-  timeout_s: 60
+  # Per profile. A 4B model on CPU needs more than 60 s for a cold load or a long answer (S-04).
+  timeout_s: {free: 60, local: 300}
   retries: 3
   backoff_base_s: 2
   backoff_cap_s: 30

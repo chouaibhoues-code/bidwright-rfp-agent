@@ -61,3 +61,9 @@ def test_run_limits_exist_for_the_dev_rfp(config: Config) -> None:
     assert config.limits.run("dev", "local").active_minutes == 60
     with pytest.raises(KeyError):
         config.limits.run("dev", "paid")
+
+
+def test_every_profile_has_a_call_timeout(config: Config) -> None:
+    for profile in config.models.profiles:
+        assert config.limits.call.timeout_for(profile) > 0, profile
+    assert config.limits.call.timeout_for("local") > config.limits.call.timeout_for("free")

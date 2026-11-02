@@ -250,6 +250,7 @@ class RequirementView(Facing):
     id: str
     statement: str
     modality: Modality
+    mandatory: bool
     hazard: bool
 
 
@@ -263,10 +264,17 @@ class ApproachProposal(Facing):
     basis: str
 
 
+class ApproachQuestion(Facing):
+    """`approach` sees requirement ids only; the app resolves them to passage ids."""
+
+    text: str
+    requirement_ids: list[str] = Field(min_length=1)
+
+
 class ApproachResult(Facing):
     items: list[ApproachProposal]
     unmapped_requirement_ids: list[str] = Field(default_factory=list)
-    open_questions: list[OpenQuestion] = Field(default_factory=list)
+    open_questions: list[ApproachQuestion] = Field(default_factory=list)
 
 
 class ApproachItemView(Facing):
@@ -293,9 +301,16 @@ class RiskProposal(Facing):
     evidence_src_ids: list[str] = Field(default_factory=list)
 
 
+class RiskQuestion(Facing):
+    """`risk` finds passages through `search_rfp`, so it cites passage ids directly."""
+
+    text: str
+    src_ids: list[str] = Field(default_factory=list)
+
+
 class RiskRegister(Facing):
     risks: list[RiskProposal]
-    open_questions: list[OpenQuestion] = Field(default_factory=list)
+    open_questions: list[RiskQuestion] = Field(default_factory=list)
 
 
 class DraftTask(Facing):

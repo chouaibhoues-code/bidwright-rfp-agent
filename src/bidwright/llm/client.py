@@ -139,7 +139,7 @@ class LLMClient:
                 schema_name=schema.__name__ if schema is not None else None,
                 tools=tool_specs,
                 settings=settings,
-                timeout_s=self.config.limits.call.timeout_s,
+                timeout_s=self.config.limits.call.timeout_for(self.profile),
             )
             try:
                 response, latency_ms, retries, replayed, backend = self._obtain(

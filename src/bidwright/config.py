@@ -3,7 +3,7 @@
 import os
 from datetime import date
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
@@ -46,10 +46,16 @@ class RunLimits(Strict):
 
 
 class CallLimits(Strict):
-    timeout_s: float = Field(gt=0)
+    timeout_s: dict[str, Annotated[float, Field(gt=0)]]
     retries: int = Field(ge=0)
     backoff_base_s: float = Field(gt=0)
     backoff_cap_s: float = Field(gt=0)
+
+    def timeout_for(self, profile: str) -> float:
+        try:
+            return self.timeout_s[profile]
+        except KeyError as exc:
+            raise KeyError(f"no call timeout for profile {profile!r}") from exc
 
 
 class LimitsConfig(Strict):

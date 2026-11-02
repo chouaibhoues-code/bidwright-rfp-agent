@@ -1,0 +1,168 @@
+# Few-shot examples for the prompts. The text is fictional and written for these examples
+# only: it never comes from gold or from a corpus RFP. Each set renders into one prompt's
+# <examples> block through src/bidwright/prompts.py, which checks it against the schemas.
+
+# For extract and extract_oneshot: one worked batch. Three obligations to record, then the
+# traps that must not become binding: background that reads like a requirement, a "may"
+# clause and an unticked option box. A lead-in and plain narrative carry no item.
+# `expect: null` means the passage belongs in no_obligation_src_ids.
+clauses:
+  - src_id: SRC-0901
+    section_path: "4 Service requirements"
+    text: "The Supplier shall retain every signed consent form for seven (7) years."
+    expect:
+      quote: "The Supplier shall retain every signed consent form for seven (7) years."
+      statement: "The Supplier retains every signed consent form for seven years."
+      modality: shall
+      disposition: BINDING
+      hazard: false
+  - src_id: SRC-0902
+    section_path: "2 Instructions to bidders"
+    text: "Tenders must be uploaded to the portal as one PDF of no more than 40 pages by 2027-03-01 17:00 UTC."
+    expect:
+      quote: "Tenders must be uploaded to the portal as one PDF of no more than 40 pages by 2027-03-01 17:00 UTC."
+      statement: "Each bidder uploads its tender to the portal as one PDF of at most 40 pages by 2027-03-01 17:00 UTC."
+      modality: must
+      disposition: BINDING
+      hazard: true
+  - src_id: SRC-0903
+    section_path: "4 Service requirements"
+    text: "The Supplier shall:"
+    expect: null
+  - src_id: SRC-0904
+    section_path: "4 Service requirements"
+    lead_in: "The Supplier shall:"
+    text: "(a) send a reminder to each signer who has not signed within 48 hours;"
+    expect:
+      quote: "send a reminder to each signer who has not signed within 48 hours"
+      statement: "The Supplier sends a reminder to each signer who has not signed within 48 hours."
+      modality: shall
+      disposition: BINDING
+      hazard: false
+  - src_id: SRC-0905
+    section_path: "1 Background"
+    text: "The Trust's previous supplier held ISO 27001 certification throughout its contract."
+    expect:
+      quote: "The Trust's previous supplier held ISO 27001 certification throughout its contract."
+      statement: "The previous supplier held ISO 27001 certification; this states no requirement."
+      modality: none
+      disposition: BACKGROUND
+      hazard: false
+  - src_id: SRC-0906
+    section_path: "4 Service requirements"
+    text: "Bidders may offer a mobile app for signers."
+    expect:
+      quote: "Bidders may offer a mobile app for signers."
+      statement: "A bidder may offer a mobile app for signers."
+      modality: may
+      disposition: OPTIONAL
+      hazard: false
+  - src_id: SRC-0907
+    section_path: "Annex B Options"
+    text: "[ ] The Supplier will provide on-site training (tick if offered)."
+    expect:
+      quote: "The Supplier will provide on-site training (tick if offered)."
+      statement: "On-site training is an option the form leaves unticked, so nothing is required."
+      modality: will
+      disposition: NOT_BINDING
+      hazard: false
+  - src_id: SRC-0908
+    section_path: "1 Background"
+    text: "The Trust serves 40,000 patients across three sites."
+    expect: null
+
+# For approach: verified requirements in, an approach out. The optional requirement is left
+# unmapped with a question, because 0a has no supplier knowledge base to offer it from.
+approach:
+  input:
+    requirements:
+      - {id: REQ-0901, statement: "The Supplier retains every signed consent form for seven years.", modality: shall, mandatory: true, hazard: false}
+      - {id: REQ-0902, statement: "Each bidder uploads its tender to the portal as one PDF of at most 40 pages by 2027-03-01 17:00 UTC.", modality: must, mandatory: true, hazard: true}
+      - {id: REQ-0903, statement: "The Supplier sends a reminder to each signer who has not signed within 48 hours.", modality: shall, mandatory: true, hazard: false}
+      - {id: REQ-0904, statement: "A bidder may offer a mobile app for signers.", modality: may, mandatory: false, hazard: false}
+  output:
+    items:
+      - text: "Bid compliance: assemble the tender as one PDF, check it against the 40-page limit, and upload it to the portal one working day before 2027-03-01 17:00 UTC."
+        requirement_ids: [REQ-0902]
+        basis: "The instructions fix the format, the page limit and the deadline. The day of margin is an assumption about portal reliability."
+      - text: "Records retention: keep each signed consent form in write-once storage for seven years, and delete it only after that period ends."
+        requirement_ids: [REQ-0901]
+        basis: "The retention period is stated. Write-once storage is an assumption the solution lead must confirm."
+      - text: "Signer reminders: send an automatic reminder 48 hours after a request to every signer who has not yet signed."
+        requirement_ids: [REQ-0903]
+        basis: "The 48-hour rule is stated. The reminder channel, email or text message, is not, so it is an assumption."
+    unmapped_requirement_ids: [REQ-0904]
+    open_questions:
+      - text: "Should the optional mobile app be priced as a separate option, and which phone platforms must it support?"
+        requirement_ids: [REQ-0904]
+
+# For risk: what search_rfp found, a final register built on it, and a generic risk that
+# the prompt must never produce.
+risk:
+  evidence:
+    - {src_id: SRC-0910, section_path: "6 Timeline", text: "The service must be live for all three sites by 2027-04-05."}
+    - {src_id: SRC-0911, section_path: "6 Timeline", text: "Migration of the consent forms signed since 2015 must be complete by 2027-06-30."}
+    - {src_id: SRC-0902, section_path: "2 Instructions to bidders", text: "Tenders must be uploaded to the portal as one PDF of no more than 40 pages by 2027-03-01 17:00 UTC."}
+  register:
+    risks:
+      - condition: "Go-live is due on 2027-04-05, but migrating the consent forms signed since 2015 may run until 2027-06-30, 86 days later."
+        event: "Staff use the new service while older forms still sit in the old system, and a retrieval request misses a form."
+        effect: "A missed retrieval breaks the seven-year retention duty in practice and undermines the Trust's confidence in the service."
+        assumptions: ["The migration cannot finish before go-live."]
+        owner_role: "Delivery lead"
+        trigger: "The migration plan's finish date falls after the go-live date."
+        responses: ["Migrate the most often retrieved years first, before go-live.", "Ask the Trust whether search across both systems is acceptable until 2027-06-30."]
+        residual_exposure: "An 86-day window in which some lookups still need the old system."
+        evidence_src_ids: [SRC-0910, SRC-0911]
+      - condition: "The tender must be one PDF of at most 40 pages, uploaded by 2027-03-01 17:00 UTC."
+        event: "The final PDF passes 40 pages, or the upload starts too late to finish before the portal closes."
+        effect: "The tender is rejected without evaluation."
+        assumptions: []
+        owner_role: "Bid manager"
+        trigger: "The draft passes 35 pages, or the upload has not started by 2027-02-28."
+        responses: ["Set a 35-page limit for the draft.", "Upload one working day early and keep the portal receipt."]
+        residual_exposure: "Small once the early upload is done; a portal outage on the last day remains."
+        evidence_src_ids: [SRC-0902]
+    open_questions:
+      - text: "Does the 2027-06-30 migration date include forms signed on paper and scanned later?"
+        src_ids: [SRC-0911]
+  generic:
+    why: "it cites no passage, names no requirement or date, and could be written without reading the RFP"
+    risk:
+      condition: "Projects of this kind are complex."
+      event: "The project may be delayed by unforeseen circumstances."
+      effect: "Delivery could be late."
+      assumptions: []
+      owner_role: "Project manager"
+      trigger: "Delays occur."
+      responses: ["Monitor the project closely."]
+      residual_exposure: "Medium."
+      evidence_src_ids: []
+
+# For draft: one short example per 0a section type.
+draft:
+  - task:
+      section_id: understanding
+      records:
+        - {id: REQ-0901, statement: "The Supplier retains every signed consent form for seven years.", hazard: false}
+        - {id: REQ-0902, statement: "Each bidder uploads its tender to the portal as one PDF of at most 40 pages by 2027-03-01 17:00 UTC.", hazard: true}
+    result:
+      title: "Our understanding of the Trust's needs"
+      text: "The Trust needs every signed consent form kept for seven years [REQ-0901]. This tender is one PDF of at most 40 pages, uploaded to the portal before 2027-03-01 17:00 UTC [REQ-0902]."
+      cited_ids: [REQ-0901, REQ-0902]
+  - task:
+      section_id: approach
+      records:
+        - {id: APP-001, text: "Signer reminders: send an automatic reminder 48 hours after a request to every signer who has not yet signed.", requirement_ids: [REQ-0903], basis: "The 48-hour rule is stated. The reminder channel, email or text message, is not, so it is an assumption."}
+    result:
+      title: "How we would deliver"
+      text: "Every signer who has not signed within 48 hours of a request receives an automatic reminder [APP-001]. Whether reminders go by email or text message is still an assumption [APP-001]."
+      cited_ids: [APP-001]
+  - task:
+      section_id: risks_and_assumptions
+      records:
+        - {id: RSK-001, event: "The final PDF passes 40 pages, or the upload starts too late to finish before the portal closes.", responses: ["Set a 35-page limit for the draft.", "Upload one working day early and keep the portal receipt."]}
+    result:
+      title: "Risks and assumptions"
+      text: "The main risk to this tender is the 40-page limit and the upload deadline [RSK-001]. We would hold the draft to 35 pages and upload one working day early, keeping the portal receipt [RSK-001]."
+      cited_ids: [RSK-001]
