@@ -12,6 +12,7 @@ free tier's terms let the provider use prompt content. Your own files belong on
 
 import argparse
 import hashlib
+import json
 import os
 import sys
 from pathlib import Path
@@ -24,6 +25,7 @@ HOME = Path(os.environ.get("BIDWRIGHT_HOME", Path(__file__).resolve().parents[2]
 CORPUS_MANIFEST = HOME / "inputs" / "CORPUS.sha256"
 DEMO_SOURCE = HOME / "inputs" / "dev" / "dev_rfp.pdf"
 CASSETTES = HOME / "tests" / "cassettes"
+RECORDING = "recording.json"  # which profile and input a cassette folder was recorded from
 CONSENT = "i-accept-free-tier-terms"
 
 
@@ -112,12 +114,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "demo":
         store = CASSETTES / "demo"
-        if not store.exists():
+        if not (store / RECORDING).exists():
             print("No demo cassettes. Record them with: bidwright record inputs/dev/dev_rfp.pdf")
             return 1
+        recording = json.loads((store / RECORDING).read_text(encoding="utf-8"))
         result = execute(
-            source=DEMO_SOURCE,
-            profile="free",
+            source=HOME / recording["source"],
+            profile=recording["profile"],
             outputs=args.outputs,
             mode="replay",
             cassettes=CassetteStore(store),
@@ -129,16 +132,28 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Refused: {exc}", file=sys.stderr)
         return 2
     if args.command == "record":
+        store = CASSETTES / args.name
         result = execute(
             source=args.file,
             profile=args.profile,
             outputs=args.outputs,
             mode="record",
-            cassettes=CassetteStore(CASSETTES / args.name),
+            cassettes=CassetteStore(store),
             backends=default_backends(),
             overrides=overrides,
             limits=_limits(args.file),
         )
+        if result.status in ("COMPLETED", "DEGRADED"):
+            source = args.file.resolve()
+            recording = {
+                "profile": args.profile,
+                "source": source.relative_to(HOME).as_posix()
+                if source.is_relative_to(HOME)
+                else str(source),
+                "run_id": result.run_id,
+                "status": result.status,
+            }
+            (store / RECORDING).write_text(json.dumps(recording, indent=1) + "\n", encoding="utf-8")
         return _report(result)
     result = execute(
         source=args.file,

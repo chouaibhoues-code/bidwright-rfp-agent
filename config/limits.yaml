@@ -6,8 +6,9 @@ runs:
   hero:
     free:  {requests: 250, tokens: 2000000, active_minutes: 90}
 call:
-  # Per profile. A 4B model on CPU needs more than 60 s for a cold load or a long answer (S-04).
-  timeout_s: {free: 60, local: 300}
+  # Per profile. A 4B model on CPU needs more than 60 s for a cold load or a long answer (S-04),
+  # and gemini-3.8-flash answered in 55-60 s under load, then hit the 60 s deadline (504).
+  timeout_s: {free: 120, local: 300}
   retries: 3
   backoff_base_s: 2
   backoff_cap_s: 30

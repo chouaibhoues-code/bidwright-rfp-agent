@@ -9,10 +9,12 @@ breaks its schema. Whatever still fails is rejected and logged, never accepted.
 
 import json
 import re
+import threading
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+from openinference.semconv.trace import OpenInferenceSpanKindValues, SpanAttributes
 from pydantic import BaseModel
 
 from bidwright.config import AgentLimits
@@ -22,6 +24,7 @@ from bidwright.ingest import display_text
 from bidwright.llm.client import Completion, LLMClient
 from bidwright.llm.schema import sha256_of
 from bidwright.llm.types import Message
+from bidwright.obs.tracing import Tracing, maybe_span, record_llm, set_attribute
 from bidwright.prompts import Prompt
 from bidwright.schemas import (
     ApproachInput,
@@ -78,13 +81,19 @@ class RunContext:
     prompts: dict[str, Prompt]
     passages: dict[str, Passage]
     ledger: list[LedgerEntry] = field(default_factory=list)
+    tracing: Tracing | None = None
+    _lock: threading.Lock = field(default_factory=threading.Lock)
 
     def __post_init__(self) -> None:
         self.client.on_ledger = self.record
 
     def record(self, entry: LedgerEntry) -> None:
-        self.ledger.append(entry)
-        self.budget.record(entry)
+        with self._lock:
+            self.ledger.append(entry)
+            self.budget.record(entry)
+
+    def span(self, name: str, kind: OpenInferenceSpanKindValues, **attributes: Any) -> Any:
+        return maybe_span(self.tracing, name, kind, **attributes)
 
     def call(
         self,
@@ -98,18 +107,31 @@ class RunContext:
         repeat: int = 0,
     ) -> Completion:
         self.budget.check()
-        return self.client.complete(
-            prompt.meta.role,
-            messages,
-            schema,
-            tools or None,
-            node=node,
-            agent=prompt.meta.id,
-            prompt_hash=prompt.hash,
-            input_hash=input_hash,
-            repeat=repeat,
-            decoding=prompt.decoding,
-        )
+        attributes = {
+            "bidwright.node": node,
+            "bidwright.prompt": prompt.ref,
+            "bidwright.prompt_hash": prompt.hash,
+            "bidwright.input_hash": input_hash,
+        }
+        with self.span(f"llm.{node}", OpenInferenceSpanKindValues.LLM, **attributes) as span:
+            completion = self.client.complete(
+                prompt.meta.role,
+                messages,
+                schema,
+                tools or None,
+                node=node,
+                agent=prompt.meta.id,
+                prompt_hash=prompt.hash,
+                input_hash=input_hash,
+                repeat=repeat,
+                decoding=prompt.decoding,
+            )
+            with self._lock:
+                entry = next((e for e in reversed(self.ledger) if e.input_hash == input_hash), None)
+            if entry is not None:
+                record_llm(span, entry)
+            set_attribute(span, "bidwright.parse_error", completion.parse_error and "yes")
+            return completion
 
     def structured(
         self,
@@ -442,7 +464,12 @@ def risk(
         progress = False
         for call in completion.tool_calls:
             request = ToolRequest(tool=call.name, args=call.arguments, agent="risk", turn=turn)
-            result = gateway.call(request)
+            tool_attributes = {SpanAttributes.TOOL_NAME: call.name, "bidwright.turn": turn}
+            with ctx.span(
+                f"tool.{call.name}", OpenInferenceSpanKindValues.TOOL, **tool_attributes
+            ) as span:
+                result = gateway.call(request)
+                set_attribute(span, "bidwright.tool_status", result.status)
             transcript.append([call.name, call.arguments, result.model_dump()])
             for key in _progress_keys(call.name, result):
                 if key not in seen:

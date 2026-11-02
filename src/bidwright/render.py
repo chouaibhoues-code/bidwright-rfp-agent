@@ -24,7 +24,6 @@ from bidwright.schemas import (
     Requirement,
     Risk,
     RunManifest,
-    RunTotals,
     SolutionSummary,
 )
 
@@ -167,19 +166,6 @@ def proposal_markdown(records: RunRecords) -> str:
         )
         lines.append("")
     return "\n".join(lines)
-
-
-def totals_of(ledger: Sequence[LedgerEntry], active_seconds: float) -> RunTotals:
-    return RunTotals(
-        requests=len(ledger),
-        tokens_in=sum(e.tokens_in for e in ledger),
-        tokens_out=sum(e.tokens_out for e in ledger),
-        tokens_cached=sum(e.tokens_cached for e in ledger),
-        tokens_thinking=sum(e.tokens_thinking for e in ledger),
-        cost_usd=round(sum(e.cost_usd for e in ledger), 8),
-        shadow_cost_usd=round(sum(e.shadow_cost_usd for e in ledger), 8),
-        active_seconds=round(active_seconds, 3),
-    )
 
 
 def write_manifest(run_dir: Path, manifest: RunManifest, ledger: Sequence[LedgerEntry]) -> None:

@@ -14,11 +14,12 @@ import subprocess
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
+from openinference.semconv.trace import OpenInferenceSpanKindValues
 
 from bidwright.config import Config, load_config
 from bidwright.graph.nodes import (
@@ -40,8 +41,10 @@ from bidwright.ingest import doc_id_for, ingest_pdf
 from bidwright.llm.client import LLMClient, Mode
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Backend, LLMError
+from bidwright.obs.ledger import totals_of
+from bidwright.obs.tracing import Tracing, maybe_span
 from bidwright.prompts import Prompt, load_prompt, load_prompt_ref
-from bidwright.render import RenderBlocked, RunRecords, render, totals_of, write_manifest
+from bidwright.render import RenderBlocked, RunRecords, render, write_manifest
 from bidwright.retrieval import PassageIndex
 from bidwright.schemas import (
     ApproachItem,
@@ -58,6 +61,12 @@ from bidwright.tools import date_tool, search_tool
 from bidwright.verify import QuoteCheck
 
 SECTIONS = ("understanding", "approach", "risks_and_assumptions")
+
+
+class NodeFunction(Protocol):
+    """A graph node: takes the state it reads, returns the keys it writes."""
+
+    def __call__(self, state: Any) -> dict[str, Any]: ...
 
 
 @dataclass
@@ -237,14 +246,27 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         render(rt.run_dir, records)
         return {}
 
+    def traced(name: str, node: NodeFunction) -> NodeFunction:
+        kind = (
+            OpenInferenceSpanKindValues.AGENT
+            if name == "risk"
+            else OpenInferenceSpanKindValues.CHAIN
+        )
+
+        def run(state: Any) -> dict[str, Any]:
+            with maybe_span(ctx.tracing, f"node.{name}", kind, **{"bidwright.node": name}):
+                return node(state)
+
+        return run
+
     builder = StateGraph(RunState)
-    builder.add_node("ingest", ingest_node)
-    builder.add_node("extract", extract_node, input_schema=BatchState)
-    builder.add_node("verify", verify_node)
-    builder.add_node("approach", approach_node)
-    builder.add_node("risk", risk_node)
-    builder.add_node("draft", draft_node)
-    builder.add_node("render", render_node)
+    builder.add_node("ingest", traced("ingest", ingest_node))
+    builder.add_node("extract", traced("extract", extract_node), input_schema=BatchState)
+    builder.add_node("verify", traced("verify", verify_node))
+    builder.add_node("approach", traced("approach", approach_node))
+    builder.add_node("risk", traced("risk", risk_node))
+    builder.add_node("draft", traced("draft", draft_node))
+    builder.add_node("render", traced("render", render_node))
     builder.add_edge(START, "ingest")
     builder.add_conditional_edges("ingest", fan_out, ["extract"])
     builder.add_edge("extract", "verify")
@@ -321,15 +343,20 @@ def execute(
     )
     budget = RunBudget(config.limits.run(limits, profile))
     prompts = run_prompts(config)
-    ctx = RunContext(run_id, client, budget, prompts, {})
+    tracing = Tracing(run_id, run_dir, os.environ.get("PHOENIX_ENDPOINT") or None)
+    ctx = RunContext(run_id, client, budget, prompts, {}, tracing=tracing)
     rt = Runtime(ctx, config, source, run_dir)
     if baseline == "ex0":
         rt.extract_prompt, rt.one_batch = "extract_oneshot", True
     status: RunStatus = "COMPLETED"
     reason: str | None = None
     budget.start()
+    run_attributes = {"bidwright.run_id": run_id, "bidwright.profile": profile}
     try:
-        with SqliteSaver.from_conn_string(str(run_dir / "checkpoints.sqlite")) as saver:
+        with (
+            tracing.span("run", OpenInferenceSpanKindValues.CHAIN, **run_attributes),
+            SqliteSaver.from_conn_string(str(run_dir / "checkpoints.sqlite")) as saver,
+        ):
             graph = build_graph(rt, saver)
             final = graph.invoke(
                 {},
@@ -346,6 +373,7 @@ def execute(
         status, reason = "UNRECOVERABLE_FAULT", f"{type(exc).__name__}: {exc}"
     finally:
         budget.pause()
+        tracing.close()
         manifest = RunManifest(
             run_id=run_id,
             commit=_commit(),
