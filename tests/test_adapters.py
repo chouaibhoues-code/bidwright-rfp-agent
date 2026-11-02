@@ -1,0 +1,87 @@
+"""Offline checks that each provider adapter maps the provider's fields as documented."""
+
+import json
+
+import pytest
+from google.genai import types
+from openai.types import CompletionUsage
+from openai.types.completion_usage import CompletionTokensDetails, PromptTokensDetails
+
+from bidwright.llm.genai import _content, _response
+from bidwright.llm.ollama import OllamaBackend
+from bidwright.llm.openai_compat import _usage
+from bidwright.llm.types import Message, ProviderError, Request, ToolCall, Usage
+
+
+def test_genai_keeps_cached_and_thinking_counts_and_the_model_turn() -> None:
+    turn = types.Content(role="model", parts=[types.Part(text='{"risks": []}')])
+    response = types.GenerateContentResponse(
+        candidates=[types.Candidate(content=turn)],
+        usage_metadata=types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=1200,
+            tool_use_prompt_token_count=30,
+            candidates_token_count=80,
+            cached_content_token_count=1024,
+            thoughts_token_count=40,
+        ),
+    )
+    mapped = _response(response)
+    assert mapped.text == '{"risks": []}'
+    assert mapped.usage == Usage(
+        tokens_in=1230, tokens_out=80, tokens_cached=1024, tokens_thinking=40
+    )
+    assert mapped.native == turn
+
+
+def test_genai_function_calls_become_tool_calls_with_no_text() -> None:
+    call = types.FunctionCall(name="search_rfp", args={"query": "audit record"})
+    turn = types.Content(role="model", parts=[types.Part(function_call=call)])
+    mapped = _response(types.GenerateContentResponse(candidates=[types.Candidate(content=turn)]))
+    assert mapped.text == ""
+    assert [(c.name, c.arguments) for c in mapped.tool_calls] == [
+        ("search_rfp", {"query": "audit record"})
+    ]
+    assert mapped.usage == Usage()
+
+
+def test_genai_sends_the_model_turn_back_unchanged() -> None:
+    signed = types.Part(
+        function_call=types.FunctionCall(name="date_calc", args={}), thought_signature=b"sig"
+    )
+    native = types.Content(role="model", parts=[signed])
+    message = Message("assistant", tool_calls=(ToolCall("call_0", "date_calc", {}),), native=native)
+    assert _content(message) is native
+
+
+def test_genai_tool_results_become_function_responses() -> None:
+    result = json.dumps({"status": "OK", "data": []})
+    content = _content(Message("tool", result, tool_call_id="call_0", name="search_rfp"))
+    parts = content.parts or []
+    response = parts[0].function_response
+    assert content.role == "user" and response is not None
+    assert response.name == "search_rfp"
+    assert response.response == {"result": {"status": "OK", "data": []}}
+
+
+def test_openai_usage_splits_reasoning_out_of_completion_tokens() -> None:
+    usage = CompletionUsage(
+        prompt_tokens=900,
+        completion_tokens=300,
+        total_tokens=1200,
+        prompt_tokens_details=PromptTokensDetails(cached_tokens=512),
+        completion_tokens_details=CompletionTokensDetails(reasoning_tokens=120),
+    )
+    assert _usage(usage) == Usage(
+        tokens_in=900, tokens_out=180, tokens_cached=512, tokens_thinking=120
+    )
+
+
+def test_openai_usage_without_details() -> None:
+    usage = CompletionUsage(prompt_tokens=130, completion_tokens=211, total_tokens=341)
+    assert _usage(usage) == Usage(tokens_in=130, tokens_out=211)
+
+
+def test_ollama_refuses_a_call_without_num_ctx() -> None:
+    request = Request(model="qwen3.5:4b", messages=(Message("user", "hello"),))
+    with pytest.raises(ProviderError, match="num_ctx"):
+        OllamaBackend("http://127.0.0.1:9").call(request)

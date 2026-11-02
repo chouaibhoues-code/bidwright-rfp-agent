@@ -1,0 +1,342 @@
+"""The one LLM interface: `LLMClient.complete(role, messages, schema=None, tools=None)`.
+
+The client picks the model for a role from `config/models.yaml`, applies a prompt's decoding
+block over the role's defaults, retries transient failures with full-jitter backoff (a
+provider's `Retry-After` wins), falls back once to the role's fallback model when one is
+configured, records or replays cassettes, validates structured output against its Pydantic
+model, and reports one `LedgerEntry` per call.
+"""
+
+import os
+import random
+import time
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
+from datetime import date
+from typing import Literal
+
+from pydantic import BaseModel, ValidationError
+
+from bidwright.config import Config, RoleConfig, TokenPrices
+from bidwright.llm.replay import CassetteStore, cache_key
+from bidwright.llm.schema import provider_schema, sha256_of
+from bidwright.llm.types import (
+    Backend,
+    CassetteMissing,
+    LLMError,
+    Message,
+    ProviderError,
+    RateLimited,
+    Request,
+    Response,
+    ToolCall,
+    ToolSpec,
+    TransientError,
+    UnrecoverableFault,
+    Usage,
+)
+from bidwright.schemas import LedgerEntry
+
+Mode = Literal["live", "record", "replay"]
+Decoding = Mapping[str, Mapping[str, object]]
+
+# The settings a prompt's decoding block may override, per provider. Model and provider stay
+# with config/models.yaml.
+_DECODING_KEYS = frozenset({"thinking", "think", "num_ctx"})
+
+
+@dataclass(frozen=True)
+class Completion:
+    text: str
+    parsed: BaseModel | None
+    parse_error: str | None
+    tool_calls: tuple[ToolCall, ...]
+    usage: Usage
+    latency_ms: int
+    provider: str
+    model: str
+    replayed: bool
+    retries: int
+    native: object = None
+
+    def as_message(self) -> Message:
+        """The model's turn, ready to append to the conversation."""
+        return Message(
+            role="assistant", content=self.text, tool_calls=self.tool_calls, native=self.native
+        )
+
+
+class LLMClient:
+    def __init__(
+        self,
+        config: Config,
+        profile: str,
+        backends: dict[str, Backend] | None = None,
+        *,
+        mode: Mode = "live",
+        cassettes: CassetteStore | None = None,
+        run_id: str = "",
+        on_ledger: Callable[[LedgerEntry], None] | None = None,
+        sleep: Callable[[float], None] = time.sleep,
+        rng: Callable[[], float] = random.random,
+        clock: Callable[[], float] = time.perf_counter,
+        today: Callable[[], date] = date.today,
+    ) -> None:
+        if mode != "live" and cassettes is None:
+            raise ValueError(f"mode {mode!r} needs a cassette store")
+        self.config = config
+        self.profile = profile
+        self.backends = backends or {}
+        self.mode = mode
+        self.cassettes = cassettes
+        self.run_id = run_id
+        self.on_ledger = on_ledger
+        self._sleep = sleep
+        self._rng = rng
+        self._clock = clock
+        self._today = today
+
+    def complete(
+        self,
+        role: str,
+        messages: Sequence[Message],
+        schema: type[BaseModel] | None = None,
+        tools: Sequence[ToolSpec] | None = None,
+        *,
+        node: str,
+        agent: str,
+        prompt_hash: str,
+        input_hash: str,
+        repeat: int = 0,
+        decoding: Decoding | None = None,
+    ) -> Completion:
+        """One call for `role`. `decoding` is a prompt's front-matter block, keyed by provider."""
+        role_config = _with_decoding(self.config.models.role(self.profile, role), decoding)
+        schema_json = provider_schema(schema) if schema is not None else None
+        tool_specs = tuple(tools or ())
+        tools_hash = (
+            sha256_of([[t.name, t.description, t.parameters] for t in tool_specs])
+            if tool_specs
+            else None
+        )
+        settings = _settings(role_config)
+        models = [role_config.model] + ([role_config.fallback] if role_config.fallback else [])
+        last_error: LLMError | None = None
+        for model in models:
+            key = cache_key(
+                prompt_hash=prompt_hash,
+                schema_hash=sha256_of(schema_json) if schema_json is not None else None,
+                tools_hash=tools_hash,
+                model=model,
+                settings=settings,
+                input_hash=input_hash,
+                repeat=repeat,
+            )
+            request = Request(
+                model=model,
+                messages=tuple(messages),
+                schema=schema_json,
+                schema_name=schema.__name__ if schema is not None else None,
+                tools=tool_specs,
+                settings=settings,
+                timeout_s=self.config.limits.call.timeout_s,
+            )
+            try:
+                response, latency_ms, retries, replayed, backend = self._obtain(
+                    role_config, request, key
+                )
+            except (UnrecoverableFault, CassetteMissing) as exc:
+                # A replayed run that fell back has its cassette under the fallback model.
+                last_error = exc
+                continue
+            completion = _completion(
+                response, schema, latency_ms, role_config.provider, model, replayed, retries
+            )
+            self._report(role, node, agent, completion, backend, prompt_hash, input_hash, repeat)
+            return completion
+        if isinstance(last_error, CassetteMissing):
+            raise last_error
+        raise UnrecoverableFault(f"{role} failed on every model: {last_error}")
+
+    def _store(self) -> CassetteStore:
+        if self.cassettes is None:
+            raise ValueError(f"mode {self.mode!r} needs a cassette store")
+        return self.cassettes
+
+    def _obtain(
+        self, role_config: RoleConfig, request: Request, key: str
+    ) -> tuple[Response, int, int, bool, Backend | None]:
+        if self.mode == "replay":
+            response = self._store().load(key)
+            if response is None:
+                raise CassetteMissing(f"no cassette {key} for {request.model}")
+            return response, 0, 0, True, None
+        backend = self.backends.get(role_config.provider)
+        if backend is None:
+            raise ProviderError(f"no backend configured for provider {role_config.provider!r}")
+        call = self.config.limits.call
+        retries = 0
+        while True:
+            started = self._clock()
+            try:
+                response = backend.call(request)
+            except TransientError as exc:
+                if retries >= call.retries:
+                    raise UnrecoverableFault(f"{request.model}: {exc}") from exc
+                wait = (
+                    exc.retry_after_s
+                    if isinstance(exc, RateLimited) and exc.retry_after_s is not None
+                    else self._rng() * min(call.backoff_cap_s, call.backoff_base_s * 2**retries)
+                )
+                retries += 1
+                self._sleep(wait)
+                continue
+            latency_ms = int((self._clock() - started) * 1000)
+            break
+        if self.mode == "record":
+            self._store().save(
+                key,
+                {
+                    "provider": role_config.provider,
+                    "model": request.model,
+                    "request": {
+                        "schema_name": request.schema_name,
+                        "tools": [t.name for t in request.tools],
+                        "settings": request.settings,
+                    },
+                },
+                response,
+            )
+        return response, latency_ms, retries, False, backend
+
+    def _report(
+        self,
+        role: str,
+        node: str,
+        agent: str,
+        completion: Completion,
+        backend: Backend | None,
+        prompt_hash: str,
+        input_hash: str,
+        repeat: int,
+    ) -> None:
+        if self.on_ledger is None:
+            return
+        today = self._today()
+        own_price = self.config.pricing.price(completion.model, today)
+        shadow_model = self.config.pricing.shadow_model.get(role, completion.model)
+        shadow_price = self.config.pricing.price(shadow_model, today) or own_price
+        paid = backend.paid if backend is not None else False
+        usage = completion.usage
+        self.on_ledger(
+            LedgerEntry(
+                run_id=self.run_id,
+                node=node,
+                agent=agent,
+                provider=completion.provider,
+                model=completion.model,
+                prompt_hash=prompt_hash,
+                input_hash=input_hash,
+                repeat=repeat,
+                tokens_in=usage.tokens_in,
+                tokens_out=usage.tokens_out,
+                tokens_cached=usage.tokens_cached,
+                tokens_thinking=usage.tokens_thinking,
+                streamed=False,
+                latency_ms=completion.latency_ms,
+                ttft_ms=None,
+                load_ms=usage.load_ms,
+                prompt_ms=usage.prompt_ms,
+                gen_ms=usage.gen_ms,
+                cost_usd=_cost(usage, own_price) if paid else 0.0,
+                shadow_cost_usd=_cost(usage, shadow_price),
+                replayed=completion.replayed,
+                retries=completion.retries,
+            )
+        )
+
+
+def _with_decoding(role_config: RoleConfig, decoding: Decoding | None) -> RoleConfig:
+    """Apply the decoding block's entry for this role's provider over the role's defaults."""
+    overrides = dict((decoding or {}).get(role_config.provider, {}))
+    unknown = sorted(set(overrides) - _DECODING_KEYS)
+    if unknown:
+        raise ValueError(f"decoding for {role_config.provider} may not set {unknown}")
+    if not overrides:
+        return role_config
+    return RoleConfig.model_validate({**role_config.model_dump(), **overrides})
+
+
+def _settings(role_config: RoleConfig) -> dict[str, object]:
+    candidates = {
+        "thinking": role_config.thinking,
+        "think": role_config.think,
+        "num_ctx": role_config.num_ctx,
+    }
+    return {key: value for key, value in candidates.items() if value is not None}
+
+
+def _completion(
+    response: Response,
+    schema: type[BaseModel] | None,
+    latency_ms: int,
+    provider: str,
+    model: str,
+    replayed: bool,
+    retries: int,
+) -> Completion:
+    parsed: BaseModel | None = None
+    parse_error: str | None = None
+    if schema is not None and not response.tool_calls:
+        try:
+            parsed = schema.model_validate_json(response.text)
+        except ValidationError as exc:
+            parse_error = str(exc)
+    return Completion(
+        text=response.text,
+        parsed=parsed,
+        parse_error=parse_error,
+        tool_calls=response.tool_calls,
+        usage=response.usage,
+        latency_ms=latency_ms,
+        provider=provider,
+        model=model,
+        replayed=replayed,
+        retries=retries,
+        native=response.native,
+    )
+
+
+def _cost(usage: Usage, price: TokenPrices | None) -> float:
+    if price is None:
+        return 0.0
+    per_token = 1 / 1_000_000
+    uncached = max(usage.tokens_in - usage.tokens_cached, 0)
+    cached_rate = price.cached_input if price.cached_input is not None else price.input
+    return round(
+        (
+            uncached * price.input
+            + usage.tokens_cached * cached_rate
+            + usage.tokens_out * price.output
+            + usage.tokens_thinking * price.thinking
+        )
+        * per_token,
+        8,
+    )
+
+
+def default_backends(*, paid: bool = False) -> dict[str, Backend]:
+    """Live backends from the environment. Missing keys leave that provider out."""
+    from bidwright.llm.ollama import OllamaBackend
+
+    backends: dict[str, Backend] = {"ollama": OllamaBackend()}
+    key_name = "GEMINI_PAID_API_KEY" if paid else "GEMINI_API_KEY"
+    key = os.environ.get(key_name, "")
+    if key:
+        from bidwright.llm.genai import GenaiBackend
+
+        backends["gemini"] = GenaiBackend(api_key=key, paid=paid)
+    return backends
+
+
+__all__ = ["Completion", "LLMClient", "default_backends"]
