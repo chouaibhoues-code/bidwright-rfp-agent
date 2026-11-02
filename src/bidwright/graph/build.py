@@ -21,6 +21,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 from openinference.semconv.trace import OpenInferenceSpanKindValues
 
+from bidwright.baselines import BASELINES
 from bidwright.config import Config, load_config
 from bidwright.graph.nodes import (
     BatchOutcome,
@@ -346,8 +347,9 @@ def execute(
     tracing = Tracing(run_id, run_dir, os.environ.get("PHOENIX_ENDPOINT") or None)
     ctx = RunContext(run_id, client, budget, prompts, {}, tracing=tracing)
     rt = Runtime(ctx, config, source, run_dir)
-    if baseline == "ex0":
-        rt.extract_prompt, rt.one_batch = "extract_oneshot", True
+    if baseline is not None:
+        chosen = BASELINES[baseline]
+        rt.extract_prompt, rt.one_batch = chosen.extract_prompt, chosen.one_batch
     status: RunStatus = "COMPLETED"
     reason: str | None = None
     budget.start()

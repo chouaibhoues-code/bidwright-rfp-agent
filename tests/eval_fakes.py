@@ -1,7 +1,12 @@
-"""Hand-built run folders for scorer tests: an oracle built from gold, and single records."""
+"""Hand-built run folders for scorer tests: an oracle built from gold, and single records.
+
+Gold is read lazily, so collecting these tests never needs `evals/gold`: the image used by
+the `test` service has no gold, and runs only the tests not marked `gold`.
+"""
 
 import json
 from datetime import UTC, datetime
+from functools import cache
 from pathlib import Path
 from typing import Any
 
@@ -11,10 +16,11 @@ from bidwright.verify import check_quote
 from evals.matcher import gold_clauses
 from evals.score import GOLD_DIR
 
-GOLD = [
-    json.loads(line)
-    for line in (GOLD_DIR / "dev" / "gold.jsonl").read_text(encoding="utf-8").splitlines()
-]
+
+@cache
+def gold() -> list[dict[str, Any]]:
+    path = GOLD_DIR / "dev" / "gold.jsonl"
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
 def record(
@@ -39,20 +45,20 @@ def record(
 
 def oracle(ingest: IngestResult) -> tuple[list[Requirement], list[dict[str, Any]]]:
     """A perfect run: one exact record per gold requirement, and one risk per seed."""
-    clauses = gold_clauses(GOLD, ingest.frozen_text)
+    clauses = gold_clauses(gold(), ingest.frozen_text)
     passages = list(ingest.passages)
     records = []
     for clause in [c for c in clauses if c.kind == "requirement"]:
         cited = [p for p in passages if p.start < clause.span[1] and clause.span[0] < p.end]
         quote = ingest.frozen_text[clause.span[0] : clause.span[1]].replace("\n", " ")
-        line = next(g for g in GOLD if g["gold_id"] == clause.gold_id)
+        line = next(g for g in gold() if g["gold_id"] == clause.gold_id)
         item = record(len(records) + 1, quote, cited, "BINDING" if clause.mandatory else "OPTIONAL")
         records.append(
             item.model_copy(update={"modality": line["modality"], "hazard": clause.hazard})
         )
     by_id = {c.gold_id: c for c in clauses}
     risks = []
-    for seed in [g for g in GOLD if g["kind"] == "risk_seed"]:
+    for seed in [g for g in gold() if g["kind"] == "risk_seed"]:
         anchors = [
             p.id
             for p in passages

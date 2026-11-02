@@ -18,6 +18,8 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from bidwright.baselines import BASELINES
+
 if TYPE_CHECKING:
     from bidwright.graph.build import RunResult
 
@@ -94,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     run = sub.add_parser("run", help="run one RFP live")
     run.add_argument("file", type=Path)
     run.add_argument("--profile", choices=["free", "local"], default="free")
-    run.add_argument("--baseline", choices=["ex0"])
+    run.add_argument("--baseline", choices=sorted(BASELINES))
     run.add_argument("--allow-non-corpus", dest="consent", metavar="CONSENT")
     run.add_argument("--outputs", type=Path, default=HOME / "outputs")
     demo = sub.add_parser("demo", help="replay the recorded development run, with no keys")
