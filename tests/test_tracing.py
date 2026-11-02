@@ -46,6 +46,9 @@ def test_without_a_collector_spans_land_in_jsonl(
     assert kinds["TOOL"] >= 1 and kinds["AGENT"] == 1
     names = {span["name"] for span in spans}
     assert {"run", "node.ingest", "node.extract", "llm.extract", "tool.search_rfp"} <= names
+    agent = next(span for span in spans if span["name"] == "node.risk")
+    assert agent["attributes"]["bidwright.stop_reason"] == "answered"
+    assert agent["attributes"]["bidwright.tool_calls"] == 1
     llm = next(span for span in spans if span["name"] == "llm.approach")
     assert llm["attributes"]["llm.model_name"] == "gemini-3.8-flash"
     assert llm["attributes"]["llm.token_count.prompt"] > 0

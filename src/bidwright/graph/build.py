@@ -20,6 +20,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 from openinference.semconv.trace import OpenInferenceSpanKindValues
+from opentelemetry import trace as otel_trace
 
 from bidwright.baselines import BASELINES
 from bidwright.config import Config, load_config
@@ -43,7 +44,7 @@ from bidwright.llm.client import LLMClient, Mode
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Backend, LLMError
 from bidwright.obs.ledger import totals_of
-from bidwright.obs.tracing import Tracing, maybe_span
+from bidwright.obs.tracing import Tracing, maybe_span, set_attribute
 from bidwright.prompts import Prompt, load_prompt, load_prompt_ref
 from bidwright.render import RenderBlocked, RunRecords, render, write_manifest
 from bidwright.retrieval import PassageIndex
@@ -190,6 +191,10 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         )
         rows = [r.model_dump(mode="json") for r in outcome.risks]
         _jsonl(rt.run_dir / "risks.jsonl", rows)
+        span = otel_trace.get_current_span()
+        set_attribute(span, "bidwright.stop_reason", outcome.stop_reason)
+        set_attribute(span, "bidwright.turns", outcome.turns)
+        set_attribute(span, "bidwright.tool_calls", len(gateway.calls))
         calls = [
             {
                 "tool": request.tool,
