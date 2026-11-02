@@ -1,0 +1,107 @@
+"""A full development run recorded once, then replayed with no network and no keys."""
+
+import json
+from pathlib import Path
+
+import pytest
+
+from bidwright.graph.build import execute
+from bidwright.llm.replay import CassetteStore
+from bidwright.schemas import LedgerEntry, RunManifest
+from tests.node_fakes import DEV_RFP, RuleBackend
+
+pytestmark = pytest.mark.replay
+
+OUTPUTS = (
+    "frozen.txt",
+    "passages.jsonl",
+    "search.sqlite",
+    "requirements.jsonl",
+    "rejected.jsonl",
+    "approach.json",
+    "risks.jsonl",
+    "sections/understanding.md",
+    "sections/approach.md",
+    "sections/risks_and_assumptions.md",
+    "proposal.md",
+    "solution_summary.md",
+    "solution_summary.json",
+    "ledger.jsonl",
+    "run_manifest.json",
+)
+
+
+def _summary(run_dir: Path) -> dict:
+    data = json.loads((run_dir / "solution_summary.json").read_text(encoding="utf-8"))
+    data["summary"].pop("run_id")
+    return data
+
+
+def test_a_development_run_replays_with_no_network(tmp_path: Path) -> None:
+    store = CassetteStore(tmp_path / "cassettes")
+    model = RuleBackend()
+    live = execute(
+        source=DEV_RFP,
+        profile="free",
+        outputs=tmp_path / "out",
+        mode="record",
+        cassettes=store,
+        backends={"gemini": model},
+        run_id="recorded",
+    )
+    assert live.status == "COMPLETED", live.reason
+    replay = execute(
+        source=DEV_RFP,
+        profile="free",
+        outputs=tmp_path / "out",
+        mode="replay",
+        cassettes=store,
+        run_id="replayed",
+    )
+    assert replay.status == "COMPLETED", replay.reason
+    for name in OUTPUTS:
+        assert (replay.run_dir / name).exists(), name
+    assert _summary(replay.run_dir) == _summary(live.run_dir)
+    ledger = [
+        LedgerEntry.model_validate_json(line)
+        for line in (replay.run_dir / "ledger.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert ledger and all(entry.replayed for entry in ledger)
+    assert len(ledger) == len(model.requests)
+    manifest = RunManifest.model_validate_json(
+        (replay.run_dir / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest.status == "COMPLETED" and manifest.totals.requests == len(ledger)
+
+
+def test_a_missing_cassette_ends_the_run_as_a_fault(tmp_path: Path) -> None:
+    result = execute(
+        source=DEV_RFP,
+        profile="free",
+        outputs=tmp_path,
+        mode="replay",
+        cassettes=CassetteStore(tmp_path / "empty"),
+        run_id="nothing-recorded",
+    )
+    assert result.status == "UNRECOVERABLE_FAULT"
+    assert "CassetteMissing" in (result.reason or "")
+    assert (result.run_dir / "run_manifest.json").exists()
+    assert not (result.run_dir / "solution_summary.md").exists()
+
+
+def test_ex0_sends_every_passage_in_one_call(tmp_path: Path) -> None:
+    model = RuleBackend()
+    result = execute(
+        source=DEV_RFP,
+        profile="free",
+        outputs=tmp_path,
+        mode="record",
+        cassettes=CassetteStore(tmp_path / "c"),
+        backends={"gemini": model},
+        baseline="ex0",
+        run_id="ex0",
+    )
+    assert result.status == "COMPLETED", result.reason
+    extract_calls = [r for r in model.requests if r.schema_name == "ExtractResult"]
+    assert len(extract_calls) == 1
+    assert "You list the obligations" in extract_calls[0].messages[0].content

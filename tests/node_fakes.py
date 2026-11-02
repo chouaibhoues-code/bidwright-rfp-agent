@@ -1,6 +1,7 @@
 """Scripted model replies and a run context over the development RFP, for node tests."""
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -58,6 +59,81 @@ def tools(*calls: tuple[str, dict[str, Any]]) -> Response:
         tool_calls=tuple(ToolCall(f"call_{n}", name, args) for n, (name, args) in enumerate(calls)),
         usage=USAGE,
     )
+
+
+_DATA = re.compile(r"<(data-[0-9a-f]{8})>\n(.*)\n</\1>", re.DOTALL)
+_MODAL = re.compile(r"\b(shall|must|should|may)\b")
+
+
+class RuleBackend:
+    """A deterministic stand-in for a model, for whole-run tests: it reads the data block
+    and answers each node's schema with simple rules, so every reply is valid and every
+    quote is an exact copy."""
+
+    provider = "gemini"
+    paid = False
+
+    def __init__(self) -> None:
+        self.requests: list[Request] = []
+
+    def call(self, request: Request) -> Response:
+        self.requests.append(request)
+        user = next(m.content for m in request.messages if m.role == "user")
+        found = _DATA.search(user)
+        data = json.loads(found.group(2)) if found else {}
+        name = request.schema_name
+        if request.tools:
+            if any(m.role == "tool" for m in request.messages):
+                return Response(text="I have the evidence I need.", usage=USAGE)
+            return tools(("search_rfp", {"query": "go-live migration"}))
+        if name == "ExtractResult":
+            return Response(text=json.dumps(_extract(data)), usage=USAGE)
+        if name == "ApproachResult":
+            items = [
+                {
+                    "text": f"Deliver: {r['statement']}",
+                    "requirement_ids": [r["id"]],
+                    "basis": "Stated.",
+                }
+                for r in data["requirements"]
+                if r["mandatory"]
+            ]
+            result = {"items": items, "unmapped_requirement_ids": [], "open_questions": []}
+            return Response(text=json.dumps(result), usage=USAGE)
+        if name == "RiskRegister":
+            return Response(
+                text=json.dumps({"risks": [GOOD_RISK], "open_questions": []}), usage=USAGE
+            )
+        records = data.get("records", [])
+        first = records[0]["id"] if records else None
+        body = f"This section covers the records [{first}]." if first else "Nothing to report."
+        result = {
+            "title": data.get("section_id", "Section"),
+            "text": body,
+            "cited_ids": [first] if first else [],
+        }
+        return Response(text=json.dumps(result), usage=USAGE)
+
+
+def _extract(batch: dict[str, Any]) -> dict[str, Any]:
+    items, none = [], []
+    for passage in batch["passages"]:
+        found = _MODAL.search(passage["text"]) or _MODAL.search(passage.get("lead_in") or "")
+        if not found or passage["text"].endswith(":"):
+            none.append(passage["src_id"])
+            continue
+        modality = found.group(1)
+        items.append(
+            {
+                "src_ids": [passage["src_id"]],
+                "quote": passage["text"][:300],
+                "statement": passage["text"][:300],
+                "modality": modality,
+                "disposition": "BINDING" if modality in ("shall", "must") else "OPTIONAL",
+                "hazard": "UTC" in passage["text"],
+            }
+        )
+    return {"items": items, "no_obligation_src_ids": none}
 
 
 _INGESTED: list[IngestResult] = []

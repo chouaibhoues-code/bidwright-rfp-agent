@@ -1,0 +1,156 @@
+"""The `bidwright` command line.
+
+    bidwright run <file> [--profile free|local] [--baseline ex0]
+                         [--allow-non-corpus=i-accept-free-tier-terms]
+    bidwright demo       replays a recorded development run; needs no keys
+    bidwright record <file> [--name demo]   runs live and writes cassettes, on the host
+
+On `free`, a file is refused unless its hash is listed in `inputs/CORPUS.sha256`, because the
+free tier's terms let the provider use prompt content. Your own files belong on
+`--profile local`; the override exists for informed use, and the run manifest logs it.
+"""
+
+import argparse
+import hashlib
+import os
+import sys
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bidwright.graph.build import RunResult
+
+HOME = Path(os.environ.get("BIDWRIGHT_HOME", Path(__file__).resolve().parents[2]))
+CORPUS_MANIFEST = HOME / "inputs" / "CORPUS.sha256"
+DEMO_SOURCE = HOME / "inputs" / "dev" / "dev_rfp.pdf"
+CASSETTES = HOME / "tests" / "cassettes"
+CONSENT = "i-accept-free-tier-terms"
+
+
+class Refused(Exception):
+    """The run must not start. The message says why and what to do instead."""
+
+
+def corpus_name(path: Path, manifest: Path = CORPUS_MANIFEST) -> str | None:
+    """The corpus entry whose hash matches the file, if any."""
+    if not manifest.exists():
+        return None
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    for line in manifest.read_text(encoding="utf-8").splitlines():
+        parts = line.split(maxsplit=1)
+        if len(parts) == 2 and parts[0] == digest:
+            return parts[1].strip()
+    return None
+
+
+def check_corpus(
+    path: Path, profile: str, consent: str | None, manifest: Path = CORPUS_MANIFEST
+) -> list[str]:
+    """The overrides to log. Raises `Refused` for a non-corpus file on `free` without consent."""
+    if consent is not None and consent != CONSENT:
+        raise Refused(f"--allow-non-corpus takes exactly {CONSENT!r}")
+    if profile != "free" or corpus_name(path, manifest):
+        return []
+    if consent == CONSENT:
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        return [f"allow-non-corpus: {path.name} sha256:{digest}"]
+    raise Refused(
+        f"{path.name} is not in the synthetic corpus, and the free tier's terms let the provider"
+        " use prompt content. Run it with --profile local, or pass"
+        f" --allow-non-corpus={CONSENT} if you accept those terms."
+    )
+
+
+def load_env(path: Path) -> None:
+    """Read KEY=VALUE lines from `.env` into the environment, never overriding a set variable."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        key, sep, value = line.strip().partition("=")
+        if sep and key and not key.startswith("#") and value.strip():
+            os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
+def _limits(path: Path) -> str:
+    name = corpus_name(path)
+    return name.split("/")[0] if name and name.split("/")[0] in ("dev", "hero") else "dev"
+
+
+def _report(result: "RunResult") -> int:
+    print(f"{result.status}: {result.run_dir}")
+    if result.reason:
+        print(f"  {result.reason}")
+    summary = result.run_dir / "solution_summary.md"
+    if summary.exists():
+        print(f"  summary: {summary}")
+    return 0 if result.status in ("COMPLETED", "DEGRADED") else 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="bidwright", description="Bidwright: RFP to proposal.")
+    sub = parser.add_subparsers(dest="command", required=True)
+    run = sub.add_parser("run", help="run one RFP live")
+    run.add_argument("file", type=Path)
+    run.add_argument("--profile", choices=["free", "local"], default="free")
+    run.add_argument("--baseline", choices=["ex0"])
+    run.add_argument("--allow-non-corpus", dest="consent", metavar="CONSENT")
+    run.add_argument("--outputs", type=Path, default=HOME / "outputs")
+    demo = sub.add_parser("demo", help="replay the recorded development run, with no keys")
+    demo.add_argument("--outputs", type=Path, default=HOME / "outputs")
+    record = sub.add_parser("record", help="run live and record cassettes, on the host")
+    record.add_argument("file", type=Path)
+    record.add_argument("--name", default="demo")
+    record.add_argument("--profile", choices=["free", "local"], default="free")
+    record.add_argument("--outputs", type=Path, default=HOME / "outputs")
+    args = parser.parse_args(argv)
+
+    os.environ.setdefault("LANGGRAPH_STRICT_MSGPACK", "true")
+    load_env(HOME / ".env")
+    from bidwright.graph.build import execute
+    from bidwright.llm.client import default_backends
+    from bidwright.llm.replay import CassetteStore
+
+    if args.command == "demo":
+        store = CASSETTES / "demo"
+        if not store.exists():
+            print("No demo cassettes. Record them with: bidwright record inputs/dev/dev_rfp.pdf")
+            return 1
+        result = execute(
+            source=DEMO_SOURCE,
+            profile="free",
+            outputs=args.outputs,
+            mode="replay",
+            cassettes=CassetteStore(store),
+        )
+        return _report(result)
+    try:
+        overrides = check_corpus(args.file, args.profile, getattr(args, "consent", None))
+    except Refused as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    if args.command == "record":
+        result = execute(
+            source=args.file,
+            profile=args.profile,
+            outputs=args.outputs,
+            mode="record",
+            cassettes=CassetteStore(CASSETTES / args.name),
+            backends=default_backends(),
+            overrides=overrides,
+            limits=_limits(args.file),
+        )
+        return _report(result)
+    result = execute(
+        source=args.file,
+        profile=args.profile,
+        outputs=args.outputs,
+        backends=default_backends(),
+        baseline=args.baseline,
+        overrides=overrides,
+        limits=_limits(args.file),
+    )
+    return _report(result)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
