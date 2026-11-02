@@ -38,6 +38,11 @@ class ToolGateway:
     ) -> "ToolGateway":
         return cls(agent, frozenset(allowed), {t.name: t for t in tools}, max_tool_calls)
 
+    @property
+    def executed(self) -> int:
+        """Tool calls that passed every check and ran."""
+        return self._executed
+
     def specs(self) -> list[Tool]:
         """The tools this agent may see, in a stable order."""
         return [self.tools[name] for name in sorted(self.allowed) if name in self.tools]

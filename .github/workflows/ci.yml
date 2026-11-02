@@ -36,6 +36,14 @@ jobs:
         env:
           HYGIENE_HASHES: ${{ secrets.HYGIENE_HASHES }}
 
+  replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --locked
+      - run: uv run pytest -m replay
+
   secrets:
     runs-on: ubuntu-latest
     steps:

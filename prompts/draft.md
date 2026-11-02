@@ -55,6 +55,10 @@ $examples
 Based on the records above, inside the <$data_tag> tags, write the $section_id section.
 </task>
 
+<repair_format>
+Your answer did not match the response schema: $error. Return the whole section again, as JSON that matches the schema.
+</repair_format>
+
 ## Why it works
 
 - **CO-STAR.** Context, objective, style, tone, audience and response are explicit, because the reader is a buyer's evaluator rather than the bid team. The tone rules out filler, which gives an evaluator nothing to score.

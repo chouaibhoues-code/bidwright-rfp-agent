@@ -41,6 +41,10 @@ $examples
 Based on the requirements above, inside the <$data_tag> tags, write the approach. Before you answer, check that every mandatory requirement id appears in at least one item.
 </task>
 
+<repair_format>
+Your answer did not match the response schema: $error. Return the whole approach again, as JSON that matches the schema.
+</repair_format>
+
 ## Why it works
 
 - **Skeleton first.** Rule 1 asks for the workstream outline before any item, the first phase of Skeleton-of-Thought. With `thinking: medium` the outline happens in the model's thinking, and the items expand it.

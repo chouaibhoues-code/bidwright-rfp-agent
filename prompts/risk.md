@@ -45,6 +45,14 @@ Based on the requirements, approach and hazards above, inside the <$data_tag> ta
 Return the final risk register now, based on the evidence you found. Before you answer, check that every risk cites a passage id from your search results, names something specific to this RFP, and carries no probability or rating.
 </final_task>
 
+<repair_generic>
+These risks were rejected: $rejected. Return the whole register again. Replace each rejected risk with one tied to passages you found and to something specific in this RFP, with no probability or rating, or leave it out.
+</repair_generic>
+
+<repair_format>
+Your answer did not match the response schema: $error. Return the whole register again, as JSON that matches the schema.
+</repair_format>
+
 ## Why it works
 
 - **Two perspectives in one call.** The risk manager walks requirements and dates; the devil's advocate attacks the approach. One call with both views costs one request per turn, where separate personas would multiply requests on a scarce free quota.

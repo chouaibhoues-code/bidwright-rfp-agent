@@ -1,9 +1,10 @@
 """Versioned prompts: front-matter, `string.Template.substitute` rendering, seeded delimiters.
 
 A prompt file in `prompts/` is Markdown with YAML front-matter. Its body is the system
-instruction in XML-style tags, plus a `<task>` element, and for agent loops a `<final_task>`
-element, which go last in the user message, after the data. Everything from the
-`## Why it works` heading on is notes for people and never reaches a model.
+instruction in XML-style tags, plus a `<task>` element, which goes last in the user message,
+after the data. Follow-up messages are elements too: `<final_task>` closes an agent loop, and
+`<repair_...>` elements ask for one targeted repair. Everything from the `## Why it works`
+heading on is notes for people and never reaches a model.
 
 `substitute` raises on a missing value and never re-reads what it inserts, so quotes with
 braces or `$` stay exact. Data is never substituted into a template: it goes between
@@ -31,7 +32,7 @@ from bidwright.llm.types import Message
 PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
 EXAMPLES_FILE = Path("examples") / "mini_rfp.yaml"
 NOTES_HEADING = "## Why it works"
-TASK_TAGS = ("task", "final_task")
+_TASK_ELEMENT = re.compile(r"\s*<(task|final_task|repair_[a-z_]+)>\s*(.*?)\s*</\1>", re.DOTALL)
 _FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n(.*)\Z", re.DOTALL)
 
 Value = str | int
@@ -152,14 +153,11 @@ def load_prompt(prompt_id: str, root: Path = PROMPTS_DIR) -> Prompt:
         raise ValueError(f"{path}: front-matter id {meta.id!r} differs from the file name")
     body, _, notes = match.group(2).partition(NOTES_HEADING)
     tasks: dict[str, Template] = {}
-    for name in TASK_TAGS:
-        element = re.compile(rf"\s*<{name}>\s*(.*?)\s*</{name}>", re.DOTALL)
-        found = element.findall(body)
-        if len(found) > 1:
+    for name, text in _TASK_ELEMENT.findall(body):
+        if name in tasks:
             raise ValueError(f"{path}: more than one <{name}> element")
-        if found:
-            tasks[name] = _template(found[0], path)
-            body = element.sub("", body)
+        tasks[name] = _template(text, path)
+    body = _TASK_ELEMENT.sub("", body)
     if "task" not in tasks:
         raise ValueError(f"{path}: no <task> element")
     system = _template(body.strip(), path)
