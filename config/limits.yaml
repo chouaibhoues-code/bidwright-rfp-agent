@@ -1,0 +1,14 @@
+# Per-run limits by RFP and profile. The clock counts only time spent RUNNING.
+runs:
+  dev:
+    free:  {requests: 60, tokens: 300000, active_minutes: 20}
+    local: {requests: 60, tokens: 300000, active_minutes: 60}
+  hero:
+    free:  {requests: 250, tokens: 2000000, active_minutes: 90}
+call:
+  timeout_s: 60
+  retries: 3
+  backoff_base_s: 2
+  backoff_cap_s: 30
+concurrency: 2
+batch_size: 20

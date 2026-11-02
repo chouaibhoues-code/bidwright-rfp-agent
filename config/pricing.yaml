@@ -1,0 +1,19 @@
+# Paid list prices in USD per million tokens. read_on is when the price list was read;
+# V-03 rechecks before any figure is reported. Null dates are open-ended.
+models:
+  - {model: gemini-3.8-flash, effective_from: null, effective_to: 2026-12-31, read_on: 2026-11-01,
+     usd_per_mtok: {input: 0.75, output: 3.75, thinking: 3.75, cached_input: null},
+     source: "https://ai.google.dev/gemini-api/docs/pricing"}
+  - {model: gemini-3.8-flash, effective_from: 2027-01-01, effective_to: null, read_on: 2026-11-01,
+     usd_per_mtok: {input: 1.50, output: 7.50, thinking: 7.50, cached_input: null},
+     source: "https://ai.google.dev/gemini-api/docs/pricing"}
+  - {model: gemini-3.5-flash-lite, effective_from: null, effective_to: null, read_on: 2026-11-01,
+     usd_per_mtok: {input: 0.30, output: 2.50, thinking: 2.50, cached_input: null},
+     source: "https://ai.google.dev/gemini-api/docs/pricing"}
+  - {model: gemini-3.1-flash-lite, effective_from: null, effective_to: null, read_on: 2026-11-01,
+     usd_per_mtok: {input: 0.25, output: 1.50, thinking: 1.50, cached_input: null},
+     source: "https://ai.google.dev/gemini-api/docs/pricing"}
+# The paid rate used to price free and local calls, so runs compare fairly.
+shadow_model:
+  extract: gemini-3.5-flash-lite
+  reason: gemini-3.8-flash
