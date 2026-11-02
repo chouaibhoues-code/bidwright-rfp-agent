@@ -10,6 +10,7 @@ dependencies = [
     "httpx>=0.27,<1",
     "ollama>=0.5,<1",
     "openai>=2,<4",
+    "pdfplumber>=0.11,<1",
     "pydantic>=2.10,<3",
     "pyyaml>=6,<7",
 ]
@@ -21,10 +22,11 @@ bidwright-eval = "evals.cli:main"
 [dependency-groups]
 dev = [
     "pytest",
- "ruff",
- "pyright",
- "pip-audit",
- "types-pyyaml>=6.0.12.20261030",
+    "ruff",
+    "pyright",
+    "pip-audit",
+    "types-pyyaml>=6.0.12.20261030",
+    "reportlab>=4,<5",
 ]
 
 [build-system]

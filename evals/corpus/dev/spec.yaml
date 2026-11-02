@@ -1,0 +1,149 @@
+# Development RFP, gold v1. Fictional: Kestrel Vale Community College does not exist.
+# The rendered PDF goes to inputs/; gold is written only here, and evals/render/gold.py
+# generates evals/gold/dev/gold.jsonl from it. Producer code never reads this file.
+#
+# Contents fixed by the plan: 12 requirements, 8 of them mandatory, one submission hazard,
+# one "may" clause, one background clause that reads like a requirement, one "shall:" list
+# and 3 risk seeds. Traps join in Iteration 1.
+#
+# Labeling conventions: "should" is OPTIONAL (preferred, not required); a list item carries
+# its lead-in's modality; risk-seed terms are lowercase word prefixes.
+
+corpus: dev
+doc_id: dev-rfp
+output: dev/dev_rfp.pdf
+gold_version: 1
+title: "Request for Proposal: Electronic Signature Service"
+subtitle:
+  - "Kestrel Vale Community College"
+  - "Reference KV-2026-014. Issued 2026-11-03."
+notice: "This is a fictional document written to test software. Kestrel Vale Community College is not a real organization."
+header: "Kestrel Vale Community College | RFP KV-2026-014"
+
+sections:
+  - heading: "1 Introduction"
+    blocks:
+      - para:
+          - "Kestrel Vale Community College (the College) invites proposals for a cloud electronic signature service."
+          - "The service replaces paper forms for enrollment, financial aid and staff contracts."
+          - "The College serves about 6,400 students on two campuses and employs 410 staff."
+
+  - heading: "2 Background"
+    blocks:
+      - para:
+          - "Since 2019 the College has collected signatures with a hosted forms tool whose contract ends on 2027-03-31."
+          - "About 38,000 signed records are held in that tool."
+      - id: GB-0001
+        text: "Previous suppliers have generally held ISO 27001 certification."
+        gold: {kind: background}
+      - para:
+          - id: GB-0002
+            text: "The College plans to replace its student records system during 2027, and the replacement has not yet been chosen."
+            gold: {kind: background}
+          - id: GB-0003
+            text: "The College is closed from 2026-12-19 to 2027-01-04, and no staff are available for testing or training in that period."
+            gold: {kind: background}
+
+  - heading: "3 Instructions to bidders"
+    page_break_before: true
+    blocks:
+      - text: "This section explains how to respond."
+      - id: GR-0001
+        text: "Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC."
+        gold: {kind: requirement, modality: must, mandatory: true, hazard: true, zone: INSTRUCTION, tags: [date, format]}
+      - text: "Section 7 describes how proposals are scored."
+
+  - heading: "4 Requirements"
+    blocks:
+      - text: "The requirements in this section apply for the whole contract term."
+
+  - heading: "4.1 Signing"
+    level: 2
+    blocks:
+      - id: GR-0002
+        text: "The Supplier shall keep an audit record of every signature event, including the signer's identity, the time and the document version."
+        gold: {kind: requirement, modality: shall, mandatory: true, zone: OBLIGATION}
+      - list:
+          lead_in: "The Supplier shall:"
+          items:
+            - id: GR-0003
+              text: "(a) support signing on current desktop and mobile browsers;"
+              gold: {kind: requirement, modality: shall, mandatory: true, zone: OBLIGATION}
+            - id: GR-0004
+              text: "(b) send a reminder to each signer who has not signed within 72 hours."
+              gold: {kind: requirement, modality: shall, mandatory: true, zone: OBLIGATION, tags: [numeric]}
+      - id: GR-0005
+        text: "The Supplier should provide templates for the College's twelve most used forms."
+        gold: {kind: requirement, modality: should, mandatory: false, zone: OBLIGATION}
+
+  - heading: "4.2 Records"
+    level: 2
+    blocks:
+      - para:
+          - id: GR-0006
+            text: "The Supplier shall store signed documents for ten (10) years."
+            gold: {kind: requirement, modality: shall, mandatory: true, zone: OBLIGATION, tags: [numeric]}
+          - id: GR-0007
+            text: "The Supplier should migrate the signed records held in the current tool by 2027-02-28."
+            gold: {kind: requirement, modality: should, mandatory: false, zone: OBLIGATION, tags: [date]}
+
+  - heading: "4.3 Integration"
+    level: 2
+    blocks:
+      - id: GR-0008
+        text: "The service must integrate with the College's student records system through its existing REST API."
+        gold: {kind: requirement, modality: must, mandatory: true, zone: OBLIGATION}
+      - id: GR-0009
+        text: "Bidders may propose an on-premises deployment option."
+        gold: {kind: requirement, modality: may, mandatory: false, zone: OBLIGATION}
+
+  - heading: "5 Service levels"
+    page_break_before: true
+    blocks:
+      - id: GR-0010
+        text: "The service shall be available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance."
+        gold: {kind: requirement, modality: shall, mandatory: true, zone: OBLIGATION, tags: [numeric]}
+      - id: GR-0011
+        text: "The Supplier should respond to severity-one incidents within one hour, at any time of day."
+        gold: {kind: requirement, modality: should, mandatory: false, zone: OBLIGATION, tags: [numeric]}
+
+  - heading: "6 Timeline"
+    blocks:
+      - para:
+          - "Contract award is planned for 2026-12-15."
+          - id: GR-0012
+            text: "The service must be live for students by 2027-01-11, the first day of spring enrollment."
+            gold: {kind: requirement, modality: must, mandatory: true, zone: OBLIGATION, tags: [date]}
+
+  - heading: "7 Evaluation"
+    page_break_before: true
+    blocks:
+      - text: "Proposals are scored on the criteria below."
+      - table:
+          header: ["Criterion", "Weight"]
+          rows:
+            - ["Technical approach", "40%"]
+            - ["Service levels and support", "20%"]
+            - ["Integration and migration", "20%"]
+            - ["Price", "20%"]
+
+  - heading: "8 Contract"
+    blocks:
+      - text: "The contract runs for three years from award, with an option to extend it by one year."
+
+seeds:
+  - id: RS-01
+    type: risk
+    note: "Go-live on 2027-01-11 comes seven weeks before the migration deadline of 2027-02-28."
+    anchors: [GR-0012, GR-0007]
+    terms: [[live, launch], [migrat]]
+  - id: RS-02
+    type: risk
+    note: "The integration targets an API that the College plans to replace during 2027."
+    anchors: [GR-0008, GB-0002]
+    terms: [[integrat, api], [replac]]
+  - id: RS-03
+    type: risk
+    note: "The winter closure ends 2027-01-04, leaving four working days before go-live for testing and training."
+    anchors: [GB-0003, GR-0012]
+    terms: [[clos, holiday, break], [test, train]]
