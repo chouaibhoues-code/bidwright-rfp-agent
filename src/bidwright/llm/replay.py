@@ -73,5 +73,5 @@ class CassetteStore:
             "recorded": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
         self._path(key).write_text(
-            json.dumps(record, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+            json.dumps(record, ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n"
         )

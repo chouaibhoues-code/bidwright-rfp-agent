@@ -155,7 +155,9 @@ def main(argv: list[str] | None = None) -> int:
                 "run_id": result.run_id,
                 "status": result.status,
             }
-            (store / RECORDING).write_text(json.dumps(recording, indent=1) + "\n", encoding="utf-8")
+            (store / RECORDING).write_text(
+                json.dumps(recording, indent=1) + "\n", encoding="utf-8", newline="\n"
+            )
         return _report(result)
     result = execute(
         source=args.file,
