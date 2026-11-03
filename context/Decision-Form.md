@@ -112,6 +112,8 @@ A follow-up the same day, at the owner's request, tested masking as a local step
 
 **Recommendation.** C1, C2, C4 and C5 in Iteration 1, with C8's seam and C9's first part; C7 in Iteration 4; C3 with C8's masking in Iteration 5; C9's later parts with the channels they cover, research in Iteration 2 and Context7 and `reflect` in Iteration 3; C6 optional. C2 changes the consent override of ADR-010, so it needs a new ADR. Section 4.4 of [`docs/designs/iteration-1.md`](../docs/designs/iteration-1.md) gives the Iteration 1 parts.
 
+**Status on 2026-11-03.** The first architecture review raised C2 on its own (item A-31: the override serves no stated need and admits a client document to a tier whose terms forbid it). The owner held it with this decision, so the override stays until D-05 is decided, and `docs/architecture.md` marks it as D-05's open question.
+
 ### Decisions closed in later design docs
 
 | Iteration | Decisions its design doc closes |
@@ -127,7 +129,7 @@ Not decisions, but work only the owner can do.
 
 | When | Input |
 |---|---|
-| Iteration 0b | Start the first Goldfish architecture review, `/egm:egm-review docs/architecture.md feature_spec`, with section 10 of `docs/architecture.md` (the quality scenarios) and `docs/decision-matrix.md` as context, and the drift report at the tag; triage both with Claude |
+| Iteration 0b | The first Goldfish architecture review is triaged (2026-11-03, ADR-022 to ADR-025). Start the drift report at the tag, `/egm:egm-drift-report docs`, limited to `architecture.md`, `agents.md` and `security.md`, and triage it with Claude |
 | Iteration 1 | Review gold v2, about 1 hour; write the held-out RFP's requirement list, about 1 hour; decide D-01, D-02 and D-05; triage the Stage 9 review |
 | Iteration 2 | The NotebookLM login for `live` research; triage Stage 9 |
 | Iteration 3 | The Cerebras key (D-03); approve one manifest at the gate; triage Stage 9 |
