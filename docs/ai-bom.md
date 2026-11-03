@@ -27,16 +27,16 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 
 | Agent or function | Kind | Tools it may call | Limits |
 |---|---|---|---|
-| `extract` | function | None | max_calls 1, max_repairs 1 |
-| `approach` | function | None | max_calls 1, max_repairs 1 |
+| `extract` | function | None | 1 call and 1 repair, fixed in code |
+| `approach` | function | None | 1 call and 1 repair, fixed in code |
 | `risk` | agent | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
-| `draft` | function | None | max_calls 1, max_repairs 1 |
+| `draft` | function | None | 1 call and 1 repair, fixed in code |
 
 Controls on every run, in code:
 
 - Every tool call passes `ToolGateway`: the agent's allowlist, the argument schema, no third identical call, and the agent's call cap.
 - Every model response must parse into its Pydantic schema, and code checks every quote against the RFP before a requirement is accepted.
-- Per-run limits on requests, tokens and active time, checked before every call (`config/limits.yaml`).
+- Per-run limits on requests, tokens and active time, checked before every provider attempt (`config/limits.yaml`).
 - Mode `DRAFT_ONLY`: nothing is submitted, and every output is `UNREVIEWED_DRAFT` until a person signs it off.
 - Spans and the ledger carry hashes, counts, timings and costs, never prompt or response text.
 

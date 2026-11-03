@@ -1,8 +1,10 @@
 # Gold, corpus specs and results never enter the image: only the eval service mounts them.
+# Spikes are experiments run from the checkout.
 evals/corpus/
 evals/gold/
 evals/results/
 evals/labels/
+evals/spikes/
 private/
 outputs/
 .env

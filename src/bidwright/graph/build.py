@@ -26,7 +26,6 @@ from bidwright.baselines import BASELINES
 from bidwright.config import Config, load_config
 from bidwright.graph.nodes import (
     BatchOutcome,
-    NodeFailed,
     RunContext,
     approach,
     assign_requirements,
@@ -43,8 +42,9 @@ from bidwright.ingest import doc_id_for, ingest_pdf
 from bidwright.llm.client import LLMClient, Mode
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Backend, LLMError, QuotaExhausted
-from bidwright.obs.ledger import totals_of
+from bidwright.obs.ledger import models_used, totals_of
 from bidwright.obs.tracing import Tracing, maybe_span, set_attribute
+from bidwright.preflight import check_preconditions
 from bidwright.prompts import Prompt, load_prompt, load_prompt_ref
 from bidwright.render import RenderBlocked, RunRecords, render, write_manifest
 from bidwright.retrieval import PassageIndex
@@ -166,6 +166,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             "items": [a.model_dump(mode="json") for a in outcome.items],
             "unmapped": outcome.unmapped,
             "questions": [q.model_dump(mode="json") for q in outcome.questions],
+            "failure": outcome.failure,
         }
         (rt.run_dir / "approach.json").write_text(
             json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
@@ -206,6 +207,14 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             }
             for request, result in gateway.calls
         ]
+        # Every tool request with its full result, so a trace can be checked from the folder.
+        _jsonl(
+            rt.run_dir / "tool_calls.jsonl",
+            [
+                {**call, "reason": result.reason, "data": result.data}
+                for call, (_, result) in zip(calls, gateway.calls, strict=True)
+            ],
+        )
         data = {
             "risks": rows,
             "questions": [q.model_dump(mode="json") for q in outcome.questions],
@@ -213,6 +222,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             "stop_reason": outcome.stop_reason,
             "turns": outcome.turns,
             "tool_calls": calls,
+            "failure": outcome.failure,
         }
         return {"risk": data}
 
@@ -309,6 +319,7 @@ def _file_hash(path: Path) -> str:
 
 
 def _degraded(state: dict[str, Any]) -> str | None:
+    """The shortfalls a finished run carries: each one makes the status `DEGRADED`."""
     failed = [
         r for r in state.get("rejected", []) if r.get("reason") == "malformed output after repair"
     ]
@@ -316,6 +327,10 @@ def _degraded(state: dict[str, Any]) -> str | None:
     reasons = []
     if failed:
         reasons.append(f"{len(failed)} extraction batch(es) failed")
+    for node in ("approach", "risk"):
+        failure = (state.get(node) or {}).get("failure")
+        if failure:
+            reasons.append(f"{node}: {failure}")
     if sections:
         reasons.append(f"sections failed: {', '.join(sections)}")
     return "; ".join(reasons) or None
@@ -337,12 +352,23 @@ def execute(
     cassettes: CassetteStore | None = None,
     backends: dict[str, Backend] | None = None,
     baseline: str | None = None,
-    overrides: list[str] | None = None,
+    consent: str | None = None,
     limits: str = "dev",
     run_id: str | None = None,
 ) -> RunResult:
-    """Run one RFP end to end. A failed run still leaves its manifest and ledger."""
+    """Run one RFP end to end. A failed run still leaves its manifest and ledger.
+
+    The profile's preconditions are checked first (`preflight.py`): a run that is refused
+    leaves no folder, and `Refused` carries what to do instead."""
     config = load_config()
+    overrides = check_preconditions(
+        source=source,
+        profile=profile,
+        mode=mode,
+        consent=consent,
+        backends=backends or {},
+        config=config,
+    )
     started = datetime.now(UTC)
     suffix = f"-{baseline}" if baseline else ""
     run_id = run_id or f"{started:%Y%m%dT%H%M%SZ}-{doc_id_for(source)}-{profile}{suffix}"
@@ -394,7 +420,7 @@ def execute(
         status, reason = "BUDGET_EXCEEDED", str(exc)
     except QuotaExhausted as exc:
         status, reason = "QUOTA_PAUSED", f"{exc}; rerun after the quota resets"
-    except (NodeFailed, LLMError, RenderBlocked) as exc:
+    except (LLMError, RenderBlocked) as exc:
         status, reason = "UNRECOVERABLE_FAULT", f"{type(exc).__name__}: {exc}"
     except KeyboardInterrupt:
         status, reason = "STOPPED", "interrupted by the operator"
@@ -415,13 +441,14 @@ def execute(
                 commit=_commit(),
                 profile=profile,
                 models={role: rc.model for role, rc in config.models.profiles[profile].items()},
+                models_used=models_used(ctx.ledger),
                 prompt_hashes={name: prompt.hash for name, prompt in prompts.items()},
                 input_hashes={source.name: _file_hash(source)},
                 started=started,
                 ended=datetime.now(UTC),
                 status=status,
                 status_reason=reason,
-                overrides=[*(overrides or []), *budget.raises],
+                overrides=[*overrides, *budget.raises],
                 totals=totals_of(ctx.ledger, budget.active_seconds),
             )
             write_manifest(run_dir, manifest, ctx.ledger)

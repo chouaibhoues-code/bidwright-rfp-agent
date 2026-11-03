@@ -4,7 +4,9 @@ The client picks the model for a role from `config/models.yaml`, applies a promp
 block over the role's defaults, retries transient failures with full-jitter backoff (a
 provider's `Retry-After` wins), falls back once to the role's fallback model when one is
 configured, records or replays cassettes, validates structured output against its Pydantic
-model, and reports one `LedgerEntry` per call.
+model, and reports one `LedgerEntry` per call. The entry's `retries` counts the provider
+attempts beyond the first, across the primary and the fallback model, and `before_attempt`
+runs before every attempt, which is where the run budget is checked (ADR-022).
 """
 
 import os
@@ -67,6 +69,13 @@ class Completion:
         )
 
 
+@dataclass
+class _Attempts:
+    """The provider attempts made for one logical call, across the primary and the fallback."""
+
+    made: int = 0
+
+
 class LLMClient:
     def __init__(
         self,
@@ -78,6 +87,7 @@ class LLMClient:
         cassettes: CassetteStore | None = None,
         run_id: str = "",
         on_ledger: Callable[[LedgerEntry], None] | None = None,
+        before_attempt: Callable[[], None] | None = None,
         sleep: Callable[[float], None] = time.sleep,
         rng: Callable[[], float] = random.random,
         clock: Callable[[], float] = time.perf_counter,
@@ -92,6 +102,7 @@ class LLMClient:
         self.cassettes = cassettes
         self.run_id = run_id
         self.on_ledger = on_ledger
+        self.before_attempt = before_attempt
         self._sleep = sleep
         self._rng = rng
         self._clock = clock
@@ -123,6 +134,7 @@ class LLMClient:
         settings = _settings(role_config)
         models = [role_config.model] + ([role_config.fallback] if role_config.fallback else [])
         last_error: LLMError | None = None
+        attempts = _Attempts()
         for model in models:
             key = cache_key(
                 prompt_hash=prompt_hash,
@@ -143,14 +155,16 @@ class LLMClient:
                 timeout_s=self.config.limits.call.timeout_for(self.profile),
             )
             try:
-                response, latency_ms, retries, replayed, backend = self._obtain(
-                    role_config, request, key
+                response, latency_ms, replayed, backend = self._obtain(
+                    role_config, request, key, attempts
                 )
             except (UnrecoverableFault, CassetteMissing, QuotaExhausted) as exc:
                 # A replayed run that fell back has its cassette under the fallback model, and
-                # a spent daily quota moves straight to the fallback, with no retries.
+                # a spent daily quota moves straight to the fallback, with no backoff; its
+                # refused attempt still counts.
                 last_error = exc
                 continue
+            retries = max(attempts.made - 1, 0)
             completion = _completion(
                 response, schema, latency_ms, role_config.provider, model, replayed, retries
             )
@@ -166,19 +180,22 @@ class LLMClient:
         return self.cassettes
 
     def _obtain(
-        self, role_config: RoleConfig, request: Request, key: str
-    ) -> tuple[Response, int, int, bool, Backend | None]:
+        self, role_config: RoleConfig, request: Request, key: str, attempts: _Attempts
+    ) -> tuple[Response, int, bool, Backend | None]:
         if self.mode == "replay":
             response = self._store().load(key)
             if response is None:
                 raise CassetteMissing(f"no cassette {key} for {request.model}")
-            return response, 0, 0, True, None
+            return response, 0, True, None
         backend = self.backends.get(role_config.provider)
         if backend is None:
             raise ProviderError(f"no backend configured for provider {role_config.provider!r}")
         call = self.config.limits.call
         retries = 0
         while True:
+            if self.before_attempt is not None:
+                self.before_attempt()
+            attempts.made += 1
             started = self._clock()
             try:
                 response = backend.call(request)
@@ -209,7 +226,7 @@ class LLMClient:
                 },
                 response,
             )
-        return response, latency_ms, retries, False, backend
+        return response, latency_ms, False, backend
 
     def _report(
         self,

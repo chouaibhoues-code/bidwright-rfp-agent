@@ -5,13 +5,14 @@
     bidwright demo       replays a recorded development run; needs no keys
     bidwright record <file> [--name demo]   runs live and writes cassettes, on the host
 
-On `free`, a file is refused unless its hash is listed in `inputs/CORPUS.sha256`, because the
-free tier's terms let the provider use prompt content. Your own files belong on
-`--profile local`; the override exists for informed use, and the run manifest logs it.
+The command line parses arguments and prints what the run entry refuses. The rules themselves
+sit at the run entry, in `preflight.py`: on `free`, a file is refused unless its hash is
+listed in `inputs/CORPUS.sha256`, because the free tier's terms let the provider use prompt
+content. Your own files belong on `--profile local`; the override exists for informed use,
+and the run manifest logs it.
 """
 
 import argparse
-import hashlib
 import json
 import os
 import sys
@@ -19,50 +20,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bidwright.baselines import BASELINES
+from bidwright.preflight import HOME, Refused, corpus_name
 
 if TYPE_CHECKING:
     from bidwright.graph.build import RunResult
 
-HOME = Path(os.environ.get("BIDWRIGHT_HOME", Path(__file__).resolve().parents[2]))
-CORPUS_MANIFEST = HOME / "inputs" / "CORPUS.sha256"
 DEMO_SOURCE = HOME / "inputs" / "dev" / "dev_rfp.pdf"
 CASSETTES = HOME / "tests" / "cassettes"
 RECORDING = "recording.json"  # which profile and input a cassette folder was recorded from
-CONSENT = "i-accept-free-tier-terms"
-
-
-class Refused(Exception):
-    """The run must not start. The message says why and what to do instead."""
-
-
-def corpus_name(path: Path, manifest: Path = CORPUS_MANIFEST) -> str | None:
-    """The corpus entry whose hash matches the file, if any."""
-    if not manifest.exists():
-        return None
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    for line in manifest.read_text(encoding="utf-8").splitlines():
-        parts = line.split(maxsplit=1)
-        if len(parts) == 2 and parts[0] == digest:
-            return parts[1].strip()
-    return None
-
-
-def check_corpus(
-    path: Path, profile: str, consent: str | None, manifest: Path = CORPUS_MANIFEST
-) -> list[str]:
-    """The overrides to log. Raises `Refused` for a non-corpus file on `free` without consent."""
-    if consent is not None and consent != CONSENT:
-        raise Refused(f"--allow-non-corpus takes exactly {CONSENT!r}")
-    if profile != "free" or corpus_name(path, manifest):
-        return []
-    if consent == CONSENT:
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        return [f"allow-non-corpus: {path.name} sha256:{digest}"]
-    raise Refused(
-        f"{path.name} is not in the synthetic corpus, and the free tier's terms let the provider"
-        " use prompt content. Run it with --profile local, or pass"
-        f" --allow-non-corpus={CONSENT} if you accept those terms."
-    )
 
 
 def load_env(path: Path) -> None:
@@ -76,7 +41,10 @@ def load_env(path: Path) -> None:
 
 
 def _limits(path: Path) -> str:
-    name = corpus_name(path)
+    try:
+        name = corpus_name(path)
+    except OSError:
+        return "dev"  # the run entry reports the missing file
     return name.split("/")[0] if name and name.split("/")[0] in ("dev", "hero") else "dev"
 
 
@@ -129,53 +97,43 @@ def main(argv: list[str] | None = None) -> int:
         )
         return _report(result)
     try:
-        overrides = check_corpus(args.file, args.profile, getattr(args, "consent", None))
-        if args.command == "record" and corpus_name(args.file) is None:
-            # Cassettes hold the model's answers, which quote the document, and Git tracks
-            # tests/cassettes/; so only files of the synthetic corpus are ever recorded.
-            raise Refused(
-                f"{args.file.name} is not in the synthetic corpus. record writes into"
-                " tests/cassettes, which Git tracks, so it records corpus files only, on any"
-                " profile. Use bidwright run instead."
+        if args.command == "record":
+            store = CASSETTES / args.name
+            result = execute(
+                source=args.file,
+                profile=args.profile,
+                outputs=args.outputs,
+                mode="record",
+                cassettes=CassetteStore(store),
+                backends=default_backends(),
+                limits=_limits(args.file),
+            )
+        else:
+            result = execute(
+                source=args.file,
+                profile=args.profile,
+                outputs=args.outputs,
+                backends=default_backends(),
+                baseline=args.baseline,
+                consent=args.consent,
+                limits=_limits(args.file),
             )
     except Refused as exc:
         print(f"Refused: {exc}", file=sys.stderr)
         return 2
-    if args.command == "record":
-        store = CASSETTES / args.name
-        result = execute(
-            source=args.file,
-            profile=args.profile,
-            outputs=args.outputs,
-            mode="record",
-            cassettes=CassetteStore(store),
-            backends=default_backends(),
-            overrides=overrides,
-            limits=_limits(args.file),
+    if args.command == "record" and result.status in ("COMPLETED", "DEGRADED"):
+        source = args.file.resolve()
+        recording = {
+            "profile": args.profile,
+            "source": source.relative_to(HOME).as_posix()
+            if source.is_relative_to(HOME)
+            else str(source),
+            "run_id": result.run_id,
+            "status": result.status,
+        }
+        (CASSETTES / args.name / RECORDING).write_text(
+            json.dumps(recording, indent=1) + "\n", encoding="utf-8", newline="\n"
         )
-        if result.status in ("COMPLETED", "DEGRADED"):
-            source = args.file.resolve()
-            recording = {
-                "profile": args.profile,
-                "source": source.relative_to(HOME).as_posix()
-                if source.is_relative_to(HOME)
-                else str(source),
-                "run_id": result.run_id,
-                "status": result.status,
-            }
-            (store / RECORDING).write_text(
-                json.dumps(recording, indent=1) + "\n", encoding="utf-8", newline="\n"
-            )
-        return _report(result)
-    result = execute(
-        source=args.file,
-        profile=args.profile,
-        outputs=args.outputs,
-        backends=default_backends(),
-        baseline=args.baseline,
-        overrides=overrides,
-        limits=_limits(args.file),
-    )
     return _report(result)
 
 

@@ -1,8 +1,10 @@
 """Offline checks that each provider adapter maps the provider's fields as documented."""
 
 import json
+from types import SimpleNamespace
 from typing import Any
 
+import ollama
 import pytest
 from google.genai import errors as genai_errors
 from google.genai import types
@@ -10,7 +12,7 @@ from openai.types import CompletionUsage
 from openai.types.completion_usage import CompletionTokensDetails, PromptTokensDetails
 
 from bidwright.llm.genai import _content, _response, _translate
-from bidwright.llm.ollama import OllamaBackend
+from bidwright.llm.ollama import TRUNCATION_MARGIN, OllamaBackend
 from bidwright.llm.openai_compat import _usage
 from bidwright.llm.types import (
     Message,
@@ -125,3 +127,47 @@ def test_ollama_refuses_a_call_without_num_ctx() -> None:
     request = Request(model="qwen3.5:4b", messages=(Message("user", "hello"),))
     with pytest.raises(ProviderError, match="num_ctx"):
         OllamaBackend("http://127.0.0.1:9").call(request)
+
+
+def _ollama_client(prompt_eval_count: int) -> type:
+    class FakeClient:
+        def __init__(self, host: str | None = None, timeout: float | None = None) -> None:
+            pass
+
+        def chat(self, **kwargs: Any) -> Any:
+            return SimpleNamespace(
+                message=SimpleNamespace(content="OK", tool_calls=None),
+                prompt_eval_count=prompt_eval_count,
+                eval_count=2,
+                load_duration=None,
+                prompt_eval_duration=None,
+                eval_duration=None,
+            )
+
+    return FakeClient
+
+
+_LOCAL = Request(
+    model="qwen3.5:2b", messages=(Message("user", "hello"),), settings={"num_ctx": 16384}
+)
+
+
+@pytest.mark.parametrize("evaluated", [16384 - TRUNCATION_MARGIN, 16384, 16400])
+def test_ollama_fails_a_call_whose_prompt_reached_num_ctx(
+    monkeypatch: pytest.MonkeyPatch, evaluated: int
+) -> None:
+    """S-14: Ollama drops the start of a prompt longer than num_ctx without an error."""
+    monkeypatch.setattr(ollama, "Client", _ollama_client(evaluated))
+    with pytest.raises(ProviderError, match="cut"):
+        OllamaBackend("http://127.0.0.1:9").call(_LOCAL)
+
+
+def test_ollama_answers_a_prompt_that_fits(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ollama, "Client", _ollama_client(16384 - TRUNCATION_MARGIN - 1))
+    response = OllamaBackend("http://127.0.0.1:9").call(_LOCAL)
+    assert response.text == "OK" and response.usage.tokens_in == 16384 - TRUNCATION_MARGIN - 1
+
+
+def test_ollama_models_reports_an_unreachable_host() -> None:
+    with pytest.raises(ProviderError, match="did not answer"):
+        OllamaBackend("http://127.0.0.1:9").models()

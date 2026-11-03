@@ -200,7 +200,8 @@ class RunManifest(Record):
     run_id: str
     commit: str
     profile: str
-    models: dict[str, str]
+    models: dict[str, str]  # configured, by role
+    models_used: dict[str, list[str]] = Field(default_factory=dict)  # answered, by node
     prompt_hashes: dict[str, str] = Field(default_factory=dict)
     input_hashes: dict[str, str] = Field(default_factory=dict)
     started: datetime

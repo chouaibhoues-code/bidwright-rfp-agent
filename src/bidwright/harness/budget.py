@@ -1,9 +1,12 @@
 """The minimal run budget: requests, tokens and active time, per run.
 
 Limits come from `config/limits.yaml` by RFP and profile. Only live calls count: a replayed
-call spends nothing. The clock runs only while the run is `RUNNING`, so time waiting for a
-person or a quota never counts. Going over a limit raises `BudgetExceeded`, and the run stops
-in `BUDGET_EXCEEDED`, a resumable status: `raise_limits` records the raise for the manifest.
+call spends nothing. The request limit counts provider attempts, retries and the fallback
+model's attempts included, because that is what a provider's quota counts (ADR-022); the
+client checks the budget before each attempt. The clock runs only while the run is `RUNNING`,
+so time waiting for a person or a quota never counts. Going over a limit raises
+`BudgetExceeded`, and the run stops in `BUDGET_EXCEEDED`, a resumable status: `raise_limits`
+records the raise for the manifest.
 """
 
 import time
@@ -47,7 +50,7 @@ class RunBudget:
             self._since = None
 
     def check(self) -> None:
-        """Called before each LLM call. Raises if any limit is already reached."""
+        """Called before each provider attempt. Raises if any limit is already reached."""
         if self.requests >= self.limits.requests:
             raise BudgetExceeded(f"request limit of {self.limits.requests} reached")
         if self.tokens >= self.limits.tokens:
@@ -58,10 +61,10 @@ class RunBudget:
             )
 
     def record(self, entry: LedgerEntry) -> None:
-        """Count one finished call from the ledger."""
+        """Count one finished call from the ledger: every attempt it took, retries included."""
         if entry.replayed:
             return
-        self.requests += 1
+        self.requests += 1 + entry.retries
         self.tokens += entry.tokens_in + entry.tokens_out + entry.tokens_thinking
 
     def raise_limits(

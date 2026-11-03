@@ -13,7 +13,7 @@ Model and prompt ADRs also give the evaluation evidence and the model's expected
 
 ## ADRs
 
-ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 are proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and become accepted or change at its Stage 9 review.
+ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 are proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and become accepted or change at its Stage 9 review. ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03.
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -38,6 +38,10 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 019 | The `consolidate` cluster rule | proposed |
 | 020 | Review files for quarantined text, small print and suspect passages | proposed |
 | 021 | The compliance matrix layout | proposed |
+| 022 | The request budget counts provider attempts, checked before each attempt | accepted |
+| 023 | Profile preconditions at the run entry | accepted |
+| 024 | Acceptance checks: degrade after the requirements, fault on a cut prompt | accepted |
+| 025 | Agent configuration declares only what code enforces | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -96,7 +100,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 - The host path stays keyless: `uv run bidwright demo` and `uv run pytest` need no `.env`. The CI `docker` job builds and runs the image with plain `docker`, not Compose, so it stays keyless too.
 - The 0a exit check "`docker compose run --rm test` passes with no keys" is an accepted exception: it passes once `.env` holds a key.
 
-**Options.** `${GEMINI_API_KEY:-}`, which would let `demo` and `test` run in Docker without a key and move the missing-key error to run time. Not chosen.
+**Options.** `${GEMINI_API_KEY:-}`, which would let `demo` and `test` run in Docker without a key and move the missing-key error to run time. Not chosen: a missing key would then fail a live run partway instead of at start-up.
 
 **Confirmation.** `tests/test_compose_lockdown.py` checks that every key in `compose.yaml` is a variable reference, never a literal.
 
@@ -173,7 +177,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 - Agentic depth has to be shown by measurement, not asserted.
 - There are more nodes than in a single-prompt app, but each is small and tested on its own.
 
-**Options.** CrewAI, whose role-led autonomy works against fixed routing; n8n or Flowise, whose flows are exported JSON or visual graphs that diff and test poorly; plain Python, with checkpoints and interrupts built by hand; one agent for everything.
+**Options.** CrewAI, whose role-led autonomy works against fixed routing; n8n or Flowise, whose flows are exported JSON or visual graphs that diff and test poorly; plain Python, with checkpoints and interrupts built by hand; one agent for everything, which could neither separate author from assessor nor fan out.
 
 **Confirmation.** `tests/test_e2e_replay.py` replays a whole run; `tests/test_risk_loop.py` covers the loop's caps and stops; `tests/test_budget.py` covers `BUDGET_EXCEEDED`; from Iteration 3, the SO, RK and PR ablations with their `-F` controls.
 
@@ -197,7 +201,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 - A real obligation with a bad quote is lost after one repair, and the scorecard shows it.
 - Lexical search needs no embedding model or vector store, but it misses paraphrases.
 
-**Options.** Offsets emitted by the model; citations added after drafting; dense retrieval with a vector store, which Iteration 7 measures with reciprocal rank fusion.
+**Options.** Offsets emitted by the model; citations added after drafting; dense retrieval with a vector store, which Iteration 7 measures with reciprocal rank fusion. The `v0.0` parser is pdfplumber, which runs with no service and reports character positions, which the frozen text's offsets need; `docling-serve` replaces it in Iteration 1 if S-01 shows equal or better fidelity.
 
 **Confirmation.** `tests/test_verify.py` with the S-07 cases (every real quote accepted, none invented); `tests/test_tools.py`; the scorecard's verbatim and normalized rates.
 
@@ -222,7 +226,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 - A change in the manifest reaches every output the same way.
 - Risks scan less easily than a rated heat map, but carry no invented precision.
 
-**Options.** The summary alone; a free-text approach; a rated risk register.
+**Options.** The summary alone, which leaves the bid team without a proposal it can edit; a free-text approach, which cannot be checked fact by fact; a rated risk register, whose ratings would be invented.
 
 **Confirmation.** `tests/test_render_outputs.py` (four parts, hazards first, and a schema failure blocks output); `tests/test_risk_loop.py` (generic and rated risks rejected); from Iteration 4, `test_drift_check.py` and the PR ablation.
 
@@ -244,7 +248,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 **Consequences.** Unattended runs stop at the gates, and evaluation runs record `--auto-select` in their run manifest.
 
-**Options.** A fully automatic pipeline; one final review only.
+**Options.** A fully automatic pipeline, which would let an agent approve a binding claim; one final review only, which would show the reviewer a proposal built on an unapproved solution.
 
 **Confirmation.** The status line of every Iteration 0a output; `test_gate_waiting_human` in Iteration 3 and `test_review_unreviewed` in Iteration 4.
 
@@ -290,7 +294,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 **Consequences.** A hidden instruction is caught before it reaches a prompt and is never deleted silently. Real documents go to the `local` profile.
 
-**Options.** Sanitizing after parsing; removing hidden content silently; relying on delimiters; allowing any file on `free`.
+**Options.** Sanitizing after parsing, which loses the structural evidence that text was hidden; removing hidden content silently, which could delete a real obligation; relying on delimiters, whose effect varies by model; allowing any file on `free`, which would put client text under free-tier terms.
 
 **Confirmation.** `tests/test_corpus_rule.py`; from Iteration 1, `test_guard_limits`, `test_guard_quarantine`, `test_guard_scanned` and the CrackedPDFs benchmark run; QS-3.
 
@@ -338,7 +342,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 **Consequences.** A prompt change fails CI until its cassettes are re-recorded, and prompts stay lean.
 
-**Options.** A prompt registry service; f-strings or `safe_substitute`; retrieving method cards by search.
+**Options.** A prompt registry service, which adds infrastructure for five prompts; f-strings or `safe_substitute`, which hide a missing value or break quotes; retrieving method cards by search, which buys nothing over loading 4,430 characters by code.
 
 **Confirmation.** `tests/test_prompts.py` (a missing placeholder raises, braces and `$` survive, and the same run id gives the same tags); `tests/test_cache_key.py`; S-10 and S-12.
 
@@ -360,7 +364,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 **Consequences.** Research reproduces in `pack` mode; `live` mode depends on a personal login.
 
-**Options.** A web-search API; no research.
+**Options.** A web-search API, which gives no deep research, imports or follow-up questions; no research, which leaves domain seeds unfound, as SO4 measures.
 
 **Confirmation.** From Iteration 2: `test_discover_fallback`, `test_fi10_poisoned_source`, `test_fi11_tool_pin`, and the outbound overlap test.
 
@@ -406,7 +410,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 **Consequences.** Every run carries its own cost and timing, and free, local and paid runs compare on shadow cost.
 
-**Options.** Langfuse; a vendor's tracing SDK.
+**Options.** Langfuse, six containers against one; a vendor's tracing SDK, which ties spans to one provider.
 
 **Confirmation.** `tests/test_ledger.py` (ledger totals match the manifest); `tests/test_tracing.py` (spans land in `spans.jsonl` without a collector, refused batches fall back, failed calls leave error spans).
 
@@ -427,7 +431,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 **Consequences.** Two run paths have to keep working, and ADR-002 makes Compose need a key even for the demo.
 
-**Options.** The host only; Docker only.
+**Options.** The host only, which gives no reproducible services; Docker only, which fails reviewers without Docker, and the build laptop when Docker is down.
 
 **Confirmation.** The CI jobs `docker` and `host-path`; `tests/test_compose_lockdown.py`.
 
@@ -548,6 +552,91 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** The owner's review of the matrix finds a column missing or unused.
 
 **Provenance.** The plan's compliance matrix columns; OWASP guidance on CSV injection.
+
+### ADR-022: The request budget counts provider attempts, checked before each attempt
+
+**Status:** accepted, 2026-11-03. From the first architecture review of `docs/architecture.md`, items A-02 and A-17.
+
+**Context.** The run budget protects a provider's daily quota (ADR-003) and is the control against unbounded consumption in `docs/security.md`. At `v0.0` it counted one request per ledger entry and was checked once before a logical call, while one call can make up to 8 provider attempts across the primary and the fallback model, and the attempts of a model that failed over left no entry. The failure log of 2026-11-02 records a daily quota spent mostly by retried attempts. "The clock counts only active time" also defined nothing a reader could check, because nothing pauses the clock at `v0.0`.
+
+**Decision.**
+- A ledger entry's `retries` counts the provider attempts beyond the first, across the primary and the fallback model; a refused attempt on a spent daily quota counts too.
+- The budget adds `1 + retries` requests per entry, and the client checks the budget before every provider attempt through a `before_attempt` hook, so the overshoot past a limit is at most one attempt and one backoff.
+- At `v0.0`, active time is wall time: the clock starts with the run and stops when it ends, backoff sleeps and Ollama queueing included. Pausing for a person or a quota arrives with Iteration 2's statuses.
+
+**Consequences.**
+- The budget counts what the quota counts, and a stop lands between attempts rather than after a full retry sequence.
+- The manifest's `requests` total still counts completed calls; the attempts behind each one are in its entry.
+- No schema and no cassette key changed.
+
+**Options.** Counting attempts in the ledger's `requests` total, which would make the totals disagree with the entry count; a separate attempts counter in the budget only, which would leave the ledger silent about the attempts of a model that failed over.
+
+**Confirmation.** `test_the_request_limit_counts_provider_attempts` in `tests/test_budget.py`; `test_fi01_exhausted_retries_switch_extract_to_its_fallback_model` (five attempts, four retries) and `test_the_budget_stops_a_call_between_its_attempts` in `tests/test_simulator.py`.
+
+**Reverse if.** A provider documents that refused attempts do not count against its quota, or Iteration 2's budget controller keeps its own attempt clock.
+
+**Provenance.** The first architecture review, 2026-11-03; the failure log entry on the spent Flash quota.
+
+### ADR-023: Profile preconditions at the run entry
+
+**Status:** accepted, 2026-11-03. From the first architecture review, items A-09 and A-15. The consent override of ADR-010 stays, pending D-05.
+
+**Context.** The corpus rule lived in `cli.py`, with a second copy for `record`, so any other caller of `execute`, such as the Iteration 1 matrix runner or the spike script, would bypass it. A missing key failed at the first LLM call, after ingest, and a local fallback model that was never pulled answered 404 forty minutes into a run (failure log, 2026-11-02). A 4xx other than 429 had no row in the failure table.
+
+**Decision.**
+- `preflight.py` owns the run's preconditions, and `execute` checks them before the run folder exists, in `live` and `record` mode: the consent string, then on `free` the corpus rule, then `record`'s corpus-only rule on any profile, then a backend for every provider the profile's roles use, then on Ollama the primary and the fallback model of every role, read from the host's model list.
+- A refused run raises `Refused` with what to do instead, and leaves nothing behind. The command line parses arguments and prints the refusal.
+- A replayed run checks none of this, because it sends nothing to a provider.
+- A 4xx other than 429 ends the run `UNRECOVERABLE_FAULT` at once, because a retry fixes neither a bug nor a configuration error.
+
+**Consequences.** Every entry rule has one home, a refused run costs nothing, and the `local` profile states its prerequisite: both configured models pulled. The consent override stays as ADR-010 decided it, annotated in `docs/architecture.md` as D-05's open question.
+
+**Options.** Keeping the rule in the command line and copying it into each new caller; checking the backends lazily at the first call, which is where they failed.
+
+**Confirmation.** `tests/test_preflight.py` (a missing key, a missing local model and an unreachable Ollama are refused before the run folder exists; replay needs no backend); `tests/test_corpus_rule.py` (the rule through `execute`, and a manifest that records the override).
+
+**Reverse if.** Iteration 2's supervisor takes over the run entry with its own checks.
+
+**Provenance.** The first architecture review, 2026-11-03; the failure log entry of 2026-11-02 on the local fallback model.
+
+### ADR-024: Acceptance checks: degrade after the requirements, fault on a cut prompt
+
+**Status:** accepted, 2026-11-03. From the first architecture review, items A-08, A-10 and A-11. The per-item caps are built in Iteration 1.
+
+**Context.** `approach` or `risk` breaking its schema twice ended the run `UNRECOVERABLE_FAULT` with no summary, although the requirements were complete and verified, and the failure log shows that class twice. On `local`, the Ollama adapter always sent `num_ctx` but never checked that the prompt fit, while S-14 showed a 5,606-token prompt silently cut to 2,050 evaluated tokens at the default context. The 3-id and 300-character caps on `ExtractItem` are Pydantic constraints on the model-facing schema, so one over-long quote fails the parse of a whole batch of 20 passages.
+
+**Decision.**
+- On the second schema failure, `approach` returns no items with every requirement unmapped, and `risk` an empty register; each carries its reason, and the run ends `DEGRADED` with the verified requirements in the summary. `render` still faults on a record that fails its schema, because it cannot be written.
+- The Ollama adapter fails a call whose evaluated prompt reaches `num_ctx`, within a margin of 64 tokens, with a `ProviderError`, so the run ends `UNRECOVERABLE_FAULT` rather than continuing on a cut prompt. A probe on 2026-11-03 showed that a cached prefix does not lower Ollama's `prompt_eval_count`, so the check holds on repeated prompts, and that a prompt longer than `num_ctx` reports a count above it.
+- In Iteration 1, with the extraction changes that re-record the cassettes anyway, `ExtractItem` loses the two caps and `settle` enforces them per item, routing a failed item to the targeted repair; `Requirement` keeps them. At `v0.0` the caps stay schema constraints, and `docs/architecture.md` says so.
+
+**Consequences.** A run that reached `verify` always leaves its requirements, and a `DEGRADED` run names what it lacks in `status_reason`. A local batch that does not fit the context fails instead of losing its start. The per-item caps wait for Iteration 1 because relaxing the model-facing schema changes every `extract` cassette key.
+
+**Options.** A second writer of the summary after `verify`, which breaks the one-writer rule; estimating prompt tokens before the call, which needs a tokenizer per model; relaxing the caps now, at the cost of a new live run, a refreshed sample and re-scored results.
+
+**Confirmation.** `test_approach_degrades_after_two_schema_failures`, `test_risk_degrades_after_two_schema_failures` and `test_a_broken_approach_degrades_the_run_and_keeps_the_summary`; `test_ollama_fails_a_call_whose_prompt_reached_num_ctx` and `test_ollama_answers_a_prompt_that_fits`; in Iteration 1, a batch with one 301-character quote keeps its other items.
+
+**Reverse if.** Iteration 2's resume makes a faulted run cheap to continue, or Ollama reports a truncation error of its own.
+
+**Provenance.** The first architecture review, 2026-11-03; S-14 and the probe of 2026-11-03 in `docs/verification_log.md`.
+
+### ADR-025: Agent configuration declares only what code enforces
+
+**Status:** accepted, 2026-11-03. From the first architecture review, item A-06.
+
+**Context.** `config/agents.yaml` declared `max_calls` and `max_repairs` for the functions and `cards` and `skills` for every role, and the generated `docs/agents.md` and `docs/ai-bom.md` showed them as controls, while nothing but the configuration loader read them. A function's one call and one repair are fixed in the node code; cards and skills arrive in Iterations 3 and 4.
+
+**Decision.** The four fields are removed from the file and from its Pydantic models, and a field that nothing enforces cannot be declared, because the models forbid unknown fields. The generated documents say that a function makes one call and one repair, fixed in code, and that an agent's limits bound its tool loop. Each field returns with the code that reads it, in the design doc of the iteration that needs it. The same review questioned the unused OpenAI-compatible adapter and the write-only checkpointer; the owner kept both, and `docs/architecture.md` now states what each gives at `v0.0`.
+
+**Consequences.** The generated documents show enforced controls only, so a reader cannot mistake a declared number for a limit. Iteration 3's `blueprint`, with two calls, and the card families bring their fields back with their consumers.
+
+**Options.** Wiring the four fields now, which adds code whose only value is to read a constant; leaving them as documentation, which the review showed misleads.
+
+**Confirmation.** `test_only_the_agent_declares_limits` and `test_a_field_that_nothing_enforces_cannot_be_declared` in `tests/test_config.py`; the `docs-generated` CI job.
+
+**Reverse if.** A function's call or repair count becomes configurable, which first happens in Iteration 3.
+
+**Provenance.** The first architecture review, 2026-11-03, items A-06, A-13 and A-14.
 
 ## Failure modes hit
 

@@ -1,11 +1,13 @@
-"""FI-01 and FI-02 offline: backoff, Retry-After, fallback, malformed output and missing ids."""
+"""FI-01 and FI-02 offline: backoff, Retry-After, fallback, malformed output and missing ids,
+and the run budget seen from the client: attempts counted, and a stop between attempts."""
 
 import json
 from typing import Any
 
 import pytest
 
-from bidwright.config import load_config
+from bidwright.config import RunLimits, load_config
+from bidwright.harness.budget import BudgetExceeded, RunBudget
 from bidwright.llm.client import LLMClient
 from bidwright.llm.simulator import ProviderSimulator
 from bidwright.llm.types import Message, QuotaExhausted, UnrecoverableFault
@@ -45,6 +47,8 @@ def test_fi01_exhausted_retries_switch_extract_to_its_fallback_model() -> None:
     completion = _client(script, [], inner).complete("extract", MESSAGES, ExtractResult, **CALL)
     assert completion.model == "gemini-3.1-flash-lite"
     assert inner.models == ["gemini-3.1-flash-lite"]
+    # Four attempts on the primary and one on the fallback: the ledger sees all five.
+    assert completion.retries == 4
 
 
 def test_fi01_reason_falls_back_to_its_own_flash_lite_model() -> None:
@@ -72,7 +76,39 @@ def test_a_spent_daily_quota_moves_to_the_fallback_without_retrying() -> None:
     client = _client([{"call": 1, "fault": "quota_exhausted"}], sleeps, inner)
     completion = client.complete("extract", MESSAGES, ExtractResult, **CALL)
     assert completion.model == "gemini-3.1-flash-lite" and sleeps == []
-    assert completion.retries == 0 and inner.models == ["gemini-3.1-flash-lite"]
+    # No backoff, but the refused attempt on the primary still counts as one.
+    assert completion.retries == 1 and inner.models == ["gemini-3.1-flash-lite"]
+
+
+class Clock:
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def test_the_budget_stops_a_call_between_its_attempts() -> None:
+    """The budget is checked before every provider attempt, not only before the call."""
+    clock = Clock()
+    budget = RunBudget(RunLimits(requests=60, tokens=300_000, active_minutes=1), clock=clock)
+    budget.start()
+    backend = ProviderSimulator(FakeBackend(), [{"call": n, "fault": "timeout"} for n in (1, 2)])
+
+    def backoff(_: float) -> None:
+        clock.now += 61  # one backoff takes the run past its active-time limit
+
+    client = LLMClient(
+        load_config(),
+        "free",
+        {"gemini": backend},
+        before_attempt=budget.check,
+        sleep=backoff,
+        rng=lambda: 0.5,
+    )
+    with pytest.raises(BudgetExceeded, match="active-time"):
+        client.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert backend.calls == 1  # the second attempt never reached the provider
 
 
 def test_a_spent_quota_with_no_fallback_left_stops_with_quota_exhausted() -> None:

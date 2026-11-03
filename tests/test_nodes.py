@@ -2,11 +2,9 @@
 
 import json
 
-import pytest
-
 from bidwright.graph.nodes import (
+    MALFORMED_TWICE,
     BatchOutcome,
-    NodeFailed,
     approach,
     assign_requirements,
     batches,
@@ -136,6 +134,15 @@ def test_fi02_malformed_twice_rejects_the_whole_batch() -> None:
     assert outcome.rejected[0]["src_ids"] == [p.id for p in SECTION_4]
 
 
+def test_an_id_from_another_batch_is_dropped_from_the_item() -> None:
+    """SRC-0030 is a real passage, but not one this batch showed the model."""
+    stray = dict(GOOD_ITEMS[0], src_ids=["SRC-0018", "SRC-0030"])
+    backend = ScriptBackend([text({"items": [stray], "no_obligation_src_ids": []})])
+    outcome = extract_batch(context(backend), SECTION_4[:1], "B01")
+    [(item, check)] = outcome.accepted
+    assert item.src_ids == ["SRC-0018"] and check.status == "VERBATIM_VERIFIED"
+
+
 def test_requirements_are_numbered_in_reading_order() -> None:
     backend = ScriptBackend(
         [text({"items": GOOD_ITEMS[::-1], "no_obligation_src_ids": ["SRC-0019"]})]
@@ -176,9 +183,12 @@ def test_approach_keeps_known_ids_and_lists_what_is_unmapped() -> None:
     assert outcome.questions[0].src_ids == ["SRC-0025"]
 
 
-def test_approach_fails_after_two_schema_failures() -> None:
-    with pytest.raises(NodeFailed):
-        approach(context(ScriptBackend(["{}", "[]"])), dev_requirements())
+def test_approach_degrades_after_two_schema_failures() -> None:
+    """The requirements are verified by now, so the run keeps them and ends DEGRADED."""
+    outcome = approach(context(ScriptBackend(["{}", "[]"])), dev_requirements())
+    assert outcome.items == [] and outcome.questions == []
+    assert outcome.unmapped == ["REQ-0001", "REQ-0002", "REQ-0003", "REQ-0004"]
+    assert outcome.failure == MALFORMED_TWICE
 
 
 def test_draft_keeps_only_ids_from_its_records() -> None:

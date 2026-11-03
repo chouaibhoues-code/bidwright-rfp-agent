@@ -449,7 +449,6 @@ triage:
   prompt: triage@0.1.0
   model_role: extract
   tools: []
-  limits: {max_calls: 1, max_repairs: 1}
 consolidate:
   kind: function
   input: ClusterTask
@@ -457,8 +456,9 @@ consolidate:
   prompt: consolidate@0.1.0
   model_role: reason
   tools: []
-  limits: {max_calls: 1, max_repairs: 1}
 ```
+
+A function declares no limits: its one call and one repair are fixed in the node code (ADR-025).
 
 **Tests.** `test_config.py`: each new file loads; the zone names equal `Zone`; every cue and lint pattern compiles; rule ids are unique; `agents.yaml` names prompts that exist; D-05: every destination in the egress register names its hosts and a locality. `test_compose_lockdown.py`: `docling` is pinned by digest and published on loopback only.
 
@@ -600,10 +600,11 @@ D-05 tests:
 - **Number and date fidelity in `verify`:** every number, percentage, amount, duration and date in an item's statement must appear in its quote or a cited passage, compared by value: "seven (7)" matches 7, and a date in any common form matches its ISO form. A mismatch joins the item's targeted repair; a mismatch after repair rejects the item with "number not in source".
 - **Hazards:** a requirement is a hazard when `extract` flagged it or a `triage` hazard cites one of its passages; each hazard's `requirement_ids` are filled in.
 - A requirement's `zone` is the zone of its first cited passage's section, and its `page` and `small_print` come from that passage.
+- **Per-item caps (ADR-024):** `ExtractItem` loses its 3-id and 300-character constraints, and `settle` enforces them per item, routing a failed item to the targeted repair, so one over-long quote no longer fails its whole batch; `Requirement` keeps the caps. The schema change re-keys the extraction cassettes, which this step re-records anyway.
 - `verify` writes `candidates.jsonl`, adding to `requirements.jsonl` and `rejected.jsonl`, all three as the only writer.
 - **D-05:** `verify` finds each quote in the view's text of its cited passages, and maps the span to `frozen.txt` with `TextView.to_frozen`. With `IdentityView`, the mapping changes nothing.
 
-**Tests.** The `v0.0` node tests; number fidelity cases (a correct number, a changed number, spelled and digit forms, dates in three forms); hazard merging; a candidate ledger row for every passage; `test_prompts.py` for the new versions and the examples' coverage of every disposition.
+**Tests.** The `v0.0` node tests; number fidelity cases (a correct number, a changed number, spelled and digit forms, dates in three forms); hazard merging; a candidate ledger row for every passage; a batch with one 301-character quote keeps its other items; `test_prompts.py` for the new versions and the examples' coverage of every disposition.
 
 ### Step 12: `coverage`
 

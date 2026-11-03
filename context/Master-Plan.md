@@ -3,16 +3,16 @@ title: Master Plan
 type: plan
 applies-to: bidwright
 related: ["[[Decision-Form]]", "[[Project-Backlog]]", "[[Research-Register]]"]
-date: 2026-11-02
+date: 2026-11-03
 status: current
 tags: [bidwright, project-management, plan, roadmap]
 ---
 
 # Master Plan
 
-> [!summary] Status on 2026-11-02
+> [!summary] Status on 2026-11-03
 > - Released: `v0.0`, Iteration 0a, the walking skeleton, on commit `1c9acaf`.
-> - In progress: Iteration 0b, documents and review, toward `v0.0.1`; its documents are done, and the first architecture review waits for the owner.
+> - In progress: Iteration 0b, documents and review, toward `v0.0.1`; its documents are done and the first architecture review is triaged, with ADR-022 to ADR-025; the drift report and the tag remain.
 > - At each tag the owner chooses to continue, release or stop (section 2.8).
 
 This file owns the scope, the work-package register, the assignment trace, the gates, the risks, the change log, the close-out notes and the full vision with its unbuilt scope. Other facts have one owner each: the current architecture is in `docs/architecture.md`, decisions in `DECISIONS.md`, assumptions in `ASSUMPTIONS.md`, hours in `TIMELOG.md`, research in [[Research-Register]], open decisions in [[Decision-Form]], and deferred work in [[Project-Backlog]].
@@ -262,7 +262,7 @@ The WBS is held as this register. Estimates are Claude's judgment (section 2.6).
 | WP-0b.4 | Documentation generators | 0.5 | A9 | `scripts/gen_docs.py`; `test_docs_generated.py` finds no difference | Done, awaiting `v0.0.1` |
 | WP-0b.5 | Documentation checks in CI | 0.5 | A9 | `scripts/check_docs.py`; CI jobs `docs-generated` and `docs-links` green | Done, awaiting `v0.0.1` |
 | WP-0b.6 | Iteration 1 design doc | 0.5 | A1, A7, A8; CH-44 | `docs/designs/iteration-1.md` with a Detailed Implementation Plan and its open decisions closed as ADRs | Done; Stage 9 review next |
-| WP-0b.7 | First Goldfish architecture review | 0.5 | A13; CH-28 | Findings triaged; accepted ones become ADRs | Planned, started by the owner |
+| WP-0b.7 | First Goldfish architecture review | 0.5 | A13; CH-28 | Findings triaged; accepted ones became ADR-022 to ADR-025 and CH-75 to CH-78 | Done, awaiting `v0.0.1` |
 | WP-1.1 | `guard` and package input | 2.0 | A10, A11; CH-40 | Limits, scanned-PDF report, PDF and Office hidden-content quarantine; `guard` on CrackedPDFs | Planned |
 | WP-1.2 | Docling `ingest` and the control register | 1.5 | A10 | Package folder with an addendum runs end to end; Docling responses replay | Planned |
 | WP-1.3 | `candidates`, `triage`, full `extract`, second-pass trial | 2.5 | A7, A10; CH-46 | Every candidate has a disposition; S-03, S-10, S-13 decided | Planned |
@@ -405,7 +405,7 @@ Cause, event and effect, with an owner, an observable trigger and a planned resp
 | The `risk` agent finds 1 of 3 planted risks on `free` and none on `local`, so the risk register under-delivers | Claude | Risk-seed recall in each scorecard | Prompt and loop work in Iteration 1 and the full `risk` in Iteration 3, judged by the RK ablation against its fixed control | Open |
 | The interview probes code the owner has not read, so the defense is weak | The owner | Code reading not done when the release step starts | Code reading and rehearsal in the release step | Open |
 
-Two structural limits are not risks with triggers: synthetic RFPs are cleaner than real ones, and one author writes both corpus and prompts. Both sit under the known limits in section 10.9, with their mitigations.
+Two structural limits are not risks with triggers: synthetic RFPs are cleaner than real ones, and Claude writes both the corpus and the prompts, under the owner's direction. Both sit under the known limits in section 10.9, with their mitigations.
 
 ## 8. Change log
 
@@ -413,7 +413,7 @@ Every accepted change since the first agreed design, one line each. The Kind col
 
 **Baseline.** "The first agreed design" is the plan of 2026-10-30: a summary-only output, build phases fitted to 36 focused hours, a thirteen-file `.obsidian-vault/`, Ollama Cloud as the paid fallback, and prompt rendering through the standard's `safe_render`.
 
-**Review ids to entries.** E1 CH-52, E2 CH-43, E4 CH-42, E5 CH-21, E6 CH-35, E7 CH-36; F1 CH-32, F2 CH-31, F3 CH-53, F4 CH-41, F5 CH-30, F6 CH-44, F9 CH-33, F18 CH-34, F19 CH-34 and CH-45 (F19 set the paid cap at $10), F28 CH-39, F30 CH-40, F42 CH-38. The other round-1 items fixed text or consistency, with no design change. Round-2 design changes are CH-54 to CH-67.
+**Review ids to entries.** E1 CH-52, E2 CH-43, E4 CH-42, E5 CH-21, E6 CH-35, E7 CH-36; F1 CH-32, F2 CH-31, F3 CH-53, F4 CH-41, F5 CH-30, F6 CH-44, F9 CH-33, F18 CH-34, F19 CH-34 and CH-45 (F19 set the paid cap at $10), F28 CH-39, F30 CH-40, F42 CH-38. The other round-1 items fixed text or consistency, with no design change. Round-2 design changes are CH-54 to CH-67. The design changes from the first architecture review of `docs/architecture.md` are CH-75 to CH-78.
 
 | ID | Change | Merit reason | Reverse if | Kind |
 |---|---|---|---|---|
@@ -489,6 +489,10 @@ Every accepted change since the first agreed design, one line each. The Kind col
 | CH-72 | The local Phoenix starts with authentication off, and the app sends `PHOENIX_API_KEY` when set | Phoenix 21 turned authentication on by default and refused every trace. This collector listens on loopback only and holds spans of synthetic runs. Reported to the owner at `v0.0`. | A shared or remote collector, or real data | ADR-015 |
 | CH-73 | `Send` concurrency is set per profile: 2 on `free`, 1 on `local` | Ollama on the build machine serves one request at a time, so a second parallel request only waited and timed out | A local runtime that serves requests in parallel | ADR-005 |
 | CH-74 | The charter sets two capabilities to show together, tech-lead AI engineering and technology-consulting judgment, at the level of the product and of the submission. It adds `docs/brief.md` for business readers, `docs/governance.md` in the client's governance terms, and a generated AI bill of materials, `docs/ai-bom.md`. The owner's decision of 2026-11-03. | EY's announcement of the role and its job description ask for both capabilities, and the brief itself was ambiguous; read at source on 2026-11-03 | The owner reverses it | Process |
+| CH-75 | The request budget counts provider attempts and is checked before each attempt; active time at `v0.0` is wall time (ADR-022) | The budget protects the quota, and the quota counts attempts, retries and fallback included; the failure log shows a quota spent by retries. First architecture review, A-02 and A-17. | Iteration 2's budget controller keeps its own attempt clock | ADR-022 |
+| CH-76 | The profile's preconditions move to the run entry: the corpus rule, a backend per provider, the local models (ADR-023) | Any caller of `execute` bypassed the corpus rule in the command line, and a missing key or local model failed after ingest, forty minutes in. First architecture review, A-09 and A-15. | Iteration 2's supervisor takes over the run entry | ADR-023 |
+| CH-77 | `approach` and `risk` degrade instead of faulting; a cut local prompt fails its call; extraction caps apply per item from Iteration 1 (ADR-024) | A run with complete, verified requirements lost its summary to a second schema failure, and S-14 showed Ollama cutting prompts silently. First architecture review, A-08, A-10 and A-11. | Resume makes a faulted run cheap to continue | ADR-024 |
+| CH-78 | Agent configuration declares only what code enforces: `max_calls`, `max_repairs`, `cards` and `skills` are removed until their consumers exist (ADR-025) | The generated documents showed declared values as controls. First architecture review, A-06. | A function's call count becomes configurable | ADR-025 |
 
 ## 9. Close-out notes
 
@@ -537,7 +541,7 @@ One tag gives no trend; the snapshot only fixes the method.
 
 ### 9.2 Iteration 0b, `v0.0.1`
 
-In progress: WP-0b.1 to 0b.6 are done; the first architecture review, WP-0b.7, waits for the owner to start it.
+In progress: WP-0b.1 to 0b.7 are done; the drift report and the tag remain.
 
 **Delivered so far.**
 
@@ -552,6 +556,8 @@ In progress: WP-0b.1 to 0b.6 are done; the first architecture review, WP-0b.7, w
 **Added on 2026-11-03, after the owner set the two-capability goal (CH-74).** `docs/brief.md` for business readers; `docs/governance.md`, mapping the controls to EY's roles and trust layer and to the NIST AI RMF, with a record of how sensitive information is handled; and `docs/ai-bom.md`, an AI bill of materials generated by `scripts/gen_docs.py`. Reviewing sensitive data found that `bidwright record --profile local` would have written model answers quoting a client document into `tests/cassettes/`, which Git tracks. It now refuses any file outside the synthetic corpus, with a test. The measures that remain are open as D-05.
 
 **Defect found while documenting.** A run that failed with an unexpected error, such as an unreadable PDF, left a manifest that said `COMPLETED`. `execute` now records any such error as `UNRECOVERABLE_FAULT` before it propagates, with a test. A tool that raises was already turned into a `FAILED` result, and now has a test too.
+
+**The first architecture review, 2026-11-03 (WP-0b.7).** The owner started `/egm:egm-review docs/architecture.md` in consolidated mode. Its 123 raw findings consolidated into 31 action items: 1 Blocker, 18 Majors and 12 Nit groups, in `private/egm/architecture-0b/`. The owner triaged them with Claude under the rules of section 2.11: 28 items were accepted in full or in part, with the Blocker's severity contested to Major on the one-owner-per-fact rule and three findings contested with evidence the reviewers could read; the removal of the unused OpenAI-compatible adapter and of the write-only checkpointer was declined, and the architecture document now states what each gives at `v0.0`; the removal of the consent override, D-05's option C2, was held with D-05. The accepted findings that changed the design are ADR-022 to ADR-025 (CH-75 to CH-78): the request budget counts provider attempts and is checked before each attempt; the profile's preconditions move to the run entry; `approach` and `risk` degrade instead of faulting, and a cut local prompt fails its call; and agent configuration declares only what code enforces. The document fixes complete the Options line of nine ADRs, add the non-goals and a pointer to the residual risks, define the corpus tiers and the other terms the comprehension test found undefined, and add a check in CI that every test named under `docs/` exists. Found while applying the fixes: the wheel shipped gold, corpus specs and results, which `pyproject.toml` now excludes, with a test that the wheel and the image exclude the same paths; and a probe showed that Ollama's evaluated-token count is not lowered by a cached prefix, which ADR-024's truncation check relies on.
 
 **Lessons so far.**
 - Writing the failure table from the code found a defect that no test had covered, because every test exercised a failure the code expected.
@@ -1484,7 +1490,7 @@ Three levels, so every score has something to stand against. They stay in separa
 
 **2. Model comparisons.** The same scorecard on the development RFP, compared by result per shadow dollar: Flash-Lite, Flash and the two Cerebras models in Iteration 5, then the hosted and seven-model local bake-offs in Iteration 6. Speed, VRAM fit and schema validity come from the same ledger.
 
-**3. External benchmarks, stage by stage.** No public benchmark was found that covers a whole RFP pipeline, but several cover one stage. They give outside anchors and reduce the problem of one author writing both corpus and prompts.
+**3. External benchmarks, stage by stage.** No public benchmark was found that covers a whole RFP pipeline, but several cover one stage. They give outside anchors and reduce the problem that Claude writes both the corpus and the prompts.
 
 | Stage | Benchmark | What runs | Published comparison | LLM | When |
 |---|---|---|---|---|---|
@@ -1598,7 +1604,7 @@ The ablation tables are the centerpiece. They show what each rung buys and wheth
 
 **Known limits, stated in `ASSUMPTIONS.md`**
 - No public gold corpus of whole real RFPs was found, so whole-pipeline scores have no outside comparison, and synthetic RFPs are cleaner than real ones. External benchmarks anchor single stages only, mostly on other document types.
-- The same author wrote corpus and prompts. The owner's held-out requirement list and the owner's release brief, plus independent seeds and external benchmarks, reduce this, but do not remove it.
+- Claude writes both the corpus and the prompts, under the owner's direction. The owner's held-out requirement list, written without the prompts in view, and the owner's release brief, plus independent seeds and external benchmarks, reduce this, but do not remove it.
 - About 65 mandatory gold requirements across the hero and held-out RFPs is small, so small differences are not claimed.
 - Automated scores overstate human acceptance, so review stays human-in-the-loop, and that review has its own fatigue limits.
 
@@ -1684,6 +1690,7 @@ That is about 194 requests per full run, and up to about 1.6M input tokens if ev
 | Groq, same models plus `gpt-oss-20b` | 8K tokens per minute each | Failover for small requests only |
 
 - A 20% reserve of each daily quota stays free for development.
+- Five hero repeats for QS-2, QS-3, QS-5 and QS-8, at about 194 requests each, need about 970 requests against 500 a day on Flash-Lite, so the Iteration 3 exit measurement runs over two days or on the paid key, within the budget set at the Iteration 1 exit.
 - With `reflect` enabled, each gated thought adds one request, at most 2 per agent invocation. It is off by default, so the counts above leave it out.
 - On paid Flash, a full hero run would cost about $1.0-1.1 at the list price read on 2026-11-02 (`config/pricing.yaml` holds the prices, which double on 2027-01-01).
 - The Iteration 5 ablations, with their fixed controls, would come to about $35-50 on paid Flash, against the $10 cap that holds until the Iteration 1 exit; on Flash-Lite they fit the free tier at the cost of the planned Flash comparison. PR rungs reuse a frozen manifest, and SO and RK rungs a frozen EX3 run.

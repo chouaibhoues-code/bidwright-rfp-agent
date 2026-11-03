@@ -1,4 +1,10 @@
-"""Local models through Ollama. `num_ctx` is always sent, because the default can truncate."""
+"""Local models through Ollama. `num_ctx` is always sent, because the default can truncate.
+
+Ollama evaluates at most `num_ctx` tokens of a prompt and drops the start of a longer one
+without an error (S-14), so a call whose evaluated prompt reaches `num_ctx` is failed here
+rather than answered from a cut prompt (ADR-024). A probe on 2026-11-03 showed that a cached
+prefix does not lower `prompt_eval_count`, so the check holds on repeated prompts too.
+"""
 
 import os
 from typing import Any
@@ -18,6 +24,10 @@ from bidwright.llm.types import (
 )
 
 _NS_PER_MS = 1_000_000
+# A prompt that comes within this many tokens of num_ctx is treated as cut: Ollama reported
+# 1,026 evaluated tokens at a num_ctx of 1,024 for a prompt that did not fit.
+TRUNCATION_MARGIN = 64
+_TRANSPORT_ERRORS = (httpx.TimeoutException, httpx.TransportError, ConnectionError)
 
 
 class OllamaBackend:
@@ -26,6 +36,19 @@ class OllamaBackend:
 
     def __init__(self, host: str | None = None) -> None:
         self._host = host or os.environ.get("OLLAMA_HOST") or "http://localhost:11434"
+
+    @property
+    def host(self) -> str:
+        return self._host
+
+    def models(self) -> set[str]:
+        """The names of the models pulled on this host, for the run's preconditions."""
+        client = ollama.Client(host=self._host, timeout=10)
+        try:
+            listed = client.list()
+        except (ollama.ResponseError, *_TRANSPORT_ERRORS) as exc:
+            raise ProviderError(f"ollama at {self._host} did not answer: {exc}") from exc
+        return {entry.model for entry in listed.models if entry.model}
 
     def call(self, request: Request) -> Response:
         num_ctx = request.settings.get("num_ctx")
@@ -45,8 +68,14 @@ class OllamaBackend:
             if exc.status_code >= 500:
                 raise TransientError(f"ollama {exc.status_code}: {exc.error}") from exc
             raise ProviderError(f"ollama {exc.status_code}: {exc.error}") from exc
-        except (httpx.TimeoutException, httpx.TransportError, ConnectionError) as exc:
+        except _TRANSPORT_ERRORS as exc:
             raise TransientError(f"ollama transport error: {exc}") from exc
+        evaluated = response.prompt_eval_count or 0
+        if evaluated >= num_ctx - TRUNCATION_MARGIN:
+            raise ProviderError(
+                f"ollama evaluated {evaluated} prompt tokens at a num_ctx of {num_ctx}: the"
+                " prompt was cut, so the answer is not trusted"
+            )
         calls = tuple(
             ToolCall(
                 id=f"call_{index}",

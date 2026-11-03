@@ -8,10 +8,12 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 
 | Name | Kind | Input | Output | Prompt | Model role | Tools | Limits |
 |---|---|---|---|---|---|---|---|
-| `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.2.0` | extract | None | max_calls 1, max_repairs 1 |
-| `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | max_calls 1, max_repairs 1 |
+| `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.2.0` | extract | None | None |
+| `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
 | `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
-| `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | max_calls 1, max_repairs 1 |
+| `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | None |
+
+A function declares no limits: it makes one call and one repair, fixed in the node code. An agent's limits bound its tool loop.
 
 ## Prompts
 

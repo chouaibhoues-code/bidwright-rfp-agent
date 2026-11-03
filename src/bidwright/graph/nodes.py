@@ -2,9 +2,12 @@
 
 Each node is a plain function over typed inputs, so it runs and tests without the graph;
 `build.py` wires them into LangGraph. Every LLM call goes through `RunContext.call`, which
-checks the run budget first and records the ledger entry. Each node allows one repair:
-a targeted one for quotes, missing ids or generic risks, or a format one for a response that
-breaks its schema. Whatever still fails is rejected and logged, never accepted.
+checks the run budget before each provider attempt and records the ledger entry. Each node
+allows one repair: a targeted one for quotes, missing ids or generic risks, or a format one
+for a response that breaks its schema. Whatever still fails is rejected and logged, never
+accepted: `extract` rejects the batch, `draft` marks the section `FAILED`, and `approach` and
+`risk` return an empty result with the reason, so the run ends `DEGRADED` with its verified
+requirements in the summary (ADR-024).
 """
 
 import json
@@ -78,8 +81,7 @@ STOPWORDS = frozenset(
 )
 
 
-class NodeFailed(Exception):
-    """A node could not produce a valid result, even after its repair."""
+MALFORMED_TWICE = "malformed output twice"
 
 
 @dataclass
@@ -95,6 +97,7 @@ class RunContext:
 
     def __post_init__(self) -> None:
         self.client.on_ledger = self.record
+        self.client.before_attempt = self.budget.check
 
     def record(self, entry: LedgerEntry) -> None:
         with self._lock:
@@ -272,12 +275,17 @@ def settle(
 ) -> list[ExtractItem]:
     """Accept verified items. Failures are returned for repair, or rejected when final.
 
-    A quote counts only against the passages of its own batch (`ids`)."""
+    A quote counts only against the passages of its own batch (`ids`), and an id from outside
+    the batch is dropped from the item, so a requirement never cites a passage its batch did
+    not show the model."""
     failed = []
     for item in items:
         if not item.quote.strip():
             outcome.rejected.append(_rejection(outcome.batch_id, item.src_ids, "", "withdrawn"))
             continue
+        kept = [s for s in item.src_ids if s in ids]
+        if kept and kept != item.src_ids:
+            item = item.model_copy(update={"src_ids": kept})
         check = _check(item, passages, ids)
         if check.status != "REJECTED":
             outcome.accepted.append((item, check))
@@ -381,6 +389,7 @@ class ApproachOutcome:
     items: list[ApproachItem]
     unmapped: list[str]
     questions: list[OpenQuestion]
+    failure: str | None = None  # set when the node gave up, and the run ends DEGRADED
 
 
 def approach(ctx: RunContext, requirements: Sequence[Requirement]) -> ApproachOutcome:
@@ -394,7 +403,9 @@ def approach(ctx: RunContext, requirements: Sequence[Requirement]) -> ApproachOu
         prompt, rendered.messages, ApproachResult, node="approach", input_hash=rendered.input_hash
     )
     if not isinstance(parsed, ApproachResult):
-        raise NodeFailed("approach broke its schema twice")
+        # The requirements are complete and verified by now: keep them, and let the summary
+        # show every requirement as unmapped rather than lose the run.
+        return ApproachOutcome([], [r.id for r in chosen], [], failure=MALFORMED_TWICE)
     items = []
     for proposal in parsed.items:
         kept = [i for i in proposal.requirement_ids if i in by_id]
@@ -431,6 +442,7 @@ class RiskOutcome:
     rejected: list[dict[str, Any]]
     stop_reason: str
     turns: int
+    failure: str | None = None  # set when the node gave up, and the run ends DEGRADED
 
 
 def risk(
@@ -499,7 +511,7 @@ def risk(
     base = sha256_of([rendered.input_hash, transcript, "final"])
     parsed, history = ctx.structured(prompt, final, RiskRegister, node="risk", input_hash=base)
     if not isinstance(parsed, RiskRegister):
-        raise NodeFailed("risk broke its schema twice")
+        return RiskOutcome([], [], [], stop_reason, turns, failure=MALFORMED_TWICE)
     accepted, rejected = _screen(parsed.risks, ctx.passages)
     if rejected:
         reasons = json.dumps([[entry["event"], entry["reason"]] for entry in rejected])

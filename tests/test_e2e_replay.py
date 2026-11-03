@@ -7,8 +7,9 @@ import pytest
 
 from bidwright.graph.build import execute
 from bidwright.llm.replay import CassetteStore
+from bidwright.llm.types import Request, Response
 from bidwright.schemas import LedgerEntry, RunManifest
-from tests.node_fakes import DEV_RFP, RuleBackend
+from tests.node_fakes import DEV_RFP, USAGE, RuleBackend
 
 pytestmark = pytest.mark.replay
 
@@ -20,6 +21,7 @@ OUTPUTS = (
     "rejected.jsonl",
     "approach.json",
     "risks.jsonl",
+    "tool_calls.jsonl",
     "sections/understanding.md",
     "sections/approach.md",
     "sections/risks_and_assumptions.md",
@@ -72,6 +74,42 @@ def test_a_development_run_replays_with_no_network(tmp_path: Path) -> None:
         (replay.run_dir / "run_manifest.json").read_text(encoding="utf-8")
     )
     assert manifest.status == "COMPLETED" and manifest.totals.requests == len(ledger)
+    assert manifest.models_used == {
+        node: ["gemini-3.5-flash-lite"] for node in ("approach", "draft", "extract", "risk")
+    }
+    calls = [
+        json.loads(line)
+        for line in (replay.run_dir / "tool_calls.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert [(c["tool"], c["turn"], c["status"]) for c in calls] == [("search_rfp", 1, "OK")]
+    assert calls[0]["data"] and calls[0]["reason"] is None
+
+
+class BrokenApproach(RuleBackend):
+    """Answers every approach call with output that breaks its schema."""
+
+    def call(self, request: Request) -> Response:
+        if request.schema_name == "ApproachResult":
+            self.requests.append(request)
+            return Response(text="{}", usage=USAGE)
+        return super().call(request)
+
+
+def test_a_broken_approach_degrades_the_run_and_keeps_the_summary(tmp_path: Path) -> None:
+    result = execute(
+        source=DEV_RFP,
+        profile="free",
+        outputs=tmp_path,
+        mode="record",
+        cassettes=CassetteStore(tmp_path / "c"),
+        backends={"gemini": BrokenApproach()},
+        run_id="broken-approach",
+    )
+    assert result.status == "DEGRADED"
+    assert result.reason == "approach: malformed output twice"
+    summary = (result.run_dir / "solution_summary.md").read_text(encoding="utf-8")
+    assert "REQ-0001" in summary and "No approach items." in summary
+    assert "Not yet mapped to an approach item: REQ-0001" in summary
 
 
 def test_a_missing_cassette_ends_the_run_as_a_fault(tmp_path: Path) -> None:

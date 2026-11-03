@@ -24,6 +24,14 @@ def totals_of(ledger: Sequence[LedgerEntry], active_seconds: float) -> RunTotals
     )
 
 
+def models_used(ledger: Sequence[LedgerEntry]) -> dict[str, list[str]]:
+    """The models that answered, by node: a run that fell back lists both models."""
+    found: dict[str, set[str]] = {}
+    for entry in ledger:
+        found.setdefault(entry.node, set()).add(entry.model)
+    return {node: sorted(models) for node, models in sorted(found.items())}
+
+
 def read_ledger(path: Path) -> list[LedgerEntry]:
     lines = path.read_text(encoding="utf-8").splitlines()
     return [LedgerEntry.model_validate_json(line) for line in lines if line.strip()]

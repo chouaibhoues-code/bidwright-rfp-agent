@@ -1,5 +1,6 @@
 # What each LLM call may do. ExecutionPolicy and ToolGateway enforce this file,
-# and docs/agents.md is generated from it (from Iteration 0b).
+# and docs/agents.md is generated from it (from Iteration 0b). A function makes one call and
+# one repair, fixed in the node code, so only the agent's loop declares limits (ADR-025).
 extract:
   kind: function
   input: ExtractBatch
@@ -7,7 +8,6 @@ extract:
   prompt: extract@0.2.0
   model_role: extract
   tools: []
-  limits: {max_calls: 1, max_repairs: 1}
 
 approach:
   kind: function
@@ -16,7 +16,6 @@ approach:
   prompt: approach@0.2.0
   model_role: reason
   tools: []
-  limits: {max_calls: 1, max_repairs: 1}
 
 risk:
   kind: agent
@@ -34,4 +33,3 @@ draft:
   prompt: draft@0.2.0
   model_role: reason
   tools: []
-  limits: {max_calls: 1, max_repairs: 1}

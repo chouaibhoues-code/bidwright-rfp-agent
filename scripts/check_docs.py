@@ -13,7 +13,11 @@ The checks skip fenced code blocks and inline code, except the internal-marker c
 - front matter: every file in `context/` has the fields and values in `FRONT_MATTER`;
 - voice: no internal marker anywhere, and no first- or second-person pronoun in `context/`,
   `docs/`, `DECISIONS.md`, `ASSUMPTIONS.md` or `TIMELOG.md`. Quoted text is skipped, because a
-  quotation keeps its source's words.
+  quotation keeps its source's words;
+- test names: a `test_*` name in inline code under `docs/` is a test function or file under
+  `tests/`, or a `test_x_*` pattern some function matches, so a renamed test shows up here
+  rather than as a stale reference. `docs/designs/` is exempt, because a design names the
+  tests it will build.
 """
 
 import os
@@ -61,6 +65,8 @@ RELATIVE_DATE = re.compile(
     re.IGNORECASE,
 )
 ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+TEST_NAME = re.compile(r"`(?:tests/)?(test_[A-Za-z0-9_]+(?:\*|\.py)?)`")
+TEST_DEF = re.compile(r"^def (test_\w+)\(", re.MULTILINE)
 SECOND_PERSON = re.compile(r"\b(?:you|your|yours|yourself|yourselves)\b", re.IGNORECASE)
 FIRST_PERSON = re.compile(
     r"\bI(?=\s+[a-z]|['’])"
@@ -248,14 +254,45 @@ def check_voice(path: Path, text: str, *, pronouns: bool) -> list[Problem]:
     return problems
 
 
+def test_names(root: Path) -> frozenset[str] | None:
+    """The test functions and files under `tests/`, or None when there is no such folder."""
+    folder = root / "tests"
+    if not folder.is_dir():
+        return None
+    names: set[str] = set()
+    for path in folder.rglob("test_*.py"):
+        names.add(path.name)
+        names.update(TEST_DEF.findall(path.read_text(encoding="utf-8")))
+    return frozenset(names)
+
+
+def check_test_names(path: Path, text: str, names: frozenset[str]) -> list[Problem]:
+    problems = []
+    for number, line in unfenced_lines(text):
+        for match in TEST_NAME.finditer(line):
+            name = match.group(1)
+            if name.endswith("*"):
+                if not any(n.startswith(name[:-1]) for n in names):
+                    problems.append(Problem(path, number, f"no test matches {name!r}"))
+            elif name not in names:
+                problems.append(Problem(path, number, f"no such test: {name}"))
+    return problems
+
+
 def needs_voice(path: Path, root: Path) -> bool:
     relative = path.relative_to(root)
     return relative.parts[0] in DOC_DIRS or relative.as_posix() in VOICE_ROOT_DOCS
 
 
+def names_tests_that_exist(path: Path, root: Path) -> bool:
+    """`docs/` describes the current tag, so its test names must exist; designs may look ahead."""
+    return root / "docs" in path.parents and root / "docs" / "designs" not in path.parents
+
+
 def check(root: Path = ROOT) -> list[Problem]:
     root = root.resolve()
     names = doc_names(root)
+    tests = test_names(root)
     problems = []
     for path in documents(root):
         text = path.read_text(encoding="utf-8")
@@ -264,6 +301,8 @@ def check(root: Path = ROOT) -> list[Problem]:
         problems += check_voice(path, text, pronouns=needs_voice(path, root))
         if root / "context" in path.parents:
             problems += check_front_matter(path, text)
+        if tests is not None and names_tests_that_exist(path, root):
+            problems += check_test_names(path, text, tests)
     return problems
 
 

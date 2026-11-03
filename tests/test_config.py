@@ -3,9 +3,10 @@
 from datetime import date
 
 import pytest
+from pydantic import ValidationError
 
 from bidwright import schemas
-from bidwright.config import Config, load_config
+from bidwright.config import AgentConfig, AgentLimits, Config, load_config
 
 TOOLS_IN_0A = {"search_rfp", "date_calc"}
 
@@ -38,6 +39,38 @@ def test_agent_io_names_are_real_schemas(config: Config) -> None:
 def test_agent_tools_exist(config: Config) -> None:
     for agent in config.agents.agents.values():
         assert set(agent.tools) <= TOOLS_IN_0A
+
+
+def test_only_the_agent_declares_limits(config: Config) -> None:
+    """A function's one call and one repair are fixed in code, so nothing declares them."""
+    for name, agent in config.agents.agents.items():
+        declared = agent.limits.model_dump(exclude_unset=True)
+        assert bool(declared) == (agent.kind == "agent"), name
+
+
+@pytest.mark.parametrize(
+    ("model", "field"),
+    [
+        (AgentLimits, "max_calls"),
+        (AgentLimits, "max_repairs"),
+        (AgentConfig, "cards"),
+        (AgentConfig, "skills"),
+    ],
+)
+def test_a_field_that_nothing_enforces_cannot_be_declared(model: type, field: str) -> None:
+    base = {} if model is AgentLimits else _function()
+    with pytest.raises(ValidationError):
+        model.model_validate({**base, field: 1})
+
+
+def _function() -> dict[str, object]:
+    return {
+        "kind": "function",
+        "input": "ExtractBatch",
+        "output": "ExtractResult",
+        "prompt": "extract@0.2.0",
+        "model_role": "extract",
+    }
 
 
 def test_free_models_and_shadow_models_have_prices(config: Config) -> None:

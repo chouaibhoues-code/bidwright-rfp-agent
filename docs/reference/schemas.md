@@ -164,6 +164,7 @@ The assignment's output. Lists hold record ids; the JSON twin adds full records.
 | `commit` | str | yes |  |  |
 | `profile` | str | yes |  |  |
 | `models` | dict[str, str] | yes |  |  |
+| `models_used` | dict[str, list[str]] | no | {} |  |
 | `prompt_hashes` | dict[str, str] | no | {} |  |
 | `input_hashes` | dict[str, str] | no | {} |  |
 | `started` | datetime | yes |  |  |

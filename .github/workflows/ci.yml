@@ -84,10 +84,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: docker build -t bidwright:ci .
-      - name: The image holds no gold and no corpus spec
+      - name: The image holds no gold, no corpus spec and no spike
         run: |
           docker run --rm --entrypoint sh bidwright:ci -c \
-            'test ! -e /app/evals/gold && ! find /app -name spec.yaml | grep -q .'
+            'test ! -e /app/evals/gold && test ! -e /app/evals/spikes && ! find /app -name spec.yaml | grep -q .'
       - run: docker run --rm --network none --entrypoint pytest bidwright:ci -m "not gold" -p no:cacheprovider
 
   secrets:

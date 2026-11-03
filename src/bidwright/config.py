@@ -79,8 +79,9 @@ class LimitsConfig(Strict):
 
 
 class AgentLimits(Strict):
-    max_calls: int | None = None
-    max_repairs: int | None = None
+    """The limits the `risk` loop enforces. A function's one call and one repair are fixed in
+    the node code, so no field declares them (ADR-025)."""
+
     max_turns: int | None = None
     max_tool_calls: int | None = None
     stop_on_no_progress: bool = False
@@ -94,8 +95,6 @@ class AgentConfig(Strict):
     model_role: str
     tools: list[str] = Field(default_factory=list)
     limits: AgentLimits = Field(default_factory=AgentLimits)
-    cards: list[str] = Field(default_factory=list)
-    skills: list[str] = Field(default_factory=list)
 
 
 class AgentsConfig(Strict):

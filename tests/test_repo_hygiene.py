@@ -37,6 +37,21 @@ def test_secrets_and_private_material_are_ignored() -> None:
     assert not _is_ignored(".env.example")
 
 
+def test_the_wheel_and_the_image_exclude_the_same_evaluation_paths() -> None:
+    """Gold, corpus specs, results, labels and spikes ship in neither (ADR-014)."""
+    import tomllib
+
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    excluded = set(pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["exclude"])
+    ignored = {
+        line.strip().rstrip("/")
+        for line in (ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines()
+        if line.startswith("evals/")
+    }
+    expected = {"evals/corpus", "evals/gold", "evals/results", "evals/labels", "evals/spikes"}
+    assert expected <= excluded and expected <= ignored
+
+
 def test_no_pdf_committable_outside_inputs() -> None:
     offenders = [
         path.relative_to(ROOT).as_posix()

@@ -71,12 +71,17 @@ def agents_md() -> str:
         "|---|---|---|---|---|---|---|---|",
     ]
     for name, spec in agents.items():
-        limits = ", ".join(f"{k} {v}" for k, v in spec.get("limits", {}).items())
+        limits = ", ".join(f"{k} {v}" for k, v in spec.get("limits", {}).items()) or "None"
         tools = ", ".join(f"`{t}`" for t in spec.get("tools", [])) or "None"
         lines.append(
             f"| `{name}` | {spec['kind']} | `{spec['input']}` | `{spec['output']}`"
             f" | `{spec['prompt']}` | {spec['model_role']} | {tools} | {_cell(limits)} |"
         )
+    lines += [
+        "",
+        "A function declares no limits: it makes one call and one repair, fixed in the node"
+        " code. An agent's limits bound its tool loop.",
+    ]
 
     lines += [
         "",
@@ -270,7 +275,7 @@ CONTROLS = [
     " identical call, and the agent's call cap.",
     "Every model response must parse into its Pydantic schema, and code checks every quote"
     " against the RFP before a requirement is accepted.",
-    "Per-run limits on requests, tokens and active time, checked before every call"
+    "Per-run limits on requests, tokens and active time, checked before every provider attempt"
     " (`config/limits.yaml`).",
     "Mode `DRAFT_ONLY`: nothing is submitted, and every output is `UNREVIEWED_DRAFT` until a"
     " person signs it off.",
@@ -337,8 +342,9 @@ def ai_bom_md() -> str:
         for tool in agent.tools:
             callers.setdefault(tool, []).append(name)
         tools = ", ".join(f"`{t}`" for t in agent.tools) or "None"
-        limits = ", ".join(
-            f"{k} {v}" for k, v in agent.limits.model_dump(exclude_unset=True).items()
+        limits = (
+            ", ".join(f"{k} {v}" for k, v in agent.limits.model_dump(exclude_unset=True).items())
+            or "1 call and 1 repair, fixed in code"
         )
         lines.append(f"| `{name}` | {agent.kind} | {tools} | {_cell(limits)} |")
     lines += ["", "Controls on every run, in code:", ""]

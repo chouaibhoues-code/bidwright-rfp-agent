@@ -15,7 +15,9 @@ class Clock:
         return self.now
 
 
-def _entry(tokens_in: int = 1000, tokens_out: int = 200, replayed: bool = False) -> LedgerEntry:
+def _entry(
+    tokens_in: int = 1000, tokens_out: int = 200, replayed: bool = False, retries: int = 0
+) -> LedgerEntry:
     return LedgerEntry(
         run_id="run-1",
         node="extract",
@@ -31,6 +33,7 @@ def _entry(tokens_in: int = 1000, tokens_out: int = 200, replayed: bool = False)
         cost_usd=0.0,
         shadow_cost_usd=0.0,
         replayed=replayed,
+        retries=retries,
     )
 
 
@@ -42,6 +45,15 @@ def test_the_request_limit_stops_the_run() -> None:
     with pytest.raises(BudgetExceeded, match="request limit") as stop:
         budget.check()
     assert stop.value.status == "BUDGET_EXCEEDED"
+
+
+def test_the_request_limit_counts_provider_attempts() -> None:
+    """A call that took 3 retries made 4 attempts, which is what the quota counted."""
+    budget = RunBudget(RunLimits(requests=4, tokens=10_000, active_minutes=20))
+    budget.record(_entry(retries=3))
+    assert budget.requests == 4
+    with pytest.raises(BudgetExceeded, match="request limit"):
+        budget.check()
 
 
 def test_the_token_limit_counts_input_output_and_thinking() -> None:

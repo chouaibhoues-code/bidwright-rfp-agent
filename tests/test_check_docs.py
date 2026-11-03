@@ -200,6 +200,30 @@ def test_front_matter_missing(tmp_path: Path) -> None:
     assert "front matter missing" in _messages(tmp_path, files)
 
 
+def test_a_test_name_in_docs_must_exist(tmp_path: Path) -> None:
+    files = _clean()
+    files["tests/test_a.py"] = (
+        "def test_real() -> None:\n    pass\n\n\ndef test_real_too() -> None:\n    pass\n"
+    )
+    files["docs/a.md"] += (
+        "\nSee `test_real`, `test_real_*`, `test_a.py` and `tests/test_a.py`; then `test_fake`,"
+        " `test_b.py` and `test_no_*`.\n"
+    )
+    messages = _messages(tmp_path, files)
+    assert messages == [
+        "no such test: test_fake",
+        "no such test: test_b.py",
+        "no test matches 'test_no_*'",
+    ]
+
+
+def test_a_design_doc_may_name_the_tests_it_will_build(tmp_path: Path) -> None:
+    files = _clean()
+    files["tests/test_a.py"] = "def test_real() -> None:\n    pass\n"
+    files["docs/designs/iteration-9.md"] = "# Design\n\nBuilds `test_future`.\n"
+    assert _messages(tmp_path, files) == []
+
+
 def test_repository_documents_pass() -> None:
     problems = _module().check()
     assert not problems, "\n".join(str(p) for p in problems)

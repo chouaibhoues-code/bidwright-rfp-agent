@@ -1,11 +1,16 @@
-"""On `free`, only corpus files run, unless the user gives the exact consent string."""
+"""On `free`, only corpus files run, unless the user gives the exact consent string. The rule
+sits at the run entry, so `execute` refuses before a run folder exists, and the manifest of a
+run that used the override records it."""
 
+import hashlib
 from pathlib import Path
 
 import pytest
 
-from bidwright.cli import CONSENT, Refused, check_corpus, corpus_name
-from tests.node_fakes import DEV_RFP
+from bidwright.graph.build import execute
+from bidwright.preflight import CONSENT, Refused, check_corpus, corpus_name
+from bidwright.schemas import RunManifest
+from tests.node_fakes import DEV_RFP, RuleBackend
 
 
 @pytest.fixture
@@ -40,3 +45,34 @@ def test_a_wrong_consent_string_is_refused(stranger: Path) -> None:
 
 def test_local_never_refuses(stranger: Path) -> None:
     assert check_corpus(stranger, "local", None) == []
+
+
+def test_free_refuses_a_non_corpus_file_at_the_run_entry(stranger: Path, tmp_path: Path) -> None:
+    with pytest.raises(Refused, match="--profile local"):
+        execute(
+            source=stranger,
+            profile="free",
+            outputs=tmp_path / "out",
+            backends={"gemini": RuleBackend()},
+        )
+    assert not (tmp_path / "out").exists()
+
+
+def test_the_override_runs_a_non_corpus_file_and_the_manifest_records_it(tmp_path: Path) -> None:
+    twin = tmp_path / "my_tender.pdf"
+    twin.write_bytes(DEV_RFP.read_bytes() + b"\n% a trailing comment changes the hash only\n")
+    assert corpus_name(twin) is None
+    result = execute(
+        source=twin,
+        profile="free",
+        outputs=tmp_path / "out",
+        backends={"gemini": RuleBackend()},
+        consent=CONSENT,
+        run_id="override",
+    )
+    assert result.status == "COMPLETED", result.reason
+    manifest = RunManifest.model_validate_json(
+        (result.run_dir / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    digest = hashlib.sha256(twin.read_bytes()).hexdigest()
+    assert manifest.overrides == [f"allow-non-corpus: my_tender.pdf sha256:{digest}"]

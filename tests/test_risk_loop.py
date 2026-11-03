@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from bidwright.config import AgentLimits
-from bidwright.graph.nodes import risk
+from bidwright.graph.nodes import MALFORMED_TWICE, risk
 from tests.node_fakes import (
     GENERIC_RISK,
     GOOD_RISK,
@@ -133,6 +133,13 @@ def test_an_availability_percentage_is_not_a_probability(tmp_path: Path) -> None
     backend = ScriptBackend(["Done.", text({"risks": [sla], "open_questions": []})])
     outcome = risk(context(backend), dev_requirements(), [], gateway(tmp_path), RISK_LIMITS)
     assert len(outcome.risks) == 1
+
+
+def test_risk_degrades_after_two_schema_failures(tmp_path: Path) -> None:
+    backend = ScriptBackend(["Done.", "{}", "[]"])
+    outcome = risk(context(backend), dev_requirements(), [], gateway(tmp_path), RISK_LIMITS)
+    assert outcome.risks == [] and outcome.questions == [] and outcome.rejected == []
+    assert outcome.failure == MALFORMED_TWICE and outcome.stop_reason == "answered"
 
 
 def test_without_a_no_progress_stop_the_loop_runs_to_its_cap(tmp_path: Path) -> None:
