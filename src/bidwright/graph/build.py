@@ -176,15 +176,17 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         passages(state)
         index = rt.index or PassageIndex(rt.run_dir / "search.sqlite")
         limits = rt.config.agents.agents["risk"].limits
+        requirements = [Requirement.model_validate(r) for r in state["requirements"]]
+        sources = {r.id: r.src_ids for r in requirements}
         gateway = ToolGateway.for_agent(
             "risk",
             allowed=rt.config.agents.agents["risk"].tools,
-            tools=[search_tool(index), date_tool()],
+            tools=[search_tool(index, sources), date_tool()],
             max_tool_calls=limits.max_tool_calls or 6,
         )
         outcome = risk(
             ctx,
-            [Requirement.model_validate(r) for r in state["requirements"]],
+            requirements,
             [ApproachItem.model_validate(a) for a in state["approach"]["items"]],
             gateway,
             limits,

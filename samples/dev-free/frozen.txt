@@ -1,0 +1,88 @@
+Request for Proposal: Electronic Signature Service
+
+Kestrel Vale Community College
+
+Reference KV-2026-014. Issued 2026-11-03.
+
+This is a fictional document written to test software. Kestrel Vale Community College is not a real
+organization.
+
+1 Introduction
+
+Kestrel Vale Community College (the College) invites proposals for a cloud electronic signature
+service. The service replaces paper forms for enrollment, financial aid and staff contracts. The
+College serves about 6,400 students on two campuses and employs 410 staff.
+
+2 Background
+
+Since 2019 the College has collected signatures with a hosted forms tool whose contract ends on
+2027-03-31. About 38,000 signed records are held in that tool.
+
+Previous suppliers have generally held ISO 27001 certification.
+
+The College plans to replace its student records system during 2027, and the replacement has not
+yet been chosen. The College is closed from 2026-12-19 to 2027-01-04, and no staff are available
+for testing or training in that period.
+
+3 Instructions to bidders
+
+This section explains how to respond.
+
+Proposals must be submitted through the College's procurement portal as a single PDF of no more
+than 20 pages by 2026-12-01 12:00 UTC.
+
+Section 7 describes how proposals are scored.
+
+4 Requirements
+
+The requirements in this section apply for the whole contract term.
+
+4.1 Signing
+
+The Supplier shall keep an audit record of every signature event, including the signer's identity, the
+time and the document version.
+
+The Supplier shall:
+
+(a) support signing on current desktop and mobile browsers;
+
+(b) send a reminder to each signer who has not signed within 72 hours.
+
+The Supplier should provide templates for the College's twelve most used forms.
+
+4.2 Records
+
+The Supplier shall store signed documents for ten (10) years. The Supplier should migrate the
+signed records held in the current tool by 2027-02-28.
+
+4.3 Integration
+
+The service must integrate with the College's student records system through its existing REST API.
+
+Bidders may propose an on-premises deployment option.
+
+5 Service levels
+
+The service shall be available 99.5% of the time in each calendar month, excluding planned
+maintenance announced five working days in advance.
+
+The Supplier should respond to severity-one incidents within one hour, at any time of day.
+
+6 Timeline
+
+Contract award is planned for 2026-12-15. The service must be live for students by 2027-01-11, the
+first day of spring enrollment.
+
+7 Evaluation
+
+Proposals are scored on the criteria below.
+
+Criterion | Weight
+Technical approach | 40%
+Service levels and support | 20%
+Integration and migration | 20%
+Price | 20%
+
+8 Contract
+
+The contract runs for three years from award, with an option to extend it by one year.

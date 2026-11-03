@@ -1,0 +1,26 @@
+{
+ "key": "sha256:f0913de1b0e09a5b5f4dce667e7b43637ad3f80e6dd23ab3da759c38b7f2ffa9",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "RiskRegister",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"risks\": [\n    {\n      \"condition\": \"The proposal must be submitted as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC under REQ-0009.\",\n      \"event\": \"The final document exceeds 20 pages during last-minute edits, or portal congestion delays the 2026-12-01 12:00 UTC upload.\",\n      \"effect\": \"The proposal is disqualified instantly without review, losing the bid entirely.\",\n      \"assumptions\": [\n        \"The team can finalize content well within the 20-page limit without last-minute overflow.\"\n      ],\n      \"owner_role\": \"Bid manager\",\n      \"trigger\": \"The draft reaches 18 pages one week before submission, or the portal is untested.\",\n      \"responses\": [\n        \"Enforce a strict 18-page budget immediately.\",\n        \"Perform a dry-run upload via the procurement portal one week before the deadline.\"\n      ],\n      \"residual_exposure\": \"A technical outage of the procurement portal in the final hour before the deadline.\",\n      \"evidence_src_ids\": [\n        \"SRC-0015\"\n      ]\n    },\n    {\n      \"condition\": \"The service must go live for students by 2027-01-11, leaving only 41 days from the submission deadline of 2026-12-01 to build, test, and integrate.\",\n      \"event\": \"Integration complexities with the College's student records system REST API delay the go-live past 2027-01-11.\",\n      \"effect\": \"The service fails to launch on the first day of spring enrollment, disrupting student registration.\",\n      \"assumptions\": [\n        \"The College's existing REST API is fully documented and immediately accessible for testing.\"\n      ],\n      \"owner_role\": \"Integration lead\",\n      \"trigger\": \"API sandbox credentials are not provided within three days of contract award.\",\n      \"responses\": [\n        \"Request API documentation and sandbox access prior to contract award.\",\n        \"Build a mock API server to enable parallel frontend and backend integration testing.\"\n      ],\n      \"residual_exposure\": \"Undocumented rate limits or unexpected authentication quirks in the College's live REST API.\",\n      \"evidence_src_ids\": [\n        \"SRC-0025\",\n        \"SRC-0030\"\n      ]\n    },\n    {\n      \"condition\": \"Migration of signed records held in the current tool is scheduled as a should requirement (REQ-0017) by 2027-02-28, while ten-year document storage (REQ-0016) is mandatory.\",\n      \"event\": \"Resources are pulled away from migration to handle spring enrollment support, causing migration to slip past 2027-02-28.\",\n      \"effect\": \"Historical signed records remain trapped in the legacy tool, complicating audits and ten-year retention compliance.\",\n      \"assumptions\": [\n        \"Legacy data export formats are compatible with the new ingestion pipeline.\"\n      ],\n      \"owner_role\": \"Data migration lead\",\n      \"trigger\": \"Migration script development is delayed past 2027-01-15 due to enrollment support priorities.\",\n      \"responses\": [\n        \"Allocate dedicated data engineering resources separate from the core go-live delivery team.\",\n        \"Define a prioritized batch migration schedule starting with the most recent records.\"\n      ],\n      \"residual_exposure\": \"Incomplete legacy records requiring manual data cleanup and exception handling.\",\n      \"evidence_src_ids\": [\n        \"SRC-0023\",\n        \"SRC-0024\"\n      ]\n    }\n  ],\n  \"open_questions\": [\n    {\n      \"text\": \"Does the College's existing REST API support webhook subscriptions, or must the service poll for record updates?\",\n      \"src_ids\": [\n        \"SRC-0025\"\n      ]\n    },\n    {\n      \"text\": \"What data format and schema are used by the current tool for storing signed records that need to be migrated by 2027-02-28?\",\n      \"src_ids\": [\n        \"SRC-0024\"\n      ]\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2928,
+   "tokens_out": 987,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-03T01:12:47Z"
+}

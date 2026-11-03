@@ -52,6 +52,15 @@ jobs:
       - run: uv sync --locked
       - run: uv run pytest -m gold
 
+  host-path:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - run: uv sync --locked
+      - name: The demo replays on a clean checkout, with no .env and no keys
+        run: test ! -e .env && uv run bidwright demo
+
   docker:
     runs-on: ubuntu-latest
     steps:

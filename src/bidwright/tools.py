@@ -6,7 +6,8 @@ model, is generated from that same model. A tool never raises: it returns a type
 """
 
 import calendar
-from collections.abc import Callable
+import re
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any, Literal
@@ -55,11 +56,19 @@ def parameters_schema(model: type[BaseModel]) -> dict[str, Any]:
     """The model's JSON Schema without titles, keeping only its required fields required."""
 
     def strip(node: Any) -> Any:
-        if isinstance(node, dict):
-            return {key: strip(value) for key, value in node.items() if key != "title"}
         if isinstance(node, list):
             return [strip(value) for value in node]
-        return node
+        if not isinstance(node, dict):
+            return node
+        out: dict[str, Any] = {}
+        for key, value in node.items():
+            if key == "title":
+                continue
+            if key == "properties" and isinstance(value, dict):
+                out[key] = {name: strip(schema) for name, schema in value.items()}
+            else:
+                out[key] = strip(value)
+        return out
 
     return strip(model.model_json_schema())
 
@@ -67,9 +76,24 @@ def parameters_schema(model: type[BaseModel]) -> dict[str, Any]:
 # --- search_rfp --------------------------------------------------------------------------
 
 
-def search_tool(index: PassageIndex) -> Tool:
+REQUIREMENT_ID = re.compile(r"\bREQ-\d{4}\b")
+
+
+def search_tool(
+    index: PassageIndex, requirement_sources: Mapping[str, Sequence[str]] | None = None
+) -> Tool:
+    """`requirement_sources` maps requirement ids to the passages they quote, so a query that
+    names a requirement id returns those passages first. Models do look requirements up by id:
+    the first live run searched only for ids, which match no RFP words."""
+    sources = requirement_sources or {}
+
     def run(args: SearchArgs) -> ToolResult:
-        hits = index.search(args.query, args.k)
+        named = [s for req in REQUIREMENT_ID.findall(args.query) for s in sources.get(req, [])]
+        words = REQUIREMENT_ID.sub(" ", args.query)
+        hits = index.get(named)
+        seen = {h.src_id for h in hits}
+        hits += [h for h in index.search(words, args.k) if h.src_id not in seen]
+        hits = hits[: args.k]
         if not hits:
             return ToolResult(status="EMPTY", data=[], reason="no passage matched the query")
         data = [
@@ -81,8 +105,9 @@ def search_tool(index: PassageIndex) -> Tool:
     return Tool(
         name="search_rfp",
         description=(
-            "Search the RFP's passages by words. Returns up to k passages, best first, each with"
-            " its SRC id, section path and text."
+            "Search the RFP's passages by words, such as 'go-live migration deadline'. A"
+            " requirement id such as REQ-0003 returns the passages that requirement quotes."
+            " Returns up to k passages, best first, each with its SRC id, section path and text."
         ),
         args_model=SearchArgs,
         run=run,

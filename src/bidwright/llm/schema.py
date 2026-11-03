@@ -46,15 +46,27 @@ def _inline(schema: dict[str, Any]) -> dict[str, Any]:
 
 
 def _close(node: Any) -> Any:
-    if isinstance(node, dict):
-        closed = {key: _close(value) for key, value in node.items() if key not in _DROPPED_KEYS}
-        if closed.get("type") == "object" and "properties" in closed:
-            closed["additionalProperties"] = False
-            closed["required"] = list(closed["properties"])
-        return closed
+    """Close every object and drop `title` and `default` annotations.
+
+    Keys inside `properties` are field names, not annotations, so a field called `title`
+    survives. Dropping it once made the draft model omit `DraftResult.title` on every call.
+    """
     if isinstance(node, list):
         return [_close(value) for value in node]
-    return node
+    if not isinstance(node, dict):
+        return node
+    closed: dict[str, Any] = {}
+    for key, value in node.items():
+        if key in _DROPPED_KEYS:
+            continue
+        if key == "properties" and isinstance(value, dict):
+            closed[key] = {name: _close(schema) for name, schema in value.items()}
+        else:
+            closed[key] = _close(value)
+    if closed.get("type") == "object" and "properties" in closed:
+        closed["additionalProperties"] = False
+        closed["required"] = list(closed["properties"])
+    return closed
 
 
 def provider_schema(model: type[BaseModel]) -> dict[str, Any]:

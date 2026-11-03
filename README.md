@@ -28,6 +28,8 @@ A deterministic shell around a probabilistic core: code checks everything code c
 | `uv run bidwright-eval score outputs/<run>` | Scores a finished run against its gold and writes `evals/results/runs/<run>/` |
 | `uv run pytest -m "not gold and not replay"` | The fast tests; `-m replay` and `-m gold` run the other two sets |
 
+`samples/dev-free/` holds one real run of the development RFP on the `free` profile, and `evals/results/runs/20261103T011236Z-dev-rfp-3c582e4c-free/scorecard.md` its score: no mandatory requirement or submission hazard missed, every quote verbatim, every binding requirement mapped to an approach item, and one of three planted risks found, in 9 requests. The demo replays that same run.
+
 Each run writes `outputs/<run>/`: `solution_summary.md` and its JSON twin, `proposal.md`, the frozen text and passages, the verified requirements and rejected quotes, the approach, the risks, `ledger.jsonl` with one entry per LLM call, `run_manifest.json` with the status and totals, and `spans.jsonl` when no Phoenix collector is set.
 
 ## How a run works

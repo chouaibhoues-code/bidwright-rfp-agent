@@ -1,0 +1,47 @@
+{
+ "key": "sha256:db8786ad3a1d8c82f5c74d786c795ba4e6ab57b639a805c6897dab058b4b913c",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "date_calc",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_410358",
+    "name": "date_calc",
+    "arguments": {
+     "unit": "days",
+     "op": "add",
+     "date": "2026-12-01",
+     "amount": 41
+    }
+   },
+   {
+    "id": "call_410359",
+    "name": "search_rfp",
+    "arguments": {
+     "query": "REQ-0016"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 3120,
+   "tokens_out": 64,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-03T01:12:44Z"
+}

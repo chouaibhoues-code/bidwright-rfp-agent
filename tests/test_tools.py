@@ -48,6 +48,17 @@ def test_search_finds_the_go_live_and_migration_passages(index: PassageIndex) ->
     assert scores == sorted(scores, reverse=True)
 
 
+def test_a_requirement_id_returns_the_passages_it_quotes(index: PassageIndex) -> None:
+    tool = search_tool(index, {"REQ-0011": ["SRC-0015"], "REQ-0025": ["SRC-0030"]})
+    only_ids = tool.run(SearchArgs(query="REQ-0011 REQ-0025", k=5))
+    assert [hit["src_id"] for hit in only_ids.data] == ["SRC-0015", "SRC-0030"]
+    mixed = tool.run(SearchArgs(query="REQ-0025 migration", k=3))
+    ids = [hit["src_id"] for hit in mixed.data]
+    assert ids[0] == "SRC-0030" and "SRC-0024" in ids and len(ids) <= 3
+    unknown = search_tool(index).run(SearchArgs(query="REQ-0011", k=3))
+    assert unknown.status == "EMPTY"
+
+
 def test_search_caps_k_and_reports_empty(index: PassageIndex) -> None:
     assert len(index.search("the", k=50)) <= 8
     empty = search_tool(index).run(SearchArgs(query="kangaroo", k=3))

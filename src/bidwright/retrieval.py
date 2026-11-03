@@ -19,6 +19,7 @@ from bidwright.schemas import Passage
 
 MAX_K = 8
 MAX_QUERY_WORDS = 32
+BY_ID = 100.0  # the score of a passage fetched by id rather than ranked by BM25
 _WORD = re.compile(r"\w+")
 _SCHEMA = (
     "CREATE VIRTUAL TABLE passages USING fts5("
@@ -57,6 +58,23 @@ class PassageIndex:
                 [(p.id, p.section_path, display_text(p.text)) for p in passages],
             )
         return cls(path)
+
+    def get(self, src_ids: Iterable[str]) -> list[Hit]:
+        """Passages by id, in the order asked, with the score `BY_ID`."""
+        wanted = list(dict.fromkeys(src_ids))
+        if not wanted:
+            return []
+        db = sqlite3.connect(self.path)
+        try:
+            marks = ",".join("?" for _ in wanted)
+            rows = db.execute(
+                f"SELECT src_id, section_path, text FROM passages WHERE src_id IN ({marks})",  # noqa: S608
+                wanted,
+            ).fetchall()
+        finally:
+            db.close()
+        found = {src_id: Hit(src_id, section, text, BY_ID) for src_id, section, text in rows}
+        return [found[s] for s in wanted if s in found]
 
     def search(self, query: str, k: int = 5) -> list[Hit]:
         expression = match_expression(query)
