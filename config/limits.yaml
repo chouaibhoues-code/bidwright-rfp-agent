@@ -12,5 +12,7 @@ call:
   retries: 3
   backoff_base_s: 2
   backoff_cap_s: 30
-concurrency: 2
+# Send workers at once, per profile. Ollama here serves one request at a time, so a second
+# worker only queues, and its wait counts against the call timeout.
+concurrency: {free: 2, local: 1}
 batch_size: 20

@@ -61,7 +61,7 @@ class CallLimits(Strict):
 class LimitsConfig(Strict):
     runs: dict[str, dict[str, RunLimits]]
     call: CallLimits
-    concurrency: int = Field(ge=1)
+    concurrency: dict[str, Annotated[int, Field(ge=1)]]
     batch_size: int = Field(ge=1)
 
     def run(self, corpus: str, profile: str) -> RunLimits:
@@ -69,6 +69,13 @@ class LimitsConfig(Strict):
             return self.runs[corpus][profile]
         except KeyError as exc:
             raise KeyError(f"no run limits for {corpus!r} on {profile!r}") from exc
+
+    def concurrency_for(self, profile: str) -> int:
+        """How many `Send` workers run at once on this profile."""
+        try:
+            return self.concurrency[profile]
+        except KeyError as exc:
+            raise KeyError(f"no concurrency for profile {profile!r}") from exc
 
 
 class AgentLimits(Strict):

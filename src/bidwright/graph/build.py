@@ -376,7 +376,7 @@ def execute(
                 {},
                 {
                     "configurable": {"thread_id": run_id},
-                    "max_concurrency": config.limits.concurrency,
+                    "max_concurrency": config.limits.concurrency_for(profile),
                 },
             )
         reason = _degraded(final)
