@@ -41,7 +41,7 @@ Research results become a seventh boundary in Iteration 2.
 | ASI08 Cascading Failures | Each node's output is checked before the next node uses it; per-run budgets; one fallback per role; a spent daily quota is not retried; every failure has a defined run status | A circuit breaker and a dead-letter file (Iteration 2) | `test_simulator.py`, `test_budget.py` |
 | ASI09 Human-Agent Trust Exploitation; LLM09 Misinformation | Every output is `UNREVIEWED_DRAFT`; each requirement shows its verified quote; rejected quotes are counted; risks must cite passages and carry no invented rating | Claims without evidence marked `UNVERIFIED` (Iteration 3); review gates with the source beside each record and a sample of what was not flagged (Iteration 4) | `test_verify.py`, `test_risk_loop.py`, `test_render_outputs.py` |
 | ASI10 Rogue Agents | The graph routes every step; the `risk` loop stops at 4 turns, at 6 tool calls, or on a turn with no progress | A stop command between nodes (Iteration 2) | `test_risk_loop.py` |
-| LLM02 Sensitive Information Disclosure | `free` refuses files outside the synthetic corpus without a logged consent override; spans carry hashes and counts, never prompt or response text; keys only in `.env`; `private/` and `outputs/` are gitignored | Metadata-only traces for real documents | `test_corpus_rule.py`, `test_tracing.py`, `test_repo_hygiene.py` |
+| LLM02 Sensitive Information Disclosure | `free` refuses files outside the synthetic corpus without a logged consent override; spans carry hashes and counts, never prompt or response text; keys only in `.env`; `private/` and `outputs/` are gitignored | Metadata-only traces for real documents. For client documents, proposed under D-05: ids from the file's hash, one egress register for every outbound client, and masking around hosted calls under client terms. | `test_corpus_rule.py`, `test_tracing.py`, `test_repo_hygiene.py` |
 | LLM05 Improper Output Handling | Every response is validated against its schema; quotes are verified; `render` validates every record before writing; search terms from a model are stripped of FTS5 operators and quoted | Formula escaping in XLSX outputs (Iteration 1) | `test_tools.py`, `test_render_outputs.py` |
 | LLM07 System Prompt Leakage | The prompts are public in the repository and hold no secret | Unchanged | Inspection |
 | LLM08 Vector and Embedding Weaknesses | Not applicable: retrieval is lexical | Reassessed if Iteration 7 adds dense retrieval | None |
@@ -54,6 +54,7 @@ Q-07 ([`context/Research-Register.md`](../context/Research-Register.md), section
 ## Residual risks at `v0.0`
 
 - Hidden text in a PDF reaches the model until `guard` arrives in Iteration 1.
+- Run ids carry the input file's name, so spans and folder names reveal it.
 - A paraphrased injection can still steer what an agent writes inside its schema; only measurement per model (QS-3) shows how often.
 - CI actions are pinned by version tag, not by commit hash.
 - Human review is subject to fatigue and automation bias, which DR-08 studies before the review interface is built.

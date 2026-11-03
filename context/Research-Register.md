@@ -96,6 +96,7 @@ About 90 one-sentence technical claims, each checked just before the module that
 | C7-02 | Cerebras schema limits, tools, caching, rate headers, prompting guidance for `gpt-oss` and Qwen | `/websites/inference-docs_cerebras_ai`, `/cerebras/cerebras-cloud-sdk-python` | 5 | 3 | Planned |
 | C7-03 | Groq schema, tools, rate headers | `/websites/console_groq`, `/groq/groq-python` | 3 | 3 | Planned |
 | C7-15 | python-docx generation: styles, tables, headers, page control; python-pptx for the deck | Not yet resolved | 4 | 4 | Planned |
+| C7-18 | Masking libraries: LangChain's PII middleware and its integrations list; Presidio's reversible sample and its recognizers backed by language models; LlamaIndex's PII postprocessors; DSPy's PAPILLON tutorial | `/websites/langchain_oss_python`, `/data-privacy-stack/presidio`, `/run-llama/llama_index`, `/stanfordnlp/dspy` | 5 | 0b, for D-05 | Done 2026-11-03 (section 17) |
 
 ## 5. Queries, spikes and checks
 
@@ -120,12 +121,14 @@ About 90 one-sentence technical claims, each checked just before the module that
 | S-12 | Spike | Method cards on and off, per family | 3 | Planned |
 | S-08 | Spike | GPU passthrough on WSL2 | 6 | Planned |
 | S-06 | Spike | Hidden-text detection by comparing extracted text with OCR of the rendered page | 7 | Planned |
+| S-15 | Spike | Typed placeholders against realistic surrogates, on the hero with planted personal data | 5, if D-05 takes C8 | Planned |
 | V-03 | Limits and prices | Real Gemini limits, paid-tier prices, the Cerebras trial, model retirement, the dated price list, Context7 auth and limits, the NotebookLM quota, and the current free-tier terms | 0a | Done 2026-11-02 |
 | V-06 | Environment | The GPU's state and the local generation speed | 0a | Done 2026-11-02 |
 | V-08 | Versions | The library and image versions at lock time | 0a | Done 2026-11-02 |
 | V-02 | Access check | Download and license for CrackedPDFs, ContractScrub, ContractNLI, QuRE, CUAD and FedProc-Bench | 1 | Planned |
 | V-01 | Paper check | The primary source of every figure that may enter a deliverable: ORCS first, then MAUD, REGen, The Power of Noise and the Cortex full text, and the OWASP lists | 5 and release | Partly done: the OWASP Agentic Top 10 and LLM Top 10 read at source on 2026-11-02 |
 | V-04 | The owner | RFP-SPEC-001 and the repository the owner's notes mention, if they exist; until then the boundary notes are the baseline | Any time | Open |
+| V-09 | Source check | The UK GDPR on pseudonymization (Articles 4, 25 and 32), and Carrell et al. 2013 on realistic surrogates | 0b, for D-05 | Done 2026-11-03 (section 17) |
 | H-06 | Save | Raw reports and answers kept privately | 0a | Done 2026-11-02 |
 | H-01 | Audit | Numeric-claim audit of any report to be quoted | Before quoting | As needed |
 | H-02 | Repair | Re-add the INCOSE guide, the APMP Body of Knowledge, OWASP AISVS, and the PyMuPDF and pypdf docs to their notebooks | Backlog | Backlog |
@@ -153,6 +156,7 @@ Each spike decides one design question, with its pass mark fixed before it runs.
 | S-12 | Negative-case violations per card family, cards off and on, plus the scorecard | A family switches on only if violations fall beyond noise and the scorecard holds | Every family off | `methods.enabled` per family | Planned |
 | S-08 | `ollama ps` shows GPU use inside Docker | GPU in use | CPU, or the host's Ollama | The GPU path | Planned |
 | S-06 | Hidden-text recall, render-and-compare against the operator scan | Higher recall with no more false positives | Off | Whether render-and-compare joins `guard` | Planned |
+| S-15 | Quotes restored, values left unrestored in model-written text, and missed mandatory, for typed placeholders and for realistic surrogates, 5 repeats each | Every quote restored; the style with fewer unrestored values wins, unless its misses rise beyond noise | Realistic surrogates | The surrogate style in C8 | Planned |
 
 ## 7. Q-07: what prompt-layer and tool-layer defenses stop
 
@@ -447,6 +451,23 @@ Two adversarial deep-research jobs ran on 2026-11-03, each in a fresh notebook. 
 - Routing follows the providers' terms.
 - The consent override that lets a client document reach the free tier conflicts with Google's terms for that tier.
 
+### Masking around hosted calls: follow-up, 2026-11-03
+
+The owner asked whether a local model could mask sensitive values before hosted calls, with a local pass afterwards, as a bridge until local models do well enough on their own. Library documentation (C7-18) and two sources (V-09) were checked.
+
+- **Similar implementations.**
+  - LangChain's built-in PII middleware redacts, masks, hashes or blocks values in agent input and output. Its documentation describes no restoration.
+  - Presidio's sample for hosted models replaces values with numbered placeholders, keeps one mapping across a session's requests, and restores the reply. Its recognizers backed by language models, which can run on Ollama, are marked experimental.
+  - LlamaIndex masks retrieved text with a local entity model or an LLM, and keeps the mapping out of the model's input.
+  - DSPy's PAPILLON tutorial has a local model write a redacted request to an untrusted hosted model, then compose the final answer from the private context. It scores quality and leakage together.
+  - LangChain's integrations list adds two community packages, piighost and MaskFlow. Both restore values, and can stop a call when personal data reaches the model. Neither was evaluated.
+- **What none of them does.** In the documentation read, each restores values by replacing text in the model's output. None maps evidence back to the original by offsets. Bidwright can, because its quotes are verified spans of frozen text.
+- **Pseudonymization in law.** Confirmed at source in the UK GDPR, as revised, on legislation.gov.uk. Article 25(1) names "pseudonymisation" among the measures that implement data-protection principles "such as data minimisation". Article 32(1)(a) lists "the pseudonymisation and encryption of personal data". The definition in Article 4 requires the information that reverses it to be "kept separately" under "technical and organisational measures". The EU text was not fetched.
+- **Realistic surrogates.** Confirmed at source in the abstract of Carrell et al. (JAMIA, 2013), through Europe PMC. Replacing the identifiers a detector found with realistic synthetic surrogates makes the few it missed hard to tell apart. In a pilot on 81 clinical notes, about 90% of the identifiers left behind were concealed, in text with average and high densities of identifiers. The authors ask for larger tests.
+- **What it changed.** D-05 gained two options:
+  - C8, masking around hosted calls as minimization on an allowed path, with privacy tiers measured on the gold.
+  - C9, one egress rule for every outbound channel, including MCP servers, the trace collector, coding assistants and metadata.
+
 ## 18. Sources
 
 - **The owner's research notebooks**, private to the owner's account: L1 Prompt, L2 Context, L3 Loop, L4 Graph, L5 Neuro-Symbolic, HNS Runtime Harness, REP Framework, The Art of RFP Treatment, PMI Domain Methods, Real-Tender Evaluation Gap, and the `RFP SOTA` notebooks for DR-19, DR-01, DR-03, DR-16 and DR-17.
@@ -466,3 +487,4 @@ Two adversarial deep-research jobs ran on 2026-11-03, each in a fresh notebook. 
 - **Project and architecture methods:** [PMBOK 8 summary](https://pmstudycircle.com/pmbok-guide-8th-edition/), [arc42](https://arc42.org/overview), [C4 diagrams](https://c4model.com/diagrams), [MADR](https://adr.github.io/madr/), [Diátaxis](https://diataxis.fr/), [ISO 42010 summary](https://quality.arc42.org/standards/iso-42010), [RAD-AI](https://arxiv.org/abs/2603.28735), [C4 for agentic AI systems](https://arxiv.org/html/2603.15021v1), [ADR template study](https://arxiv.org/abs/2604.27333), [Beyond Component Testing](https://arxiv.org/html/2607.29405v2), [ISO/IEC 25059 sample](https://cdn.standards.iteh.ai/samples/80655/168addf09e0a4d8181b9172dc7404fab/ISO-IEC-25059-2023.pdf), [AgentSpec](https://arxiv.org/abs/2503.18666), [AgentArcEval](https://arxiv.org/html/2510.21031v1), [architecture options taxonomy](https://arxiv.org/html/2408.02920v2), [EPIC](https://arxiv.org/html/2610.07534v1).
 - **Procurement model for the hero RFP:** [Directive 2014/24/EU](https://eur-lex.europa.eu/eli/dir/2014/24/oj), a model only, with no real citations in the corpus.
 - **Design checks:** [REGen](https://arxiv.org/html/2502.16838v2), [span-oriented IE survey](https://arxiv.org/pdf/2403.15453).
+- **Masking and data protection:** [LangChain built-in middleware](https://docs.langchain.com/oss/python/langchain/middleware/built-in), [LangChain middleware integrations](https://docs.langchain.com/oss/python/integrations/middleware), [Presidio's sample for hosted models](https://github.com/data-privacy-stack/presidio/blob/main/docs/samples/deployments/openai-anonymaztion-and-deanonymaztion-best-practices/index.md), [LlamaIndex](https://github.com/run-llama/llama_index), [DSPy](https://github.com/stanfordnlp/dspy), [UK GDPR Article 4](https://www.legislation.gov.uk/eur/2016/679/article/4), [Article 25](https://www.legislation.gov.uk/eur/2016/679/article/25), [Article 32](https://www.legislation.gov.uk/eur/2016/679/article/32), [Carrell et al. 2013](https://doi.org/10.1136/amiajnl-2012-001034).

@@ -1,6 +1,6 @@
 # Iteration 1 design: trust the requirements
 
-**Status:** a draft for the Stage 9 review, written 2026-11-02. It closes the open decisions of Iteration 1 as the proposed ADRs ADR-017 to ADR-021 in [`DECISIONS.md`](../../DECISIONS.md), and proposes two process changes. At that review the owner accepts or changes each one (D-02 in [`context/Decision-Form.md`](../../context/Decision-Form.md)). Nothing here is built before the review passes.
+**Status:** a draft for the Stage 9 review, written 2026-11-02. It closes the open decisions of Iteration 1 as the proposed ADRs ADR-017 to ADR-021 in [`DECISIONS.md`](../../DECISIONS.md), and proposes two process changes. At that review the owner accepts or changes each one (D-02 in [`context/Decision-Form.md`](../../context/Decision-Form.md)). Nothing here is built before the review passes. Section 4.4, added 2026-11-03, holds the Iteration 1 parts of D-05's recommendation on client documents. They are built only if D-05 is decided that way.
 
 ## 1. Purpose
 
@@ -70,11 +70,25 @@ flowchart LR
 
 `bidwright run <path>` takes a file or a folder. A folder is a package: its files are read in name order, and an optional `package.yaml` names each document's role and the order of precedence. Without one, roles come from file names (section 6.2). Passage ids run across the whole package, `SRC-0001` onward, in register order, and every passage keeps its `doc_id`.
 
-On `free`, every file of a package must be listed in `inputs/CORPUS.sha256`, or the run needs the consent override, as in `v0.0`.
+On `free`, every file of a package must be listed in `inputs/CORPUS.sha256`, or the run needs the consent override, as in `v0.0`, unless D-05 removes the override (section 4.4).
 
 ### 4.3 Run statuses used from `v0.1`
 
 `POLICY_BLOCKED` joins the statuses of `v0.0`: `guard` refuses a file over a limit, an encrypted or corrupt file, or a path outside `inputs/`. `DEGRADED` gains three reasons: coverage gaps that remain after the last round, a Docling `partial_success`, and the zone fallback in `triage`.
+
+### 4.4 Client documents and outbound channels (D-05)
+
+D-05 in [`context/Decision-Form.md`](../../context/Decision-Form.md) is due before this build. If it is decided as recommended, Iteration 1 also builds the items below, and the ADRs that record D-05 are written when it is decided. The bullets marked "D-05" in the Detailed Implementation Plan build them.
+
+- **The data class (C1).** A file is synthetic when its sha256 is listed in `inputs/CORPUS.sha256`, and a client document otherwise. A package is a client package when any of its files is one. The run manifest records the class.
+- **`free` takes synthetic files only (C2).** The consent override is removed. `free` refuses a client document, and its message names `--profile local`.
+- **Retention and purge (C4).** `bidwright purge <run>` deletes the run folder, which holds its checkpoints, and the cache entries the run wrote. `bidwright purge --expired` deletes every client run older than the retention period.
+- **The privacy invariant (C5).** The development PDF gains planted synthetic personal data. None of it may reach a span, the ledger, the manifest or a log. It may not reach a tracked file either, except the places that hold corpus content by design: `inputs/`, `evals/corpus/`, `evals/gold/`, `tests/cassettes/`, `samples/` and this document.
+- **The text view (C8's seam).** Every prompt and every tool result is built from a `TextView`. The default, `IdentityView`, returns the frozen text unchanged, so runs behave as before. A test view that swaps the planted values shows that nothing reaches a model without passing through the view.
+- **Egress (C9's first part).**
+  - An egress register lists every destination a run may reach, and each outbound client is checked against it. An unlisted destination is refused, and a client run reaches local destinations only.
+  - A client document gets an id from its hash alone.
+  - Client documents must sit under a data root outside the repository.
 
 ## 5. Contracts
 
@@ -411,12 +425,20 @@ Twenty steps, in build order. Each step leaves the repository buildable with its
 
 ### Step 1: Dependencies and configuration
 
-**Files.** Modify `pyproject.toml` and `uv.lock`: add `pikepdf`, `python-docx` and `openpyxl` as runtime dependencies, and `hypothesis` as a development dependency, each with an upper bound on the next major version. Create `config/ingest.yaml`, `config/cues.yaml`, `config/zones.yaml` and `config/lint.yaml` with the values of section 6. Modify `config/limits.yaml` (a `providers` block, `coverage`, `clusters`, `context` and `cache` blocks), `config/agents.yaml` (`triage` and `consolidate`), `src/bidwright/config.py`, `compose.yaml` and `.env.example`.
+**Files.** Modify `pyproject.toml` and `uv.lock`: add `pikepdf`, `python-docx` and `openpyxl` as runtime dependencies, and `hypothesis` as a development dependency, each with an upper bound on the next major version. Create `config/ingest.yaml`, `config/cues.yaml`, `config/zones.yaml` and `config/lint.yaml` with the values of section 6. Modify `config/limits.yaml` (a `providers` block, `coverage`, `clusters`, `context` and `cache` blocks), `config/agents.yaml` (`triage` and `consolidate`), `src/bidwright/config.py`, `compose.yaml` and `.env.example`. D-05: create `config/egress.yaml`, and add a `retention` block to `config/limits.yaml`.
 
 **Does.**
 - `config.py` gains a Pydantic model per new file and loads each with `yaml.safe_load`. Every regular expression compiles at load time, and a bad one fails with its file and rule id.
 - `compose.yaml` gains a `docling` service: the `docling-serve` CPU image, pinned by digest after V-08 checks the current release, published on `127.0.0.1:5001` only, in the default profile. `app` gets `DOCLING_URL: http://docling:5001`.
 - `.env.example` gains `DOCLING_URL=` with a comment: on the host, `http://localhost:5001`; empty to use recorded Docling responses only.
+- **D-05, the egress register:** `config/egress.yaml` lists each destination by name, with its hosts, whether it is local, and what it may receive.
+  - `gemini`: `generativelanguage.googleapis.com`, remote, prompts.
+  - `ollama`: `localhost` and the Compose service `ollama`, local, prompts.
+  - `phoenix`: `localhost` and `phoenix`, local, spans.
+  - `docling`: `localhost` and `docling`, local, documents.
+  
+  A host is local when it is a loopback address, `localhost`, or a Compose service the register names.
+- **D-05, retention:** `config/limits.yaml` gains `retention: {client_days: 30}`. `.env.example` gains `BIDWRIGHT_CLIENT_ROOT=`, with a comment: a folder outside the repository that holds client documents.
 - `config/agents.yaml` gains:
 
 ```yaml
@@ -438,7 +460,7 @@ consolidate:
   limits: {max_calls: 1, max_repairs: 1}
 ```
 
-**Tests.** `test_config.py`: each new file loads; the zone names equal `Zone`; every cue and lint pattern compiles; rule ids are unique; `agents.yaml` names prompts that exist. `test_compose_lockdown.py`: `docling` is pinned by digest and published on loopback only.
+**Tests.** `test_config.py`: each new file loads; the zone names equal `Zone`; every cue and lint pattern compiles; rule ids are unique; `agents.yaml` names prompts that exist; D-05: every destination in the egress register names its hosts and a locality. `test_compose_lockdown.py`: `docling` is pinned by digest and published on loopback only.
 
 ### Step 2: Schemas
 
@@ -467,6 +489,7 @@ consolidate:
 
 **Does.**
 - **Development PDF:** one visible injection trap and one hidden one (render mode 3), each with a unique marker and a requested action that can be detected in output.
+- **D-05, planted personal data:** the development PDF's instructions gain a background sentence: "The Authority's procurement officer for this tender is Ottoline Vexmoor (ottoline.vexmoor@example.org, 07700 900318)." RFC 2606 reserves `example.org` for examples. The phone number comes from the mobile range that Ofcom lists for drama, 07700 900000 to 900999. Ofcom's page refused an automated read, so the range is confirmed in a browser before step 4 renders it. The spec marks the three values with `personal_data`. Gold v2 lists them as `kind: personal_data` records, PD-01 to PD-03, with the categories `PERSON`, `EMAIL` and `PHONE`.
 - **Development DOCX:** a fictional charity buying a CRM; about 10 requirements; one hidden-run trap and one comment trap.
 - **Hero package:** a fictional municipal authority buying a digital case-management service under an open procedure modeled on Directive 2014/24/EU, with no real citation. It has a main PDF of 20-25 pages, an addendum PDF that supersedes one clause under an order-of-precedence clause, and an XLSX annex with a requirements table and a `veryHidden` sheet holding a trap. It holds:
   - about 55 requirements, 45 of them mandatory, including at least one obligation of each implicit type in section 6.3, a small-print obligation and an obligation in the annex table;
@@ -492,17 +515,20 @@ Every organization and person is fictional, and gold is written only in the spec
 
 ### Step 6: `guard`
 
-**Files.** Create `src/bidwright/guard/__init__.py`, `limits.py`, `pdf.py`, `ooxml.py`, `docx.py` and `xlsx.py`. Create `tests/test_guard.py`, with fixtures built inside the tests by ReportLab, python-docx and openpyxl.
+**Files.** Create `src/bidwright/guard/__init__.py`, `limits.py`, `pdf.py`, `ooxml.py`, `docx.py` and `xlsx.py`. Create `tests/test_guard.py`, with fixtures built inside the tests by ReportLab, python-docx and openpyxl. D-05: create `src/bidwright/data_class.py`, and modify `src/bidwright/cli.py`.
 
 **Does.** `run_guard(paths, run_dir, config) -> GuardResult`, where `GuardResult` holds the `GuardReport`, the quarantine records, the sanitized paths, the hidden PDF characters and the small-print boxes.
 - **Every file:** the path resolves under the allowed root; the size, page and file-count limits hold; the format is known by its signature, not its extension. A failure refuses the run with `POLICY_BLOCKED` and the reason.
+- **D-05, the data class and the client root:**
+  - `src/bidwright/data_class.py` gives `data_class(paths)`: `synthetic` when every file's sha256 is listed in `inputs/CORPUS.sha256`, and `client` otherwise. `corpus_name` moves there from `cli.py`, which imports it.
+  - Corpus files keep the root `inputs/`. A client document must resolve under `BIDWRIGHT_CLIENT_ROOT`, and that folder must lie outside the repository; otherwise the run ends `POLICY_BLOCKED`, with the reason.
 - **PDF** (`pdf.py`): pikepdf opens the file; an encrypted or unreadable file is refused. A pdfminer pass reads every character with its text render mode, through a subclass of pdfminer's `PDFPageAggregator` whose `render_string` override records the text state's render mode on each character it adds. A character is hidden when its render mode is 3, its fill is within 0.05 of white, its size is under 2 pt, or its box lies wholly outside the page's crop box. Hidden characters are grouped by line into runs, and each run becomes a `QuarantineRecord` whose location gives the page and box. Visible characters from 2 pt up to 6 pt are grouped by line into small-print boxes. A file with fewer than 20 extractable characters per page on average is marked `scanned` and is not parsed; if every file is scanned, the run ends `POLICY_BLOCKED` with "no text layer", and otherwise it ends `DEGRADED`. If the installed pdfminer.six does not pass the text state to `render_string`, the step stops and the version is pinned to one that does; the guard test fails until then.
 - **DOCX and XLSX archives** (`ooxml.py`): member count, total expansion and ratio within limits; no absolute or `..` member path; a macro part (`vbaProject.bin`) or a macro-enabled content type refuses the file. An external relationship (`TargetMode="External"`) is quarantined and removed. XML is parsed with lxml with entity resolution and network access off.
 - **DOCX** (`docx.py`): a run is hidden when its own properties, its character style or its paragraph style, followed through `basedOn` up to 5 levels, set `w:vanish`, `w:webHidden` or `w:specVanish` to anything other than false. Hidden runs, tracked deletions (`w:del`), comments, alternative text (`wp:docPr` `descr` and `title`), custom XML parts, document-property text and field instructions (`w:instrText`) are each quarantined and removed from a sanitized copy in `sanitized/`. Inserted text (`w:ins`) stays, since a reader sees it.
 - **XLSX** (`xlsx.py`): with openpyxl, `hidden` and `veryHidden` sheets are quarantined, one record per sheet, and removed; cells formatted `;;;`, cell comments, data-validation messages and defined names are quarantined and cleared; the sanitized workbook is saved to `sanitized/`.
 - Writes `guard_report.json` and `quarantine.jsonl`, the only writer of both.
 
-**Tests.** `test_guard_limits` (oversized file, too many pages, path outside the root, archive bomb, macro part: each refused, with a clean file allowed as control); `test_guard_quarantine` (each hidden kind found, its marker in `quarantine.jsonl`, and absent from the sanitized copy; a visible control sentence kept); `test_guard_scanned`; `test_guard_small_print`; a Hypothesis test that every rule finishes on random XML text within 0.5 seconds.
+**Tests.** `test_guard_limits` (oversized file, too many pages, path outside the root, archive bomb, macro part: each refused, with a clean file allowed as control; D-05: a client document inside the repository refused, and one under the client root allowed); `test_guard_quarantine` (each hidden kind found, its marker in `quarantine.jsonl`, and absent from the sanitized copy; a visible control sentence kept); `test_guard_scanned`; `test_guard_small_print`; a Hypothesis test that every rule finishes on random XML text within 0.5 seconds.
 
 ### Step 7: Parsers, package ingest and the control register
 
@@ -516,8 +542,9 @@ Every organization and person is fictional, and gold is written only in the spec
 - **`docling_client.py`** runs in the client's three modes. `live` calls the service, with 3 retries on connection errors and 5xx responses; `record` also saves the response as a Docling cassette; `replay` reads the cassette and never opens a connection. A `failure` status after retries ends the run `UNRECOVERABLE_FAULT`; `partial_success` continues with the run marked `DEGRADED`. The raw document is saved as `parse/<doc_id>.json`, with its `schema_name` and `version`.
 - **Suspect passages:** a passage matching a pattern in `config/ingest.yaml`, such as `ignore (?:all )?(?:previous|prior) instructions`, `you are now`, `system prompt` or `disregard the above`, gets `suspect: true`.
 - The `v0.0` PDF path stays available as `parser: pdfplumber`.
+- **D-05, document ids:** `doc_id_for(path, data_class)`. A corpus file keeps the `v0.0` id: its stem and 8 hex digits of its hash. A client document's id is `doc-` and those 8 digits, so its name never reaches the run id, spans or folder names. `DocumentEntry.file` keeps the name, in the run folder only.
 
-**Tests.** `test_ingest.py` (the `v0.0` cases, now through `PdfplumberParser`); `test_docling_parser.py` on recorded Docling output: every passage is a slice of `frozen.txt`, every table row points to its header, list items keep their lead-ins, headings build section paths, and no hidden trap marker appears in `frozen.txt`. This replaces S-02, which becomes a test. Also `test_register.py` (roles and precedence from names and from `package.yaml`) and `test_ingest_retry` (a failing Docling call is retried, then faults).
+**Tests.** `test_ingest.py` (the `v0.0` cases, now through `PdfplumberParser`); `test_docling_parser.py` on recorded Docling output: every passage is a slice of `frozen.txt`, every table row points to its header, list items keep their lead-ins, headings build section paths, and no hidden trap marker appears in `frozen.txt`. This replaces S-02, which becomes a test. Also `test_register.py` (roles and precedence from names and from `package.yaml`) and `test_ingest_retry` (a failing Docling call is retried, then faults). D-05: a client document's id holds no part of its file name.
 
 ### Step 8: `candidates` and the B0 baseline
 
@@ -532,14 +559,24 @@ Every organization and person is fictional, and gold is written only in the spec
 
 ### Step 9: Context packs, the limiter and the response cache
 
-**Files.** Create `src/bidwright/harness/context.py`, `src/bidwright/llm/limits.py` and `src/bidwright/llm/cache.py`. Modify `src/bidwright/llm/client.py`. Create `tests/test_context.py`, `tests/test_limiter.py` and `tests/test_cache.py`.
+**Files.** Create `src/bidwright/harness/context.py`, `src/bidwright/llm/limits.py` and `src/bidwright/llm/cache.py`. Modify `src/bidwright/llm/client.py`. Create `tests/test_context.py`, `tests/test_limiter.py` and `tests/test_cache.py`. D-05: create `src/bidwright/harness/view.py`, `src/bidwright/harness/egress.py`, `tests/test_text_view.py` and `tests/test_egress.py`, and modify `src/bidwright/tools.py`, `src/bidwright/obs/tracing.py` and `src/bidwright/parsers/docling_client.py`.
 
 **Does.**
 - **`ContextManager.pack(node, passages, *, fixed_tokens, budget_tokens, batch_size, neighbours, terms, zones, cues)`** returns context packs in reading order. A pack closes when it holds `batch_size` passages or when the next passage would pass the budget; a passage larger than the budget goes alone. Nothing is ever cut. Each pack carries its neighbours, marked as context, and the definitions of terms that occur in it. Each call's manifest goes to `context/<node>-<call_id>.json`.
 - **The limiter** keeps, per provider and model, the request times and input tokens of the last 60 seconds and a daily count in `outputs/.quota/<provider>-<model>-<YYYY-MM-DD>.json`, where the date is the quota day. Before a live call it raises `QuotaExhausted` once the day's count reaches the daily limit less the reserve, and otherwise waits until the per-minute limits allow the call. Input tokens are estimated as characters divided by 4. Replayed and cached calls skip it.
-- **The cache** is a cassette store in `outputs/.cache/`, keyed by the cassette key, read before a live call and written after one, when caching is on. A hit returns `replayed: true` and costs nothing in the ledger.
+- **The cache** is a cassette store in `outputs/.cache/`, keyed by the cassette key, read before a live call and written after one, when caching is on. A hit returns `replayed: true` and costs nothing in the ledger. D-05: each entry records the id of the run that wrote it, for `purge`.
+- **D-05, the text view:** `TextView` has two methods.
+  - `text(passage) -> str` gives the text a model sees.
+  - `to_frozen(src_id, start, end) -> tuple[int, int]` maps a span of that text back to `frozen.txt`.
+  
+  `IdentityView` returns passage text and spans unchanged. `ContextManager.pack` takes the view, and so does `search_rfp`, whose results carry the view's text. No other path puts passage text into a request.
+- **D-05, egress:** `harness/egress.py` builds every outbound client: the model adapters, the trace exporter and the Docling client. Each host is first checked against `config/egress.yaml` and the run's data class. An unlisted host raises `EgressRefused`, and so does a remote host on a client run. A remote trace endpoint on a client run is refused instead of failing the run: spans go to `spans.jsonl`, and the run manifest records the reason.
 
 **Tests.** `test_context.py`, with Hypothesis: the packs' union equals the input, with no duplicate and the order kept; no pack passes its budget except a lone oversized passage; neighbours are never members. `test_limiter.py`, on a fake clock: a request waits for the per-minute window; the daily reserve raises before any call; the count survives a new limiter on the same day. `test_cache.py`: a second identical call is served from the cache; a different repeat index misses it.
+
+D-05 tests:
+- **`test_text_view.py`:** `IdentityView` returns text and spans unchanged. Given a test view that swaps a value, `pack` and `search_rfp` return the swapped text. The end-to-end test joins this file in step 16, once every node uses packs.
+- **`test_egress.py`:** an unlisted host is refused; a client run refuses a remote host and allows `localhost`; a remote trace endpoint on a client run falls back to `spans.jsonl`.
 
 ### Step 10: `triage`
 
@@ -564,6 +601,7 @@ Every organization and person is fictional, and gold is written only in the spec
 - **Hazards:** a requirement is a hazard when `extract` flagged it or a `triage` hazard cites one of its passages; each hazard's `requirement_ids` are filled in.
 - A requirement's `zone` is the zone of its first cited passage's section, and its `page` and `small_print` come from that passage.
 - `verify` writes `candidates.jsonl`, adding to `requirements.jsonl` and `rejected.jsonl`, all three as the only writer.
+- **D-05:** `verify` finds each quote in the view's text of its cited passages, and maps the span to `frozen.txt` with `TextView.to_frozen`. With `IdentityView`, the mapping changes nothing.
 
 **Tests.** The `v0.0` node tests; number fidelity cases (a correct number, a changed number, spelled and digit forms, dates in three forms); hazard merging; a candidate ledger row for every passage; `test_prompts.py` for the new versions and the examples' coverage of every disposition.
 
@@ -627,15 +665,28 @@ Contract flags run over every passage, one flag per passage and category. Severi
 
 ### Step 16: Graph, state and CLI
 
-**Files.** Modify `src/bidwright/graph/build.py`, `src/bidwright/graph/state.py`, `src/bidwright/cli.py` and `src/bidwright/graph/nodes.py`. Modify `tests/test_cli.py` and `tests/test_e2e_replay.py`.
+**Files.** Modify `src/bidwright/graph/build.py`, `src/bidwright/graph/state.py`, `src/bidwright/cli.py` and `src/bidwright/graph/nodes.py`. Modify `tests/test_cli.py` and `tests/test_e2e_replay.py`. D-05: create `src/bidwright/purge.py`, `tests/test_purge.py` and `tests/test_privacy_invariant.py`, and modify `tests/test_corpus_rule.py` and `tests/test_text_view.py`.
 
 **Does.**
 - The graph of section 4.1. `coverage` takes a conditional edge: `Send` gap packs to `extract`, or go on to `lint`. `consolidate` fans out with one `Send` per LLM cluster, and its results merge through a list reducer.
 - `execute` gains `until`, the last node to run: `verify`, `coverage`, `consolidate` or `render`, the default. A run stopped by `until` ends `COMPLETED` with the reason "stopped after <node> by request", and writes its manifest and ledger as always.
 - The `risk` node also writes `risk_calls.jsonl`, the tool requests and results it already keeps, so the scorecard can check tool-call arguments for trap markers.
 - **CLI:** `bidwright run <file or folder> [--profile free|local] [--baseline ex0|b0] [--allow-non-corpus=i-accept-free-tier-terms] [--cache] [--second-pass] [--until NODE]`. `bidwright record <file or folder>` records LLM and Docling cassettes. `bidwright demo` stays the development PDF, recorded again at step 20. `bidwright matrix run <file> [--resume]` arrives in step 18.
+- **D-05, `free` and the data class:** `--allow-non-corpus` is removed, and `free` refuses a client document with a message that names `--profile local`. The run manifest gains `data_class`.
+- **D-05, purge:** `bidwright purge <run>` deletes `outputs/<run>/` and every entry in `outputs/.cache/` that the run wrote. `bidwright purge --expired` does the same for every client run whose manifest ended more than `retention.client_days` days ago. Each purge prints what it deleted.
 
 **Tests.** `test_e2e_replay.py`: the development DOCX and the development PDF with traps replay end to end with no network, on recorded LLM and Docling cassettes, and the hero package replays through `consolidate`; `test_cli.py`: folder input, `--until`, `--baseline b0`, `--cache`.
+
+D-05 tests:
+- **`test_text_view.py`, end to end:** the development PDF runs through a scripted adapter. The adapter records every request body and answers from a script that copies no document text into its answers, except as noted:
+  - For each `extract` batch, one requirement that quotes the first 40 characters of the batch's first passage as the request shows them, with every other passage id under `no_obligation_src_ids`.
+  - `risk` calls `search_rfp` once, with the query "procurement officer".
+  - The other roles get fixed, schema-valid answers.
+  
+  With a test view that swaps each planted value for a string of the same length, no planted value appears in any request body or tool result. With `IdentityView` they do, which shows that the test can fail.
+- **`test_corpus_rule.py`:** the override flag is rejected as unknown, and `free` refuses a client document.
+- **`test_purge.py`:** a run folder and its cache entries are deleted, and another run's entries stay. `--expired` skips synthetic runs and recent client runs.
+- **`test_privacy_invariant.py`**, marked `gold`: after a replayed development run, no planted value appears in `spans.jsonl`, the ledger, the manifest or the log. No tracked file holds one either, except in `inputs/`, `evals/corpus/`, `evals/gold/`, `tests/cassettes/`, `samples/` and this document.
 
 ### Step 17: Evaluation: matcher, funnel, scorecard, gate
 
@@ -702,12 +753,13 @@ Each check of the Iteration 1 gate in `context/Master-Plan.md`, with the step an
 | Docling responses replay, so `demo` and `test` run with no network | Steps 7 and 16 |
 | The matrix runner runs a rung with its repeats, and `evals/hypotheses.yaml` is hashed before the first matrix run | Steps 5 and 18 |
 | S-03 sets the batch size; the held-out list is rendered and frozen; a measured hero run gives the figures for D-01 | Steps 4 and 20 |
+| If D-05 is decided as recommended: `free` refuses a client document; a client run reaches no remote destination; a client document's name reaches no id or span; planted personal data reaches no span, ledger, manifest or log; nothing reaches a model without passing the text view; `purge` deletes a run and its cache entries | Steps 1, 4, 6, 7, 9, 11 and 16; `test_corpus_rule.py`, `test_egress.py`, `test_text_view.py`, `test_privacy_invariant.py`, `test_purge.py` |
 
 Under ADR-017, the plan's check "the unflagged sample runs" is replaced by "every passage has a disposition", which is stronger.
 
 ## 8. Owner inputs and open points
 
-- **Before the build:** accept or change ADR-017 to ADR-021 and the two process changes at the Stage 9 review (D-02).
+- **Before the build:** accept or change ADR-017 to ADR-021 and the two process changes at the Stage 9 review (D-02), and decide D-05, whose Iteration 1 parts are in section 4.4.
 - **During the build:** review the hero and DOCX gold, about one hour, before step 5 records the hashes; write the held-out requirement list, about one hour, before step 4 renders it; read `gemini-3.1-flash-lite`'s free limits in AI Studio.
 - **At the exit:** decide D-01, the paid budget, from the measured hero run.
 

@@ -53,16 +53,32 @@ On `free`, prompts go to Google's Gemini API, whose free-tier terms let the prov
 |---|---|---|
 | `outputs/<run>/`: frozen text, passages, search index, checkpoints, records, summary, proposal | Yes | Local disk, ignored by Git; no retention period or purge command yet |
 | `tests/cassettes/` | Model answers, which quote the document | `bidwright record` refuses any file outside the synthetic corpus, on every profile (fixed 2026-11-03) |
-| `spans.jsonl` and Phoenix | No: hashes, counts, timings and costs | Phoenix listens on loopback only |
-| `ledger.jsonl`, `run_manifest.json` | No: models, hashes, token counts and costs, and the input's file name and hash | None needed beyond the file name |
+| `spans.jsonl` and Phoenix | No document text: hashes, counts, timings and costs, and the run id, which holds the input file's name | Phoenix listens on loopback only |
+| `ledger.jsonl`, `run_manifest.json` | No: models, hashes, token counts and costs, and the input's file name and hash | Local disk, ignored by Git |
 | Logs | No: counts only | None needed |
-| Research queries, from Iteration 2 | Never RFP text: a gateway rule denies a query that copies 8 or more words of a passage | The gateway |
+
+### Outbound channels
+
+Each place a run, or a tool around it, can send text. Rules marked D-05 are proposed, as C8 and C9 in [`context/Decision-Form.md`](../context/Decision-Form.md).
+
+| Channel | From | What it receives | Rule |
+|---|---|---|---|
+| Model providers: Gemini, then Cerebras and Groq from Iteration 3 | `v0.0` | Prompts built from passages, records and tool results | Synthetic documents only on hosted profiles, and client documents on `local`. Under client terms, masked text only (D-05). |
+| The trace collector, Phoenix | `v0.0` | Spans without document text, and the run id | Loopback only. Client documents get ids from their hash alone (D-05). |
+| The parser service, Docling | Iteration 1 | Whole documents | A local container. It gets no route out if its image needs no download at run time (D-05, checked at the build). |
+| NotebookLM, through its MCP server | Iteration 2 | Research topics, follow-up questions and notebook titles | Never RFP text: a gateway rule denies a query that copies 8 or more words of a passage. Proposed under D-05: topics built by code from typed fields, notebook titles carrying a run hash, and research `off` or `pack` on client runs until the masking's list of values exists. |
+| Context7 | Iteration 3 | Library names, versions and queries | Queries built by code from a claim's library, version and feature fields (D-05) |
+| The sequential-thinking server, for `reflect` | Iteration 3, off by default | The agent's thoughts | A local process over stdio that needs no network, with its thought logging off. Thoughts are kept in the run folder, and spans carry only their counts and hashes (D-05). |
+| Coding assistants and Goldfish reviewers | Development | Any file in the working tree that they open | Client documents stay outside the repository, under a data root that `guard` checks (D-05) |
+| GitHub | Development | Committed files, including cassettes | `bidwright record` takes corpus files only; `private/` and `outputs/` are ignored by Git; gitleaks runs in CI |
 
 ### Not covered yet
 
 - Nothing detects personal data or other sensitive content in an input.
-- Nothing pseudonymizes text before it leaves the machine.
+- Nothing masks personal data before a hosted call.
+- Run ids carry the input file's name, and spans carry the run id, so a remote trace collector would receive file names.
+- No single control limits where a run connects: each outbound client is configured on its own.
 - Run folders and caches have no retention period and no purge command, and rely on the operating system for protection at rest.
 - The consent string on `free` records the operator's acceptance of the provider's terms. Those terms say not to submit sensitive, confidential or personal information to the free quota, so the string should not admit a client document at all.
 
-Research jobs DR-20 and DR-21 tested the first proposals on 2026-11-03 (section 17 of [`context/Research-Register.md`](../context/Research-Register.md)). A clean scan cannot clear a document, and pseudonymization is fragile on a round trip and leaves the sender's duties in place, so the revised measures treat every client document as confidential and route by the providers' terms. They are decision D-05 in [`context/Decision-Form.md`](../context/Decision-Form.md).
+Research jobs DR-20 and DR-21 tested the first proposals on 2026-11-03 (section 17 of [`context/Research-Register.md`](../context/Research-Register.md)). A clean scan cannot clear a document, and pseudonymization is fragile on a round trip and leaves the sender's duties in place, so the revised measures treat every client document as confidential and route by the providers' terms. A follow-up the same day added two measures: masking around hosted calls, as minimization on an allowed path, and one egress rule for every outbound channel above. All are decision D-05 in [`context/Decision-Form.md`](../context/Decision-Form.md).

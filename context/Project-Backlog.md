@@ -24,6 +24,7 @@ tags: [bidwright, backlog]
 | C7-04 in full and C7-14 for Streamlit | The Context7 register | Iteration 6 | Needed only by the bake-off and the UI |
 | The `app` service exits after printing its help under `docker compose up -d` | The 0a Docker check | Iteration 6 | Iteration 0a has no long-running app service; Streamlit arrives in Iteration 6 |
 | The IDE's type checker flags LangGraph's `add_node` overload with `input_schema`; pyright, which CI runs, passes | The editor | When LangGraph's type stubs change | No runtime effect |
+| A plan for better results from local models, the long-term aim behind D-05's privacy tiers | The owner, 2026-11-03 | The Iteration 5 exit, before the Iteration 6 design doc | It needs measured gaps between hosted and local runs: Iteration 5's PV0, PV1 and PV3 tiers if D-05 takes C8, or the Iteration 6 bake-off otherwise. Levers to weigh: model choice per role, smaller tasks per call, prompts optimized on quality and leakage together as in DSPy's PAPILLON, structured output, context size and the GPU path. Training or fine-tuning is a non-goal, and would need an ADR. |
 
 ## Research in reserve
 

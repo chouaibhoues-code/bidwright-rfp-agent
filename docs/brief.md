@@ -47,7 +47,7 @@ The request was not clarified with EY, by the owner's choice, so the open points
 
 - **Model quality on free tiers.** Every role runs Gemini Flash-Lite on the free profile (ADR-003). A comparison with the larger Flash model waits for a paid budget.
 - **Synthetic documents are cleaner than real tenders.** A requirement list written independently by the owner, and public benchmarks for single stages, check the scores from outside.
-- **Confidential documents.** Client files run on the local profile. Detecting and pseudonymizing personal data is proposed; [`governance.md`](governance.md) records what protects a document now.
+- **Confidential documents.** Client files run on the local profile. Two measures are proposed (D-05): masking personal data around hosted calls, and one egress rule for every outbound channel, MCP servers included. [`governance.md`](governance.md) records what protects a document now.
 - **Over-trust.** Each requirement shows its quote, rejected quotes are counted, and every output is labeled a draft.
 
 ## Decisions open
