@@ -50,7 +50,7 @@ def test_without_a_collector_spans_land_in_jsonl(
     assert agent["attributes"]["bidwright.stop_reason"] == "answered"
     assert agent["attributes"]["bidwright.tool_calls"] == 1
     llm = next(span for span in spans if span["name"] == "llm.approach")
-    assert llm["attributes"]["llm.model_name"] == "gemini-3.8-flash"
+    assert llm["attributes"]["llm.model_name"] == "gemini-3.5-flash-lite"
     assert llm["attributes"]["llm.token_count.prompt"] > 0
     text = (result.run_dir / "spans.jsonl").read_text(encoding="utf-8")
     assert "Proposals must be submitted" not in text  # no RFP or prompt text in spans

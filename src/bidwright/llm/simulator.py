@@ -15,9 +15,16 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
 
-from bidwright.llm.types import Backend, RateLimited, Request, Response, TransientError
+from bidwright.llm.types import (
+    Backend,
+    QuotaExhausted,
+    RateLimited,
+    Request,
+    Response,
+    TransientError,
+)
 
-FAULTS = {"http_429", "timeout", "server_error", "malformed_json", "missing_ids"}
+FAULTS = {"http_429", "quota_exhausted", "timeout", "server_error", "malformed_json", "missing_ids"}
 
 
 class ProviderSimulator:
@@ -39,6 +46,8 @@ class ProviderSimulator:
         fault = entry["fault"]
         if fault == "http_429":
             raise RateLimited("simulated 429", retry_after_s=entry.get("retry_after_s"))
+        if fault == "quota_exhausted":
+            raise QuotaExhausted("simulated daily quota spent")
         if fault == "timeout":
             raise TransientError("simulated timeout")
         if fault == "server_error":

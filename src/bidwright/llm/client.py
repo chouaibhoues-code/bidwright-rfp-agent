@@ -26,6 +26,7 @@ from bidwright.llm.types import (
     LLMError,
     Message,
     ProviderError,
+    QuotaExhausted,
     RateLimited,
     Request,
     Response,
@@ -145,8 +146,9 @@ class LLMClient:
                 response, latency_ms, retries, replayed, backend = self._obtain(
                     role_config, request, key
                 )
-            except (UnrecoverableFault, CassetteMissing) as exc:
-                # A replayed run that fell back has its cassette under the fallback model.
+            except (UnrecoverableFault, CassetteMissing, QuotaExhausted) as exc:
+                # A replayed run that fell back has its cassette under the fallback model, and
+                # a spent daily quota moves straight to the fallback, with no retries.
                 last_error = exc
                 continue
             completion = _completion(
@@ -154,7 +156,7 @@ class LLMClient:
             )
             self._report(role, node, agent, completion, backend, prompt_hash, input_hash, repeat)
             return completion
-        if isinstance(last_error, CassetteMissing):
+        if isinstance(last_error, CassetteMissing | QuotaExhausted):
             raise last_error
         raise UnrecoverableFault(f"{role} failed on every model: {last_error}")
 

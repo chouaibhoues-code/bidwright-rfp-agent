@@ -8,7 +8,7 @@ import pytest
 from bidwright.config import load_config
 from bidwright.llm.client import LLMClient
 from bidwright.llm.simulator import ProviderSimulator
-from bidwright.llm.types import Message, UnrecoverableFault
+from bidwright.llm.types import Message, QuotaExhausted, UnrecoverableFault
 from bidwright.schemas import ExtractResult, RiskRegister
 from tests.llm_fakes import CALL, FakeBackend
 
@@ -47,10 +47,38 @@ def test_fi01_exhausted_retries_switch_extract_to_its_fallback_model() -> None:
     assert inner.models == ["gemini-3.1-flash-lite"]
 
 
-def test_fi01_reason_has_no_fallback_and_fails_unrecoverably() -> None:
+def test_fi01_reason_falls_back_to_its_own_flash_lite_model() -> None:
+    inner = FakeBackend()
     script = [{"call": n, "fault": "timeout"} for n in range(1, 5)]
+    completion = _client(script, [], inner).complete("reason", MESSAGES, RiskRegister, **CALL)
+    assert completion.model == "gemini-3.1-flash-lite"
+
+
+def test_fi01_a_role_without_a_fallback_fails_unrecoverably() -> None:
+    config = load_config()
+    reason = config.models.role("free", "reason").model_copy(update={"fallback": None})
+    config.models.profiles["free"]["reason"] = reason
+    backend = ProviderSimulator(
+        FakeBackend(), [{"call": n, "fault": "timeout"} for n in range(1, 5)]
+    )
+    client = LLMClient(config, "free", {"gemini": backend}, sleep=lambda _: None, rng=lambda: 0.5)
     with pytest.raises(UnrecoverableFault):
-        _client(script, []).complete("reason", MESSAGES, RiskRegister, **CALL)
+        client.complete("reason", MESSAGES, RiskRegister, **CALL)
+
+
+def test_a_spent_daily_quota_moves_to_the_fallback_without_retrying() -> None:
+    sleeps: list[float] = []
+    inner = FakeBackend()
+    client = _client([{"call": 1, "fault": "quota_exhausted"}], sleeps, inner)
+    completion = client.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert completion.model == "gemini-3.1-flash-lite" and sleeps == []
+    assert completion.retries == 0 and inner.models == ["gemini-3.1-flash-lite"]
+
+
+def test_a_spent_quota_with_no_fallback_left_stops_with_quota_exhausted() -> None:
+    script = [{"call": 1, "fault": "quota_exhausted"}, {"call": 2, "fault": "quota_exhausted"}]
+    with pytest.raises(QuotaExhausted):
+        _client(script, []).complete("extract", MESSAGES, ExtractResult, **CALL)
 
 
 def test_fi02_malformed_output_is_reported_for_repair() -> None:

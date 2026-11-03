@@ -2,7 +2,8 @@
 profiles:
   free:
     extract: {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: minimal}
-    reason:  {provider: gemini, model: gemini-3.8-flash, fallback: null, thinking: low}
+    # ADR-003: Flash allows 20 requests a day on the free tier; 3.5 Flash-Lite allows 500.
+    reason:  {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: low}
   local:
     extract: {provider: ollama, model: "qwen3.5:4b", fallback: "qwen3.5:2b", num_ctx: 16384, think: false}
     reason:  {provider: ollama, model: "qwen3.5:4b", fallback: "qwen3.5:2b", num_ctx: 16384, think: true}

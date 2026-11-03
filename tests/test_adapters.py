@@ -1,16 +1,26 @@
 """Offline checks that each provider adapter maps the provider's fields as documented."""
 
 import json
+from typing import Any
 
 import pytest
+from google.genai import errors as genai_errors
 from google.genai import types
 from openai.types import CompletionUsage
 from openai.types.completion_usage import CompletionTokensDetails, PromptTokensDetails
 
-from bidwright.llm.genai import _content, _response
+from bidwright.llm.genai import _content, _response, _translate
 from bidwright.llm.ollama import OllamaBackend
 from bidwright.llm.openai_compat import _usage
-from bidwright.llm.types import Message, ProviderError, Request, ToolCall, Usage
+from bidwright.llm.types import (
+    Message,
+    ProviderError,
+    QuotaExhausted,
+    RateLimited,
+    Request,
+    ToolCall,
+    Usage,
+)
 
 
 def test_genai_keeps_cached_and_thinking_counts_and_the_model_turn() -> None:
@@ -61,6 +71,36 @@ def test_genai_tool_results_become_function_responses() -> None:
     assert content.role == "user" and response is not None
     assert response.name == "search_rfp"
     assert response.response == {"result": {"status": "OK", "data": []}}
+
+
+def _quota_error(quota_id: str, delay: str | None = None) -> genai_errors.APIError:
+    details: list[dict[str, Any]] = [
+        {
+            "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+            "violations": [{"quotaId": quota_id, "quotaValue": "20"}],
+        }
+    ]
+    if delay:
+        details.append({"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": delay})
+    body = {
+        "error": {
+            "code": 429,
+            "status": "RESOURCE_EXHAUSTED",
+            "message": "quota",
+            "details": details,
+        }
+    }
+    return genai_errors.APIError(429, body)
+
+
+def test_genai_a_spent_daily_quota_is_not_retried() -> None:
+    error = _translate(_quota_error("GenerateRequestsPerDayPerProjectPerModel-FreeTier"))
+    assert isinstance(error, QuotaExhausted)
+
+
+def test_genai_a_per_minute_429_is_retried_after_its_delay() -> None:
+    error = _translate(_quota_error("GenerateRequestsPerMinutePerProjectPerModel-FreeTier", "7s"))
+    assert isinstance(error, RateLimited) and error.retry_after_s == 7.0
 
 
 def test_openai_usage_splits_reasoning_out_of_completion_tokens() -> None:

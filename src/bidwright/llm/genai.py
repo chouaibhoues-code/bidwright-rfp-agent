@@ -16,6 +16,7 @@ from google.genai import types
 from bidwright.llm.types import (
     Message,
     ProviderError,
+    QuotaExhausted,
     RateLimited,
     Request,
     Response,
@@ -99,10 +100,32 @@ def _content(message: Message) -> types.Content:
 
 def _translate(exc: genai_errors.APIError) -> Exception:
     if exc.code == 429:
-        return RateLimited(f"gemini 429: {exc.message or exc}")
+        quota_ids, retry_after = _quota_details(exc.details)
+        if any("PerDay" in quota_id for quota_id in quota_ids):
+            return QuotaExhausted(f"gemini daily quota spent: {', '.join(quota_ids)}")
+        return RateLimited(f"gemini 429: {exc.message or exc}", retry_after_s=retry_after)
     if exc.code and exc.code >= 500:
         return TransientError(f"gemini {exc.code}: {exc.message or exc}")
     return ProviderError(f"gemini {exc.code}: {exc.message or exc}")
+
+
+def _quota_details(details: Any) -> tuple[list[str], float | None]:
+    """The quota ids a 429 names, and its retry delay in seconds when it gives one."""
+    if not isinstance(details, dict):
+        return [], None
+    quota_ids: list[str] = []
+    retry_after: float | None = None
+    for item in details.get("error", {}).get("details", []) or []:
+        for violation in item.get("violations", []) or []:
+            if violation.get("quotaId"):
+                quota_ids.append(str(violation["quotaId"]))
+        delay = str(item.get("retryDelay", ""))
+        if delay.endswith("s"):
+            try:
+                retry_after = float(delay[:-1])
+            except ValueError:
+                retry_after = None
+    return quota_ids, retry_after
 
 
 def _response(response: types.GenerateContentResponse) -> Response:

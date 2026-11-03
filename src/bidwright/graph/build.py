@@ -42,7 +42,7 @@ from bidwright.harness.gateway import ToolGateway
 from bidwright.ingest import doc_id_for, ingest_pdf
 from bidwright.llm.client import LLMClient, Mode
 from bidwright.llm.replay import CassetteStore
-from bidwright.llm.types import Backend, LLMError
+from bidwright.llm.types import Backend, LLMError, QuotaExhausted
 from bidwright.obs.ledger import totals_of
 from bidwright.obs.tracing import Tracing, maybe_span, set_attribute
 from bidwright.prompts import Prompt, load_prompt, load_prompt_ref
@@ -376,6 +376,8 @@ def execute(
         status = "DEGRADED" if reason else "COMPLETED"
     except BudgetExceeded as exc:
         status, reason = "BUDGET_EXCEEDED", str(exc)
+    except QuotaExhausted as exc:
+        status, reason = "QUOTA_PAUSED", f"{exc}; rerun after the quota resets"
     except (NodeFailed, LLMError, RenderBlocked) as exc:
         status, reason = "UNRECOVERABLE_FAULT", f"{type(exc).__name__}: {exc}"
     finally:

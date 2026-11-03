@@ -105,6 +105,11 @@ class ProviderError(LLMError):
     """A 4xx other than 429, or a response the adapter cannot read: not worth retrying."""
 
 
+class QuotaExhausted(LLMError):
+    """A daily quota is spent. Retrying burns nothing but time until it resets, so the client
+    moves straight to the fallback model, or stops the run in `QUOTA_PAUSED`."""
+
+
 class CassetteMissing(LLMError):
     """Replay mode found no cassette for the request's key."""
 

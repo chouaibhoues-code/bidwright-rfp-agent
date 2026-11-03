@@ -80,6 +80,34 @@ Decisions made while building are recorded here as they are made. The planning c
 
 **Provenance.** The owner's decision on 2026-11-02, after the check above (C7-13 in `docs/verification_log.md`).
 
+### ADR-003: The free profile's `reason` model is Gemini 3.5 Flash-Lite
+
+**Status:** accepted, 2026-11-02. It changes the planned choice of `gemini-3.8-flash` for `reason` on the `free` profile.
+
+**Context.** The plan gave `reason` to Gemini Flash because solution quality outranks cost. The project's real free-tier limits, read in AI Studio on 2026-11-02, allow 20 requests a day on `gemini-3.8-flash` and on `gemini-3.6-flash`, against 500 on `gemini-3.5-flash-lite`. One development run needs about 10 to 14 `reason` calls, and retries count against the quota. On the same day, `gemini-3.8-flash` returned 504s on every attempt in two runs, and its quota was spent before the demo could be recorded. Gemma 4 allows 14,400 requests a day, but it accepts only 16K input tokens a minute, rejects a thinking level, and failed about half its probe calls.
+
+**Decision.**
+- On the `free` profile, `reason` runs `gemini-3.5-flash-lite`, with `gemini-3.1-flash-lite` as its fallback, the same class and the same fallback as `extract`.
+- The shadow price for `reason` follows the model in use, so free and local runs are priced as this configuration would cost on the paid tier.
+- A 429 that names a daily quota is no longer retried: the client moves to the fallback at once, and with no fallback left the run stops in `QUOTA_PAUSED`.
+
+**Consequences.**
+- Development runs and the demo fit the free tier, with room for repeats.
+- Approach, risk and draft quality may fall, since Flash-Lite was not chosen for solution work. The planned SO comparison measures this, and `gemini-3.8-flash` stays available for quality runs, on its 20 free requests a day or on the paid key.
+- Comparisons stay clean: the ledger records the model behind every call, and a run that used the fallback is marked as such.
+
+**Options.**
+- `gemini-3.8-flash`, as planned: 20 requests a day, unavailable for most of 2026-11-02.
+- `gemini-3.6-flash` as the fallback: rejected by the owner, since it has the same 20-a-day quota and is a different model class.
+- Gemma 4: unreliable on the day, and too small an input budget per minute for the Iteration 3 prompts.
+- A non-Gemini model: needs new keys, and the plan keeps those families for independent assessment.
+
+**Confirmation.** `tests/test_simulator.py` covers the fallback for `reason` and the no-retry rule for a spent daily quota. The ledger of a recorded run shows `reason` calls on `gemini-3.5-flash-lite`.
+
+**Reverse if.** The SO comparison shows Flash-Lite below Flash by more than noise on approach or risk, or a paid budget makes Flash affordable for every run.
+
+**Provenance.** The owner's decision on 2026-11-02, from the AI Studio limits and the probes in `docs/verification_log.md`.
+
 ## Failure modes hit
 
 Only failures that actually happened, logged as they happen. Scripted test faults never count.

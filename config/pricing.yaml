@@ -16,4 +16,4 @@ models:
 # The paid rate used to price free and local calls, so runs compare fairly.
 shadow_model:
   extract: gemini-3.5-flash-lite
-  reason: gemini-3.8-flash
+  reason: gemini-3.5-flash-lite  # the model the free profile runs for reason (ADR-003)
