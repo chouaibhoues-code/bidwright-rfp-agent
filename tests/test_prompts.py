@@ -161,7 +161,7 @@ def test_extract_examples_show_every_route() -> None:
 
 def test_decoding_is_passed_on_per_provider() -> None:
     assert load_prompt("extract").decoding == {
-        "gemini": {"thinking": "minimal"},
+        "gemini": {"thinking": "medium"},  # S-05
         "ollama": {"think": False},
     }
     assert load_prompt("approach").decoding["gemini"] == {"thinking": "medium"}

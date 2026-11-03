@@ -1,0 +1,26 @@
+{
+ "key": "sha256:271918f834423ef7175182a987e88e932058ac4ed4e681e9e6fa7ce71629f249",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "RiskRegister",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"risks\": [\n    {\n      \"condition\": \"Requirement REQ-0014 mandates that the service go live by 2027-01-11, leaving only 41 days from contract award assuming a 2026-12-01 award date.\",\n      \"event\": \"Integration with the student records system via REST API (REQ-0009) encounters unexpected authentication or schema hurdles, delaying go-live past 2027-01-11.\",\n      \"effect\": \"The service fails to launch for students on the first day of spring enrollment, breaching contract terms.\",\n      \"assumptions\": [\n        \"The College's existing REST API is fully documented and immediately accessible upon contract award.\"\n      ],\n      \"owner_role\": \"Integration architect\",\n      \"trigger\": \"API documentation is not provided within three days of contract award.\",\n      \"responses\": [\n        \"Request API documentation and sandbox access prior to contract award.\",\n        \"Prepare a fallback manual roster import mechanism if API integration is delayed.\"\n      ],\n      \"residual_exposure\": \"Manual import requires operational overhead and risks student friction during spring enrollment.\",\n      \"evidence_src_ids\": [\n        \"SRC-0025\",\n        \"SRC-0030\"\n      ]\n    },\n    {\n      \"condition\": \"Requirement REQ-0008 suggests migrating signed records held in the current tool by 2027-02-28, which is after the student go-live date of 2027-01-11.\",\n      \"event\": \"Support staff attempt to access historical signed records during the spring enrollment period before migration is finished, and cannot find them in the new system.\",\n      \"effect\": \"Administrative delays and compliance confusion occur when staff must query two separate systems during enrollment.\",\n      \"assumptions\": [\n        \"Users will tolerate checking the legacy tool for historical records until the end of February 2027.\"\n      ],\n      \"owner_role\": \"Data migration lead\",\n      \"trigger\": \"Migration script testing reveals data format mismatches from the legacy tool.\",\n      \"responses\": [\n        \"Prioritize migration of the most frequently accessed form templates before 2027-01-11.\",\n        \"Provide staff with clear documentation on how to access legacy archives.\"\n      ],\n      \"residual_exposure\": \"Staff time is wasted navigating dual systems until full migration completes on 2027-02-28.\",\n      \"evidence_src_ids\": [\n        \"SRC-0024\",\n        \"SRC-0030\"\n      ]\n    }\n  ],\n  \"open_questions\": [\n    {\n      \"text\": \"What is the expected schema and rate limit for the College's existing REST API referenced in REQ-0009?\",\n      \"src_ids\": [\n        \"SRC-0025\"\n      ]\n    },\n    {\n      \"text\": \"Does the target go-live date of 2027-01-11 allow for a phased rollout to specific student cohorts, or must all students be supported simultaneously?\",\n      \"src_ids\": [\n        \"SRC-0030\"\n      ]\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 4028,
+   "tokens_out": 740,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-03T02:15:47Z"
+}

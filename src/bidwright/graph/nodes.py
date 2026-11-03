@@ -10,7 +10,7 @@ breaks its schema. Whatever still fails is rejected and logged, never accepted.
 import json
 import re
 import threading
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -55,6 +55,15 @@ from bidwright.verify import QuoteCheck, check_quote
 PREDICTIONS = ("BINDING", "OPTIONAL")
 RATING_WORDS = frozenset(
     "high medium low moderate minor major critical severe negligible significant".split()
+)
+# A rating stated in words: an exposure that opens with a scale level ("Low if tested
+# early"), or a level attached to risk, exposure or similar ("remains a medium risk"). Words
+# such as "lower" or "highly" do not match.
+RATING_PHRASE = re.compile(
+    r"^(?:very |fairly |relatively |quite )?(?:high|medium|low|moderate|negligible)\b"
+    r"|\b(?:high|medium|low|moderate)(?:[- ](?:to[- ])?(?:high|medium|low))?"
+    r" (?:risk|exposure|likelihood|impact|probability|severity)\b",
+    re.IGNORECASE,
 )
 PROBABILITY = re.compile(
     r"(probability|likelihood|chance)\W{0,3}(of\W+)?(is\W+)?\d"
@@ -212,10 +221,10 @@ def extract_batch(
         if not isinstance(second.parsed, ExtractResult):
             outcome.rejected.append(_rejection(batch_id, ids, "", "malformed output after repair"))
             return outcome
-        _settle(outcome, second.parsed.items, ctx, ids, final=True)
+        settle(outcome, second.parsed.items, ctx.passages, ids, final=True)
         _account(outcome, second.parsed.no_obligation_src_ids, ids)
         return outcome
-    failed = _settle(outcome, result.items, ctx, ids, final=False)
+    failed = settle(outcome, result.items, ctx.passages, ids, final=False)
     outcome.no_obligation += [s for s in result.no_obligation_src_ids if s in ids]
     missing = [s for s in ids if s not in _accounted(outcome, failed)]
     if not failed and not missing:
@@ -238,7 +247,7 @@ def extract_batch(
     repaired = (
         second.parsed if isinstance(second.parsed, ExtractResult) else ExtractResult(items=[])
     )
-    _merge_repair(outcome, failed, missing, repaired, ctx, ids)
+    _merge_repair(outcome, failed, missing, repaired, ctx.passages, ids)
     return outcome
 
 
@@ -246,28 +255,30 @@ def _rejection(batch_id: str, src_ids: list[str], quote: str, reason: str) -> di
     return {"batch_id": batch_id, "src_ids": src_ids, "quote": quote, "reason": reason}
 
 
-def _check(item: ExtractItem, ctx: RunContext, ids: list[str]) -> QuoteCheck:
-    cited = [ctx.passages[s] for s in item.src_ids if s in ids]
+def _check(item: ExtractItem, passages: Mapping[str, Passage], ids: list[str]) -> QuoteCheck:
+    cited = [passages[s] for s in item.src_ids if s in ids]
     if not cited:
         return QuoteCheck("REJECTED", reason="cites no passage of the batch")
     return check_quote(item.quote, cited)
 
 
-def _settle(
+def settle(
     outcome: BatchOutcome,
     items: Sequence[ExtractItem],
-    ctx: RunContext,
+    passages: Mapping[str, Passage],
     ids: list[str],
     *,
     final: bool,
 ) -> list[ExtractItem]:
-    """Accept verified items. Failures are returned for repair, or rejected when final."""
+    """Accept verified items. Failures are returned for repair, or rejected when final.
+
+    A quote counts only against the passages of its own batch (`ids`)."""
     failed = []
     for item in items:
         if not item.quote.strip():
             outcome.rejected.append(_rejection(outcome.batch_id, item.src_ids, "", "withdrawn"))
             continue
-        check = _check(item, ctx, ids)
+        check = _check(item, passages, ids)
         if check.status != "REJECTED":
             outcome.accepted.append((item, check))
         elif final:
@@ -296,7 +307,7 @@ def _merge_repair(
     failed: list[ExtractItem],
     missing: list[str],
     repaired: ExtractResult,
-    ctx: RunContext,
+    passages: Mapping[str, Passage],
     ids: list[str],
 ) -> None:
     pool = list(repaired.items)
@@ -309,9 +320,9 @@ def _merge_repair(
             )
             continue
         pool.remove(match)
-        _settle(outcome, [match], ctx, ids, final=True)
+        settle(outcome, [match], passages, ids, final=True)
     added = [r for r in pool if set(r.src_ids) & set(missing)]
-    _settle(outcome, added, ctx, ids, final=True)
+    settle(outcome, added, passages, ids, final=True)
     _account(outcome, [s for s in repaired.no_obligation_src_ids if s in missing], ids)
 
 
@@ -544,7 +555,11 @@ def _screen(
             reason = "generic: cites no passage"
         elif not shared:
             reason = "generic: shares no content word with the passages it cites"
-        elif exposure in RATING_WORDS or PROBABILITY.search(everything):
+        elif (
+            exposure in RATING_WORDS
+            or RATING_PHRASE.search(exposure)
+            or PROBABILITY.search(everything)
+        ):
             reason = "carries a rating or a probability"
         else:
             accepted.append((proposal, evidence))

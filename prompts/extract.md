@@ -1,13 +1,13 @@
 ---
 id: extract
-version: 0.1.0
+version: 0.2.0
 role: extract
 pattern: plain rules and decision table
 schema: ExtractResult
 examples: clauses
-decoding: {gemini: {thinking: minimal}, ollama: {think: false}}
+decoding: {gemini: {thinking: medium}, ollama: {think: false}}
 rubric: null
-last_tested: null
+last_tested: 2026-11-02
 ---
 <role>
 You read passages from a request for proposal (RFP) and record every obligation they place on the supplier, each with an exact quote. A bid team relies on your list so that no mandatory requirement is missed. A missed obligation costs far more than an extra item.
@@ -81,5 +81,5 @@ Your answer did not match the response schema: $error. Return the whole result a
 - **Injection rule.** Rule 9 and the run-seeded tags are hygiene only. `guard` (Iteration 1) and `ToolGateway` carry the weight, and injection is measured per model (QS-3).
 - **Examples.** One worked batch from `prompts/examples/mini_rfp.yaml`: three obligations to record and three traps (background, a `may` clause, an unticked box), in the exact input and output format. The text is fictional and never comes from gold.
 - **Lean by design.** No named pattern and no persona beyond the role, since Google warns that verbose techniques built for older models can make Gemini 3 over-analyze. S-10 tests whether a CARE framing beats this plain prompt, and this prompt stays the default unless it does.
-- **Decoding.** `thinking: minimal` on Gemini and `think: false` on Ollama. No sampling parameters, which Gemini 3.6 ignores and Google advises removing.
-- **What would change it:** S-10 (prompt framing), S-05 (where reasoning happens), S-13 (a second pass), and the misses on the development RFP.
+- **Decoding.** `thinking: medium` on Gemini and `think: false` on Ollama. In S-05, one call at `medium` and one at `minimal` both missed 0 of 8 mandatory requirements in two runs of 5 repeats, but `medium` used fewer tokens in total (7.3K and 7.8K against 8.2K per extraction) and less time, so it is the cheaper of the two. No sampling parameters, which Gemini 3.6 ignores and Google advises removing. Version 0.2.0 changed only this setting.
+- **What would change it:** S-10 (prompt framing), S-03 (batch size, and whether `medium` stays the cheaper level on the hero RFP), S-13 (a second pass), and the misses on the development RFP.

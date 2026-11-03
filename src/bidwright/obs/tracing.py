@@ -2,9 +2,13 @@
 
 Spans go over OTLP HTTP to Phoenix when `PHOENIX_ENDPOINT` is set and answers within a
 second. Otherwise they go to `spans.jsonl` in the run folder, so a run never waits on a
-missing collector. No prompt or response text enters a span, only ids, hashes, models,
-counts and statuses. A failed call still leaves its span, with the error. `close` flushes
-with a 5-second timeout, because short CLI runs end before a batch export would.
+missing collector. A batch the collector refuses also goes to `spans.jsonl`: Phoenix 21
+turns authentication on by default and answers an export without a key with 401, which the
+OTLP exporter reports only as a failed result, so the whole trace was lost before this
+fallback. `PHOENIX_API_KEY`, when set, is sent as a bearer token. No prompt or response text
+enters a span, only ids, hashes, models, counts and statuses. A failed call still leaves its
+span, with the error. `close` flushes with a 5-second timeout, because short CLI runs end
+before a batch export would.
 """
 
 import json
@@ -50,6 +54,32 @@ class JsonlExporter(SpanExporter):
         return None
 
 
+class FallbackExporter(SpanExporter):
+    """Sends spans to the collector, and writes every batch it refuses to the JSONL file."""
+
+    def __init__(self, primary: SpanExporter, fallback: SpanExporter) -> None:
+        self.primary = primary
+        self.fallback = fallback
+        self.refused = 0  # batches the collector did not take
+
+    def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
+        try:
+            result = self.primary.export(spans)
+        except Exception:  # noqa: BLE001 - an exporter should not raise; a trace must survive
+            result = SpanExportResult.FAILURE
+        if result is SpanExportResult.SUCCESS:
+            return result
+        self.refused += 1
+        return self.fallback.export(spans)
+
+    def force_flush(self, timeout_millis: int = 30000) -> bool:
+        return self.primary.force_flush(timeout_millis)
+
+    def shutdown(self) -> None:
+        self.primary.shutdown()
+        self.fallback.shutdown()
+
+
 def reachable(endpoint: str, timeout: float = 1.0) -> bool:
     url = urlparse(endpoint)
     port = url.port or (443 if url.scheme == "https" else 80)
@@ -61,20 +91,30 @@ def reachable(endpoint: str, timeout: float = 1.0) -> bool:
 
 
 class Tracing:
-    def __init__(self, run_id: str, run_dir: Path, endpoint: str | None = None) -> None:
+    def __init__(
+        self,
+        run_id: str,
+        run_dir: Path,
+        endpoint: str | None = None,
+        api_key: str | None = None,
+    ) -> None:
         resource = Resource.create({"service.name": "bidwright", "bidwright.run_id": run_id})
         self.provider = TracerProvider(resource=resource)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        jsonl = JsonlExporter(run_dir / "spans.jsonl")
+        self.exporter: FallbackExporter | None = None
         if endpoint and reachable(endpoint):
             from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
-            exporter = OTLPSpanExporter(endpoint=endpoint.rstrip("/") + "/v1/traces", timeout=5)
-            self.provider.add_span_processor(BatchSpanProcessor(exporter))
+            headers = {"authorization": f"Bearer {api_key}"} if api_key else None
+            otlp = OTLPSpanExporter(
+                endpoint=endpoint.rstrip("/") + "/v1/traces", timeout=5, headers=headers
+            )
+            self.exporter = FallbackExporter(otlp, jsonl)
+            self.provider.add_span_processor(BatchSpanProcessor(self.exporter))
             self.target = endpoint
         else:
-            run_dir.mkdir(parents=True, exist_ok=True)
-            self.provider.add_span_processor(
-                SimpleSpanProcessor(JsonlExporter(run_dir / "spans.jsonl"))
-            )
+            self.provider.add_span_processor(SimpleSpanProcessor(jsonl))
             self.target = str(run_dir / "spans.jsonl")
         self._tracer = self.provider.get_tracer("bidwright")
 

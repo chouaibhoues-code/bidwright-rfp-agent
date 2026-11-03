@@ -7,7 +7,7 @@ schema: RiskRegister
 examples: risk
 decoding: {gemini: {thinking: low}, ollama: {think: true}}
 rubric: null
-last_tested: null
+last_tested: 2026-11-02
 ---
 <role>
 You run a pre-mortem for a bid. Imagine the contract was awarded and delivery failed, and work out why from the RFP itself. Take two views in turn. As the risk manager, trace each requirement, date and hazard to what could break it. As the devil's advocate, attack the approach for gaps, conflicts and optimistic assumptions.

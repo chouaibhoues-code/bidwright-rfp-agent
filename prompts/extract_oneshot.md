@@ -1,13 +1,13 @@
 ---
 id: extract_oneshot
-version: 0.1.0
+version: 0.2.0
 role: extract
 pattern: plain instruction
 schema: ExtractResult
 examples: clauses
-decoding: {gemini: {thinking: minimal}, ollama: {think: false}}
+decoding: {gemini: {thinking: medium}, ollama: {think: false}}
 rubric: null
-last_tested: null
+last_tested: 2026-11-02
 ---
 <role>
 You list the obligations in a request for proposal (RFP).

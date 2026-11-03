@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from bidwright.llm.schema import clean_schema
 from bidwright.llm.types import ToolSpec
 from bidwright.retrieval import MAX_K, PassageIndex
 from bidwright.schemas import ToolResult
@@ -54,29 +55,20 @@ class Tool:
 
 def parameters_schema(model: type[BaseModel]) -> dict[str, Any]:
     """The model's JSON Schema without titles, keeping only its required fields required."""
-
-    def strip(node: Any) -> Any:
-        if isinstance(node, list):
-            return [strip(value) for value in node]
-        if not isinstance(node, dict):
-            return node
-        out: dict[str, Any] = {}
-        for key, value in node.items():
-            if key == "title":
-                continue
-            if key == "properties" and isinstance(value, dict):
-                out[key] = {name: strip(schema) for name, schema in value.items()}
-            else:
-                out[key] = strip(value)
-        return out
-
-    return strip(model.model_json_schema())
+    return clean_schema(model.model_json_schema(), frozenset({"title"}), close=False)
 
 
 # --- search_rfp --------------------------------------------------------------------------
 
 
-REQUIREMENT_ID = re.compile(r"\bREQ-\d{4}\b")
+# A requirement id as a model may write it: any case, with a hyphen, a space or nothing
+# before the number, and with or without leading zeros. Ids are 'REQ-' plus 4 digits.
+REQUIREMENT_ID = re.compile(r"\bREQ[- ]?(\d{1,4})\b", re.IGNORECASE)
+
+
+def requirement_ids(query: str) -> list[str]:
+    """The requirement ids named in a query, in canonical form, such as REQ-0003."""
+    return [f"REQ-{int(number):04d}" for number in REQUIREMENT_ID.findall(query)]
 
 
 def search_tool(
@@ -88,7 +80,7 @@ def search_tool(
     sources = requirement_sources or {}
 
     def run(args: SearchArgs) -> ToolResult:
-        named = [s for req in REQUIREMENT_ID.findall(args.query) for s in sources.get(req, [])]
+        named = [s for req in requirement_ids(args.query) for s in sources.get(req, [])]
         words = REQUIREMENT_ID.sub(" ", args.query)
         hits = index.get(named)
         seen = {h.src_id for h in hits}

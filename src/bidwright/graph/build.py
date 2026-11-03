@@ -351,7 +351,12 @@ def execute(
     )
     budget = RunBudget(config.limits.run(limits, profile))
     prompts = run_prompts(config)
-    tracing = Tracing(run_id, run_dir, os.environ.get("PHOENIX_ENDPOINT") or None)
+    tracing = Tracing(
+        run_id,
+        run_dir,
+        os.environ.get("PHOENIX_ENDPOINT") or None,
+        os.environ.get("PHOENIX_API_KEY") or None,
+    )
     ctx = RunContext(run_id, client, budget, prompts, {}, tracing=tracing)
     rt = Runtime(ctx, config, source, run_dir)
     if baseline is not None:

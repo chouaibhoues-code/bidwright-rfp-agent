@@ -91,6 +91,8 @@ def test_risk_generic_is_rejected_then_replaced_on_retry(tmp_path: Path) -> None
         ({"evidence_src_ids": []}, "cites no passage"),
         ({"evidence_src_ids": ["SRC-0037"]}, "shares no content word"),
         ({"residual_exposure": "High"}, "rating"),
+        ({"residual_exposure": "Low if tested early; an outage could still hit."}, "rating"),
+        ({"residual_exposure": "It remains a medium-to-high risk until testing."}, "rating"),
         ({"effect": "There is a 40% chance of delay."}, "probability"),
     ],
 )
@@ -106,6 +108,21 @@ def test_risk_generic_stays_rejected_when_the_retry_repeats_it(
         reason.split()[0] in outcome.rejected[0]["reason"]
         or reason in outcome.rejected[0]["reason"]
     )
+
+
+@pytest.mark.parametrize(
+    "exposure",
+    [
+        "Lower once a dry-run upload passes, though a portal outage could still delay it.",
+        "Highly dependent on the College's test accounts arriving on time.",
+        "Staff work in two systems until late February 2027.",
+    ],
+)
+def test_an_exposure_in_plain_words_is_not_a_rating(tmp_path: Path, exposure: str) -> None:
+    plain = GOOD_RISK | {"residual_exposure": exposure}
+    backend = ScriptBackend(["Done.", text({"risks": [plain], "open_questions": []})])
+    outcome = risk(context(backend), dev_requirements(), [], gateway(tmp_path), RISK_LIMITS)
+    assert len(outcome.risks) == 1, outcome.rejected
 
 
 def test_an_availability_percentage_is_not_a_probability(tmp_path: Path) -> None:

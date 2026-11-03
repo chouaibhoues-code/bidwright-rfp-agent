@@ -1,7 +1,7 @@
 # Model per role and profile. Gemini requests send no temperature, top_p or top_k.
 profiles:
   free:
-    extract: {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: minimal}
+    extract: {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: medium}
     # ADR-003: Flash allows 20 requests a day on the free tier; 3.5 Flash-Lite allows 500.
     reason:  {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: low}
   local:

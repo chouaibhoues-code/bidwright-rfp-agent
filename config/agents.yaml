@@ -4,7 +4,7 @@ extract:
   kind: function
   input: ExtractBatch
   output: ExtractResult
-  prompt: extract@0.1.0
+  prompt: extract@0.2.0
   model_role: extract
   tools: []
   limits: {max_calls: 1, max_repairs: 1}

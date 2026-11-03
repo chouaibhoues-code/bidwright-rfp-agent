@@ -1,34 +1,40 @@
 {
  "summary": {
   "A schema only": {
+   "repeats": 5,
    "missed_median": 0,
    "missed_range": [
     0,
     0
    ],
-   "verified_mean": 1.0,
-   "tokens_mean": 8216,
-   "latency_ms_median": 7783
+   "verified_mean": 0.9889,
+   "schema_failures": 0,
+   "tokens_mean": 8197,
+   "latency_ms_median": 7605
   },
   "B thinking plus schema": {
+   "repeats": 5,
    "missed_median": 0,
    "missed_range": [
     0,
     0
    ],
    "verified_mean": 1.0,
-   "tokens_mean": 7816,
-   "latency_ms_median": 6060
+   "schema_failures": 0,
+   "tokens_mean": 7340,
+   "latency_ms_median": 5374
   },
   "C two-step": {
+   "repeats": 5,
    "missed_median": 0,
    "missed_range": [
     0,
     0
    ],
    "verified_mean": 1.0,
-   "tokens_mean": 19208,
-   "latency_ms_median": 13385
+   "schema_failures": 0,
+   "tokens_mean": 20607,
+   "latency_ms_median": 14941
   }
  },
  "repeats": [
@@ -37,135 +43,150 @@
    "repeat": 1,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 2,
-   "tokens": 8529,
-   "latency_ms": 8614
+   "tokens": 8144,
+   "latency_ms": 7022
   },
   {
    "variant": "A schema only",
    "repeat": 2,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 2,
-   "tokens": 7112,
-   "latency_ms": 5314
+   "tokens": 7118,
+   "latency_ms": 6510
   },
   {
    "variant": "A schema only",
    "repeat": 3,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 2,
-   "tokens": 8556,
-   "latency_ms": 8120
+   "tokens": 8469,
+   "latency_ms": 7605
   },
   {
    "variant": "A schema only",
    "repeat": 4,
    "missed_mandatory": [],
-   "verified_rate": 1.0,
+   "verified_rate": 0.9444,
+   "schema_failures": 0,
    "calls": 2,
-   "tokens": 8302,
-   "latency_ms": 7338
+   "tokens": 8691,
+   "latency_ms": 7666
   },
   {
    "variant": "A schema only",
    "repeat": 5,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 2,
-   "tokens": 8582,
-   "latency_ms": 7783
+   "tokens": 8561,
+   "latency_ms": 7713
   },
   {
    "variant": "B thinking plus schema",
    "repeat": 1,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 2,
-   "tokens": 8336,
-   "latency_ms": 26106
+   "tokens": 7087,
+   "latency_ms": 4970
   },
   {
    "variant": "B thinking plus schema",
    "repeat": 2,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 2,
-   "tokens": 8402,
-   "latency_ms": 7065
+   "tokens": 7609,
+   "latency_ms": 6099
   },
   {
    "variant": "B thinking plus schema",
    "repeat": 3,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 2,
-   "tokens": 7516,
-   "latency_ms": 5759
+   "tokens": 7163,
+   "latency_ms": 5374
   },
   {
    "variant": "B thinking plus schema",
    "repeat": 4,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 2,
-   "tokens": 7410,
-   "latency_ms": 5370
+   "tokens": 7439,
+   "latency_ms": 5665
   },
   {
    "variant": "B thinking plus schema",
    "repeat": 5,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 2,
-   "tokens": 7415,
-   "latency_ms": 6060
+   "tokens": 7402,
+   "latency_ms": 5320
   },
   {
    "variant": "C two-step",
    "repeat": 1,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 4,
-   "tokens": 15954,
-   "latency_ms": 9972
+   "tokens": 22140,
+   "latency_ms": 16444
   },
   {
    "variant": "C two-step",
    "repeat": 2,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 4,
-   "tokens": 18157,
-   "latency_ms": 11436
+   "tokens": 21448,
+   "latency_ms": 14941
   },
   {
    "variant": "C two-step",
    "repeat": 3,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 4,
-   "tokens": 22922,
-   "latency_ms": 21712
+   "tokens": 19432,
+   "latency_ms": 20491
   },
   {
    "variant": "C two-step",
    "repeat": 4,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 4,
-   "tokens": 19765,
-   "latency_ms": 13385
+   "tokens": 19262,
+   "latency_ms": 12446
   },
   {
    "variant": "C two-step",
    "repeat": 5,
    "missed_mandatory": [],
    "verified_rate": 1.0,
+   "schema_failures": 0,
    "calls": 4,
-   "tokens": 19243,
-   "latency_ms": 18062
+   "tokens": 20751,
+   "latency_ms": 14269
   }
  ]
 }

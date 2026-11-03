@@ -1,0 +1,26 @@
+{
+ "key": "sha256:f69af4f412c75a349acb097c9be510031c6739c491f9668ade9940900bf3403e",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"title\": \"Our understanding of the College's needs\",\n  \"text\": \"Each bidder submits its proposal through the College's procurement portal as a single PDF of at most 20 pages by 2026-12-01 12:00 UTC [REQ-0002]. The service must be live for students by 2027-01-11, the first day of spring enrollment [REQ-0014]. The Supplier keeps an audit record of every signature event, including the signer's identity, the time, and the document version [REQ-0003], and supports signing on current desktop and mobile browsers [REQ-0004]. Reminders are sent to each signer who has not signed within 72 hours [REQ-0005], and signed documents are stored for ten years [REQ-0007]. The service must integrate with the College's student records system through its existing REST API [REQ-0009], and shall be available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance [REQ-0011]. Additionally, the Supplier should provide templates for the College's twelve most used forms [REQ-0006], migrate the signed records held in the current tool by 2027-02-28 [REQ-0008], and respond to severity-one incidents within one hour, at any time of day [REQ-0012]. Bidders may propose an on-premises deployment option [REQ-0010].\",\n  \"cited_ids\": [\n    \"REQ-0002\",\n    \"REQ-0014\",\n    \"REQ-0003\",\n    \"REQ-0004\",\n    \"REQ-0005\",\n    \"REQ-0007\",\n    \"REQ-0009\",\n    \"REQ-0011\",\n    \"REQ-0006\",\n    \"REQ-0008\",\n    \"REQ-0012\",\n    \"REQ-0010\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1579,
+   "tokens_out": 485,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-03T02:15:48Z"
+}

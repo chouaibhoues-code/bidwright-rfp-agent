@@ -1,6 +1,8 @@
 # docker compose up -d starts the app and Phoenix. Profiles add the rest:
-#   docker compose run --rm demo     replay the recorded run, with no keys and no network
-#   docker compose run --rm test     the replay tests, with no keys and no network
+#   docker compose run --rm demo     replay the recorded run, with no network and no LLM call
+#   docker compose run --rm test     the replay tests, with no network and no LLM call
+# Compose refuses every command while GEMINI_API_KEY is unset, these two included (ADR-002);
+# the keyless path is the host: uv run bidwright demo, uv run pytest.
 #   docker compose --profile eval run --rm eval score outputs/<run>
 #   docker compose --profile local up -d ollama
 # Only loopback ports are published. Keys come from .env and are never written here.
@@ -17,6 +19,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env for live runs}
       GEMINI_PAID_API_KEY: ${GEMINI_PAID_API_KEY:-}
       PHOENIX_ENDPOINT: http://phoenix:6006
+      PHOENIX_API_KEY: ${PHOENIX_API_KEY:-}
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
     volumes:
       - ./inputs:/app/inputs:ro
@@ -28,6 +31,13 @@ services:
   phoenix:
     image: arizephoenix/phoenix:version-21.0.0@sha256:1f9a144a5357b4973e93a15718f050247cb7a4ee7b7c6c06ecb91b5eed3fbaad
     ports: ["127.0.0.1:6006:6006"]
+    # Phoenix 21 turns authentication on by default. This collector is local, published on
+    # loopback only, and holds spans of synthetic runs, so it starts with authentication off.
+    # To turn it on: set PHOENIX_ENABLE_AUTH=true in .env, create a system key in Phoenix,
+    # and put it in PHOENIX_API_KEY, which the app sends as a bearer token.
+    environment:
+      PHOENIX_WORKING_DIR: /mnt/data
+      PHOENIX_ENABLE_AUTH: ${PHOENIX_ENABLE_AUTH:-false}
     volumes: [phoenix-data:/mnt/data]
 
   eval:

@@ -14,7 +14,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-_DROPPED_KEYS = {"title", "default"}
+_DROPPED_KEYS = frozenset({"title", "default"})
 
 
 def canonical_json(value: Any) -> str:
@@ -45,30 +45,34 @@ def _inline(schema: dict[str, Any]) -> dict[str, Any]:
     return walk(schema, ())
 
 
-def _close(node: Any) -> Any:
-    """Close every object and drop `title` and `default` annotations.
+def clean_schema(node: Any, drop: frozenset[str] = _DROPPED_KEYS, *, close: bool = True) -> Any:
+    """Drop the annotation keys in `drop`; with `close`, also close every object and make
+    every property required.
 
     Keys inside `properties` are field names, not annotations, so a field called `title`
     survives. Dropping it once made the draft model omit `DraftResult.title` on every call.
+    Tool argument schemas use `close=False`, so their optional arguments stay optional.
     """
     if isinstance(node, list):
-        return [_close(value) for value in node]
+        return [clean_schema(value, drop, close=close) for value in node]
     if not isinstance(node, dict):
         return node
-    closed: dict[str, Any] = {}
+    cleaned: dict[str, Any] = {}
     for key, value in node.items():
-        if key in _DROPPED_KEYS:
+        if key in drop:
             continue
         if key == "properties" and isinstance(value, dict):
-            closed[key] = {name: _close(schema) for name, schema in value.items()}
+            cleaned[key] = {
+                name: clean_schema(schema, drop, close=close) for name, schema in value.items()
+            }
         else:
-            closed[key] = _close(value)
-    if closed.get("type") == "object" and "properties" in closed:
-        closed["additionalProperties"] = False
-        closed["required"] = list(closed["properties"])
-    return closed
+            cleaned[key] = clean_schema(value, drop, close=close)
+    if close and cleaned.get("type") == "object" and "properties" in cleaned:
+        cleaned["additionalProperties"] = False
+        cleaned["required"] = list(cleaned["properties"])
+    return cleaned
 
 
 def provider_schema(model: type[BaseModel]) -> dict[str, Any]:
     """The schema sent to every provider for `model`."""
-    return _close(_inline(model.model_json_schema()))
+    return clean_schema(_inline(model.model_json_schema()))

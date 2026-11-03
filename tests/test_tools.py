@@ -8,7 +8,15 @@ import yaml
 
 from bidwright.ingest import ingest_pdf
 from bidwright.retrieval import PassageIndex, match_expression
-from bidwright.tools import NO_HOLIDAYS, DateArgs, SearchArgs, date_calc, date_tool, search_tool
+from bidwright.tools import (
+    NO_HOLIDAYS,
+    DateArgs,
+    SearchArgs,
+    date_calc,
+    date_tool,
+    requirement_ids,
+    search_tool,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES: list[dict[str, Any]] = yaml.safe_load(
@@ -59,14 +67,30 @@ def test_a_requirement_id_returns_the_passages_it_quotes(index: PassageIndex) ->
     assert unknown.status == "EMPTY"
 
 
+def test_ids_joined_by_function_words_return_only_their_passages(index: PassageIndex) -> None:
+    tool = search_tool(index, {"REQ-0011": ["SRC-0015"], "REQ-0025": ["SRC-0030"]})
+    result = tool.run(SearchArgs(query="REQ-0011 and REQ-0025 for the", k=5))
+    assert [hit["src_id"] for hit in result.data] == ["SRC-0015", "SRC-0030"]
+
+
+@pytest.mark.parametrize("written", ["req-0011", "REQ-11", "Req 11", "REQ0011"])
+def test_requirement_ids_are_read_in_the_forms_models_write(
+    index: PassageIndex, written: str
+) -> None:
+    assert requirement_ids(f"risk in {written}") == ["REQ-0011"]
+    result = search_tool(index, {"REQ-0011": ["SRC-0015"]}).run(SearchArgs(query=written, k=3))
+    assert [hit["src_id"] for hit in result.data] == ["SRC-0015"]
+
+
 def test_search_caps_k_and_reports_empty(index: PassageIndex) -> None:
-    assert len(index.search("the", k=50)) <= 8
+    assert len(index.search("supplier service records", k=50)) == 8
     empty = search_tool(index).run(SearchArgs(query="kangaroo", k=3))
     assert empty.status == "EMPTY" and empty.data == []
+    assert index.search("the and of for", k=5) == []
 
 
 def test_fts5_operators_in_queries_are_inert(index: PassageIndex) -> None:
-    assert match_expression('audit" OR NEAR(x y) *') == '"audit" OR "OR" OR "NEAR" OR "x" OR "y"'
+    assert match_expression('audit" OR NEAR(x y) *') == '"audit" OR "NEAR" OR "x" OR "y"'
     assert index.search('records NOT audit "') != []
     assert index.search("*** ---") == []
 

@@ -1,34 +1,34 @@
 {
- "run_id": "20261103T011236Z-dev-rfp-3c582e4c-free",
- "commit": "b585cf0",
+ "run_id": "20261103T021533Z-dev-rfp-3c582e4c-free",
+ "commit": "f474963",
  "profile": "free",
  "models": {
   "extract": "gemini-3.5-flash-lite",
   "reason": "gemini-3.5-flash-lite"
  },
  "prompt_hashes": {
-  "extract": "sha256:6ebd046c6fb1fbbd1783ab7a1e28ff67c13b4afd90c45767c8618ba7f238ab15",
+  "extract": "sha256:bdd57daa7875f823f62040caca3f641bc42517676eeccb9a68ff1a2b02e4e327",
   "approach": "sha256:e28d5bce3843ed139a8dc1a7ee9f3e2c53838188737209c66a482343ddd598d1",
   "risk": "sha256:8938216ac1b00e17fb9d964f8bd5434bcb3bb200f139ccefd1ae1905f25b0bce",
   "draft": "sha256:94ef0606b6e183b1b0e84226006482b51aa281a4d73775b8295d0877fd3f6ae7",
-  "extract_oneshot": "sha256:f23643a18b1fdf0c79596262e06386c9b6e3f670632198e1b33b38a9ab6c041c"
+  "extract_oneshot": "sha256:75f414cc19f2e32fc4901e9c2c632d0d9848b120cec0b5ee293d91f1241499fc"
  },
  "input_hashes": {
   "dev_rfp.pdf": "sha256:3c582e4cd5caba8431b968b0f20379535c996c45a02316e7f78fee8024a1b71b"
  },
- "started": "2026-11-03T01:12:36.243148Z",
- "ended": "2026-11-03T01:13:02.048144Z",
+ "started": "2026-11-03T02:15:33.553470Z",
+ "ended": "2026-11-03T02:15:59.141048Z",
  "status": "COMPLETED",
  "status_reason": null,
  "overrides": [],
  "totals": {
-  "requests": 9,
-  "tokens_in": 20094,
-  "tokens_out": 5893,
+  "requests": 10,
+  "tokens_in": 23950,
+  "tokens_out": 5854,
   "tokens_cached": 0,
-  "tokens_thinking": 4705,
+  "tokens_thinking": 3604,
   "cost_usd": 0.0,
-  "shadow_cost_usd": 0.0325232,
-  "active_seconds": 25.703
+  "shadow_cost_usd": 0.03083,
+  "active_seconds": 25.5
  }
 }

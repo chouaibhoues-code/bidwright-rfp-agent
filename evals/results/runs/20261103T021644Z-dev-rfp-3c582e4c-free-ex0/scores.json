@@ -1,5 +1,5 @@
 {
- "run_id": "20261103T011236Z-dev-rfp-3c582e4c-free",
+ "run_id": "20261103T021644Z-dev-rfp-3c582e4c-free-ex0",
  "corpus": "dev",
  "gold_version": 1,
  "status": "COMPLETED",
@@ -14,24 +14,24 @@
  "verbatim_rate": 1.0,
  "normalized_rate": 0.0,
  "merged": [
-  "REQ-0013"
+  "REQ-0017"
  ],
  "duplicate": [
-  "REQ-0014"
+  "REQ-0018"
  ],
  "false_positive_on_background": [],
  "unmatched": [],
  "approach_mapping": 1.0,
  "risk_seed_recall": 0.3333,
  "risk_seeds": {
-  "RS-01": true,
+  "RS-01": false,
   "RS-02": false,
-  "RS-03": false
+  "RS-03": true
  },
- "requests": 9,
- "tokens": 30692,
+ "requests": 11,
+ "tokens": 38886,
  "cost_usd": 0.0,
- "shadow_cost_usd": 0.0325232,
+ "shadow_cost_usd": 0.030731,
  "models": [
   "gemini-3.5-flash-lite"
  ]

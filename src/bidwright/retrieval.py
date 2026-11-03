@@ -1,8 +1,10 @@
 """Lexical search over one run's passages: SQLite FTS5, ranked by BM25.
 
-The index is `search.sqlite` in the run folder. A query is reduced to its words, each word is
-quoted, and the words are joined with OR, so no FTS5 operator written by a model or hidden in
-a document reaches the engine. The `unicode61 remove_diacritics 2` tokenizer folds case and
+The index is `search.sqlite` in the run folder. A query is reduced to its content words, each
+word is quoted, and the words are joined with OR, so no FTS5 operator written by a model or
+hidden in a document reaches the engine. Function words such as "and" or "the" are dropped:
+under OR they match nearly every passage, so a query like "REQ-0003 and REQ-0004" would pad
+its results with unrelated passages. The `unicode61 remove_diacritics 2` tokenizer folds case and
 accents, and the `porter` stemmer wrapped around it lets "migration" find "migrate", a miss
 the development RFP showed without it. BM25 returns lower values for better matches, so
 results sort ascending, and the score reported back is its negation, where higher is better.
@@ -21,6 +23,14 @@ MAX_K = 8
 MAX_QUERY_WORDS = 32
 BY_ID = 100.0  # the score of a passage fetched by id rather than ranked by BM25
 _WORD = re.compile(r"\w+")
+# Function words only. Modal verbs, "not" and "no" stay: they carry meaning in an RFP.
+STOPWORDS = frozenset(
+    """a an the and or but nor if then than so as of to in on at by for from with into onto
+    over under per via about upon within without between through during before after against
+    is are was were be been being am do does did has have had it its this that these those
+    they them their we us our you your he she his her which who whom whose what when where
+    how there here also any all each every some such""".split()
+)
 _SCHEMA = (
     "CREATE VIRTUAL TABLE passages USING fts5("
     "src_id UNINDEXED, section_path, text, tokenize = 'porter unicode61 remove_diacritics 2')"
@@ -38,8 +48,8 @@ class Hit:
 
 
 def match_expression(query: str) -> str:
-    """Every word of the query as a quoted FTS5 string, joined with OR."""
-    words = _WORD.findall(query)[:MAX_QUERY_WORDS]
+    """Every content word of the query as a quoted FTS5 string, joined with OR."""
+    words = [w for w in _WORD.findall(query) if w.lower() not in STOPWORDS][:MAX_QUERY_WORDS]
     return " OR ".join('"' + word.replace('"', '""') + '"' for word in words)
 
 
