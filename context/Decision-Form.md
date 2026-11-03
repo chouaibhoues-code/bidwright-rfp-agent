@@ -57,24 +57,39 @@ It also proposes two process changes for the change log: S-10 compares the promp
 
 **Recommendation.** Confirm both.
 
-### D-05: Measures for sensitive information, due before the Iteration 1 build
+### D-05: How client documents are protected, due before the Iteration 1 build
 
-**Context.** A real RFP is confidential and often holds personal data: buyer staff names and contacts, signatures and forms, and sometimes employee data in annexes. As built, Bidwright protects a client document by routing it, not by inspecting it.
-- **What holds:** `free` refuses non-corpus files without a recorded consent string; `local` keeps everything on the machine; spans, the ledger and logs carry no document text; run folders are ignored by Git.
-- **Fixed on 2026-11-03:** `bidwright record` could write model answers quoting a client document into `tests/cassettes/`, which Git tracks; it now refuses any non-corpus file, with a test.
-- **Gaps:** nothing detects personal data, nothing pseudonymizes text before it leaves the machine, run data has no retention period, and the consent string stands only for the operator, not for the people a document names.
+**Context.** A real RFP is confidential, and it often holds personal data: buyer staff names and contacts, signatures and forms, and sometimes employee data in annexes. As built, Bidwright protects a client document by routing, not by inspection:
+- `free` refuses files outside the synthetic corpus unless the run passes a consent string;
+- `local` keeps everything on the machine;
+- traces, the ledger and logs carry no document text.
 
-`docs/governance.md` holds the full record.
+The first proposals were a scan for personal data that would set the routing, and pseudonymization before hosted calls. Research jobs DR-20 and DR-21 tested both on 2026-11-03, and the deciding claims were checked at source (section 17 of [[Research-Register]]):
+- **A clean scan cannot clear a document.** The candidate detector's own documentation gives no guarantee that it finds all sensitive information.
+- **Pseudonymization is fragile.** Models alter, merge or invent placeholders on the way back. An altered placeholder inside a quote would get a true requirement rejected by the exact-quote check.
+- **Pseudonymization does not lighten the sender's duties.** The Court of Justice judges them from the controller's side, before any transfer.
+- **The consent string conflicts with Google's terms.** Google's terms for the free quota say not to submit sensitive, confidential or personal information to it, and the consent string lets a client document reach that tier.
+- **The paid Gemini tier is not a full answer.** It does not train on prompts and runs under Google's data processing addendum, but it logs prompts for a limited period to detect abuse, and may cache data in any country.
+- **The tender's own terms govern.** UK guidance does not prohibit suppliers' use of AI on bids; authorities may require disclosure, and controls against confidential information becoming training data. A bidder's confidentiality duty comes from each tender's terms.
 
 **Options**, which can be combined:
-- **M1, a sensitivity scan in `guard`, Iteration 1.** Deterministic detectors for emails, phone numbers, IBANs (with their checksum), payment cards (Luhn), national identifiers and credential-like strings, plus a named-entity model for person names; Microsoft Presidio is the candidate, checked through Context7 before adoption. The scan writes counts and locations, never the values, and sets the run's data class.
-- **M2, routing by data class, Iteration 1.** A document with personal data never goes to a free tier, and the consent string admits only documents without it. Such a document runs on `local`, or on a paid provider whose terms exclude training, once one is configured. Anything else ends `POLICY_BLOCKED` with the reason.
-- **M3, reversible pseudonymization, Iteration 2.** Before any call that leaves the machine, detected entities become typed placeholders such as `[PERSON_1]`. Quotes are checked against the text the model saw, the mapping stays in the run folder, and outputs are re-identified for the local reader. A measured comparison must show no rise in missed requirements.
-- **M4, retention, Iteration 1.** A retention period in configuration, and `bidwright purge <run>` that deletes a run folder and its cache entries.
-- **M5, a privacy scenario in the evaluation, Iteration 1.** Synthetic personal data is planted in the corpus. The invariant QS-9: none of it reaches a request that leaves the machine, a span, the ledger, the manifest or a committed file. Detection recall on the planted data is also reported.
-- **M6, the production path, Iteration 5.** A deployment in the client's tenant and region with no-training terms, private networking, managed identities and secrets, encryption at rest, a retention policy and a template for a data protection impact assessment.
+- **C1, every client document is confidential by default.** Any file outside the synthetic corpus is treated as confidential and personal, whatever a scan says. Routing follows the provider's terms, never a detector.
+- **C2, the free tier takes synthetic documents only.** The consent override on `free` is removed, and client documents run on `local`.
+- **C3, a hosted path only under client terms (Iteration 5).** A paid or in-tenant provider receives client documents only with all of the following:
+  - a processor agreement;
+  - regional processing, where the client requires it;
+  - the client's written authorization, where its tender terms require it;
+  - a data protection impact assessment by the deploying organization.
+  The production path describes an in-tenant deployment.
+- **C4, retention and purge (Iteration 1).** A retention period, and `bidwright purge <run>`, which deletes a run folder, its checkpoints and its cache entries.
+- **C5, a privacy invariant (Iteration 1).** Synthetic personal data planted in the corpus never reaches a span, the ledger, the manifest, a log or a committed file, and `free` refuses every file outside the corpus.
+- **C6, detection as an audit signal only (Iteration 5, optional).** Counts and locations of personal data, listed for the reviewer and for the impact assessment, and never used to route.
+- **C7, an AI-use disclosure for each bid (Iteration 4).** Generated from the run manifest and the AI bill of materials: the tools and models used, the tasks they assisted, where data went, and how people verified the outputs. These are the questions UK guidance suggests authorities ask suppliers.
+- **Dropped on the evidence:**
+  - Routing gated by a scan, M2 as first proposed.
+  - Pseudonymization before hosted calls, M3. It reopens only if a client requires hosted processing without an in-tenant option, and a measured comparison shows no rise in missed requirements.
 
-**Recommendation.** M1, M2, M4 and M5 in Iteration 1, since they are small, testable and close the largest gaps. M3 in Iteration 2, once the hero RFP shows how often personal data sits inside obligations. M6 in Iteration 5. If accepted, the Iteration 1 design doc gains them as steps, with a proposed ADR for data classes and routing.
+**Recommendation.** C1, C2, C4 and C5 in Iteration 1; C7 in Iteration 4; C3 in Iteration 5; C6 optional. C2 changes the consent override of ADR-010, so it needs a new ADR.
 
 ### Decisions closed in later design docs
 

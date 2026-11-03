@@ -36,6 +36,9 @@ Raw reports, notebook answers and research envelopes are kept privately, outside
 | 2026-11-02 | DR-16 | RFP SOTA, DR-16 Prompting 2026 Reasoning Models | Prompt patterns, context order and constraint rules on 2026 reasoning models | Prompt simplification and the "why it works" notes | Complete, 41 sources; read 2026-11-02 for the Iteration 1 design |
 | 2026-11-02 | DR-17 | RFP SOTA, DR-17 Sectioned Drafting and LLM Evaluators | Section-by-section drafting and the validity of LLM evaluators | Drafting granularity; whether Red Team ratings are shown | Complete, 60 sources; read in Iteration 4 |
 | 2026-11-02 | Q-07 | L1 Prompt, L2 Context, HNS Runtime Harness | What prompt-layer and tool-layer defenses stop | The threat model in `docs/security.md` | Answered; section 7 |
+| 2026-11-03 | Q-11 | RFP SOTA, EY FDE & Enterprise AI Consulting (the owner's notebook) | The FDE role, EY's governance material for AI, and vendor architecture guidance | CH-74; `docs/brief.md` and `docs/governance.md` | Answered; the claims used were read at source |
+| 2026-11-03 | DR-20 | RFP SOTA, DR-20 Personal data detection and pseudonymization | Detection and pseudonymization of personal data before LLM calls, and leak paths in agentic pipelines | D-05 | Complete, 49 sources, 30 cited imported; section 17 |
+| 2026-11-03 | DR-21 | RFP SOTA, DR-21 Tender confidentiality and LLM providers | Data protection, tender confidentiality and provider terms for sending tender documents to LLM services | D-05 | Complete, 33 sources, 27 cited imported; section 17 |
 
 ## 3. Deep research jobs
 
@@ -44,6 +47,8 @@ Raw reports, notebook answers and research envelopes are kept privately, outside
 | DR-19 | Established architecture methods, lightly extended, are sufficient and proportionate for a small agentic LLM system | Elements of the architecture method change or are dropped | High | Done 2026-11-01 |
 | DR-01 | Code cues flag nearly every mandatory obligation in a whole RFP | `candidates` gets an LLM recall pass over unflagged passages, beyond the planned sample | High | Read 2026-11-02: refuted; ADR-017, proposed, sends every passage to `extract` |
 | DR-03 | A guard that scans only PDF structure is enough, though two corpus RFPs are DOCX | The DOCX and XLSX scans grow, or every file converts to PDF before `guard` | High | Read 2026-11-02: refuted; per-format scans and sanitized copies in the Iteration 1 design, ADR-010 confirmed |
+| DR-20 | Detection of personal data plus reversible pseudonymization before LLM calls protects personal data in business documents without hurting extraction | Whether detection may gate routing, and whether to pseudonymize before hosted calls | High | Done 2026-11-03: refuted; section 17 |
+| DR-21 | A bidder may send confidential tender documents with personal data to a third-party LLM API under a processor agreement, with no training, regional processing and short retention; pseudonymizing first lightens the bidder's duties | Which providers and tiers may receive a client document; whether pseudonymization has legal value | High | Done 2026-11-03: partly refuted; section 17 |
 | DR-16 | Prompt patterns, context-order rules and constraint-style rules hold on 2026 reasoning models and outside coding tasks | Prompts get simpler, patterns are dropped, and the "why it works" notes cite current evidence | High | Read 2026-11-02: positive directives, correct-output examples and zero-shot baselines; `extract@0.3.0` and the S-10 change in the Iteration 1 design |
 | DR-17 | Section-by-section drafting from a structured manifest stays grounded and specific, and LLM evaluator simulation tracks how people score proposals | Drafting granularity, and whether Red Team ratings are shown or only its findings | High | Launched 2026-11-02; read in Iteration 4 |
 | DR-18 | Domain discovery for the hero RFP's domain: the patterns, standards and pitfalls a bid should cover | Becomes the first research pack. It feeds the pack only: research seeds come from an independent source, so the gain with research is not built in. | High | Launch in Iteration 1, read in 2 |
@@ -414,7 +419,35 @@ The owner's `RFP SOTA` notebooks are written around a specification, RFP-SPEC-00
 | LiteLLM 1.82.7 and 1.82.8 were compromised on 2026-03-24 | No gateway dependency, a hash-locked `uv.lock`, and a dependency audit in CI |
 | The NotebookLM MCP server serves over HTTP on localhost, and Context7 has a remote endpoint that takes its key as `Authorization: Bearer` (V-03) | `live` research looks feasible; S-11 checks it from the container |
 
-## 17. Sources
+## 17. Sensitive information: DR-20 and DR-21
+
+Two adversarial deep-research jobs ran on 2026-11-03, each in a fresh notebook. They tested the assumptions behind the first proposals for D-05 in [[Decision-Form]]. Their reports are kept privately and are not audited as a whole. The findings below are stated in words, and each one says whether it was checked at source.
+
+**DR-20: detection, pseudonymization and leak paths.** 49 sources, 30 cited and imported.
+- **A scan that finds nothing cannot clear a document.** Confirmed at source: Presidio's documentation warns that, because it uses automated detection, there is no guarantee that it will find all sensitive information, and that other systems and protections should be used. The report's benchmark figures show detectors missing a large share of entities in business text. They are not quoted, because several rest on blogs and none was checked at source.
+- **Reversible pseudonymization is fragile on a round trip through a model.** Confirmed at source, in a 2026 preprint that evaluates its authors' own engine on English and Russian documents: models return placeholders with their form altered, merged or invented, and some placeholders fail to be restored.
+- **Pseudonymization and exact-quote checks.** The report says pseudonymization breaks exact-quote checks. That paper does not say so: the claim is the report's inference. It is plausible for Bidwright, where a placeholder altered inside a quote would get a true requirement rejected.
+- **Context leaks identity.** The report cites peer-reviewed work showing that models infer personal attributes from text whose direct identifiers were removed. Not checked at source.
+- **Leak paths beyond the provider.** Traces and logs, caches, vector stores, checkpoints, memory, test fixtures and tool calls. This is the report's account, partly from framework summaries and blogs. It agrees with OWASP LLM02 as read for `docs/security.md`.
+- **The report's verdict.** Routing gated by detection, and pseudonymization before hosted calls, are unsupported. Treating every client document as confidential by default, and processing locally or in the client's tenant, are strongly supported.
+
+**DR-21: law, procurement confidentiality and provider terms.** 33 sources, 27 cited and imported.
+- **Pseudonymised data.** Confirmed at source, in the Court of Justice's press release on EDPS v SRB (C-413/23 P, 2025-09-04). Pseudonymised data are not personal data in every case and for every person, and pseudonymisation may stop persons other than the controller from identifying the data subject. But the controller's duty to inform is assessed at collection and from the controller's point of view, whatever the data are for the recipient. Pseudonymizing before sending text to a provider therefore leaves the sender's own duties in place.
+- **Procurement confidentiality.** The report overstated it. Confirmed at source, in regulation 21 of the UK Public Contracts Regulations 2015 as made, revoked on 2025-02-24 by the Procurement Act 2023: the duty not to disclose binds the contracting authority, and authorities "may impose on economic operators requirements" that protect the confidentiality of what they make available. A bidder's duty therefore comes from each tender's own terms. Article 21 of Directive 2014/24/EU could not be retrieved from EUR-Lex, so its text is not stated here.
+- **UK guidance on AI in bids.** Confirmed at source, in PPN 017 (2025-02-17), which applies to central government. Suppliers' use of AI "is not prohibited". Authorities may ask suppliers to disclose it, and put in place controls so that confidential authority information is not used as training data for AI systems. The report's claim that sending tender text to an AI service needs the buyer's consent is not in the note.
+- **Gemini API terms**, effective 2026-03-23. Confirmed at source:
+  - On unpaid services, Google uses content to improve its products, human reviewers may read it, and the terms say not to submit sensitive, confidential or personal information.
+  - On paid services, prompts and responses are not used to improve products and are processed under Google's data processing addendum. They are logged for a limited period, solely to detect abuse and for legal disclosures, and may be stored transiently or cached in any country where Google or its agents have facilities.
+  - In the EEA, Switzerland and the UK, the paid-service data terms apply to all services, including the unpaid quota.
+- **Other providers.** The report covers abuse-monitoring retention and zero-retention options for Azure OpenAI, OpenAI, Anthropic and AWS Bedrock. Not checked at source, and not quoted.
+
+**What it changed.** D-05 was revised:
+- No detector gates routing, and pseudonymization was dropped.
+- Every client document is treated as confidential by default.
+- Routing follows the providers' terms.
+- The consent override that lets a client document reach the free tier conflicts with Google's terms for that tier.
+
+## 18. Sources
 
 - **The owner's research notebooks**, private to the owner's account: L1 Prompt, L2 Context, L3 Loop, L4 Graph, L5 Neuro-Symbolic, HNS Runtime Harness, REP Framework, The Art of RFP Treatment, PMI Domain Methods, Real-Tender Evaluation Gap, and the `RFP SOTA` notebooks for DR-19, DR-01, DR-03, DR-16 and DR-17.
 - **Read through those notebooks, not yet at source unless V-01 says so:** NASA Systems Engineering Handbook; GAO Cost Estimating and Assessment Guide; PMI's business analysis and requirements guides; MAUD; the PoliticalNLP span study; The Power of Noise; BIPIA; InjecAgent; FedProc-Bench; Bass, Clements and Kazman, *Software Architecture in Practice*, 4th edition.

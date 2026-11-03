@@ -63,6 +63,6 @@ On `free`, prompts go to Google's Gemini API, whose free-tier terms let the prov
 - Nothing detects personal data or other sensitive content in an input.
 - Nothing pseudonymizes text before it leaves the machine.
 - Run folders and caches have no retention period and no purge command, and rely on the operating system for protection at rest.
-- The consent string on `free` records the operator's acceptance of the provider's terms. It cannot stand for the consent of the people a document names, so it should not admit a document that holds personal data.
+- The consent string on `free` records the operator's acceptance of the provider's terms. Those terms say not to submit sensitive, confidential or personal information to the free quota, so the string should not admit a client document at all.
 
-The measures proposed to close these gaps are decision D-05 in [`context/Decision-Form.md`](../context/Decision-Form.md).
+Research jobs DR-20 and DR-21 tested the first proposals on 2026-11-03 (section 17 of [`context/Research-Register.md`](../context/Research-Register.md)). A clean scan cannot clear a document, and pseudonymization is fragile on a round trip and leaves the sender's duties in place, so the revised measures treat every client document as confidential and route by the providers' terms. They are decision D-05 in [`context/Decision-Form.md`](../context/Decision-Form.md).
