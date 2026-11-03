@@ -130,6 +130,14 @@ def main(argv: list[str] | None = None) -> int:
         return _report(result)
     try:
         overrides = check_corpus(args.file, args.profile, getattr(args, "consent", None))
+        if args.command == "record" and corpus_name(args.file) is None:
+            # Cassettes hold the model's answers, which quote the document, and Git tracks
+            # tests/cassettes/; so only files of the synthetic corpus are ever recorded.
+            raise Refused(
+                f"{args.file.name} is not in the synthetic corpus. record writes into"
+                " tests/cassettes, which Git tracks, so it records corpus files only, on any"
+                " profile. Use bidwright run instead."
+            )
     except Refused as exc:
         print(f"Refused: {exc}", file=sys.stderr)
         return 2

@@ -57,6 +57,25 @@ It also proposes two process changes for the change log: S-10 compares the promp
 
 **Recommendation.** Confirm both.
 
+### D-05: Measures for sensitive information, due before the Iteration 1 build
+
+**Context.** A real RFP is confidential and often holds personal data: buyer staff names and contacts, signatures and forms, and sometimes employee data in annexes. As built, Bidwright protects a client document by routing it, not by inspecting it.
+- **What holds:** `free` refuses non-corpus files without a recorded consent string; `local` keeps everything on the machine; spans, the ledger and logs carry no document text; run folders are ignored by Git.
+- **Fixed on 2026-11-03:** `bidwright record` could write model answers quoting a client document into `tests/cassettes/`, which Git tracks; it now refuses any non-corpus file, with a test.
+- **Gaps:** nothing detects personal data, nothing pseudonymizes text before it leaves the machine, run data has no retention period, and the consent string stands only for the operator, not for the people a document names.
+
+`docs/governance.md` holds the full record.
+
+**Options**, which can be combined:
+- **M1, a sensitivity scan in `guard`, Iteration 1.** Deterministic detectors for emails, phone numbers, IBANs (with their checksum), payment cards (Luhn), national identifiers and credential-like strings, plus a named-entity model for person names; Microsoft Presidio is the candidate, checked through Context7 before adoption. The scan writes counts and locations, never the values, and sets the run's data class.
+- **M2, routing by data class, Iteration 1.** A document with personal data never goes to a free tier, and the consent string admits only documents without it. Such a document runs on `local`, or on a paid provider whose terms exclude training, once one is configured. Anything else ends `POLICY_BLOCKED` with the reason.
+- **M3, reversible pseudonymization, Iteration 2.** Before any call that leaves the machine, detected entities become typed placeholders such as `[PERSON_1]`. Quotes are checked against the text the model saw, the mapping stays in the run folder, and outputs are re-identified for the local reader. A measured comparison must show no rise in missed requirements.
+- **M4, retention, Iteration 1.** A retention period in configuration, and `bidwright purge <run>` that deletes a run folder and its cache entries.
+- **M5, a privacy scenario in the evaluation, Iteration 1.** Synthetic personal data is planted in the corpus. The invariant QS-9: none of it reaches a request that leaves the machine, a span, the ledger, the manifest or a committed file. Detection recall on the planted data is also reported.
+- **M6, the production path, Iteration 5.** A deployment in the client's tenant and region with no-training terms, private networking, managed identities and secrets, encryption at rest, a retention policy and a template for a data protection impact assessment.
+
+**Recommendation.** M1, M2, M4 and M5 in Iteration 1, since they are small, testable and close the largest gaps. M3 in Iteration 2, once the hero RFP shows how often personal data sits inside obligations. M6 in Iteration 5. If accepted, the Iteration 1 design doc gains them as steps, with a proposed ADR for data classes and routing.
+
 ### Decisions closed in later design docs
 
 | Iteration | Decisions its design doc closes |
@@ -90,3 +109,4 @@ Not decisions, but work only the owner can do.
 | The free `reason` model | Gemini 3.5 Flash-Lite, with 3.1 Flash-Lite as fallback | ADR-003, CH-69 | 2026-11-02 |
 | Thinking on the local profile | Off for every role | ADR-004, CH-70 | 2026-11-02 |
 | Continue after `v0.0` | Continue to Iteration 0b | Master-Plan, section 9 | 2026-11-02 |
+| The goal: two capabilities shown together, with an engagement brief, governance in the client's terms and an AI bill of materials | Accepted | CH-74 | 2026-11-03 |

@@ -46,10 +46,11 @@ To see a run's trace tree in Phoenix, start it with `docker compose up -d phoeni
 
 ## Documents
 
-A suggested reading order: this README, then the sample summary in `samples/dev-free/solution_summary.md`, [`DECISIONS.md`](DECISIONS.md), [`docs/architecture.md`](docs/architecture.md), and [`context/Master-Plan.md`](context/Master-Plan.md) for the full vision and the plan.
+A suggested reading order: this README, then [`docs/brief.md`](docs/brief.md), the one-page brief for business readers, then the sample summary in `samples/dev-free/solution_summary.md`, [`DECISIONS.md`](DECISIONS.md), [`docs/architecture.md`](docs/architecture.md), and [`context/Master-Plan.md`](context/Master-Plan.md) for the full vision and the plan.
 
 | File | Holds |
 |---|---|
+| [`docs/brief.md`](docs/brief.md) | The request as read, success measures, scope, the questions a client would be asked, evidence, risks and open decisions, on one page |
 | [`DECISIONS.md`](DECISIONS.md) | Architecture and product decisions as short ADRs, and the failure modes hit while building |
 | [`ASSUMPTIONS.md`](ASSUMPTIONS.md) | What is assumed, what breaks if it is false, and how it is checked |
 | [`TIMELOG.md`](TIMELOG.md) | Rough hours per part |
@@ -57,6 +58,7 @@ A suggested reading order: this README, then the sample summary in `samples/dev-
 | [`docs/architecture.md`](docs/architecture.md) | The architecture of the current tag, under the arc42 headings, with the quality scenarios |
 | [`docs/decision-matrix.md`](docs/decision-matrix.md) | The architecture choices against a published taxonomy of agent design options |
 | [`docs/security.md`](docs/security.md) | The threat model, mapped to the OWASP agentic and LLM lists |
+| [`docs/governance.md`](docs/governance.md), [`docs/ai-bom.md`](docs/ai-bom.md) | Roles, the trust layer, the NIST AI RMF mapping and the handling of sensitive information; the AI bill of materials, generated from the code |
 | [`docs/evaluation.md`](docs/evaluation.md) | The evaluation harness and its results so far |
 | [`docs/agents.md`](docs/agents.md), [`docs/reference/`](docs/reference/cli.md) | Generated from the code: roles, prompts, models, tools, the runtime graph, the CLI and the schemas |
 | [`docs/designs/`](docs/designs/iteration-1.md) | One design doc per iteration, with its build plan |

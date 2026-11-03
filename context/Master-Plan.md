@@ -29,6 +29,14 @@ The assignment is EY's take-home for a Forward Deployed Engineering AI Engineer.
 
 Bidwright reads an RFP package and produces the assignment's solution summary first, then a proposal pack a bid team can edit.
 
+**Two capabilities, shown together [O].** The submission must show both:
+- tech-lead AI engineering: an executable agentic application with rigorous evaluation, observability, reliability and defensible decisions;
+- technology-consulting judgment: breaking down an ambiguous client RFP, developing a credible engineering response, managing uncertainty, and communicating a solution that technical and business stakeholders can challenge.
+
+EY launched its Forward Deployed Engineer roles on 2026-04-28, for senior engineers who "design, build, integrate and operationalise AI solutions in live environments" inside client teams. Its job description for the role says it "blends deep hands-on engineering, consulting judgment, and client-facing delivery ownership". Both were read at source (`docs/verification_log.md`).
+
+The consulting capability shows at two levels. The product does consulting work on a client's RFP: requirements, hazards, clarification questions, options, risks and an editable proposal. The submission answers an ambiguous brief, because `/inputs` held no RFP and the scope was open, so how that brief was framed, scoped and communicated is evidence too. `docs/brief.md` gives that framing to business readers, and `docs/governance.md` states the controls in a client governance function's terms.
+
 ### 1.2 Thesis [P]
 
 A deterministic shell around a probabilistic core. Code checks everything code can check, and the LLM does only the judgment and generation that code cannot, inside those checks. Each agent earns its place in a measured comparison (ADR-005).
@@ -43,6 +51,8 @@ A deterministic shell around a probabilistic core. Code checks everything code c
 - Keep every binding decision with a person: Bidwright drafts, and people approve.
 - Deliver a proposal pack a bid team can edit, generated from one manifest.
 - Demonstrate project management practice: a tailored method, gates, baselines, earned-value snapshots and change control.
+- Answer the brief as a consultant would: the problem as understood, success measures, scope, assumptions, the questions that would go to the client, measured evidence and the decisions left open, on one page for business readers (`docs/brief.md`), refreshed at each tag.
+- Govern the system in the client's terms: roles, the trust layer and the NIST AI RMF functions mapped to the controls that exist, sensitive information handled by data class, and an AI bill of materials generated from the code (`docs/governance.md`, `docs/ai-bom.md`).
 
 ### 1.4 Non-goals
 
@@ -57,7 +67,7 @@ A deterministic shell around a probabilistic core. Code checks everything code c
 | Stakeholder | Needs | Involvement |
 |---|---|---|
 | The owner | A submission that shows senior judgment and stays defensible in a live probe | Approves gates, decisions and tags; writes the held-out requirement list and the judge labels; reviews gold |
-| The EY reviewers | Evidence on the rubric's six dimensions | Read the README, `DECISIONS.md`, samples and the demo; probe live in the follow-up |
+| The EY reviewers | Evidence on the rubric's six dimensions and on both capabilities, in a response that technical and business reviewers can each challenge | Read the README, `docs/brief.md`, `DECISIONS.md`, samples and the demo; probe live in the follow-up |
 | The bid team, fictional | Every mandatory requirement found, a defensible solution, an editable proposal | The readers of each output, listed by role in section 10.1 |
 
 ### 1.6 Rubric [O]
@@ -478,6 +488,7 @@ Every accepted change since the first agreed design, one line each. The Kind col
 | CH-71 | `extract` and its EX0 baseline use `thinking: medium` instead of `minimal` | S-05: in two runs, `medium` used fewer tokens than `minimal` at the same recall, and the spike's pass mark picks the cheapest variant within noise of the best. Reported to the owner at `v0.0`. | S-03 shows `minimal` cheaper on the hero RFP at equal recall | Spike decision, in `docs/verification_log.md` |
 | CH-72 | The local Phoenix starts with authentication off, and the app sends `PHOENIX_API_KEY` when set | Phoenix 21 turned authentication on by default and refused every trace. This collector listens on loopback only and holds spans of synthetic runs. Reported to the owner at `v0.0`. | A shared or remote collector, or real data | ADR-015 |
 | CH-73 | `Send` concurrency is set per profile: 2 on `free`, 1 on `local` | Ollama on the build machine serves one request at a time, so a second parallel request only waited and timed out | A local runtime that serves requests in parallel | ADR-005 |
+| CH-74 | The charter sets two capabilities to show together, tech-lead AI engineering and technology-consulting judgment, at the level of the product and of the submission. It adds `docs/brief.md` for business readers, `docs/governance.md` in the client's governance terms, and a generated AI bill of materials, `docs/ai-bom.md`. The owner's decision of 2026-11-03. | EY's announcement of the role and its job description ask for both capabilities, and the brief itself was ambiguous; read at source on 2026-11-03 | The owner reverses it | Process |
 
 ## 9. Close-out notes
 
@@ -537,6 +548,8 @@ In progress: WP-0b.1 to 0b.6 are done; the first architecture review, WP-0b.7, w
 | Architecture, decision matrix, threat model, evaluation stub | `docs/architecture.md` under the arc42 headings, with the quality scenarios and their status at `v0.0`; `docs/decision-matrix.md` against Table 4 of the architecture-options taxonomy; `docs/security.md` mapped to the OWASP agentic and LLM lists; `docs/evaluation.md` | The OWASP lists and the taxonomy were read at source (V-01, in part) |
 | Generators and checks | `scripts/gen_docs.py` for `docs/agents.md` and the CLI and schema references; `scripts/check_docs.py` for links, anchors, wikilinks, ISO dates, front matter and voice; CI jobs `docs-generated` and `docs-links` | The voice check also catches first-person pronouns, under the neutral-voice rule |
 | The Iteration 1 design doc | `docs/designs/iteration-1.md`, with its Detailed Implementation Plan in 20 steps, after reading DR-01, DR-03 and DR-16 and checking the parsing libraries through Context7 | DR-01 refuted the cue filter, so ADR-017 proposes sending every passage to `extract` |
+
+**Added on 2026-11-03, after the owner set the two-capability goal (CH-74).** `docs/brief.md` for business readers; `docs/governance.md`, mapping the controls to EY's roles and trust layer and to the NIST AI RMF, with a record of how sensitive information is handled; and `docs/ai-bom.md`, an AI bill of materials generated by `scripts/gen_docs.py`. Reviewing sensitive data found that `bidwright record --profile local` would have written model answers quoting a client document into `tests/cassettes/`, which Git tracks. It now refuses any file outside the synthetic corpus, with a test. The measures that remain are open as D-05.
 
 **Defect found while documenting.** A run that failed with an unexpected error, such as an unreadable PDF, left a manifest that said `COMPLETED`. `execute` now records any such error as `UNRECOVERABLE_FAULT` before it propagates, with a test. A tool that raises was already turned into a `FAILED` result, and now has a test too.
 

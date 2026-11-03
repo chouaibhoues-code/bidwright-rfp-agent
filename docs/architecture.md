@@ -12,7 +12,7 @@ Six steps, combining arc42, C4 and ADRs. Research job DR-19 reviewed the method 
 | 2. Views | C4 Context and Container, an agent view, one run, and deployment. LLM calls, the deterministic boundary, tool allowlists and human control are marked. | Sections 3, 5, 6 and 7 |
 | 3. Boundaries | A contract in code wherever LLM output meets code | Section 5.4 |
 | 4. Decisions | Short ADRs | Section 9 and [`DECISIONS.md`](../DECISIONS.md) |
-| 5. Threats | Trust boundaries, and controls mapped to the OWASP lists | [`security.md`](security.md) |
+| 5. Threats and governance | Trust boundaries and controls mapped to the OWASP lists; roles, the trust layer, NIST AI RMF and sensitive information; the AI bill of materials | [`security.md`](security.md), [`governance.md`](governance.md), [`ai-bom.md`](ai-bom.md) |
 | 6. Conformance | Fitness functions in CI; behavior in the evaluation harness | Section 8.7 and [`evaluation.md`](evaluation.md) |
 
 ## 1. Introduction and goals

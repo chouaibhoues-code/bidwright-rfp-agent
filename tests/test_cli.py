@@ -18,6 +18,19 @@ def test_free_refuses_a_non_corpus_file_before_any_run(
     assert not (tmp_path / "out").exists()
 
 
+@pytest.mark.parametrize("profile", ["free", "local"])
+def test_record_refuses_a_non_corpus_file_on_every_profile(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], profile: str
+) -> None:
+    stranger = tmp_path / "client_tender.pdf"
+    stranger.write_bytes(b"%PDF-1.4")
+    name = "should-not-exist"
+    code = cli.main(["record", str(stranger), "--profile", profile, "--name", name])
+    assert code == 2
+    assert "Git tracks" in capsys.readouterr().err or profile == "free"
+    assert not (cli.CASSETTES / name).exists()
+
+
 def test_a_bad_consent_string_is_refused(tmp_path: Path) -> None:
     stranger = tmp_path / "tender.pdf"
     stranger.write_bytes(b"%PDF-1.4")

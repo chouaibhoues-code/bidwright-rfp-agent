@@ -3,7 +3,9 @@
 - `docs/agents.md` from `config/agents.yaml`, `config/models.yaml`, the prompts' front matter,
   the tool specs and the LangGraph graph itself;
 - `docs/reference/cli.md` from the two command-line parsers;
-- `docs/reference/schemas.md` from the Pydantic models in `bidwright.schemas`.
+- `docs/reference/schemas.md` from the Pydantic models in `bidwright.schemas`;
+- `docs/ai-bom.md`, the AI bill of materials, from `config/`, the prompts, `compose.yaml`,
+  `pyproject.toml` and `uv.lock`.
 
 Run `uv run python scripts/gen_docs.py` to write them, or `--check` to fail when a committed
 file differs from what the code would generate, which is what CI does.
@@ -248,10 +250,144 @@ def schemas_md() -> str:
     return "\n".join(lines)
 
 
+# Where each provider runs, and so where the text sent to it goes.
+PROVIDER_HOSTING = {
+    "gemini": "Google's Gemini API: prompts leave the machine, and on the free tier the provider"
+    " may use them, so `free` takes only the synthetic corpus",
+    "ollama": "Ollama on this machine: nothing leaves it",
+    "cerebras": "Cerebras's API: prompts leave the machine",
+    "groq": "Groq's API: prompts leave the machine",
+}
+
+# What each tool can reach. Tools are code; the gateway decides who may call them.
+TOOL_ACCESS = {
+    "search_rfp": "Reads the run's own search index of the RFP; writes nothing",
+    "date_calc": "Computes dates; reads and writes nothing",
+}
+
+CONTROLS = [
+    "Every tool call passes `ToolGateway`: the agent's allowlist, the argument schema, no third"
+    " identical call, and the agent's call cap.",
+    "Every model response must parse into its Pydantic schema, and code checks every quote"
+    " against the RFP before a requirement is accepted.",
+    "Per-run limits on requests, tokens and active time, checked before every call"
+    " (`config/limits.yaml`).",
+    "Mode `DRAFT_ONLY`: nothing is submitted, and every output is `UNREVIEWED_DRAFT` until a"
+    " person signs it off.",
+    "Spans and the ledger carry hashes, counts, timings and costs, never prompt or response text.",
+]
+
+
+def _package_name(requirement: str) -> str:
+    for stop in "<>=!~[; ":
+        requirement = requirement.split(stop)[0]
+    return requirement.strip()
+
+
+def ai_bom_md() -> str:
+    import tomllib
+
+    import yaml
+
+    from bidwright.config import load_config
+    from bidwright.graph.build import run_prompts
+
+    config = load_config()
+    prompts = run_prompts(config)
+    lines = [
+        "# AI bill of materials",
+        "",
+        GENERATED.strip(),
+        "",
+        "Every model, prompt, agent control, tool, service and runtime dependency of the current"
+        " tag, generated from the code and configuration. EY's paper on AI use case management"
+        " screens the risks of agentic AI with an AI bill of materials that includes agentic"
+        " control factors; this is Bidwright's. [`governance.md`](governance.md) explains how it is"
+        " used.",
+        "",
+        "## Models",
+        "",
+        "| Profile | Role | Provider | Model | Fallback | Where prompts go |",
+        "|---|---|---|---|---|---|",
+    ]
+    for profile, roles in config.models.profiles.items():
+        for role, rc in roles.items():
+            fallback = f"`{rc.fallback}`" if rc.fallback else "None"
+            hosting = PROVIDER_HOSTING.get(rc.provider, "See `config/models.yaml`")
+            lines.append(
+                f"| `{profile}` | {role} | {rc.provider} | `{rc.model}` | {fallback}"
+                f" | {_cell(hosting)} |"
+            )
+
+    lines += ["", "## Prompts", "", "| Prompt | Version | Role | Hash |", "|---|---|---|---|"]
+    for prompt_id, prompt in sorted(prompts.items()):
+        lines.append(
+            f"| `{prompt_id}` | {prompt.meta.version} | {prompt.meta.role} | `{prompt.hash[:19]}` |"
+        )
+
+    lines += [
+        "",
+        "## Agentic control factors",
+        "",
+        "| Agent or function | Kind | Tools it may call | Limits |",
+        "|---|---|---|---|",
+    ]
+    callers: dict[str, list[str]] = {}
+    for name, agent in config.agents.agents.items():
+        for tool in agent.tools:
+            callers.setdefault(tool, []).append(name)
+        tools = ", ".join(f"`{t}`" for t in agent.tools) or "None"
+        limits = ", ".join(
+            f"{k} {v}" for k, v in agent.limits.model_dump(exclude_unset=True).items()
+        )
+        lines.append(f"| `{name}` | {agent.kind} | {tools} | {_cell(limits)} |")
+    lines += ["", "Controls on every run, in code:", ""]
+    lines += [f"- {control}" for control in CONTROLS]
+
+    lines += ["", "## Tools", "", "| Tool | Access | Called by |", "|---|---|---|"]
+    for tool, access in TOOL_ACCESS.items():
+        called_by = ", ".join(f"`{c}`" for c in callers.get(tool, [])) or "No agent"
+        lines.append(f"| `{tool}` | {access} | {called_by} |")
+
+    compose = yaml.safe_load((ROOT / "compose.yaml").read_text(encoding="utf-8"))
+    lines += [
+        "",
+        "## Services",
+        "",
+        "| Service | Image | Published ports | Profiles |",
+        "|---|---|---|---|",
+    ]
+    for name, service in compose["services"].items():
+        image = "Built from this repository" if "build" in service else f"`{service['image']}`"
+        ports = ", ".join(f"`{p}`" for p in service.get("ports", [])) or "None"
+        profiles = ", ".join(service.get("profiles", [])) or "default"
+        lines.append(f"| `{name}` | {_cell(image)} | {ports} | {profiles} |")
+
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    lock = tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))
+    locked = {package["name"]: package["version"] for package in lock["package"]}
+    lines += [
+        "",
+        "## Runtime dependencies",
+        "",
+        "Direct runtime dependencies, at the versions `uv.lock` pins; CI audits them with"
+        " `pip-audit`.",
+        "",
+        "| Package | Locked version |",
+        "|---|---|",
+    ]
+    for requirement in sorted(pyproject["project"]["dependencies"]):
+        name = _package_name(requirement)
+        lines.append(f"| `{name}` | {locked.get(name, 'not locked')} |")
+    lines.append("")
+    return "\n".join(lines)
+
+
 TARGETS: dict[str, Callable[[], str]] = {
     "docs/agents.md": agents_md,
     "docs/reference/cli.md": cli_md,
     "docs/reference/schemas.md": schemas_md,
+    "docs/ai-bom.md": ai_bom_md,
 }
 
 
