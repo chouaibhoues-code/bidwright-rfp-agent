@@ -46,11 +46,19 @@ To see a run's trace tree in Phoenix, start it with `docker compose up -d phoeni
 
 ## Documents
 
+A suggested reading order: this README, then the sample summary in `samples/dev-free/solution_summary.md`, [`DECISIONS.md`](DECISIONS.md), [`docs/architecture.md`](docs/architecture.md), and [`context/Master-Plan.md`](context/Master-Plan.md) for the full vision and the plan.
+
 | File | Holds |
 |---|---|
-| `DECISIONS.md` | Architecture and product decisions, and the failure modes hit while building |
-| `ASSUMPTIONS.md` | What is assumed, what breaks if it is false, and how it is checked |
-| `TIMELOG.md` | Rough hours per part |
+| [`DECISIONS.md`](DECISIONS.md) | Architecture and product decisions as short ADRs, and the failure modes hit while building |
+| [`ASSUMPTIONS.md`](ASSUMPTIONS.md) | What is assumed, what breaks if it is false, and how it is checked |
+| [`TIMELOG.md`](TIMELOG.md) | Rough hours per part |
 | `prompts/` | Versioned prompts, each with its "why it works" notes |
-| `docs/` | Engineering documents, including the verification log and the demo script |
-| `context/` | Project management: plan, decisions in progress, backlog, research register (from Iteration 0b) |
+| [`docs/architecture.md`](docs/architecture.md) | The architecture of the current tag, under the arc42 headings, with the quality scenarios |
+| [`docs/decision-matrix.md`](docs/decision-matrix.md) | The architecture choices against a published taxonomy of agent design options |
+| [`docs/security.md`](docs/security.md) | The threat model, mapped to the OWASP agentic and LLM lists |
+| [`docs/evaluation.md`](docs/evaluation.md) | The evaluation harness and its results so far |
+| [`docs/agents.md`](docs/agents.md), [`docs/reference/`](docs/reference/cli.md) | Generated from the code: roles, prompts, models, tools, the runtime graph, the CLI and the schemas |
+| [`docs/designs/`](docs/designs/iteration-1.md) | One design doc per iteration, with its build plan |
+| [`docs/verification_log.md`](docs/verification_log.md), [`docs/demo_script.md`](docs/demo_script.md) | Technical claims checked against documentation; the demo's structure |
+| [`context/`](context/Master-Plan.md) | Project management: the plan, open decisions, the backlog and the research register |

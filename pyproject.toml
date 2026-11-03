@@ -63,4 +63,4 @@ select = ["E", "F", "I", "B", "UP", "S"]
 [tool.pyright]
 typeCheckingMode = "standard"
 pythonVersion = "3.12"
-include = ["src", "evals", "tests"]
+include = ["src", "evals", "tests", "scripts"]

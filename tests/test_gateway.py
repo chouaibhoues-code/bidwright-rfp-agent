@@ -1,5 +1,6 @@
 """FI-09 basics: the gateway denies what the agent may not do, and allows a clean call."""
 
+import dataclasses
 from typing import Any
 
 import pytest
@@ -46,6 +47,16 @@ def test_fi09_unauthorized_or_malformed_calls_are_denied(
     result = gateway.call(request_)
     assert result.status == "DENIED" and reason in (result.reason or "")
     assert gateway.calls == [(request_, result)]
+
+
+def test_a_tool_that_raises_returns_failed_to_the_model() -> None:
+    def explode(_: Any) -> Any:
+        raise RuntimeError("disk full")
+
+    broken = dataclasses.replace(date_tool(), run=explode)
+    gateway = ToolGateway.for_agent("risk", ["date_calc"], [broken], max_tool_calls=6)
+    result = gateway.call(_request())
+    assert result.status == "FAILED" and "disk full" in (result.reason or "")
 
 
 def test_a_third_identical_call_is_denied() -> None:

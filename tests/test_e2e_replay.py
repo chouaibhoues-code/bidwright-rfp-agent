@@ -89,6 +89,64 @@ def test_a_missing_cassette_ends_the_run_as_a_fault(tmp_path: Path) -> None:
     assert not (result.run_dir / "solution_summary.md").exists()
 
 
+def test_an_unexpected_error_is_recorded_as_a_fault(tmp_path: Path) -> None:
+    broken = tmp_path / "broken.pdf"
+    broken.write_bytes(b"%PDF-1.7 not really a PDF")
+    with pytest.raises(Exception):  # noqa: B017 - any parser error will do
+        execute(
+            source=broken,
+            profile="free",
+            outputs=tmp_path,
+            mode="replay",
+            cassettes=CassetteStore(tmp_path / "empty"),
+            run_id="unreadable",
+        )
+    manifest = RunManifest.model_validate_json(
+        (tmp_path / "unreadable" / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest.status == "UNRECOVERABLE_FAULT"
+    assert (manifest.status_reason or "").startswith("unexpected ")
+
+
+def test_a_missing_input_still_leaves_a_manifest(tmp_path: Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        execute(
+            source=tmp_path / "missing.pdf",
+            profile="free",
+            outputs=tmp_path,
+            mode="replay",
+            cassettes=CassetteStore(tmp_path / "empty"),
+            run_id="missing",
+        )
+    manifest = RunManifest.model_validate_json(
+        (tmp_path / "missing" / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest.status == "UNRECOVERABLE_FAULT"
+    assert manifest.input_hashes == {"missing.pdf": "unreadable: FileNotFoundError"}
+
+
+def test_an_interrupt_is_recorded_as_stopped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def interrupt(*_: object, **__: object) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr("bidwright.graph.build.ingest_pdf", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        execute(
+            source=DEV_RFP,
+            profile="free",
+            outputs=tmp_path,
+            mode="replay",
+            cassettes=CassetteStore(tmp_path / "empty"),
+            run_id="interrupted",
+        )
+    manifest = RunManifest.model_validate_json(
+        (tmp_path / "interrupted" / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest.status == "STOPPED"
+
+
 def test_ex0_sends_every_passage_in_one_call(tmp_path: Path) -> None:
     model = RuleBackend()
     result = execute(

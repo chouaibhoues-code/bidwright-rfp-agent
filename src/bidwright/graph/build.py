@@ -301,6 +301,13 @@ def _commit() -> str:
         return "unknown"
 
 
+def _file_hash(path: Path) -> str:
+    try:
+        return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as exc:
+        return f"unreadable: {type(exc).__name__}"
+
+
 def _degraded(state: dict[str, Any]) -> str | None:
     failed = [
         r for r in state.get("rejected", []) if r.get("reason") == "malformed output after repair"
@@ -362,8 +369,10 @@ def execute(
     if baseline is not None:
         chosen = BASELINES[baseline]
         rt.extract_prompt, rt.one_batch = chosen.extract_prompt, chosen.one_batch
-    status: RunStatus = "COMPLETED"
-    reason: str | None = None
+    # Until the graph returns, the run has not finished: any exit this function does not name
+    # below is recorded as a fault, never as COMPLETED.
+    status: RunStatus = "UNRECOVERABLE_FAULT"
+    reason: str | None = "the run ended before it finished"
     budget.start()
     run_attributes = {"bidwright.run_id": run_id, "bidwright.profile": profile}
     try:
@@ -387,22 +396,33 @@ def execute(
         status, reason = "QUOTA_PAUSED", f"{exc}; rerun after the quota resets"
     except (NodeFailed, LLMError, RenderBlocked) as exc:
         status, reason = "UNRECOVERABLE_FAULT", f"{type(exc).__name__}: {exc}"
+    except KeyboardInterrupt:
+        status, reason = "STOPPED", "interrupted by the operator"
+        raise
+    except Exception as exc:
+        # Recorded before it propagates, so the manifest tells what happened.
+        status, reason = "UNRECOVERABLE_FAULT", f"unexpected {type(exc).__name__}: {exc}"
+        raise
     finally:
         budget.pause()
-        tracing.close()
-        manifest = RunManifest(
-            run_id=run_id,
-            commit=_commit(),
-            profile=profile,
-            models={role: rc.model for role, rc in config.models.profiles[profile].items()},
-            prompt_hashes={name: prompt.hash for name, prompt in prompts.items()},
-            input_hashes={source.name: "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()},
-            started=started,
-            ended=datetime.now(UTC),
-            status=status,
-            status_reason=reason,
-            overrides=[*(overrides or []), *budget.raises],
-            totals=totals_of(ctx.ledger, budget.active_seconds),
-        )
-        write_manifest(run_dir, manifest, ctx.ledger)
+        try:
+            tracing.close()
+        finally:
+            # Nothing here may raise again and hide the run's own error: the manifest is the
+            # record of the run, whatever happened.
+            manifest = RunManifest(
+                run_id=run_id,
+                commit=_commit(),
+                profile=profile,
+                models={role: rc.model for role, rc in config.models.profiles[profile].items()},
+                prompt_hashes={name: prompt.hash for name, prompt in prompts.items()},
+                input_hashes={source.name: _file_hash(source)},
+                started=started,
+                ended=datetime.now(UTC),
+                status=status,
+                status_reason=reason,
+                overrides=[*(overrides or []), *budget.raises],
+                totals=totals_of(ctx.ledger, budget.active_seconds),
+            )
+            write_manifest(run_dir, manifest, ctx.ledger)
     return RunResult(run_id, run_dir, status, reason)
