@@ -4,7 +4,7 @@ What the design takes as true, what breaks if it is false, how it is checked, an
 
 | Assumed | Breaks if false | Checked how | If false, then |
 |---|---|---|---|
-| Free-tier limits roughly match the community figures | Capacity and the paid budget | V-03 and the owner's AI Studio check | Recount capacity, and bring the paid-budget decision forward |
+| Free-tier limits roughly match the community figures. Checked 2026-11-02 in AI Studio: Flash models allow 20 requests a day (the low end of the community 20-40), 3.5 Flash-Lite 500, and Gemma 4 14,400 at 16K input tokens a minute | Capacity and the paid budget | V-03 and the owner's AI Studio check | Recount capacity, and bring the paid-budget decision forward |
 | Gemini 3 models need no sampling parameters: 3.6 and later ignore them, and Google advises keeping defaults on earlier Gemini 3 models such as 3.5 Flash-Lite | Decoding settings | C7-01 | Set the documented values per model in `config/models.yaml` |
 | `docling-serve` keeps text exact enough for quote checks | The parser choice | S-01 and S-02 | pdfplumber stays the PDF parser, and DR-04 picks a fallback for tables |
 | A local demo on free-tier Gemini with synthetic data is acceptable under Google's terms. This is a legal reading, not a settled fact. | The data rule | V-03 reads the current terms | Record the demo on `local` or on the paid tier |

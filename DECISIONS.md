@@ -58,6 +58,28 @@ Decisions made while building are recorded here as they are made. The planning c
 
 **Provenance.** The S-04 spike on 2026-11-02, and the documentation checks in `docs/verification_log.md`.
 
+### ADR-002: Compose requires the Gemini key
+
+**Status:** accepted, 2026-11-02.
+
+**Context.** `compose.yaml` marks `GEMINI_API_KEY` as required with `${GEMINI_API_KEY:?}`. Checked with Docker Compose 2.27.0: when the variable is unset, Compose refuses every command, the keyless `demo` and `test` services included, with "required variable GEMINI_API_KEY is missing a value".
+
+**Decision.** The key stays required in Compose.
+
+**Consequences.**
+- A missing key stops Compose at start-up with a clear message, instead of a live run failing partway.
+- Docker users put a key in `.env` even for the demo and the tests.
+- The host path stays keyless: `uv run bidwright demo` and `uv run pytest` need no `.env`. The CI `docker` job builds and runs the image with plain `docker`, not Compose, so it stays keyless too.
+- The 0a exit check "`docker compose run --rm test` passes with no keys" is an accepted exception: it passes once `.env` holds a key.
+
+**Options.** `${GEMINI_API_KEY:-}`, which would let `demo` and `test` run in Docker without a key and move the missing-key error to run time. Not chosen.
+
+**Confirmation.** `tests/test_compose_lockdown.py` checks that every key in `compose.yaml` is a variable reference, never a literal.
+
+**Reverse if.** Reviewers need to run the demo in Docker without creating a key.
+
+**Provenance.** The owner's decision on 2026-11-02, after the check above (C7-13 in `docs/verification_log.md`).
+
 ## Failure modes hit
 
 Only failures that actually happened, logged as they happen. Scripted test faults never count.
