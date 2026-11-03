@@ -102,13 +102,31 @@ def test_the_budget_stops_a_call_between_its_attempts() -> None:
         load_config(),
         "free",
         {"gemini": backend},
-        before_attempt=budget.check,
+        before_attempt=budget.attempt,
         sleep=backoff,
         rng=lambda: 0.5,
     )
     with pytest.raises(BudgetExceeded, match="active-time"):
         client.complete("extract", MESSAGES, ExtractResult, **CALL)
     assert backend.calls == 1  # the second attempt never reached the provider
+
+
+def test_the_request_limit_counts_each_attempt_as_it_is_made() -> None:
+    """Retries spend requests before any ledger entry exists, so the limit stops them."""
+    budget = RunBudget(RunLimits(requests=2, tokens=300_000, active_minutes=20))
+    budget.start()
+    backend = ProviderSimulator(FakeBackend(), [{"call": n, "fault": "timeout"} for n in (1, 2, 3)])
+    client = LLMClient(
+        load_config(),
+        "free",
+        {"gemini": backend},
+        before_attempt=budget.attempt,
+        sleep=lambda _: None,
+        rng=lambda: 0.5,
+    )
+    with pytest.raises(BudgetExceeded, match="request limit"):
+        client.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert backend.calls == 2 and budget.requests == 2
 
 
 def test_a_spent_quota_with_no_fallback_left_stops_with_quota_exhausted() -> None:

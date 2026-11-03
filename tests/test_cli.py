@@ -27,7 +27,7 @@ def test_record_refuses_a_non_corpus_file_on_every_profile(
     name = "should-not-exist"
     code = cli.main(["record", str(stranger), "--profile", profile, "--name", name])
     assert code == 2
-    assert "Git tracks" in capsys.readouterr().err or profile == "free"
+    assert "Git tracks" in capsys.readouterr().err
     assert not (cli.CASSETTES / name).exists()
 
 

@@ -190,7 +190,7 @@ def exists_exactly(path: Path, root: Path) -> bool:
     """Whether `path` exists with exactly this case, as on Linux, where CI runs."""
     current = root
     for part in path.relative_to(root).parts:
-        if part not in os.listdir(current):
+        if not current.is_dir() or part not in os.listdir(current):
             return False
         current = current / part
     return True

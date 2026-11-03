@@ -555,13 +555,13 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-022: The request budget counts provider attempts, checked before each attempt
 
-**Status:** accepted, 2026-11-03. From the first architecture review of `docs/architecture.md`, items A-02 and A-17.
+**Status:** accepted, 2026-11-03. From the first architecture review of `docs/architecture.md`, items A-02 and A-17. Amended the same day, after the tag's code review: the attempt is counted in the hook as it is made, not reconstructed from the ledger entry afterwards.
 
 **Context.** The run budget protects a provider's daily quota (ADR-003) and is the control against unbounded consumption in `docs/security.md`. At `v0.0` it counted one request per ledger entry and was checked once before a logical call, while one call can make up to 8 provider attempts across the primary and the fallback model, and the attempts of a model that failed over left no entry. The failure log of 2026-11-02 records a daily quota spent mostly by retried attempts. "The clock counts only active time" also defined nothing a reader could check, because nothing pauses the clock at `v0.0`.
 
 **Decision.**
 - A ledger entry's `retries` counts the provider attempts beyond the first, across the primary and the fallback model; a refused attempt on a spent daily quota counts too.
-- The budget adds `1 + retries` requests per entry, and the client checks the budget before every provider attempt through a `before_attempt` hook, so the overshoot past a limit is at most one attempt and one backoff.
+- The client calls the budget's `attempt` before every provider attempt, through a `before_attempt` hook. It checks every limit and then counts the attempt, so the request count is exact between retries, a call that fails on every model still spent its attempts, and the overshoot past a limit is at most one attempt and one backoff. Tokens are counted from the ledger entry after the call.
 - At `v0.0`, active time is wall time: the clock starts with the run and stops when it ends, backoff sleeps and Ollama queueing included. Pausing for a person or a quota arrives with Iteration 2's statuses.
 
 **Consequences.**
@@ -569,9 +569,9 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 - The manifest's `requests` total still counts completed calls; the attempts behind each one are in its entry.
 - No schema and no cassette key changed.
 
-**Options.** Counting attempts in the ledger's `requests` total, which would make the totals disagree with the entry count; a separate attempts counter in the budget only, which would leave the ledger silent about the attempts of a model that failed over.
+**Options.** Counting attempts in the ledger's `requests` total, which would make the totals disagree with the entry count; reconstructing attempts from each entry's `retries` after the call, the first form of this decision, which the code review showed leaves the count stale between retries and blind to a call that fails on every model.
 
-**Confirmation.** `test_the_request_limit_counts_provider_attempts` in `tests/test_budget.py`; `test_fi01_exhausted_retries_switch_extract_to_its_fallback_model` (five attempts, four retries) and `test_the_budget_stops_a_call_between_its_attempts` in `tests/test_simulator.py`.
+**Confirmation.** `test_the_request_limit_counts_each_provider_attempt_as_it_is_made` in `tests/test_budget.py`; `test_fi01_exhausted_retries_switch_extract_to_its_fallback_model` (five attempts, four retries), `test_the_budget_stops_a_call_between_its_attempts` and `test_the_request_limit_counts_each_attempt_as_it_is_made` in `tests/test_simulator.py`.
 
 **Reverse if.** A provider documents that refused attempts do not count against its quota, or Iteration 2's budget controller keeps its own attempt clock.
 

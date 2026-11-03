@@ -143,6 +143,12 @@ def test_wikilinks_in_code_are_examples(tmp_path: Path) -> None:
     assert _messages(tmp_path, files) == []
 
 
+def test_a_link_through_a_file_is_a_broken_link(tmp_path: Path) -> None:
+    files = _clean()
+    files["docs/a.md"] += "\nSee [here](../DECISIONS.md/section).\n"
+    assert "broken link: ../DECISIONS.md/section" in _messages(tmp_path, files)
+
+
 def test_a_link_must_match_the_file_name_case(tmp_path: Path) -> None:
     files = _clean()
     files["docs/a.md"] += "\nSee [the plan](../context/plan.md).\n"

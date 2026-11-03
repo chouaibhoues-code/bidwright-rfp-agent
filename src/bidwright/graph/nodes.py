@@ -2,12 +2,12 @@
 
 Each node is a plain function over typed inputs, so it runs and tests without the graph;
 `build.py` wires them into LangGraph. Every LLM call goes through `RunContext.call`, which
-checks the run budget before each provider attempt and records the ledger entry. Each node
-allows one repair: a targeted one for quotes, missing ids or generic risks, or a format one
-for a response that breaks its schema. Whatever still fails is rejected and logged, never
-accepted: `extract` rejects the batch, `draft` marks the section `FAILED`, and `approach` and
-`risk` return an empty result with the reason, so the run ends `DEGRADED` with its verified
-requirements in the summary (ADR-024).
+records the ledger entry; the client counts and checks the run budget before each provider
+attempt (ADR-022). Each node allows one repair: a targeted one for quotes, missing ids or
+generic risks, or a format one for a response that breaks its schema. Whatever still fails is
+rejected and logged, never accepted: `extract` rejects the batch, `draft` marks the section
+`FAILED`, and `approach` and `risk` return an empty result with the reason, so the run ends
+`DEGRADED` with its verified requirements in the summary (ADR-024).
 """
 
 import json
@@ -97,7 +97,7 @@ class RunContext:
 
     def __post_init__(self) -> None:
         self.client.on_ledger = self.record
-        self.client.before_attempt = self.budget.check
+        self.client.before_attempt = self.budget.attempt
 
     def record(self, entry: LedgerEntry) -> None:
         with self._lock:
@@ -118,7 +118,6 @@ class RunContext:
         tools: Sequence[Any] = (),
         repeat: int = 0,
     ) -> Completion:
-        self.budget.check()
         attributes = {
             "bidwright.node": node,
             "bidwright.prompt": prompt.ref,

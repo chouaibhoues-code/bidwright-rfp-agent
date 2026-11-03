@@ -358,7 +358,7 @@ Every prompt follows one layout: the system instruction first, with role, rules,
 
 From `config/limits.yaml` and `config/agents.yaml`:
 - Per run on the development RFP: 60 requests and 300,000 tokens, with 20 active minutes on `free` and 60 on `local`. At `v0.0` the clock starts with the run and stops when it ends, so active time is wall time, backoff sleeps and Ollama queueing included; pausing for a person or a quota arrives with Iteration 2's statuses. `config/limits.yaml` is keyed by corpus tier and profile (`runs.dev.free`), and `v0.0` configures `dev` only.
-- The request limit counts provider attempts, retries and the fallback model's attempts included, because that is what the quota counts; the ledger's `requests` total counts completed calls, and each entry's `retries` field gives the attempts behind it (ADR-022).
+- The request limit counts provider attempts, retries and the fallback model's attempts included, because that is what the quota counts: the client counts each attempt in the budget before it is made. The ledger's `requests` total counts completed calls, and each entry's `retries` field gives the attempts behind it (ADR-022).
 - Per call: a 120-second timeout on `free` and 300 seconds on `local`, with 3 retries.
 - `extract` batches hold 20 passages. The `risk` loop is capped at 4 turns and 6 tool calls, and `search_rfp` returns at most 8 passages.
 

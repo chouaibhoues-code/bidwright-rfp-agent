@@ -353,15 +353,16 @@ def execute(
     backends: dict[str, Backend] | None = None,
     baseline: str | None = None,
     consent: str | None = None,
-    limits: str = "dev",
+    limits: str | None = None,
     run_id: str | None = None,
 ) -> RunResult:
     """Run one RFP end to end. A failed run still leaves its manifest and ledger.
 
     The profile's preconditions are checked first (`preflight.py`): a run that is refused
-    leaves no folder, and `Refused` carries what to do instead."""
+    leaves no folder, and `Refused` carries what to do instead. `limits` names the tier in
+    `config/limits.yaml`; by default a corpus file gets its own tier, and any other file `dev`."""
     config = load_config()
-    overrides = check_preconditions(
+    preflight = check_preconditions(
         source=source,
         profile=profile,
         mode=mode,
@@ -369,6 +370,7 @@ def execute(
         backends=backends or {},
         config=config,
     )
+    overrides = preflight.overrides
     started = datetime.now(UTC)
     suffix = f"-{baseline}" if baseline else ""
     run_id = run_id or f"{started:%Y%m%dT%H%M%SZ}-{doc_id_for(source)}-{profile}{suffix}"
@@ -382,7 +384,7 @@ def execute(
         cassettes=cassettes,
         run_id=run_id,
     )
-    budget = RunBudget(config.limits.run(limits, profile))
+    budget = RunBudget(config.limits.run(limits or preflight.tier, profile))
     prompts = run_prompts(config)
     tracing = Tracing(
         run_id,
@@ -443,7 +445,11 @@ def execute(
                 models={role: rc.model for role, rc in config.models.profiles[profile].items()},
                 models_used=models_used(ctx.ledger),
                 prompt_hashes={name: prompt.hash for name, prompt in prompts.items()},
-                input_hashes={source.name: _file_hash(source)},
+                input_hashes={
+                    source.name: f"sha256:{preflight.digest}"
+                    if preflight.digest
+                    else _file_hash(source)
+                },
                 started=started,
                 ended=datetime.now(UTC),
                 status=status,

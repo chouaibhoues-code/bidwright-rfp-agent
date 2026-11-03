@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from bidwright.config import load_config
+from bidwright.config import Config, load_config
 from bidwright.graph.build import execute
 from bidwright.llm.types import ProviderError, Request, Response
-from bidwright.preflight import CONSENT, Refused, check_preconditions
+from bidwright.preflight import Preflight, Refused, check_preconditions
 from tests.node_fakes import DEV_RFP, RuleBackend
 
 
@@ -31,7 +31,7 @@ class FakeOllama:
         raise AssertionError("the preconditions must fail before any call")
 
 
-def _check(**changes: object) -> list[str]:
+def _check(**changes: object) -> Preflight:
     settings: dict[str, object] = {
         "source": DEV_RFP,
         "profile": "free",
@@ -59,7 +59,17 @@ def test_a_missing_local_model_is_refused_with_the_pull_command(tmp_path: Path) 
 
 def test_the_local_profile_passes_when_both_models_are_pulled() -> None:
     ollama = FakeOllama(pulled={"qwen3.5:4b", "qwen3.5:2b"})
-    assert _check(profile="local", backends={"ollama": ollama}) == []
+    found = _check(profile="local", backends={"ollama": ollama})
+    assert found.overrides == [] and found.corpus == "dev/dev_rfp.pdf" and found.tier == "dev"
+    assert found.digest and len(found.digest) == 64
+
+
+def test_an_untagged_model_matches_the_latest_tag_ollama_lists() -> None:
+    config = load_config()
+    for role in config.models.profiles["local"].values():
+        role.model, role.fallback = "llama3", None
+    ollama = FakeOllama(pulled={"llama3:latest"})
+    assert _check(profile="local", backends={"ollama": ollama}, config=config).overrides == []
 
 
 def test_an_unreachable_ollama_is_refused() -> None:
@@ -74,13 +84,20 @@ def test_a_missing_file_is_refused(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("profile", ["free", "local"])
 def test_record_takes_corpus_files_only_on_every_profile(tmp_path: Path, profile: str) -> None:
+    """The record rule comes first, so `free` never answers with the consent override."""
     stranger = tmp_path / "client_tender.pdf"
     stranger.write_bytes(b"%PDF-1.4")
     backends = {"gemini": RuleBackend(), "ollama": FakeOllama(pulled={"qwen3.5:4b", "qwen3.5:2b"})}
-    consent = CONSENT if profile == "free" else None
     with pytest.raises(Refused, match="Git tracks"):
-        _check(source=stranger, profile=profile, mode="record", consent=consent, backends=backends)
+        _check(source=stranger, profile=profile, mode="record", backends=backends)
 
 
 def test_a_replayed_run_needs_no_backend_and_no_corpus_check(tmp_path: Path) -> None:
-    assert _check(source=tmp_path / "missing.pdf", mode="replay", backends={}) == []
+    found = _check(source=tmp_path / "missing.pdf", mode="replay", backends={})
+    assert found == Preflight([], None, None) and found.tier == "dev"
+
+
+def test_an_unknown_profile_is_refused() -> None:
+    config: Config = load_config()
+    with pytest.raises(Refused, match="no models"):
+        _check(profile="paid", config=config)

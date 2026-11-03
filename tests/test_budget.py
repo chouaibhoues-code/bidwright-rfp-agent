@@ -40,20 +40,22 @@ def _entry(
 def test_the_request_limit_stops_the_run() -> None:
     budget = RunBudget(RunLimits(requests=2, tokens=10_000, active_minutes=20))
     for _ in range(2):
-        budget.check()
+        budget.attempt()
         budget.record(_entry())
     with pytest.raises(BudgetExceeded, match="request limit") as stop:
-        budget.check()
-    assert stop.value.status == "BUDGET_EXCEEDED"
+        budget.attempt()
+    assert stop.value.status == "BUDGET_EXCEEDED" and budget.requests == 2
 
 
-def test_the_request_limit_counts_provider_attempts() -> None:
-    """A call that took 3 retries made 4 attempts, which is what the quota counted."""
+def test_the_request_limit_counts_each_provider_attempt_as_it_is_made() -> None:
+    """Four attempts on one call count four, whether or not a ledger entry follows."""
     budget = RunBudget(RunLimits(requests=4, tokens=10_000, active_minutes=20))
-    budget.record(_entry(retries=3))
+    for _ in range(4):
+        budget.attempt()
+    budget.record(_entry(retries=3))  # the entry adds the call's tokens, not its attempts
     assert budget.requests == 4
     with pytest.raises(BudgetExceeded, match="request limit"):
-        budget.check()
+        budget.attempt()
 
 
 def test_the_token_limit_counts_input_output_and_thinking() -> None:

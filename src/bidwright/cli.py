@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bidwright.baselines import BASELINES
-from bidwright.preflight import HOME, Refused, corpus_name
+from bidwright.preflight import HOME, Refused
 
 if TYPE_CHECKING:
     from bidwright.graph.build import RunResult
@@ -38,14 +38,6 @@ def load_env(path: Path) -> None:
         key, sep, value = line.strip().partition("=")
         if sep and key and not key.startswith("#") and value.strip():
             os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
-
-
-def _limits(path: Path) -> str:
-    try:
-        name = corpus_name(path)
-    except OSError:
-        return "dev"  # the run entry reports the missing file
-    return name.split("/")[0] if name and name.split("/")[0] in ("dev", "hero") else "dev"
 
 
 def _report(result: "RunResult") -> int:
@@ -106,7 +98,6 @@ def main(argv: list[str] | None = None) -> int:
                 mode="record",
                 cassettes=CassetteStore(store),
                 backends=default_backends(),
-                limits=_limits(args.file),
             )
         else:
             result = execute(
@@ -116,7 +107,6 @@ def main(argv: list[str] | None = None) -> int:
                 backends=default_backends(),
                 baseline=args.baseline,
                 consent=args.consent,
-                limits=_limits(args.file),
             )
     except Refused as exc:
         print(f"Refused: {exc}", file=sys.stderr)
