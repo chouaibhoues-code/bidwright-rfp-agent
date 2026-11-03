@@ -1,11 +1,11 @@
 ---
 id: risk
-version: 0.1.0
+version: 0.2.0
 role: reason
 pattern: Multi-Perspective pre-mortem in one call
 schema: RiskRegister
 examples: risk
-decoding: {gemini: {thinking: low}, ollama: {think: true}}
+decoding: {gemini: {thinking: low}, ollama: {think: false}}
 rubric: null
 last_tested: 2026-11-02
 ---
@@ -62,5 +62,5 @@ Your answer did not match the response schema: $error. Return the whole register
 - **Tools and schema in separate calls.** The tool turns run without a schema, and `<final_task>` asks for the register in a last call with the schema and no tools, a pattern that works on every provider. S-04 confirmed it on Flash-Lite and on `qwen3.5:4b`: the final structured call after the tool history returned a valid register citing the seeded date conflict.
 - **Stopping.** Rule 2 matches the loop's no-progress stop: a turn that adds no new passage id or date result ends the research.
 - **Examples** from `prompts/examples/mini_rfp.yaml`: two risks built on found passages, and one generic risk shown as unacceptable, with the reason.
-- **Decoding.** `thinking: low`, since higher levels encourage more tool calls, and the loop is capped at 4 turns and 6 tool calls.
+- **Decoding.** `thinking: low` on Gemini, since higher levels encourage more tool calls, and the loop is capped at 4 turns and 6 tool calls. On Ollama, thinking is off (ADR-004), because on a 4 GB card it pushed calls past the 300-second timeout. Version 0.2.0 changed only that setting.
 - **What would change it:** risk-seed recall and generic-risk rejections on the development RFP, and from Iteration 3 the RK ladder against its fixed-pipeline control.

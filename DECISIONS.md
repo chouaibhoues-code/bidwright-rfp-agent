@@ -108,6 +108,29 @@ Decisions made while building are recorded here as they are made. The planning c
 
 **Provenance.** The owner's decision on 2026-11-02, from the AI Studio limits and the probes in `docs/verification_log.md`.
 
+### ADR-004: No thinking on the local profile
+
+**Status:** accepted, 2026-11-02. It changes the planned `think: true` for `reason` on the `local` profile.
+
+**Context.** The plan turns Ollama's thinking on for `reason` and off for `extract`. On this machine's 4 GB card, both `qwen3.5:4b` and `qwen3.5:2b` run mostly on CPU at a 16K context (V-06), generating about 7 to 20 tokens a second. With thinking on, the model writes thousands of thinking tokens before its answer, and the local call timeout is 300 seconds. In two local runs on 2026-11-02, `reason` calls ran out of time every time: in the second, all 4 attempts at `approach` on `qwen3.5:4b`, then the `qwen3.5:2b` fallback's attempts, each stopped at 5 minutes. With thinking off, the same model's extract calls took 2 to 4 minutes.
+
+**Decision.** Thinking is off for every role on the `local` profile: `think: false` in `config/models.yaml` and in the Ollama decoding of `approach`, `risk` and `draft`, which move to version 0.2.0. The `free` profile is unchanged.
+
+**Consequences.**
+- The local thin thread can finish inside its 60-minute budget on a CPU-bound laptop.
+- Local `reason` output may be weaker without thinking. The local profile proves the private path end to end; it is not scored against the corpus, and the Iteration 6 bake-off measures thinking and `reflect` on local models.
+- The Gemini cassettes were re-recorded, because a prompt's hash covers its decoding for every provider.
+
+**Options.**
+- Raise the local call timeout and run budget, keeping thinking on: thinking length has no bound, so a run could take one to two hours and still fail.
+- Accept an exception for the 0a check that the same run completes on a local Ollama model.
+
+**Confirmation.** A development run on `--profile local` ends `COMPLETED`, with every call inside the timeout.
+
+**Reverse if.** The local models fit a GPU on the machine that runs them, or the Iteration 6 bake-off shows thinking finishing inside the limits with better scores.
+
+**Provenance.** The owner's decision on 2026-11-02, after the failed local runs in the failure log below.
+
 ## Failure modes hit
 
 Only failures that actually happened, logged as they happen. Scripted test faults never count.
@@ -122,4 +145,5 @@ Only failures that actually happened, logged as they happen. Scripted test fault
 | 2026-11-02 | `reason` role on the free tier, after the failed runs | A direct call to `gemini-3.8-flash` returned 429 RESOURCE_EXHAUSTED: the free daily quota was spent, much of it by retried 504 attempts, since each retry counts as a request. | None: a direct probe | Open: the free Flash quota is too small for retried live runs. The paid fallback on the same model, or waiting for the reset, is the owner's choice. Iteration 2's recovery rules should stop retrying when a quota is exhausted. |
 | 2026-11-02 | `risk` agent, live development runs after ADR-003 | A risk's residual exposure opened with a rating, "Low if tested early", which the prompt's rule 5 forbids. The screen rejected only an exposure that was a bare rating word, so the register kept it. Once the screen caught it, the retry dropped that risk, the submission-portal one, instead of rewording it. | `outputs/20261103T021308Z-dev-rfp-3c582e4c-free/spans.jsonl`; the retry in `samples/dev-free/spans.jsonl` | `RATING_PHRASE` in `graph/nodes.py` now rejects an exposure that opens with a scale level or attaches one to risk or exposure, with plain-word controls in `test_risk_loop.py`. Open: a retry that drops a risk instead of fixing it, for the full `risk` agent in Iteration 3. |
 | 2026-11-02 | Tracing, the Compose stack with Phoenix 21.0.0 | Phoenix 21 starts with authentication on, so every span export got 401. The run ended `COMPLETED` with no trace anywhere: once a collector answered, spans went only to it, and the exporter reported the refusal only as a failed export. Phoenix also kept its database outside the mounted volume. | None: the trace is what was lost (`outputs/20261103T021839Z-dev-rfp-3c582e4c-free`) | A batch the collector refuses now goes to `spans.jsonl` (`FallbackExporter`, tested), `PHOENIX_API_KEY` is sent as a bearer token when set, and Compose sets `PHOENIX_WORKING_DIR` and starts this loopback-only local Phoenix with authentication off, which `.env` can turn back on. |
+| 2026-11-02 | Second development run on the `local` profile, with thinking on for `reason` | Extraction finished on `qwen3.5:4b` in 2m20s and 3m40s, but all 4 attempts at `approach` ran past the 300-second timeout, as did the `qwen3.5:2b` fallback's attempts, which generated over 3,000 tokens each before the cut. The run was stopped after 35 minutes, since it could only end in `UNRECOVERABLE_FAULT`. | `outputs/20261103T023031Z-dev-rfp-3c582e4c-local/spans.jsonl`; Ollama's `server.log` shows each `POST /api/chat` ending 500 after 5m0s | ADR-004: thinking off on the `local` profile. |
 | 2026-11-02 | LLM client, `local` profile on CPU, during S-04 | 2 of 13 calls ran past the 60-second call timeout: the first call, while the model loaded, and a 506-token final answer at about 9 tokens a second. Each was retried, and the timed-out work was lost. | None: tracing arrives in step 11 | The call timeout is now set per profile in `config/limits.yaml`: 60 seconds on `free` and 300 on `local`. |

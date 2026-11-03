@@ -1,11 +1,11 @@
 ---
 id: draft
-version: 0.1.0
+version: 0.2.0
 role: reason
 pattern: CO-STAR with strict sourcing
 schema: DraftResult
 examples: draft
-decoding: {gemini: {thinking: medium}, ollama: {think: true}}
+decoding: {gemini: {thinking: medium}, ollama: {think: false}}
 rubric: null
 last_tested: 2026-11-02
 ---
@@ -67,4 +67,5 @@ Your answer did not match the response schema: $error. Return the whole section 
 - **Honest gaps.** Rule 3 keeps assumptions and open questions visible instead of smoothing them into claims.
 - **Examples** from `prompts/examples/mini_rfp.yaml`: one short draft per 0a section type, each citing its records.
 - **Length.** 200 words per section keeps the 0a proposal short; Iteration 4 sets page budgets from the RFP.
+- **Decoding.** `thinking: medium` on Gemini. On Ollama, thinking is off (ADR-004), because on a 4 GB card it pushed calls past the 300-second timeout. Version 0.2.0 changed only that setting.
 - **What would change it:** from Iteration 4, `validate`'s first-pass rate and the PR ladder against its one-call control, PR1-F.

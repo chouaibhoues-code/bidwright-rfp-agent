@@ -1,11 +1,11 @@
 ---
 id: approach
-version: 0.1.0
+version: 0.2.0
 role: reason
 pattern: Skeleton-of-Thought
 schema: ApproachResult
 examples: approach
-decoding: {gemini: {thinking: medium}, ollama: {think: true}}
+decoding: {gemini: {thinking: medium}, ollama: {think: false}}
 rubric: null
 last_tested: 2026-11-02
 ---
@@ -53,4 +53,5 @@ Your answer did not match the response schema: $error. Return the whole approach
 - **Hazards first.** Submission hazards decide whether the bid is read at all, so they lead, in their own item.
 - **Questions instead of guesses.** Rule 7 routes ambiguity into open questions, which the solution summary lists.
 - **The example** from `prompts/examples/mini_rfp.yaml` shows a hazard item first, stated assumptions, and an optional requirement left unmapped with a question.
+- **Decoding.** `thinking: medium` on Gemini. On Ollama, thinking is off (ADR-004): on a 4 GB card the local models run mostly on CPU, and with thinking on every `approach` call ran past the 300-second timeout. Version 0.2.0 changed only that setting.
 - **What would change it:** the approach-mapping score on the development RFP, and from Iteration 3 the `blueprint` prompt, which replaces this one with a sourced manifest.

@@ -1,0 +1,26 @@
+{
+ "key": "sha256:d25846b2b1c0c50dd4de8f8af9a72270fa6586232ede6e3a5aab2393a25b0d38",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "RiskRegister",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"risks\": [{\"condition\": \"Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC under REQ-0009.\", \"event\": \"The final bid document exceeds 20 pages or portal congestion delays the upload past 2026-12-01 12:00 UTC.\", \"effect\": \"The bid is disqualified immediately without evaluation.\", \"assumptions\": [\"The formatting can be condensed into 20 pages without losing required content.\"], \"owner_role\": \"Bid manager\", \"trigger\": \"The draft bid exceeds 18 pages one week before submission.\", \"responses\": [\"Enforce a strict 18-page budget for all sections immediately.\", \"Upload the PDF 24 hours before the deadline.\"], \"residual_exposure\": \"A technical outage of the procurement portal on the final day.\", \"evidence_src_ids\": [\"SRC-0015\"]}, {\"condition\": \"The service must be live for students by 2027-01-11 for spring enrollment under REQ-0023, leaving only 41 calendar days from the proposal deadline of 2026-12-01.\", \"event\": \"Integration with the student records system REST API or environment setup experiences delays during the winter break.\", \"effect\": \"Students cannot sign documents when spring enrollment opens, breaching the go-live requirement.\", \"assumptions\": [\"The College's REST API documentation is complete and accessible immediately upon contract award.\"], \"owner_role\": \"Technical delivery lead\", \"trigger\": \"API integration testing is not completed by 2026-12-20.\", \"responses\": [\"Begin mock API integration prior to formal contract award.\", \"Negotiate a staged rollout prioritizing critical enrollment forms first.\"], \"residual_exposure\": \"Limited time to resolve edge cases discovered during live student usage.\", \"evidence_src_ids\": [\"SRC-0030\"]}], \"open_questions\": [{\"text\": \"Does the student records system REST API support sandbox testing prior to the 2027-01-11 go-live date?\", \"src_ids\": [\"SRC-0030\"]}]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2761,
+   "tokens_out": 488,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-03T03:05:58Z"
+}

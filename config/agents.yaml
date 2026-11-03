@@ -13,7 +13,7 @@ approach:
   kind: function
   input: ApproachInput
   output: ApproachResult
-  prompt: approach@0.1.0
+  prompt: approach@0.2.0
   model_role: reason
   tools: []
   limits: {max_calls: 1, max_repairs: 1}
@@ -22,7 +22,7 @@ risk:
   kind: agent
   input: RiskInput
   output: RiskRegister
-  prompt: risk@0.1.0
+  prompt: risk@0.2.0
   model_role: reason
   tools: [search_rfp, date_calc]
   limits: {max_turns: 4, max_tool_calls: 6, stop_on_no_progress: true}
@@ -31,7 +31,7 @@ draft:
   kind: function
   input: DraftTask
   output: DraftResult
-  prompt: draft@0.1.0
+  prompt: draft@0.2.0
   model_role: reason
   tools: []
   limits: {max_calls: 1, max_repairs: 1}
