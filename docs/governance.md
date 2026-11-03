@@ -51,7 +51,7 @@ On `free`, prompts go to Google's Gemini API, whose free-tier terms let the prov
 
 | Location | Content | Protection at `v0.0` |
 |---|---|---|
-| `outputs/<run>/`: frozen text, passages, search index, checkpoints, records, summary, proposal | Yes | Local disk, ignored by Git; no retention period or purge command yet |
+| `outputs/<run>/`: frozen text, passages, search index, checkpoints, records, tool results, summary, proposal | Yes | Local disk, ignored by Git; no retention period or purge command yet |
 | `tests/cassettes/` | Model answers, which quote the document | `bidwright record` refuses any file outside the synthetic corpus, on every profile (fixed 2026-11-03) |
 | `spans.jsonl` and Phoenix | No document text: hashes, counts, timings and costs, and the run id, which holds the input file's name | Phoenix listens on loopback only |
 | `ledger.jsonl`, `run_manifest.json` | No: models, hashes, token counts and costs, and the input's file name and hash | Local disk, ignored by Git |
@@ -63,7 +63,7 @@ Each place a run, or a tool around it, can send text. Rules marked D-05 are prop
 
 | Channel | From | What it receives | Rule |
 |---|---|---|---|
-| Model providers: Gemini, then Cerebras and Groq from Iteration 3 | `v0.0` | Prompts built from passages, records and tool results | Synthetic documents only on hosted profiles, and client documents on `local`. Under client terms, masked text only (D-05). |
+| Model providers: Gemini, then Cerebras and Groq from Iteration 3 | `v0.0` | Prompts built from passages, records and tool results | Synthetic documents only on hosted profiles, unless the run passes the consent override, which the manifest records; client documents on `local`. Under client terms, masked text only (D-05). |
 | The trace collector, Phoenix | `v0.0` | Spans without document text, and the run id | Loopback only. Client documents get ids from their hash alone (D-05). |
 | The parser service, Docling | Iteration 1 | Whole documents | A local container. It gets no route out if its image needs no download at run time (D-05, checked at the build). |
 | NotebookLM, through its MCP server | Iteration 2 | Research topics, follow-up questions and notebook titles | Never RFP text: a gateway rule denies a query that copies 8 or more words of a passage. Proposed under D-05: topics built by code from typed fields, notebook titles carrying a run hash, and research `off` or `pack` on client runs until the masking's list of values exists. |

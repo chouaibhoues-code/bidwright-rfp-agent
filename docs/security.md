@@ -14,7 +14,8 @@ A one-page threat model for Bidwright as built at `v0.0`, with the controls plan
 | The requirement list and its quotes | A wrong or missing obligation can disqualify a bid |
 | API keys | Spend and quota on the owner's accounts |
 | Gold labels | If a producer could read them, every score would be meaningless |
-| Traces and run folders | Metadata about the documents processed |
+| Traces | Metadata about the documents processed |
+| Run folders | The document's text and every record drawn from it |
 
 ## Trust boundaries
 

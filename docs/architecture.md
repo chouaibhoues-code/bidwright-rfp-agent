@@ -190,7 +190,7 @@ flowchart TB
 | `llm/openai_compat.py` | An adapter for OpenAI-compatible providers, built for Cerebras and Groq from Iteration 3 and unused at `v0.0`. Kept because S-04 compared its field mapping with the native SDK; it carries no code path at `v0.0`. | `test_adapters.py` |
 | `llm/replay.py`, `llm/simulator.py` | Cassettes; a replay backend that injects scripted faults | `test_client_replay.py`, `test_simulator.py` |
 | `llm/schema.py` | The provider form of a Pydantic schema, one conservative form for every provider, whose hash is part of the cassette key | `test_provider_schema.py` |
-| `prompts.py` | Loads versioned prompts, renders them with `string.Template.substitute`, seeds delimiters from the run id | `test_prompts.py` |
+| `prompts.py` | Loads versioned prompts, renders them with `string.Template.substitute`, seeds delimiters from the run id, and renders the few-shot examples from `prompts/examples/mini_rfp.yaml`, validated against the schemas | `test_prompts.py` |
 | `graph/nodes.py`, `graph/state.py`, `graph/build.py` | The nodes, the graph state, the wiring, and `execute`, which checks the profile's preconditions first | `test_nodes.py`, `test_risk_loop.py`, `test_e2e_replay.py` |
 | `render.py` | The outputs, after schema validation | `test_render_outputs.py` |
 | `baselines.py` | EX0, the one-call extraction baseline | `test_e2e_replay.py` |
@@ -370,7 +370,7 @@ Bidwright drafts and never submits. Every summary and proposal opens with the `U
 
 ### 8.5 Observability
 
-- **Ledger.** One `LedgerEntry` per call: model, prompt and input hashes, input, cached, output and thinking tokens, latency and the provider's own timings, retries, the real cost, and a shadow cost, approximate on `local`, at the paid list price of the role's shadow model in `config/pricing.yaml`. Free and local calls cost nothing, so the shadow cost is what makes runs comparable.
+- **Ledger.** One `LedgerEntry` per call: model, prompt and input hashes, input, cached, output and thinking tokens, latency and the provider's own timings, retries, the real cost (always 0 at `v0.0`, because no command uses the paid key yet), and a shadow cost, approximate on `local`, at the paid list price of the role's shadow model in `config/pricing.yaml`. Free and local calls cost nothing, so the shadow cost is what makes runs comparable.
 - **Spans.** `run` and `node.<name>` are `CHAIN` spans, except `node.risk`, which is an `AGENT` span with its stop reason, turns and tool calls. Each call adds `llm.<node>` (`LLM`) and each tool call `tool.<name>` (`TOOL`). Spans carry hashes and counts, never prompt or response text.
 - **Tool calls.** Every tool request and its result are written to `tool_calls.jsonl` in the run folder and summarized in the trace.
 - **Where spans go.** OTLP to Phoenix when `PHOENIX_ENDPOINT` answers, and `spans.jsonl` in the run folder otherwise, or for any batch the collector refuses. The run waits at most 5 seconds for the collector at the end, and about 1 second at the start.
@@ -397,7 +397,7 @@ Structural rules are fitness functions that run on every push to `main` and ever
 
 ### 8.8 Configuration
 
-`config/models.yaml`, `limits.yaml`, `agents.yaml`, `thresholds.yaml` and `pricing.yaml` are loaded with `yaml.safe_load` and validated by Pydantic in `config.py`, so a bad value fails at start-up. A prompt's decoding block may override only `thinking`, `think` and `num_ctx`.
+`config/models.yaml`, `limits.yaml`, `agents.yaml`, `thresholds.yaml` and `pricing.yaml` are loaded with `yaml.safe_load` and validated by Pydantic in `config.py`, so a bad value fails at start-up. A prompt's decoding block may override only `thinking`, `think` and `num_ctx`. Keys and endpoints come from `.env`, whose names `.env.example` lists. Four more variables are read by code: `BIDWRIGHT_HOME` (the repository root, set in the `Dockerfile`), `BIDWRIGHT_CONFIG_DIR` (the configuration folder), `BIDWRIGHT_COMMIT` (the commit the manifest records when Git is absent) and `LANGGRAPH_STRICT_MSGPACK` (set by the command line and the `Dockerfile`, so a checkpoint holds plain data only).
 
 ## 9. Architecture decisions
 

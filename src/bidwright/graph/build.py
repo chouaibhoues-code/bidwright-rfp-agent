@@ -448,7 +448,7 @@ def execute(
                 ended=datetime.now(UTC),
                 status=status,
                 status_reason=reason,
-                overrides=[*overrides, *budget.raises],
+                overrides=overrides,
                 totals=totals_of(ctx.ledger, budget.active_seconds),
             )
             write_manifest(run_dir, manifest, ctx.ledger)

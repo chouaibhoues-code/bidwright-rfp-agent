@@ -54,7 +54,7 @@ One live run each on the development RFP, committed under `evals/results/runs/`:
 
 ## What CI gates
 
-Replayed tests block a merge: schemas, quote checks, gateway rules, the scorer self-test and a full replayed run. `config/thresholds.yaml` holds the block and warn thresholds of the regression gate, which applies from tag `v0.1`, once the hero RFP gives a baseline worth guarding. Only live runs show model quality; CI shows that the code path and the scorer are unchanged.
+CI blocks a merge on the unit tests (schemas, quote checks, gateway rules), the gold tests (the matcher and the scorer self-test) and the replayed run. `config/thresholds.yaml` holds the block and warn thresholds of the regression gate, which applies from tag `v0.1`, once the hero RFP gives a baseline worth guarding. Only live runs show model quality; CI shows that the code path and the scorer are unchanged.
 
 ## Still to come
 

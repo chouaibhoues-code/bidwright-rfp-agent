@@ -5,13 +5,13 @@ call spends nothing. The request limit counts provider attempts, retries and the
 model's attempts included, because that is what a provider's quota counts (ADR-022); the
 client checks the budget before each attempt. The clock runs only while the run is `RUNNING`,
 so time waiting for a person or a quota never counts. Going over a limit raises
-`BudgetExceeded`, and the run stops in `BUDGET_EXCEEDED`, a resumable status: `raise_limits`
-records the raise for the manifest.
+`BudgetExceeded`, and the run stops in `BUDGET_EXCEEDED`; the resume command that raises a
+budget arrives in Iteration 2.
 """
 
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from bidwright.config import RunLimits
 from bidwright.schemas import LedgerEntry
@@ -29,7 +29,6 @@ class RunBudget:
     clock: Callable[[], float] = time.monotonic
     requests: int = 0
     tokens: int = 0
-    raises: list[str] = field(default_factory=list)
     _active: float = 0.0
     _since: float | None = None
 
@@ -66,31 +65,3 @@ class RunBudget:
             return
         self.requests += 1 + entry.retries
         self.tokens += entry.tokens_in + entry.tokens_out + entry.tokens_thinking
-
-    def raise_limits(
-        self,
-        *,
-        requests: int | None = None,
-        tokens: int | None = None,
-        active_minutes: float | None = None,
-    ) -> str:
-        """Resume with higher limits. Returns the line the run manifest logs."""
-        new = self.limits.model_copy(
-            update={
-                key: value
-                for key, value in {
-                    "requests": requests,
-                    "tokens": tokens,
-                    "active_minutes": active_minutes,
-                }.items()
-                if value is not None
-            }
-        )
-        note = (
-            f"raise-budget: requests {self.limits.requests}->{new.requests},"
-            f" tokens {self.limits.tokens}->{new.tokens},"
-            f" active_minutes {self.limits.active_minutes}->{new.active_minutes}"
-        )
-        self.limits = RunLimits.model_validate(new.model_dump())
-        self.raises.append(note)
-        return note

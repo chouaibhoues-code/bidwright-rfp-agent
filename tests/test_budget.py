@@ -1,4 +1,4 @@
-"""The run budget: a run over a limit stops in BUDGET_EXCEEDED, and a raise lets it resume."""
+"""The run budget: a run over a limit stops in BUDGET_EXCEEDED, counting every provider attempt."""
 
 import pytest
 
@@ -86,14 +86,3 @@ def test_only_running_time_counts() -> None:
     clock.now = 5_011
     with pytest.raises(BudgetExceeded, match="active-time"):
         budget.check()
-
-
-def test_raising_the_budget_resumes_and_is_logged() -> None:
-    budget = RunBudget(RunLimits(requests=1, tokens=10_000, active_minutes=20))
-    budget.record(_entry())
-    with pytest.raises(BudgetExceeded):
-        budget.check()
-    note = budget.raise_limits(requests=5)
-    budget.check()
-    assert note == "raise-budget: requests 1->5, tokens 10000->10000, active_minutes 20.0->20.0"
-    assert budget.raises == [note]
