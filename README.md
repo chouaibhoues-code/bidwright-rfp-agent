@@ -30,7 +30,9 @@ A deterministic shell around a probabilistic core: code checks everything code c
 
 `samples/dev-free/` holds one real run of the development RFP on the `free` profile, and `evals/results/runs/20261103T021533Z-dev-rfp-3c582e4c-free/scorecard.md` its score: no mandatory requirement or submission hazard missed, every quote verbatim, every binding requirement mapped to an approach item, and one of three planted risks found, in 10 requests. The demo replays that same run. EX0, the one-call extraction baseline, scored the same on this four-page RFP (`evals/results/runs/20261103T021644Z-dev-rfp-3c582e4c-free-ex0/scorecard.md`, 11 requests), so the extraction comparison waits for the longer hero RFP in Iteration 1.
 
-Each run writes `outputs/<run>/`: `solution_summary.md` and its JSON twin, `proposal.md`, the frozen text and passages, the verified requirements and rejected quotes, the approach, the risks, `ledger.jsonl` with one entry per LLM call, `run_manifest.json` with the status and totals, and `spans.jsonl` when no Phoenix collector is set.
+Each run writes `outputs/<run>/`: `solution_summary.md` and its JSON twin, `proposal.md`, the frozen text and passages, the verified requirements and rejected quotes, the approach, the risks, `ledger.jsonl` with one entry per LLM call, `run_manifest.json` with the status and totals, and `spans.jsonl` when no Phoenix collector takes the spans.
+
+To see a run's trace tree in Phoenix, start it with `docker compose up -d phoenix` (Compose needs `GEMINI_API_KEY` in `.env`, ADR-002), set `PHOENIX_ENDPOINT=http://127.0.0.1:6006` in `.env`, run `uv run bidwright demo`, and open http://127.0.0.1:6006. Phoenix listens on loopback only and starts with authentication off; `.env.example` shows how to turn it on.
 
 ## How a run works
 
