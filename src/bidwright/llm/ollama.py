@@ -37,10 +37,6 @@ class OllamaBackend:
     def __init__(self, host: str | None = None) -> None:
         self._host = host or os.environ.get("OLLAMA_HOST") or "http://localhost:11434"
 
-    @property
-    def host(self) -> str:
-        return self._host
-
     def models(self) -> set[str]:
         """The names of the models pulled on this host, for the run's preconditions."""
         client = ollama.Client(host=self._host, timeout=10)
