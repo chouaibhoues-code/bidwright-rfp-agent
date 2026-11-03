@@ -26,7 +26,7 @@ services:
     depends_on: [phoenix]
 
   phoenix:
-    image: arizephoenix/phoenix:version-21.0.0
+    image: arizephoenix/phoenix:version-21.0.0@sha256:1f9a144a5357b4973e93a15718f050247cb7a4ee7b7c6c06ecb91b5eed3fbaad
     ports: ["127.0.0.1:6006:6006"]
     volumes: [phoenix-data:/mnt/data]
 
@@ -58,7 +58,7 @@ services:
       - ./outputs:/app/outputs
 
   ollama:
-    image: ollama/ollama:0.40.13
+    image: ollama/ollama:0.40.13@sha256:b2f0122c476bc9fe7ce679d8bb4bd555351e25e2554eefb156f61cb0a89cf429
     profiles: [local]
     ports: ["127.0.0.1:11434:11434"]
     volumes: [ollama-models:/root/.ollama]

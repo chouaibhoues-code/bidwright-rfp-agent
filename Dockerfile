@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 # One image for the app, eval, test and demo services. Gold and corpus specs are excluded by
 # .dockerignore; the eval service mounts them read-only at run time.
-FROM ghcr.io/astral-sh/uv:0.5.21 AS uv
+FROM ghcr.io/astral-sh/uv:0.5.21@sha256:87d729f94c87d0aade077260d07d899848f027b7ef37e734dca711c7ceffd3cf AS uv
 
-FROM python:3.12-slim AS build
+FROM python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30 AS build
 COPY --from=uv /uv /usr/local/bin/uv
 ENV UV_LINK_MODE=copy UV_COMPILE_BYTECODE=1 UV_PYTHON_DOWNLOADS=never
 WORKDIR /app
@@ -13,7 +13,7 @@ COPY src ./src
 COPY evals ./evals
 RUN uv sync --locked
 
-FROM python:3.12-slim
+FROM python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30
 RUN useradd --create-home --uid 10001 bidwright
 WORKDIR /app
 COPY --from=build /app /app

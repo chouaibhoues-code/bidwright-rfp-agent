@@ -1,0 +1,171 @@
+{
+ "summary": {
+  "A schema only": {
+   "missed_median": 0,
+   "missed_range": [
+    0,
+    0
+   ],
+   "verified_mean": 1.0,
+   "tokens_mean": 8216,
+   "latency_ms_median": 7783
+  },
+  "B thinking plus schema": {
+   "missed_median": 0,
+   "missed_range": [
+    0,
+    0
+   ],
+   "verified_mean": 1.0,
+   "tokens_mean": 7816,
+   "latency_ms_median": 6060
+  },
+  "C two-step": {
+   "missed_median": 0,
+   "missed_range": [
+    0,
+    0
+   ],
+   "verified_mean": 1.0,
+   "tokens_mean": 19208,
+   "latency_ms_median": 13385
+  }
+ },
+ "repeats": [
+  {
+   "variant": "A schema only",
+   "repeat": 1,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 2,
+   "tokens": 8529,
+   "latency_ms": 8614
+  },
+  {
+   "variant": "A schema only",
+   "repeat": 2,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 2,
+   "tokens": 7112,
+   "latency_ms": 5314
+  },
+  {
+   "variant": "A schema only",
+   "repeat": 3,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 2,
+   "tokens": 8556,
+   "latency_ms": 8120
+  },
+  {
+   "variant": "A schema only",
+   "repeat": 4,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 2,
+   "tokens": 8302,
+   "latency_ms": 7338
+  },
+  {
+   "variant": "A schema only",
+   "repeat": 5,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 2,
+   "tokens": 8582,
+   "latency_ms": 7783
+  },
+  {
+   "variant": "B thinking plus schema",
+   "repeat": 1,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 2,
+   "tokens": 8336,
+   "latency_ms": 26106
+  },
+  {
+   "variant": "B thinking plus schema",
+   "repeat": 2,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 2,
+   "tokens": 8402,
+   "latency_ms": 7065
+  },
+  {
+   "variant": "B thinking plus schema",
+   "repeat": 3,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 2,
+   "tokens": 7516,
+   "latency_ms": 5759
+  },
+  {
+   "variant": "B thinking plus schema",
+   "repeat": 4,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 2,
+   "tokens": 7410,
+   "latency_ms": 5370
+  },
+  {
+   "variant": "B thinking plus schema",
+   "repeat": 5,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 2,
+   "tokens": 7415,
+   "latency_ms": 6060
+  },
+  {
+   "variant": "C two-step",
+   "repeat": 1,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 4,
+   "tokens": 15954,
+   "latency_ms": 9972
+  },
+  {
+   "variant": "C two-step",
+   "repeat": 2,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 4,
+   "tokens": 18157,
+   "latency_ms": 11436
+  },
+  {
+   "variant": "C two-step",
+   "repeat": 3,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 4,
+   "tokens": 22922,
+   "latency_ms": 21712
+  },
+  {
+   "variant": "C two-step",
+   "repeat": 4,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 4,
+   "tokens": 19765,
+   "latency_ms": 13385
+  },
+  {
+   "variant": "C two-step",
+   "repeat": 5,
+   "missed_mandatory": [],
+   "verified_rate": 1.0,
+   "calls": 4,
+   "tokens": 19243,
+   "latency_ms": 18062
+  }
+ ]
+}
