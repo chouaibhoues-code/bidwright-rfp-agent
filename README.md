@@ -2,7 +2,7 @@
 
 Bidwright reads an RFP and drafts what a bid team needs first: a solution summary of requirements, approach and risks, with every requirement traced to a verified quote from the RFP. A short proposal draft follows from the same records. Later iterations add a proposal pack, generated from one solution manifest, that a bid team can edit.
 
-> **Status:** Iteration 0a, the walking skeleton. The thread from RFP to solution summary and proposal draft runs end to end, with a scored evaluation, a replayable demo and traces. Every output is labeled `UNREVIEWED_DRAFT` until a person signs it off.
+> **Status:** `v0.0.1`, Iteration 0b. The walking skeleton of Iteration 0a runs the thread from RFP to solution summary and proposal draft end to end, with a scored evaluation, a replayable demo and traces; Iteration 0b documented it (`docs/architecture.md`, `DECISIONS.md`, `docs/governance.md`, `docs/evaluation.md`) and had the architecture reviewed, with the fixes recorded in ADR-022 to ADR-025. Every output is labeled `UNREVIEWED_DRAFT` until a person signs it off.
 
 ## The design in one line
 

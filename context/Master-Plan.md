@@ -11,8 +11,8 @@ tags: [bidwright, project-management, plan, roadmap]
 # Master Plan
 
 > [!summary] Status on 2026-11-03
-> - Released: `v0.0`, Iteration 0a, the walking skeleton, on commit `1c9acaf`.
-> - In progress: Iteration 0b, documents and review, toward `v0.0.1`; its documents are done and the first architecture review is triaged, with ADR-022 to ADR-025; the drift report and the tag remain.
+> - Released: `v0.0`, Iteration 0a, the walking skeleton, on commit `1c9acaf`; `v0.0.1`, Iteration 0b, documents and review, on 2026-11-03, with ADR-022 to ADR-025 from the first architecture review.
+> - Next: Iteration 1, once its design doc passes the Stage 9 review (D-02) and D-05 is decided.
 > - At each tag the owner chooses to continue, release or stop (section 2.8).
 
 This file owns the scope, the work-package register, the assignment trace, the gates, the risks, the change log, the close-out notes and the full vision with its unbuilt scope. Other facts have one owner each: the current architecture is in `docs/architecture.md`, decisions in `DECISIONS.md`, assumptions in `ASSUMPTIONS.md`, hours in `TIMELOG.md`, research in [[Research-Register]], open decisions in [[Decision-Form]], and deferred work in [[Project-Backlog]].
@@ -256,13 +256,13 @@ The WBS is held as this register. Estimates are Claude's judgment (section 2.6).
 | WP-0a.9 | Evaluation harness and the EX0 baseline | 0.5 | A3, A8 | `bidwright-eval score`; `test_matcher.py`, `test_scorer_selftest.py`, `test_isolation.py`; EX0 scored beside the thread | Done `v0.0` |
 | WP-0a.10 | Containers | 0.5 | A1, A9 | Image and Compose stack; `test_compose_lockdown.py`; CI `docker` job | Done `v0.0` |
 | WP-0a.11 | Spikes, checks and research launches | 0.5 | A8, A9; CH-02 | S-04, S-05, S-07, S-09, S-14 and V-03, V-06, V-08 recorded in `docs/verification_log.md`; DR-01, DR-03, DR-16, DR-17 launched | Done `v0.0` |
-| WP-0b.1 | Project documents in `context/` | 1.5 | A13; CH-21, CH-22 | Four files with valid frontmatter; register, trace and earned-value snapshot present | Done, awaiting `v0.0.1` |
-| WP-0b.2 | ADRs for the plan's product and architecture decisions | 0.5 | A5 | ADR-005 to ADR-016 in `DECISIONS.md`, each with every short-form field | Done, awaiting `v0.0.1` |
-| WP-0b.3 | Architecture, decision matrix, threat model, evaluation stub | 1.0 | A5, A13; CH-23 | `docs/architecture.md` for `v0.0`, `docs/decision-matrix.md`, `docs/security.md`, `docs/evaluation.md` | Done, awaiting `v0.0.1` |
-| WP-0b.4 | Documentation generators | 0.5 | A9 | `scripts/gen_docs.py`; `test_docs_generated.py` finds no difference | Done, awaiting `v0.0.1` |
-| WP-0b.5 | Documentation checks in CI | 0.5 | A9 | `scripts/check_docs.py`; CI jobs `docs-generated` and `docs-links` green | Done, awaiting `v0.0.1` |
-| WP-0b.6 | Iteration 1 design doc | 0.5 | A1, A7, A8; CH-44 | `docs/designs/iteration-1.md` with a Detailed Implementation Plan and its open decisions closed as ADRs | Done; Stage 9 review next |
-| WP-0b.7 | First Goldfish architecture review | 0.5 | A13; CH-28 | Findings triaged; accepted ones became ADR-022 to ADR-025 and CH-75 to CH-78 | Done, awaiting `v0.0.1` |
+| WP-0b.1 | Project documents in `context/` | 1.5 | A13; CH-21, CH-22 | Four files with valid frontmatter; register, trace and earned-value snapshot present | Done `v0.0.1` |
+| WP-0b.2 | ADRs for the plan's product and architecture decisions | 0.5 | A5 | ADR-005 to ADR-016 in `DECISIONS.md`, each with every short-form field | Done `v0.0.1` |
+| WP-0b.3 | Architecture, decision matrix, threat model, evaluation stub | 1.0 | A5, A13; CH-23 | `docs/architecture.md` for `v0.0`, `docs/decision-matrix.md`, `docs/security.md`, `docs/evaluation.md` | Done `v0.0.1` |
+| WP-0b.4 | Documentation generators | 0.5 | A9 | `scripts/gen_docs.py`; `test_docs_generated.py` finds no difference | Done `v0.0.1` |
+| WP-0b.5 | Documentation checks in CI | 0.5 | A9 | `scripts/check_docs.py`; CI jobs `docs-generated` and `docs-links` green | Done `v0.0.1` |
+| WP-0b.6 | Iteration 1 design doc | 0.5 | A1, A7, A8; CH-44 | `docs/designs/iteration-1.md` with a Detailed Implementation Plan and its open decisions closed as ADRs | Done `v0.0.1`; Stage 9 review next |
+| WP-0b.7 | First Goldfish architecture review | 0.5 | A13; CH-28 | Findings triaged; accepted ones became ADR-022 to ADR-025 and CH-75 to CH-78 | Done `v0.0.1` |
 | WP-1.1 | `guard` and package input | 2.0 | A10, A11; CH-40 | Limits, scanned-PDF report, PDF and Office hidden-content quarantine; `guard` on CrackedPDFs | Planned |
 | WP-1.2 | Docling `ingest` and the control register | 1.5 | A10 | Package folder with an addendum runs end to end; Docling responses replay | Planned |
 | WP-1.3 | `candidates`, `triage`, full `extract`, second-pass trial | 2.5 | A7, A10; CH-46 | Every candidate has a disposition; S-03, S-10, S-13 decided | Planned |
@@ -331,7 +331,7 @@ Each iteration's gate. Entry must hold before work starts; Items are its package
 - Exit: the thin thread from RFP to summary and proposal on `free` and `local`; the 0a scorecard; the demo; CI green.
 - Verify: every 0a check passed, with two accepted exceptions recorded in section 9.
 
-**Iteration 0b, `v0.0.1`.**
+**Iteration 0b, `v0.0.1`. Closed on 2026-11-03.**
 - Entry: `v0.0` tagged.
 - Items: WP-0b.1 to 0b.7.
 - Exit: the four `context/` documents; ADRs; the architecture document for `v0.0`; the decision matrix; the one-page threat model; the evaluation stub; the generators and checks in CI; the Iteration 1 design doc; the first architecture review triaged.
@@ -541,17 +541,18 @@ One tag gives no trend; the snapshot only fixes the method.
 
 ### 9.2 Iteration 0b, `v0.0.1`
 
-In progress: WP-0b.1 to 0b.7 are done; the drift report and the tag remain.
+Tagged on 2026-11-03, with CI green on all 11 jobs.
 
-**Delivered so far.**
+**Planned against delivered.**
 
 | Planned | Delivered | Note |
 |---|---|---|
 | The four `context/` documents | Master-Plan, Decision-Form, Project-Backlog and Research-Register, with front matter, wikilinks and the voice converted | Checked in CI by `docs-links` |
-| ADRs | ADR-005 to ADR-016 for the plan's decisions; ADR-017 to ADR-021 proposed by the Iteration 1 design | The change log marks every entry ADR or process |
+| ADRs | ADR-005 to ADR-016 for the plan's decisions; ADR-017 to ADR-021 proposed by the Iteration 1 design; ADR-022 to ADR-025 from the architecture review | The change log marks every entry ADR or process |
 | Architecture, decision matrix, threat model, evaluation stub | `docs/architecture.md` under the arc42 headings, with the quality scenarios and their status at `v0.0`; `docs/decision-matrix.md` against Table 4 of the architecture-options taxonomy; `docs/security.md` mapped to the OWASP agentic and LLM lists; `docs/evaluation.md` | The OWASP lists and the taxonomy were read at source (V-01, in part) |
-| Generators and checks | `scripts/gen_docs.py` for `docs/agents.md` and the CLI and schema references; `scripts/check_docs.py` for links, anchors, wikilinks, ISO dates, front matter and voice; CI jobs `docs-generated` and `docs-links` | The voice check also catches first-person pronouns, under the neutral-voice rule |
+| Generators and checks | `scripts/gen_docs.py` for `docs/agents.md`, `docs/ai-bom.md` and the CLI and schema references; `scripts/check_docs.py` for links, anchors, wikilinks, ISO dates, front matter, voice and test names; CI jobs `docs-generated` and `docs-links` | The voice check also catches first-person pronouns, under the neutral-voice rule; the test-name check came from the review |
 | The Iteration 1 design doc | `docs/designs/iteration-1.md`, with its Detailed Implementation Plan in 20 steps, after reading DR-01, DR-03 and DR-16 and checking the parsing libraries through Context7 | DR-01 refuted the cue filter, so ADR-017 proposes sending every passage to `extract` |
+| The first architecture review (WP-0b.7) | Run, triaged and applied, with the drift report and the tag's code review after it | Below |
 
 **Added on 2026-11-03, after the owner set the two-capability goal (CH-74).** `docs/brief.md` for business readers; `docs/governance.md`, mapping the controls to EY's roles and trust layer and to the NIST AI RMF, with a record of how sensitive information is handled; and `docs/ai-bom.md`, an AI bill of materials generated by `scripts/gen_docs.py`. Reviewing sensitive data found that `bidwright record --profile local` would have written model answers quoting a client document into `tests/cassettes/`, which Git tracks. It now refuses any file outside the synthetic corpus, with a test. The measures that remain are open as D-05.
 
@@ -559,9 +560,31 @@ In progress: WP-0b.1 to 0b.7 are done; the drift report and the tag remain.
 
 **The first architecture review, 2026-11-03 (WP-0b.7).** The owner started `/egm:egm-review docs/architecture.md` in consolidated mode. Its 123 raw findings consolidated into 31 action items: 1 Blocker, 18 Majors and 12 Nit groups, in `private/egm/architecture-0b/`. The owner triaged them with Claude under the rules of section 2.11: 28 items were accepted in full or in part, with the Blocker's severity contested to Major on the one-owner-per-fact rule and three findings contested with evidence the reviewers could read; the removal of the unused OpenAI-compatible adapter and of the write-only checkpointer was declined, and the architecture document now states what each gives at `v0.0`; the removal of the consent override, D-05's option C2, was held with D-05. The accepted findings that changed the design are ADR-022 to ADR-025 (CH-75 to CH-78): the request budget counts provider attempts and is checked before each attempt; the profile's preconditions move to the run entry; `approach` and `risk` degrade instead of faulting, and a cut local prompt fails its call; and agent configuration declares only what code enforces. The document fixes complete the Options line of nine ADRs, add the non-goals and a pointer to the residual risks, define the corpus tiers and the other terms the comprehension test found undefined, and add a check in CI that every test named under `docs/` exists. Found while applying the fixes: the wheel shipped gold, corpus specs and results, which `pyproject.toml` now excludes, with a test that the wheel and the image exclude the same paths; and a probe showed that Ollama's evaluated-token count is not lowered by a cached prefix, which ADR-024's truncation check relies on.
 
-**Lessons so far.**
+**Also at the tag.** The drift report (`/egm:egm-drift-report docs`, in `private/egm/`) found seven small divergences between the documents and the code, all fixed, and removed the budget raise that no command could make before Iteration 2. The tag's `code-review` at medium effort found seven items, all fixed: the budget counts each provider attempt as it is made (ADR-022, amended the same day), the redundant budget check in the run context is gone, the record rule runs before the corpus rule, the local-model check accepts Ollama's `:latest` tag, the input file is hashed once per run, and the documentation checker reports a link through a file instead of crashing. A live run on `free` with the tagged code completed: 0 of 8 mandatory requirements and 0 of 1 hazards missed, every quote verbatim, 12 requests, and 0 of 3 planted risks this time against 1 of 3 at `v0.0`, the known weak point. The sample run and the demo cassettes stay those of `v0.0`, because no prompt, model or schema changed in this iteration.
+
+**Exit checks with accepted exceptions.** None.
+
+**Decisions taken during the iteration.** CH-74 to CH-78 and ADR-022 to ADR-025. D-05 stays open, with the consent override kept at the review (C2 held with the decision).
+
+**Lessons learned.**
 - Writing the failure table from the code found a defect that no test had covered, because every test exercised a failure the code expected.
 - A checker that cannot fail shows nothing: `check_docs.py` has its own tests, one per kind of problem.
+- A reviewer in a fresh context finds what the author's context hides: the review's 31 items came from a document the author had just written against the same code.
+- A one-owner-per-fact rule needs the owner to carry the fact: the architecture document delegated its alternatives to the ADRs, where half the Options lines gave no reason.
+- A fix needs its own review: the code review of the review's fixes found the attempt count stale between retries, a case the new tests had not covered.
+
+**Earned-value snapshot at `v0.0.1`.**
+
+| Measure | Value | Basis |
+|---|---|---|
+| Budget at completion | 68 hours to the release target (84 with Iterations 6 and 7) | Section 3 |
+| Planned value | 13.0 hours: 8.0 for Iteration 0a and 5.0 for 0b | The 0a and 0b packages |
+| Earned value | 13.0 hours | Every 0a and 0b package passed its Exit and Verify |
+| Actual cost | Entered by the owner in `TIMELOG.md` | — |
+| Schedule performance index | 1.0 | Earned value over planned value at the tag |
+| Cost performance index, estimate at completion | Pending the owner's hours | Actual cost needed |
+
+Two tags still give no trend; the review and its fixes took more of the iteration than the 0.5 hours planned for WP-0b.7, which the owner's hours will show.
 
 ## 10. Full vision
 
