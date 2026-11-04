@@ -1,8 +1,11 @@
 # S-03: recall against pack size on the hero package (Iteration 1, step 18). The largest
 # batch size whose rung is within the noise of b10 becomes `batch_size` (step 20).
+# Runs to b40-r1 ran on `free` on 2026-11-04; the free quota then ran out, and the rest ran on
+# `paid` (CH-82), which uses the same models and settings under the paid key. Each run's
+# manifest records its profile.
 name: s03-batch
 rfp: inputs/hero
-profile: free
+profile: paid
 repeats: 5
 until: coverage
 max_cost_usd: 10
