@@ -13,6 +13,7 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
 | `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
 | `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | None |
+| `consolidate` | function | `ClusterTask` | `ConsolidationResult` | `consolidate@0.1.0` | reason | None | None |
 
 A function declares no limits: it makes one call and one repair, fixed in the node code. An agent's limits bound its tool loop.
 
@@ -21,6 +22,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | Prompt | Version | Role | Pattern | Schema | Decoding | Last tested |
 |---|---|---|---|---|---|---|
 | `approach` | 0.2.0 | reason | Skeleton-of-Thought | `ApproachResult` | gemini: thinking medium; ollama: think False | 2026-11-02 |
+| `consolidate` | 0.1.0 | reason | ordered steps in the task, positive directives | `ConsolidationResult` | gemini: thinking medium; ollama: think False | never |
 | `draft` | 0.2.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-02 |
 | `extract` | 0.3.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract_noexamples` | 0.3.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | never |

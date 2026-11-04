@@ -798,7 +798,8 @@ def _progress_keys(tool: str, result: ToolResult) -> list[str]:
     return []
 
 
-def _content_stems(text: str) -> set[str]:
+def content_stems(text: str) -> set[str]:
+    """Words of 4 or more letters outside the stopword list, cut to their first 6 letters."""
     words = {w.lower() for w in re.findall(r"[A-Za-z]{4,}", text)} - STOPWORDS
     return {w[:6] for w in words}
 
@@ -811,7 +812,7 @@ def _screen(
     for proposal in proposals:
         evidence = [s for s in proposal.evidence_src_ids if s in passages]
         cited = " ".join(display_text(passages[s].text) for s in evidence)
-        shared = _content_stems(f"{proposal.condition} {proposal.event}") & _content_stems(cited)
+        shared = content_stems(f"{proposal.condition} {proposal.event}") & content_stems(cited)
         exposure = proposal.residual_exposure.strip().lower().rstrip(".")
         everything = " ".join([proposal.condition, proposal.event, proposal.effect, exposure])
         if not evidence:

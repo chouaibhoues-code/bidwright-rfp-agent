@@ -206,6 +206,7 @@ def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
         "risk": _risk_examples,
         "draft": _draft_examples,
         "triage": _triage_examples,
+        "consolidate": _consolidate_examples,
     }
     if name not in renderers or name not in sets:
         raise ValueError(f"no example set {name!r} in {EXAMPLES_FILE}")
@@ -342,3 +343,34 @@ def _triage_examples(example: dict[str, Any]) -> str:
             + _json_list(", ", "hazards", output["hazards"]),
         ]
     )
+
+
+def _consolidate_examples(examples: list[dict[str, Any]]) -> str:
+    """Clusters and their results. Every id a result cites is in its cluster, and every lint
+    finding id is one the cluster carries."""
+    blocks = []
+    for example in examples:
+        task = schemas.ClusterTask.model_validate(example["task"])
+        result = schemas.ConsolidationResult.model_validate(example["result"])
+        allowed = {m.id for m in task.members} | {m.id for m in task.context}
+        cited = {i for d in result.discrepancies for i in d.requirement_ids}
+        cited |= {i for q in result.questions for i in q.requirement_ids}
+        cited |= {i for pair in result.duplicates for i in (pair.requirement_id, pair.duplicate_of)}
+        cited |= {r.requirement_id for r in result.references}
+        cited |= {i for r in result.references for i in r.resolved_ids}
+        if not cited <= allowed:
+            raise ValueError(f"{task.cluster_id}: the result cites ids outside the cluster")
+        lint_ids = {f.id for f in task.lint}
+        if not {i for q in result.questions for i in q.lint_finding_ids} <= lint_ids:
+            raise ValueError(f"{task.cluster_id}: a question cites a lint finding not in the task")
+        blocks.append(
+            "\n".join(
+                [
+                    "A cluster:",
+                    _dump(task.model_dump(mode="json")),
+                    "Its result:",
+                    _dump(result.model_dump(mode="json")),
+                ]
+            )
+        )
+    return "\n\n".join(blocks)

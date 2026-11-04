@@ -41,3 +41,11 @@ draft:
   prompt: draft@0.2.0
   model_role: reason
   tools: []
+
+consolidate:
+  kind: function
+  input: ClusterTask
+  output: ConsolidationResult
+  prompt: consolidate@0.1.0
+  model_role: reason
+  tools: []

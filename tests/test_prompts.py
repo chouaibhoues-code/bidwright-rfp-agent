@@ -54,7 +54,7 @@ def test_the_repository_has_the_0a_prompts() -> None:
 @pytest.mark.parametrize("prompt_id", PROMPT_IDS)
 def test_every_prompt_loads_and_renders(prompt_id: str) -> None:
     prompt = load_prompt(prompt_id)
-    values = {"batch_id": "B00", "section_id": "approach", "call_id": "T01"}
+    values = {"batch_id": "B00", "section_id": "approach", "call_id": "T01", "cluster_id": "RG-001"}
     needed = {
         name: values[name] for name in prompt.tasks["task"].get_identifiers() if name != "data_tag"
     }

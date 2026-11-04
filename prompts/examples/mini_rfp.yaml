@@ -236,3 +236,43 @@ triage:
     hazards:
       - {kind: FORMAT, src_ids: [SRC-0961], summary: "Tenders must be one PDF of no more than 30 pages, uploaded to the portal."}
       - {kind: DEADLINE, src_ids: [SRC-0962], summary: "Tenders received after 12:00 UTC on 2027-02-01 are rejected."}
+
+# For consolidate: two clusters and their results. The first holds two retention periods that
+# disagree, with a lint finding answered by a question; the second holds a deadline that an
+# addendum supersedes under the RFP's own precedence clause.
+consolidate:
+  - task:
+      cluster_id: RG-901
+      members:
+        - {id: REQ-0911, statement: "The Supplier keeps audit records for seven years in an appropriate format.", modality: shall, disposition: BINDING, quote: "The Supplier shall keep audit records for seven (7) years in an appropriate format.", doc_id: example-rfp, section_path: "4 Service requirements > 4.2 Records"}
+        - {id: REQ-0912, statement: "The Supplier retains audit records for five years.", modality: shall, disposition: BINDING, quote: "Audit records shall be retained for five (5) years in accordance with Section 4.2.", doc_id: example-rfp, section_path: "Annex B Records"}
+      lint:
+        - {id: LF-0901, kind: VAGUE, requirement_id: REQ-0911, match: "appropriate"}
+    result:
+      topic: "Retention of audit records"
+      duplicates: []
+      discrepancies:
+        - {requirement_ids: [REQ-0911, REQ-0912], kind: INCONSISTENT_VALUE, state: established, description: "Section 4.2 requires seven years of retention and Annex B five years.", resolved_by: null}
+      questions:
+        - {text: "Should audit records be kept for seven years, as in section 4.2, or five years, as in Annex B?", requirement_ids: [REQ-0911, REQ-0912], lint_finding_ids: [], reason: "The two retention periods disagree."}
+        - {text: "Which file formats count as an appropriate format for audit records?", requirement_ids: [REQ-0911], lint_finding_ids: [LF-0901], reason: "The format is not measurable as written."}
+      references:
+        - {requirement_id: REQ-0912, target: "Section 4.2", resolved_ids: [REQ-0911]}
+  - task:
+      cluster_id: RG-902
+      members:
+        - {id: REQ-0921, statement: "Each bidder submits its tender by 2027-03-01 17:00 UTC.", modality: must, disposition: BINDING, quote: "Tenders must be submitted by 2027-03-01 17:00 UTC.", doc_id: example-rfp, section_path: "2 Instructions to bidders"}
+        - {id: REQ-0922, statement: "Each bidder submits its tender by 2027-03-15 17:00 UTC.", modality: must, disposition: BINDING, quote: "The deadline in Section 2 is extended: tenders must be submitted by 2027-03-15 17:00 UTC.", doc_id: example-addendum, section_path: "Addendum 1"}
+      precedence:
+        - {doc_id: example-addendum, role: addendum, precedence: 1}
+        - {doc_id: example-rfp, role: main, precedence: 2}
+      precedence_clause:
+        - {src_id: SRC-0931, text: "In the event of any conflict, the latest addendum shall prevail over the main document."}
+    result:
+      topic: "Tender submission deadline"
+      duplicates: []
+      discrepancies:
+        - {requirement_ids: [REQ-0921, REQ-0922], kind: SUPERSEDED, state: established, description: "Addendum 1 moves the submission deadline from 2027-03-01 to 2027-03-15.", resolved_by: "In the event of any conflict, the latest addendum shall prevail over the main document."}
+      questions: []
+      references:
+        - {requirement_id: REQ-0922, target: "Section 2", resolved_ids: [REQ-0921]}
