@@ -1,13 +1,13 @@
 ---
 id: extract_oneshot
-version: 0.2.0
+version: 0.3.0
 role: extract
 pattern: plain instruction
 schema: ExtractResult
 examples: clauses
 decoding: {gemini: {thinking: medium}, ollama: {think: false}}
 rubric: null
-last_tested: 2026-11-02
+last_tested: null
 ---
 <role>
 You list the obligations in a request for proposal (RFP).
@@ -29,6 +29,14 @@ Based on the whole RFP above, inside the <$data_tag> tags, list every obligation
 These quotes were not found in their cited passages: $failures. For each item, copy the exact text from the passage, or return it with an empty `quote` to withdraw it.
 </repair_quotes>
 
+<repair_numbers>
+These statements hold a number or date that is not in the cited passage: $failures. Restate each with the passage's own values, or withdraw the item with an empty quote.
+</repair_numbers>
+
+<repair_long>
+These quotes are longer than 300 characters: $failures. Shorten each to the span that states the obligation.
+</repair_long>
+
 <repair_missing>
 These passage ids are missing from your answer: $missing. Add an item for each, or list it in `no_obligation_src_ids`.
 </repair_missing>
@@ -41,9 +49,14 @@ Return only the items you corrected or added, as JSON that matches the response 
 Your answer did not match the response schema: $error. Return the whole result again, as JSON that matches the schema.
 </repair_format>
 
+<second_pass>
+Based on the passages above, list any obligation on the supplier in passages $ids that the first reading missed, or return no items.
+</second_pass>
+
 ## Why it works
 
 - **It is the control.** EX0, the first rung of the extraction ladder, sends every passage of the RFP in one call with this plain instruction. Each later rung is judged against it.
 - **Same examples, same schema, same checks.** The examples, the response schema and the repair messages match `extract.md`, and `verify` checks this rung's quotes too. EX1 therefore measures batching and the prompt contract (rules, decision table, the coverage check), not a change in examples or in quote checking.
 - **Deliberately minimal.** No rules beyond the output format, and no decision table. Adding them here would hide what the contract buys.
+- **Version 0.3.0** adds only what the code around every extract prompt needs: the repair messages for values not in the source and for quotes over 300 characters, and the second-pass task. The instruction stays plain, so EX0 remains the control the Master-Plan's ablation table describes, and EX1 still measures batching and the prompt contract together.
 - **Decoding** matches `extract.md`, so the rungs differ only in what they test.

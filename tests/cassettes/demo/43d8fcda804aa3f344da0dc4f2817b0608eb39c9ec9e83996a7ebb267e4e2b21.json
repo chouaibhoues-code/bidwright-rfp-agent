@@ -1,0 +1,26 @@
+{
+ "key": "sha256:43d8fcda804aa3f344da0dc4f2817b0608eb39c9ec9e83996a7ebb267e4e2b21",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"title\": \"Risks and assumptions\",\n  \"text\": \"The main risks involve document length, API development delays, and access to historical records during the migration gap [RSK-001, RSK-002, RSK-003]. We will enforce an 18-page limit, upload a baseline draft 24 hours prior to 2026-12-01 12:00 UTC, initiate a mock API environment, negotiate a phased go-live, prioritize frequently accessed records, and ensure staff retain read-only access to the legacy tool until migration completes [RSK-001, RSK-002, RSK-003]. This prevents outright proposal rejection, breaches of the go-live mandate, staff workflow disruption, and audit gaps [RSK-001, RSK-002, RSK-003]. Open questions remain regarding template forms, record formats, infrastructure, incident reporting channels, sandbox credentials, and migration data formats and volumes [Q-01, Q-02, Q-03, Q-04, Q-05, Q-06].\",\n  \"cited_ids\": [\"RSK-001\", \"RSK-002\", \"RSK-003\", \"Q-01\", \"Q-02\", \"Q-03\", \"Q-04\", \"Q-05\", \"Q-06\"]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1536,
+   "tokens_out": 324,
+   "tokens_cached": 0,
+   "tokens_thinking": 1281,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T07:41:45Z"
+}

@@ -2,8 +2,9 @@
 
 A prompt file in `prompts/` is Markdown with YAML front-matter. Its body is the system
 instruction in XML-style tags, plus a `<task>` element, which goes last in the user message,
-after the data. Follow-up messages are elements too: `<final_task>` closes an agent loop, and
-`<repair_...>` elements ask for one targeted repair. Everything from the `## Why it works`
+after the data. Follow-up messages are elements too: `<final_task>` closes an agent loop,
+`<second_pass>` asks `extract` for a second reading, and `<repair_...>` elements ask for one
+targeted repair. Everything from the `## Why it works`
 heading on is notes for people and never reaches a model.
 
 `substitute` raises on a missing value and never re-reads what it inserts, so quotes with
@@ -32,7 +33,9 @@ from bidwright.llm.types import Message
 PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
 EXAMPLES_FILE = Path("examples") / "mini_rfp.yaml"
 NOTES_HEADING = "## Why it works"
-_TASK_ELEMENT = re.compile(r"\s*<(task|final_task|repair_[a-z_]+)>\s*(.*?)\s*</\1>", re.DOTALL)
+_TASK_ELEMENT = re.compile(
+    r"\s*<(task|final_task|second_pass|repair_[a-z_]+)>\s*(.*?)\s*</\1>", re.DOTALL
+)
 _FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n(.*)\Z", re.DOTALL)
 
 Value = str | int
@@ -227,6 +230,10 @@ def _clause_examples(clauses: list[dict[str, Any]]) -> str:
                 "section_path": clause["section_path"],
                 "text": clause["text"],
                 "lead_in": clause.get("lead_in"),
+                "zone": clause.get("zone"),
+                "cues": clause.get("cues", []),
+                "small_print": clause.get("small_print", False),
+                "suspect": clause.get("suspect", False),
             }
         )
         expect = clause.get("expect")

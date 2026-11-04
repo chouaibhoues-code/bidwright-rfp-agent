@@ -187,7 +187,7 @@ def main() -> int:
                 print(json.dumps(write(rows, stopped=reason), indent=1))
                 return 1
             outcomes = [s.outcome for s in scores]
-            records, _ = assign_requirements(outcomes, ingest.passages, ingest.doc_id)
+            records, _ = assign_requirements(outcomes, ingest.passages)
             missed = sorted(mandatory - set(match(records, clauses, passages).captured))
             items = sum(s.items for s in scores)
             verified = sum(len(s.outcome.accepted) for s in scores)

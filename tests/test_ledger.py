@@ -30,11 +30,12 @@ def test_ledger_totals_match_the_manifest(tmp_path: Path) -> None:
     assert manifest.totals == totals_of(ledger, manifest.totals.active_seconds)
     assert manifest.totals.requests == len(ledger) == len(model.requests)
     assert manifest.totals.cost_usd == 0.0 and manifest.totals.shadow_cost_usd > 0
-    assert {entry.node for entry in ledger} == {"extract", "approach", "risk", "draft"}
+    assert {entry.node for entry in ledger} == {"triage", "extract", "approach", "risk", "draft"}
 
 
 def test_the_manifest_lists_the_models_that_answered(tmp_path: Path) -> None:
-    """A spent quota on the first call moves it to the fallback, so both models answered."""
+    """A spent quota on the first call, `triage`'s, moves it to the fallback, so both models
+    answered."""
     model = ProviderSimulator(RuleBackend(), [{"call": 1, "fault": "quota_exhausted"}])
     result = execute(
         source=DEV_RFP,
@@ -52,6 +53,7 @@ def test_the_manifest_lists_the_models_that_answered(tmp_path: Path) -> None:
     )
     assert manifest.models == {role: "gemini-3.5-flash-lite" for role in ("extract", "reason")}
     assert manifest.models_used == models_used(ledger)
-    assert manifest.models_used["extract"] == ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
+    assert manifest.models_used["triage"] == ["gemini-3.1-flash-lite"]
+    assert manifest.models_used["extract"] == ["gemini-3.5-flash-lite"]
     assert manifest.models_used["approach"] == ["gemini-3.5-flash-lite"]
     assert sum(entry.retries for entry in ledger) == 1  # the refused attempt

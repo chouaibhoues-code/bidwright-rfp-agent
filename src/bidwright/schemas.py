@@ -357,6 +357,10 @@ class PassageView(Facing):
     section_path: str
     text: str
     lead_in: str | None = None
+    zone: Zone | None = None  # the section's zone from triage, a hint (step 11)
+    cues: list[CueKind] = Field(default_factory=list)  # hints, never a filter (ADR-017)
+    small_print: bool = False
+    suspect: bool = False  # reads like an instruction to a model; classify it like any text
 
 
 class ContextPassageView(Facing):
@@ -374,11 +378,16 @@ class TermView(Facing):
 class ExtractBatch(Facing):
     batch_id: str
     passages: list[PassageView]
+    context: list[ContextPassageView] = Field(default_factory=list)  # read, never cited
+    terms: list[TermView] = Field(default_factory=list)
 
 
 class ExtractItem(Facing):
-    src_ids: list[str] = Field(min_length=1, max_length=3)
-    quote: str = Field(max_length=QUOTE_MAX_CHARS)
+    """One obligation. `settle` enforces the 3-id and 300-character limits per item, so one
+    long quote never fails its whole pack (ADR-024)."""
+
+    src_ids: list[str] = Field(min_length=1)
+    quote: str
     statement: str
     modality: Modality
     disposition: Disposition

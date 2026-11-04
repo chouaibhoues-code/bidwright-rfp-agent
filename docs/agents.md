@@ -9,7 +9,7 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | Name | Kind | Input | Output | Prompt | Model role | Tools | Limits |
 |---|---|---|---|---|---|---|---|
 | `triage` | function | `TriageInput` | `TriageResult` | `triage@0.1.0` | extract | None | None |
-| `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.2.0` | extract | None | None |
+| `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.3.0` | extract | None | None |
 | `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
 | `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
 | `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | None |
@@ -22,10 +22,11 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 |---|---|---|---|---|---|---|
 | `approach` | 0.2.0 | reason | Skeleton-of-Thought | `ApproachResult` | gemini: thinking medium; ollama: think False | 2026-11-02 |
 | `draft` | 0.2.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-02 |
-| `extract` | 0.2.0 | extract | plain rules and decision table | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-02 |
-| `extract_oneshot` | 0.2.0 | extract | plain instruction | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-02 |
+| `extract` | 0.3.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
+| `extract_noexamples` | 0.3.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | never |
+| `extract_oneshot` | 0.3.0 | extract | plain instruction | `ExtractResult` | gemini: thinking medium; ollama: think False | never |
 | `risk` | 0.2.0 | reason | Multi-Perspective pre-mortem in one call | `RiskRegister` | gemini: thinking low; ollama: think False | 2026-11-02 |
-| `triage` | 0.1.0 | extract | plain rules and a zone table, positive directives | `TriageResult` | gemini: thinking low; ollama: think False | never |
+| `triage` | 0.1.0 | extract | plain rules and a zone table, positive directives | `TriageResult` | gemini: thinking low; ollama: think False | 2026-11-04 |
 
 ## Models by profile and role
 
@@ -58,6 +59,9 @@ config:
 graph TD;
 	__start__([<p>__start__</p>]):::first
 	ingest(ingest)
+	candidates(candidates)
+	triage(triage)
+	pack(pack)
 	extract(extract)
 	verify(verify)
 	approach(approach)
@@ -67,10 +71,13 @@ graph TD;
 	__end__([<p>__end__</p>]):::last
 	__start__ --> ingest;
 	approach --> risk;
+	candidates --> triage;
 	draft --> render;
 	extract --> verify;
-	ingest -.-> extract;
+	ingest --> candidates;
+	pack -.-> extract;
 	risk --> draft;
+	triage --> pack;
 	verify --> approach;
 	render --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2

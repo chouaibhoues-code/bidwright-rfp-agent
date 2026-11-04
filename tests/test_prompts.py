@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from bidwright.config import load_config
@@ -12,6 +13,7 @@ from bidwright.prompts import (
     load_prompt,
     load_prompt_ref,
 )
+from bidwright.verify import missing_values
 
 PROMPT_IDS = sorted(path.stem for path in PROMPTS_DIR.glob("*.md"))
 QUOTE = "The Supplier shall pay ${amount} within {30} days, or $5 per day late."
@@ -154,7 +156,8 @@ def test_a_version_mismatch_in_a_ref_is_an_error() -> None:
 
 def test_extract_examples_show_every_route() -> None:
     system = load_prompt("extract").system
-    for label in ("BINDING", "OPTIONAL", "BACKGROUND", "NOT_BINDING", "no_obligation_src_ids"):
+    labels = ("BINDING", "OPTIONAL", "BACKGROUND", "NOT_BINDING", "OUT_OF_SCOPE")
+    for label in (*labels, "no_obligation_src_ids"):
         assert label in system
     assert '"hazard": true' in system
 
@@ -180,3 +183,35 @@ def test_the_triage_prompt_renders_its_outline_example() -> None:
     assert "An outline:" in triage.examples and '"hazards": [' in triage.examples
     assert triage.decoding == {"gemini": {"thinking": "low"}, "ollama": {"think": False}}
     assert "T01" in triage.task_text(data_tag="data-x", call_id="T01")
+
+
+def test_the_extract_prompts_are_at_0_3_0_and_share_their_tasks() -> None:
+    extract = load_prompt("extract")
+    for prompt_id in ("extract", "extract_oneshot", "extract_noexamples"):
+        prompt = load_prompt(prompt_id)
+        assert prompt.meta.version == "0.3.0", prompt_id
+        assert set(prompt.tasks) == set(extract.tasks), prompt_id
+        asked = prompt.task_text("second_pass", data_tag="data-x", ids='["SRC-0001"]')
+        assert "SRC-0001" in asked and "the first reading missed" in asked
+    bare = load_prompt("extract_noexamples")
+    assert bare.meta.examples is None and bare.examples == "" and "A batch:" not in bare.system
+    assert bare.system.replace("\n", "") in extract.system.replace(extract.examples, "").replace(
+        "\n", ""
+    ).replace("<examples></examples>", ""), "the same text, less the examples"
+
+
+def test_the_clause_examples_cover_every_disposition_with_valid_values() -> None:
+    sets = yaml.safe_load((PROMPTS_DIR / "examples" / "mini_rfp.yaml").read_text(encoding="utf-8"))
+    clauses = sets["clauses"]
+    shown = {c["expect"]["disposition"] for c in clauses if c.get("expect")}
+    assert shown == {"BINDING", "OPTIONAL", "BACKGROUND", "NOT_BINDING", "OUT_OF_SCOPE"}
+    assert any(c.get("expect") is None for c in clauses), "and a no-obligation passage"
+    for clause in clauses:
+        expect = clause.get("expect")
+        if expect is None:
+            continue
+        sources = [expect["quote"], clause["text"], clause.get("lead_in") or ""]
+        assert missing_values(expect["statement"], sources) == [], clause["src_id"]
+        assert {"zone", "cues"} <= set(clause), clause["src_id"]
+    system = load_prompt("extract").system
+    assert '"zone": "OBLIGATION"' in system and '"suspect": false' in system

@@ -1,0 +1,26 @@
+{
+ "key": "sha256:95928dcff5484db14495d9ae8c1280c50f5b24d04f57a7a0852dbed6e4659bb1",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"title\": \"Our approach\",\n  \"text\": \"We would assemble the proposal as a single PDF of no more than 20 pages and submit it through the College's procurement portal by 2026-12-01 12:00 UTC, while ensuring integration via the existing REST API and a live release by 2027-01-11 [APP-001]. We assume the REST API documentation is available for integration [APP-001]. We would support signing on current desktop and mobile browsers, maintain an audit record of every signature event including identity, time, and document version, and send a reminder to each signer within 72 hours [APP-002]. It is assumed that email will be the reminder channel [APP-002]. We would store signed documents for ten years and maintain 99.5% service availability in each calendar month, excluding planned maintenance announced five working days in advance [APP-003]. We assume standard cloud infrastructure will meet the availability target [APP-003].\",\n  \"cited_ids\": [\n    \"APP-001\",\n    \"APP-002\",\n    \"APP-003\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1362,
+   "tokens_out": 272,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T07:41:41Z"
+}

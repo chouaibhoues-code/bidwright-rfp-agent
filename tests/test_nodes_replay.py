@@ -22,6 +22,7 @@ from tests.node_fakes import (
     context,
     dev_ingest,
     gateway,
+    pack_of,
     text,
     tools,
 )
@@ -55,8 +56,8 @@ SECTION = {
 
 
 def _chain(ctx: RunContext, tmp_path: Path) -> dict[str, Any]:
-    outcome = extract_batch(ctx, SECTION_4, "B01")
-    requirements, rejected = assign_requirements([outcome], dev_ingest().passages, "dev-rfp")
+    outcome = extract_batch(ctx, pack_of(SECTION_4))
+    requirements, rejected = assign_requirements([outcome], dev_ingest().passages)
     plan = approach(ctx, requirements)
     found = risk(ctx, requirements, plan.items, gateway(tmp_path), RISK_LIMITS)
     sections = [

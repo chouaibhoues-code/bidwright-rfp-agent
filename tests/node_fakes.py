@@ -9,15 +9,23 @@ from typing import Any
 
 from bidwright.config import AgentLimits, RunLimits, load_config
 from bidwright.graph.nodes import RunContext
+from bidwright.graph.triage import keyword_zone
 from bidwright.harness.budget import RunBudget
 from bidwright.harness.gateway import ToolGateway
-from bidwright.ingest import IngestResult, ingest_pdf
+from bidwright.ingest import IngestResult, display_text, ingest_pdf
 from bidwright.llm.client import LLMClient
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Request, Response, ToolCall, Usage
 from bidwright.prompts import load_prompt
 from bidwright.retrieval import PassageIndex
-from bidwright.schemas import Requirement
+from bidwright.schemas import (
+    ContextManifest,
+    ContextPack,
+    ContextPassageView,
+    Passage,
+    PassageView,
+    Requirement,
+)
 from bidwright.tools import date_tool, search_tool
 
 DEV_RFP = Path(__file__).resolve().parents[1] / "inputs" / "dev" / "dev_rfp.pdf"
@@ -88,6 +96,8 @@ class RuleBackend:
             return tools(("search_rfp", {"query": "go-live migration"}))
         if name == "ExtractResult":
             return Response(text=json.dumps(_extract(data)), usage=USAGE)
+        if name == "TriageResult":
+            return Response(text=json.dumps(_triage(data)), usage=USAGE)
         if name == "ApproachResult":
             items = [
                 {
@@ -136,6 +146,25 @@ def _extract(batch: dict[str, Any]) -> dict[str, Any]:
     return {"items": items, "no_obligation_src_ids": none}
 
 
+def _triage(outline: dict[str, Any]) -> dict[str, Any]:
+    """Zones by the keyword rule, every profile field `not_stated`, and no hazards."""
+    zones = load_config().zones
+    return {
+        "zones": [
+            {
+                "section_path": section["section_path"],
+                "doc_id": section["doc_id"],
+                "zone": keyword_zone(section["section_path"], zones)[0],
+                "confidence": 0.9,
+                "reason": "By the heading's keywords.",
+            }
+            for section in outline["sections"]
+        ],
+        "profile": {},
+        "hazards": [],
+    }
+
+
 _INGESTED: list[IngestResult] = []
 
 
@@ -166,6 +195,39 @@ def context(
     prompts = {pid: load_prompt(pid) for pid in PROMPT_IDS}
     passages = {p.id: p for p in dev_ingest().passages}
     return RunContext("run-test", client, budget, prompts, passages)
+
+
+def pack_of(
+    passages: list[Passage],
+    call_id: str = "B01",
+    *,
+    zone: str | None = None,
+    context: list[Passage] | None = None,
+) -> ContextPack:
+    """A context pack over these passages, as `ContextManager.pack` would build it."""
+    by_id = {p.id: p for p in dev_ingest().passages}
+    views = [
+        PassageView.model_validate(
+            {
+                "src_id": p.id,
+                "section_path": p.section_path,
+                "text": display_text(p.text),
+                "lead_in": display_text(by_id[p.lead_in_id].text) if p.lead_in_id else None,
+                "zone": zone,
+            }
+        )
+        for p in passages
+    ]
+    neighbors = [ContextPassageView(src_id=p.id, text=display_text(p.text)) for p in context or []]
+    manifest = ContextManifest(
+        node="extract",
+        call_id=call_id,
+        included_src_ids=[p.id for p in passages],
+        context_src_ids=[p.id for p in context or []],
+        budget_tokens=12000,
+        utilization=0.1,
+    )
+    return ContextPack(call_id=call_id, passages=views, context=neighbors, manifest=manifest)
 
 
 def gateway(tmp_path: Path, limits: AgentLimits = RISK_LIMITS) -> ToolGateway:

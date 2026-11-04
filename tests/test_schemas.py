@@ -329,20 +329,26 @@ def test_requirement_limits() -> None:
         s.Requirement.model_validate({**base, "src_ids": []})
 
 
-def test_extract_item_limits() -> None:
-    good = {
-        "src_ids": ["SRC-0001"],
-        "quote": "x" * s.QUOTE_MAX_CHARS,
+def test_requirement_limits_hold_while_extract_items_are_checked_per_item() -> None:
+    """A stored requirement keeps at most 3 passages and a 300-character quote; a model's
+    item may break either, and `settle` handles it per item (ADR-024)."""
+    good = REQUIREMENT.model_dump()
+    s.Requirement.model_validate({**good, "quote": "x" * s.QUOTE_MAX_CHARS})
+    with pytest.raises(ValidationError):
+        s.Requirement.model_validate({**good, "quote": "x" * (s.QUOTE_MAX_CHARS + 1)})
+    with pytest.raises(ValidationError):
+        s.Requirement.model_validate({**good, "src_ids": ["SRC-0001"] * 4})
+    long_item = {
+        "src_ids": ["SRC-0001"] * 4,
+        "quote": "x" * (s.QUOTE_MAX_CHARS + 1),
         "statement": "s",
         "modality": "shall",
         "disposition": "BINDING",
         "hazard": False,
     }
-    s.ExtractItem.model_validate(good)
+    s.ExtractItem.model_validate(long_item)
     with pytest.raises(ValidationError):
-        s.ExtractItem.model_validate({**good, "quote": "x" * (s.QUOTE_MAX_CHARS + 1)})
-    with pytest.raises(ValidationError):
-        s.ExtractItem.model_validate({**good, "src_ids": ["SRC-0001"] * 4})
+        s.ExtractItem.model_validate({**long_item, "src_ids": []})
 
 
 def test_definitions_and_flag_quotes_are_at_most_300_characters() -> None:

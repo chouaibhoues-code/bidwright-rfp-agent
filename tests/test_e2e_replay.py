@@ -75,7 +75,8 @@ def test_a_development_run_replays_with_no_network(tmp_path: Path) -> None:
     )
     assert manifest.status == "COMPLETED" and manifest.totals.requests == len(ledger)
     assert manifest.models_used == {
-        node: ["gemini-3.5-flash-lite"] for node in ("approach", "draft", "extract", "risk")
+        node: ["gemini-3.5-flash-lite"]
+        for node in ("approach", "draft", "extract", "risk", "triage")
     }
     calls = [
         json.loads(line)

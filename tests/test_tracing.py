@@ -97,4 +97,4 @@ def test_a_failed_call_leaves_an_error_span(tmp_path: Path) -> None:
     )
     assert result.status == "UNRECOVERABLE_FAULT"
     errors = [s for s in _spans(result.run_dir) if s["status"]["status_code"] == "ERROR"]
-    assert any(span["name"] == "llm.extract" for span in errors)
+    assert any(span["name"] == "llm.triage" for span in errors), "the first call is triage's"

@@ -10,6 +10,7 @@ rejected and logged, never accepted: `extract` rejects the batch, `draft` marks 
 `DEGRADED` with its verified requirements in the summary (ADR-024).
 """
 
+import dataclasses
 import json
 import re
 import threading
@@ -23,6 +24,7 @@ from pydantic import BaseModel
 from bidwright.config import AgentLimits
 from bidwright.harness.budget import RunBudget
 from bidwright.harness.gateway import ToolGateway
+from bidwright.harness.view import TextView
 from bidwright.ingest import display_text
 from bidwright.llm.client import Completion, LLMClient
 from bidwright.llm.schema import sha256_of
@@ -30,10 +32,14 @@ from bidwright.llm.types import Message
 from bidwright.obs.tracing import Tracing, maybe_span, record_llm, set_attribute
 from bidwright.prompts import Prompt
 from bidwright.schemas import (
+    QUOTE_MAX_CHARS,
     ApproachInput,
     ApproachItem,
     ApproachItemView,
     ApproachResult,
+    CandidateRow,
+    ContextPack,
+    CueHit,
     DraftResult,
     DraftTask,
     ExtractBatch,
@@ -42,7 +48,6 @@ from bidwright.schemas import (
     LedgerEntry,
     OpenQuestion,
     Passage,
-    PassageView,
     ProposalSection,
     Requirement,
     RequirementView,
@@ -50,10 +55,11 @@ from bidwright.schemas import (
     RiskInput,
     RiskProposal,
     RiskRegister,
+    SubmissionHazard,
     ToolRequest,
     ToolResult,
 )
-from bidwright.verify import QuoteCheck, check_quote
+from bidwright.verify import QuoteCheck, check_quote, missing_values, shown_text
 
 PREDICTIONS = ("BINDING", "OPTIONAL")
 RATING_WORDS = frozenset(
@@ -93,6 +99,7 @@ class RunContext:
     passages: dict[str, Passage]
     ledger: list[LedgerEntry] = field(default_factory=list)
     tracing: Tracing | None = None
+    view: TextView | None = None  # the run's text view (D-05); None is the frozen text
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
     def __post_init__(self) -> None:
@@ -173,6 +180,9 @@ def _short(error: str | None, limit: int = 400) -> str:
 
 # --- extract and verify -------------------------------------------------------------------
 
+MAX_CITED = 3  # passages one requirement may cite
+SECOND_PASS_FROM = frozenset({"NO_OBLIGATION", "BACKGROUND", "NOT_BINDING"})
+
 
 @dataclass
 class BatchOutcome:
@@ -180,6 +190,7 @@ class BatchOutcome:
     accepted: list[tuple[ExtractItem, QuoteCheck]] = field(default_factory=list)
     rejected: list[dict[str, Any]] = field(default_factory=list)
     no_obligation: list[str] = field(default_factory=list)
+    round: int = 0  # the coverage round, 0 for the first pass
 
 
 def batches(passages: Sequence[Passage], size: int) -> list[list[Passage]]:
@@ -187,29 +198,31 @@ def batches(passages: Sequence[Passage], size: int) -> list[list[Passage]]:
 
 
 def extract_batch(
-    ctx: RunContext, batch: Sequence[Passage], batch_id: str, prompt_id: str = "extract"
+    ctx: RunContext,
+    pack: ContextPack,
+    prompt_id: str = "extract",
+    *,
+    second_pass: bool = False,
+    round: int = 0,
 ) -> BatchOutcome:
-    """Extract one batch, verify every quote, and repair once what failed or is missing."""
+    """Extract one pack, verify every item, and repair once what failed or is missing.
+
+    Each item is checked on its own: an id outside the pack is dropped and a fourth one cut,
+    a quote over 300 characters, a quote not found in its passages and a value the sources
+    do not state each fail that item only. One repair message names every failure, grouped
+    by kind, and every missing id; what still fails is rejected with its reason."""
     prompt = ctx.prompts[prompt_id]
-    view = ExtractBatch(
-        batch_id=batch_id,
-        passages=[
-            PassageView(
-                src_id=p.id,
-                section_path=p.section_path,
-                text=display_text(p.text),
-                lead_in=display_text(ctx.passages[p.lead_in_id].text) if p.lead_in_id else None,
-            )
-            for p in batch
-        ],
+    batch = ExtractBatch(
+        batch_id=pack.call_id, passages=pack.passages, context=pack.context, terms=pack.terms
     )
-    rendered = prompt.render(view.model_dump_json(), run_id=ctx.run_id, batch_id=batch_id)
+    data = batch.model_dump_json()
+    rendered = prompt.render(data, run_id=ctx.run_id, batch_id=pack.call_id)
+    ids = [view.src_id for view in pack.passages]
+    outcome = BatchOutcome(pack.call_id, round=round)
     first = ctx.call(
         prompt, rendered.messages, ExtractResult, node="extract", input_hash=rendered.input_hash
     )
     history = [*rendered.messages, first.as_message()]
-    ids = [p.id for p in batch]
-    outcome = BatchOutcome(batch_id)
     result = first.parsed
     if not isinstance(result, ExtractResult):
         repair = prompt.task_text("repair_format", error=_short(first.parse_error))
@@ -221,47 +234,156 @@ def extract_batch(
             input_hash=sha256_of([rendered.input_hash, repair]),
         )
         if not isinstance(second.parsed, ExtractResult):
-            outcome.rejected.append(_rejection(batch_id, ids, "", "malformed output after repair"))
+            outcome.rejected.append(
+                _rejection(pack.call_id, ids, "", "malformed output after repair")
+            )
             return outcome
-        settle(outcome, second.parsed.items, ctx.passages, ids, final=True)
+        settle(outcome, second.parsed.items, ctx.passages, ids, final=True, view=ctx.view)
         _account(outcome, second.parsed.no_obligation_src_ids, ids)
-        return outcome
-    failed = settle(outcome, result.items, ctx.passages, ids, final=False)
-    outcome.no_obligation += [s for s in result.no_obligation_src_ids if s in ids]
-    missing = [s for s in ids if s not in _accounted(outcome, failed)]
-    if not failed and not missing:
-        return outcome
-    parts = []
-    if failed:
-        pairs = [[item.src_ids[0] if item.src_ids else "", item.quote] for item in failed]
-        parts.append(prompt.task_text("repair_quotes", failures=json.dumps(pairs)))
-    if missing:
-        parts.append(prompt.task_text("repair_missing", missing=json.dumps(missing)))
-    parts.append(prompt.task_text("repair_close"))
-    repair = " ".join(parts)
-    second = ctx.call(
-        prompt,
-        [*history, Message("user", repair)],
-        ExtractResult,
-        node="extract",
-        input_hash=sha256_of([rendered.input_hash, repair]),
-    )
-    repaired = (
-        second.parsed if isinstance(second.parsed, ExtractResult) else ExtractResult(items=[])
-    )
-    _merge_repair(outcome, failed, missing, repaired, ctx.passages, ids)
+    else:
+        failed = settle(outcome, result.items, ctx.passages, ids, final=False, view=ctx.view)
+        outcome.no_obligation += [s for s in result.no_obligation_src_ids if s in ids]
+        pending = [item for item, _ in failed]
+        missing = [s for s in ids if s not in _accounted(outcome, pending)]
+        if failed or missing:
+            repair = _repair_message(prompt, failed, missing)
+            second = ctx.call(
+                prompt,
+                [*history, Message("user", repair)],
+                ExtractResult,
+                node="extract",
+                input_hash=sha256_of([rendered.input_hash, repair]),
+            )
+            repaired = (
+                second.parsed
+                if isinstance(second.parsed, ExtractResult)
+                else ExtractResult(items=[])
+            )
+            _merge_repair(outcome, failed, missing, repaired, ctx.passages, ids, view=ctx.view)
+    if second_pass:
+        _second_pass(ctx, prompt, pack, data, outcome)
     return outcome
 
 
-def _rejection(batch_id: str, src_ids: list[str], quote: str, reason: str) -> dict[str, Any]:
-    return {"batch_id": batch_id, "src_ids": src_ids, "quote": quote, "reason": reason}
+def _repair_message(
+    prompt: Prompt, failed: Sequence[tuple[ExtractItem, QuoteCheck]], missing: Sequence[str]
+) -> str:
+    """One message for every failure, grouped by kind, then the missing ids."""
+    groups: dict[str, list[list[str]]] = {"quote": [], "number": [], "long": []}
+    for item, check in failed:
+        first_id = item.src_ids[0] if item.src_ids else ""
+        text = item.statement if check.failure == "number" else item.quote
+        groups[check.failure or "quote"].append([first_id, text])
+    parts = []
+    for kind, element in (
+        ("quote", "repair_quotes"),
+        ("number", "repair_numbers"),
+        ("long", "repair_long"),
+    ):
+        if groups[kind]:
+            parts.append(prompt.task_text(element, failures=json.dumps(groups[kind])))
+    if missing:
+        parts.append(prompt.task_text("repair_missing", missing=json.dumps(list(missing))))
+    parts.append(prompt.task_text("repair_close"))
+    return " ".join(parts)
 
 
-def _check(item: ExtractItem, passages: Mapping[str, Passage], ids: list[str]) -> QuoteCheck:
+def _first_pass_dispositions(outcome: BatchOutcome) -> dict[str, set[str]]:
+    found: dict[str, set[str]] = {}
+    for item, check in outcome.accepted:
+        if not check.second_pass:
+            for src_id in item.src_ids:
+                found.setdefault(src_id, set()).add(item.disposition)
+    for src_id in outcome.no_obligation:
+        found.setdefault(src_id, set()).add("NO_OBLIGATION")
+    for entry in outcome.rejected:
+        if not entry.get("second_pass"):
+            for src_id in entry["src_ids"]:
+                found.setdefault(src_id, set()).add("REJECTED")
+    return found
+
+
+def second_pass_ids(pack: ContextPack, outcome: BatchOutcome) -> list[str]:
+    """The pack's passages in an `OBLIGATION` zone that the first pass found no binding,
+    optional or out-of-scope obligation in: the second pass's candidates (S-13)."""
+    found = _first_pass_dispositions(outcome)
+    return [
+        view.src_id
+        for view in pack.passages
+        if view.zone == "OBLIGATION"
+        and found.get(view.src_id)
+        and found[view.src_id] <= SECOND_PASS_FROM
+    ]
+
+
+def _second_pass(
+    ctx: RunContext, prompt: Prompt, pack: ContextPack, data: str, outcome: BatchOutcome
+) -> None:
+    """One more reading of the candidates, on the same data tag. Its items settle like any
+    other; a passage it adds nothing to keeps its first-pass row."""
+    ids = second_pass_ids(pack, outcome)
+    if not ids:
+        return
+    rendered = prompt.render(data, run_id=ctx.run_id, task="second_pass", ids=json.dumps(ids))
+    pack_hash = sha256_of(pack.model_dump(mode="json"))
+    result, _ = ctx.structured(
+        prompt,
+        rendered.messages,
+        ExtractResult,
+        node="extract",
+        input_hash=sha256_of([pack_hash, "second_pass", ids]),
+    )
+    if isinstance(result, ExtractResult):
+        settle(
+            outcome, result.items, ctx.passages, ids, final=True, view=ctx.view, second_pass=True
+        )
+
+
+def _rejection(
+    batch_id: str, src_ids: list[str], quote: str, reason: str, second_pass: bool = False
+) -> dict[str, Any]:
+    entry: dict[str, Any] = {
+        "batch_id": batch_id,
+        "src_ids": src_ids,
+        "quote": quote,
+        "reason": reason,
+    }
+    if second_pass:
+        entry["second_pass"] = True
+    return entry
+
+
+def _sources(
+    item: ExtractItem, cited: Sequence[Passage], passages: Mapping[str, Passage], view: Any
+) -> list[str]:
+    """The texts a statement's values may come from: the quote, the cited passages, their
+    lead-ins and table headers, and their section paths."""
+    texts = [item.quote]
+    for passage in cited:
+        texts.append(shown_text(passage, view))
+        for linked in (passage.lead_in_id, passage.header_id):
+            if linked and linked in passages:
+                texts.append(shown_text(passages[linked], view))
+        texts.append(passage.section_path)
+    return texts
+
+
+def _check(
+    item: ExtractItem, passages: Mapping[str, Passage], ids: list[str], view: Any = None
+) -> QuoteCheck:
     cited = [passages[s] for s in item.src_ids if s in ids]
     if not cited:
-        return QuoteCheck("REJECTED", reason="cites no passage of the batch")
-    return check_quote(item.quote, cited)
+        return QuoteCheck("REJECTED", reason="cites no passage of the batch", failure="quote")
+    if len(item.quote) > QUOTE_MAX_CHARS:
+        return QuoteCheck(
+            "REJECTED", reason=f"quote over {QUOTE_MAX_CHARS} characters", failure="long"
+        )
+    check = check_quote(item.quote, cited, view)
+    if check.status == "REJECTED":
+        return check
+    if missing_values(item.statement, _sources(item, cited, passages, view)):
+        return QuoteCheck("REJECTED", reason="number not in source", failure="number")
+    return check
 
 
 def settle(
@@ -271,28 +393,39 @@ def settle(
     ids: list[str],
     *,
     final: bool,
-) -> list[ExtractItem]:
-    """Accept verified items. Failures are returned for repair, or rejected when final.
+    view: Any = None,
+    repaired: bool = False,
+    second_pass: bool = False,
+) -> list[tuple[ExtractItem, QuoteCheck]]:
+    """Accept verified items. Failures are returned with their check for repair, or rejected
+    with their reason when final.
 
-    A quote counts only against the passages of its own batch (`ids`), and an id from outside
-    the batch is dropped from the item, so a requirement never cites a passage its batch did
-    not show the model."""
+    A quote counts only against the passages of its own batch (`ids`): an id from outside the
+    batch is dropped from the item, so a requirement never cites a passage its batch did not
+    show the model, and an item keeps at most 3 ids. On the second pass, an item that withdraws
+    its quote or cites none of the passages asked about adds nothing and is left out."""
     failed = []
     for item in items:
+        kept = [s for s in dict.fromkeys(item.src_ids) if s in ids][:MAX_CITED]
         if not item.quote.strip():
-            outcome.rejected.append(_rejection(outcome.batch_id, item.src_ids, "", "withdrawn"))
+            if not second_pass:
+                outcome.rejected.append(_rejection(outcome.batch_id, kept, "", "withdrawn"))
             continue
-        kept = [s for s in item.src_ids if s in ids]
+        if not kept and second_pass:
+            continue
         if kept and kept != item.src_ids:
             item = item.model_copy(update={"src_ids": kept})
-        check = _check(item, passages, ids)
+        check = _check(item, passages, ids, view)
         if check.status != "REJECTED":
+            check = dataclasses.replace(check, repaired=repaired, second_pass=second_pass)
             outcome.accepted.append((item, check))
         elif final:
-            reason = check.reason or "not found"
-            outcome.rejected.append(_rejection(outcome.batch_id, item.src_ids, item.quote, reason))
+            reason = check.reason or "not found in the cited passages"
+            outcome.rejected.append(
+                _rejection(outcome.batch_id, kept, item.quote, reason, second_pass)
+            )
         else:
-            failed.append(item)
+            failed.append((item, check))
     return failed
 
 
@@ -311,55 +444,150 @@ def _account(outcome: BatchOutcome, no_obligation: Sequence[str], ids: list[str]
 
 def _merge_repair(
     outcome: BatchOutcome,
-    failed: list[ExtractItem],
+    failed: list[tuple[ExtractItem, QuoteCheck]],
     missing: list[str],
     repaired: ExtractResult,
     passages: Mapping[str, Passage],
     ids: list[str],
+    *,
+    view: Any = None,
 ) -> None:
     pool = list(repaired.items)
-    for item in failed:
+    for item, _ in failed:
         first_id = item.src_ids[0] if item.src_ids else None
         match = next((r for r in pool if r.src_ids and r.src_ids[0] == first_id), None)
         if match is None:
-            outcome.rejected.append(
-                _rejection(outcome.batch_id, item.src_ids, item.quote, "not repaired")
-            )
+            kept = [s for s in item.src_ids if s in ids]
+            outcome.rejected.append(_rejection(outcome.batch_id, kept, item.quote, "not repaired"))
             continue
         pool.remove(match)
-        settle(outcome, [match], passages, ids, final=True)
+        settle(outcome, [match], passages, ids, final=True, view=view, repaired=True)
     added = [r for r in pool if set(r.src_ids) & set(missing)]
-    settle(outcome, added, passages, ids, final=True)
+    settle(outcome, added, passages, ids, final=True, view=view)
     _account(outcome, [s for s in repaired.no_obligation_src_ids if s in missing], ids)
 
 
 def assign_requirements(
-    outcomes: Sequence[BatchOutcome], passages: Sequence[Passage], doc_id: str
+    outcomes: Sequence[BatchOutcome],
+    passages: Sequence[Passage],
+    zones: Mapping[tuple[str, str], str] | None = None,
 ) -> tuple[list[Requirement], list[dict[str, Any]]]:
-    """The fan-in after extract: number verified items in reading order as requirements."""
+    """The fan-in after extract: number verified items in reading order as requirements.
+
+    A requirement takes its document, page and small-print flag from its first cited
+    passage, and its zone from that passage's section."""
+    by_id = {p.id: p for p in passages}
     order = {p.id: n for n, p in enumerate(passages)}
     accepted = [entry for outcome in outcomes for entry in outcome.accepted]
     accepted.sort(key=lambda e: (order[e[1].src_id or ""], (e[1].span or (0, 0))[0]))
     requirements = []
     for number, (item, check) in enumerate(accepted, start=1):
-        cited = [check.src_id] + [s for s in item.src_ids if s != check.src_id and s in order]
+        first = by_id[check.src_id or ""]
+        cited = [first.id] + [s for s in item.src_ids if s != first.id and s in order]
         requirements.append(
-            Requirement(
-                id=f"REQ-{number:04d}",
-                doc_id=doc_id,
-                statement=item.statement,
-                modality=item.modality,
-                mandatory=item.disposition == "BINDING",
-                hazard=item.hazard,
-                disposition=item.disposition,
-                src_ids=[s for s in cited if s][:3],
-                quote=item.quote,
-                quote_status=check.status,
-                quote_span=check.span,
+            Requirement.model_validate(
+                {
+                    "id": f"REQ-{number:04d}",
+                    "doc_id": first.doc_id,
+                    "statement": item.statement,
+                    "modality": item.modality,
+                    "mandatory": item.disposition == "BINDING",
+                    "hazard": item.hazard,
+                    "disposition": item.disposition,
+                    "src_ids": cited[:MAX_CITED],
+                    "quote": item.quote,
+                    "quote_status": check.status,
+                    "quote_span": check.span,
+                    "zone": (zones or {}).get((first.doc_id, first.section_path)),
+                    "page": first.page,
+                    "small_print": first.small_print,
+                    "repaired": check.repaired,
+                }
             )
         )
     rejected = [entry for outcome in outcomes for entry in outcome.rejected]
     return requirements, rejected
+
+
+def link_hazards(
+    requirements: Sequence[Requirement], hazards: Sequence[SubmissionHazard]
+) -> tuple[list[Requirement], list[SubmissionHazard]]:
+    """A requirement is a hazard when `extract` flagged it or a `triage` hazard cites one of
+    its passages; each hazard lists the requirements that quote its passages."""
+    linked = []
+    flagged: set[str] = set()
+    for hazard in hazards:
+        ids = [r.id for r in requirements if set(r.src_ids) & set(hazard.src_ids)]
+        flagged.update(ids)
+        linked.append(hazard.model_copy(update={"requirement_ids": ids}))
+    marked = [
+        r.model_copy(update={"hazard": True}) if r.id in flagged and not r.hazard else r
+        for r in requirements
+    ]
+    return marked, linked
+
+
+def candidate_rows(
+    outcomes: Sequence[BatchOutcome],
+    passages: Sequence[Passage],
+    requirements: Sequence[Requirement],
+    zones: Mapping[tuple[str, str], str] | None = None,
+    cues: Sequence[CueHit] = (),
+) -> list[CandidateRow]:
+    """The candidate ledger: one row per passage, with every disposition it received.
+
+    First-pass entries come first: each item's disposition for every passage it cites, a
+    no-obligation mark, or a rejection with its reason (`UNACCOUNTED` for a passage no answer
+    covered). The second pass's accepted items follow, with the reason "second pass"."""
+    first: dict[str, list[tuple[str, str]]] = {p.id: [] for p in passages}
+    later: dict[str, list[tuple[str, str]]] = {p.id: [] for p in passages}
+    rounds: dict[str, int] = {}
+    for outcome in outcomes:
+        touched: list[str] = []
+        for item, check in outcome.accepted:
+            target = later if check.second_pass else first
+            reason = "second pass" if check.second_pass else ""
+            for src_id in item.src_ids:
+                if src_id in target:
+                    target[src_id].append((item.disposition, reason))
+                    touched.append(src_id)
+        for src_id in outcome.no_obligation:
+            if src_id in first:
+                first[src_id].append(("NO_OBLIGATION", ""))
+                touched.append(src_id)
+        for entry in outcome.rejected:
+            if entry.get("second_pass"):
+                continue
+            kind = "UNACCOUNTED" if entry["reason"] == "unaccounted" else "REJECTED"
+            for src_id in entry["src_ids"]:
+                if src_id in first:
+                    first[src_id].append((kind, entry["reason"]))
+                    touched.append(src_id)
+        for src_id in touched:
+            rounds[src_id] = max(rounds.get(src_id, 0), outcome.round)
+    quoted: dict[str, list[str]] = {}
+    for requirement in requirements:
+        for src_id in requirement.src_ids:
+            quoted.setdefault(src_id, []).append(requirement.id)
+    kinds = {hit.src_id: hit.kinds for hit in cues}
+    rows = []
+    for passage in passages:
+        entries = first[passage.id] + later[passage.id] or [("UNACCOUNTED", "unaccounted")]
+        rows.append(
+            CandidateRow.model_validate(
+                {
+                    "src_id": passage.id,
+                    "doc_id": passage.doc_id,
+                    "zone": (zones or {}).get((passage.doc_id, passage.section_path)),
+                    "cues": kinds.get(passage.id, []),
+                    "dispositions": [d for d, _ in entries],
+                    "requirement_ids": quoted.get(passage.id, []),
+                    "reasons": [r for _, r in entries],
+                    "round": rounds.get(passage.id, 0),
+                }
+            )
+        )
+    return rows
 
 
 def predictions(requirements: Sequence[Requirement]) -> list[Requirement]:

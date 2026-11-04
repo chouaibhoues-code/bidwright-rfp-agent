@@ -1,7 +1,11 @@
-"""Wire the 0a nodes into a LangGraph graph, and run one RFP through it.
+"""Wire the nodes into a LangGraph graph, and run one RFP through it.
 
-ingest -> extract (one `Send` per batch, at most `concurrency` at once) -> verify -> approach
--> risk -> draft -> render, with no branches. The SQLite checkpointer keeps each step's state
+ingest -> candidates -> triage -> pack -> extract (one `Send` per context pack, at most
+`concurrency` at once) -> verify -> approach -> risk -> draft -> render, with no branches
+(Iteration 1, step 11). `pack` builds the extraction packs through `ContextManager.pack`, with
+the cues, terms and zones of the nodes before it, and writes their manifests; `verify` settles
+the outcomes into `requirements.jsonl`, `rejected.jsonl`, `candidates.jsonl` and
+`hazards.json`. The SQLite checkpointer keeps each step's state
 in the run folder. The LLM client, budget, prompts and search index stay outside the state, in
 `Runtime`, so a checkpoint holds plain data only. Each node writes its own files; `render`
 writes the summary, the proposal, the manifest and the ledger.
@@ -28,20 +32,24 @@ from openinference.semconv.trace import OpenInferenceSpanKindValues
 from opentelemetry import trace as otel_trace
 
 from bidwright.baselines import BASELINES
+from bidwright.candidates import CompiledCues, cue_hits, defined_terms, write_candidates
 from bidwright.config import Config, load_config
 from bidwright.graph.nodes import (
     BatchOutcome,
     RunContext,
     approach,
     assign_requirements,
-    batches,
+    candidate_rows,
     draft,
     extract_batch,
+    link_hazards,
     risk,
     section_records,
 )
 from bidwright.graph.state import BatchState, RunState
+from bidwright.graph.triage import triage
 from bidwright.harness.budget import BudgetExceeded, RunBudget
+from bidwright.harness.context import ContextManager, prompt_tokens
 from bidwright.harness.egress import check_run
 from bidwright.harness.gateway import ToolGateway
 from bidwright.ingest import doc_id_for, ingest_pdf
@@ -57,6 +65,9 @@ from bidwright.render import RenderBlocked, RunRecords, render, write_manifest
 from bidwright.retrieval import PassageIndex
 from bidwright.schemas import (
     ApproachItem,
+    ContextPack,
+    CueHit,
+    DefinedTerm,
     ExtractItem,
     OpenQuestion,
     Passage,
@@ -65,6 +76,8 @@ from bidwright.schemas import (
     Risk,
     RunManifest,
     RunStatus,
+    SubmissionHazard,
+    ZoneRecord,
 )
 from bidwright.tools import date_tool, search_tool
 from bidwright.verify import QuoteCheck
@@ -86,6 +99,7 @@ class Runtime:
     run_dir: Path
     extract_prompt: str = "extract"
     one_batch: bool = False
+    second_pass: bool = False  # S-13; `execute` sets it from step 16
     index: PassageIndex | None = None
 
 
@@ -106,6 +120,7 @@ def _jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 def _outcome_dict(outcome: BatchOutcome) -> dict[str, Any]:
     return {
         "batch_id": outcome.batch_id,
+        "round": outcome.round,
         "accepted": [
             {"item": item.model_dump(), "check": asdict(check)} for item, check in outcome.accepted
         ],
@@ -120,7 +135,19 @@ def _outcome(data: dict[str, Any]) -> BatchOutcome:
         check = dict(entry["check"])
         check["span"] = tuple(check["span"]) if check["span"] else None
         accepted.append((ExtractItem.model_validate(entry["item"]), QuoteCheck(**check)))
-    return BatchOutcome(data["batch_id"], accepted, data["rejected"], data["no_obligation"])
+    return BatchOutcome(
+        data["batch_id"], accepted, data["rejected"], data["no_obligation"], data["round"]
+    )
+
+
+def _zones(state: RunState) -> dict[tuple[str, str], str]:
+    """The zone of each section, by document and section path."""
+    records = [ZoneRecord.model_validate(z) for z in state.get("zones", [])]
+    return {(z.doc_id, z.section_path): z.zone for z in records}
+
+
+def _cues(state: RunState) -> list[CueHit]:
+    return [CueHit.model_validate(c) for c in state.get("cues", [])]
 
 
 def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
@@ -135,37 +162,97 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
     def ingest_node(state: RunState) -> dict[str, Any]:
         result = ingest_pdf(rt.source, rt.run_dir)
         ctx.passages = {p.id: p for p in result.passages}
-        rt.index = PassageIndex.build(result.passages, rt.run_dir / "search.sqlite")
-        size = len(result.passages) if rt.one_batch else rt.config.limits.batch_size
-        groups = batches(result.passages, max(size, 1))
+        rt.index = PassageIndex.build(result.passages, rt.run_dir / "search.sqlite", view=ctx.view)
         title = next((p.section_path for p in result.passages if p.section_path), result.doc_id)
         return {
             "doc_id": result.doc_id,
             "title": title.split(" > ")[0],
             "passages": [p.model_dump() for p in result.passages],
-            "batches": [
-                {"batch_id": f"B{n:02d}", "ids": [p.id for p in group]}
-                for n, group in enumerate(groups, start=1)
-            ],
         }
+
+    def candidates_node(state: RunState) -> dict[str, Any]:
+        found = passages(state)
+        hits = cue_hits(found, CompiledCues.load(rt.config.cues))
+        terms = defined_terms(found)
+        write_candidates(rt.run_dir, hits, terms)
+        return {
+            "cues": [h.model_dump(mode="json") for h in hits],
+            "terms": [t.model_dump(mode="json") for t in terms],
+        }
+
+    def triage_node(state: RunState) -> dict[str, Any]:
+        found = passages(state)
+        outcome = triage(
+            ctx,
+            found,
+            manager=ContextManager(rt.run_dir, rt.config.limits.context, found),
+            zones=rt.config.zones,
+            budget_tokens=rt.config.limits.context.budgets["triage"],
+            run_dir=rt.run_dir,
+            cues=_cues(state),
+            view=ctx.view,
+        )
+        return {
+            "zones": [z.model_dump(mode="json") for z in outcome.record.zones],
+            "profile": outcome.record.profile.model_dump(mode="json"),
+            "hazards": [h.model_dump(mode="json") for h in outcome.hazards],
+            "triage_fallback": outcome.degraded,
+        }
+
+    def pack_node(state: RunState) -> dict[str, Any]:
+        found = passages(state)
+        limits = rt.config.limits
+        manager = ContextManager(rt.run_dir, limits.context, found)
+        packs = manager.pack(
+            "extract",
+            found,
+            view=ctx.view,
+            fixed_tokens=prompt_tokens(
+                ctx.prompts[rt.extract_prompt], limits.context.chars_per_token
+            ),
+            budget_tokens=limits.context.budgets["extract"],
+            batch_size=None if rt.one_batch else limits.batch_size,
+            neighbors=limits.context.neighbors,
+            terms=[DefinedTerm.model_validate(t) for t in state.get("terms", [])],
+            zones=[ZoneRecord.model_validate(z) for z in state.get("zones", [])],
+            cues=_cues(state),
+        )
+        return {"packs": [p.model_dump(mode="json") for p in packs]}
 
     def fan_out(state: RunState) -> list[Send]:
         return [
-            Send("extract", {"batch_id": b["batch_id"], "ids": b["ids"]}) for b in state["batches"]
+            Send("extract", {"call_id": p["call_id"], "round": 0, "pack": p})
+            for p in state["packs"]
         ]
 
     def extract_node(state: BatchState) -> dict[str, Any]:
-        chosen = [ctx.passages[i] for i in state["ids"]]
-        outcome = extract_batch(ctx, chosen, state["batch_id"], rt.extract_prompt)
+        pack = ContextPack.model_validate(state["pack"])
+        outcome = extract_batch(
+            ctx, pack, rt.extract_prompt, second_pass=rt.second_pass, round=state["round"]
+        )
         return {"outcomes": [_outcome_dict(outcome)]}
 
     def verify_node(state: RunState) -> dict[str, Any]:
-        outcomes = sorted((_outcome(o) for o in state["outcomes"]), key=lambda o: o.batch_id)
-        requirements, rejected = assign_requirements(outcomes, passages(state), state["doc_id"])
+        found = passages(state)
+        outcomes = sorted(
+            (_outcome(o) for o in state["outcomes"]), key=lambda o: (o.round, o.batch_id)
+        )
+        zones = _zones(state)
+        requirements, rejected = assign_requirements(outcomes, found, zones)
+        hazards = [SubmissionHazard.model_validate(h) for h in state.get("hazards", [])]
+        requirements, hazards = link_hazards(requirements, hazards)
+        ledger = candidate_rows(outcomes, found, requirements, zones, _cues(state))
         rows = [r.model_dump(mode="json") for r in requirements]
         _jsonl(rt.run_dir / "requirements.jsonl", rows)
         _jsonl(rt.run_dir / "rejected.jsonl", rejected)
-        return {"requirements": rows, "rejected": rejected}
+        _jsonl(rt.run_dir / "candidates.jsonl", [c.model_dump(mode="json") for c in ledger])
+        linked = [h.model_dump(mode="json") for h in hazards]
+        (rt.run_dir / "hazards.json").write_text(
+            json.dumps(linked, indent=1, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        return {"requirements": rows, "rejected": rejected, "hazards": linked}
 
     def approach_node(state: RunState) -> dict[str, Any]:
         outcome = approach(ctx, [Requirement.model_validate(r) for r in state["requirements"]])
@@ -286,6 +373,9 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
 
     builder = StateGraph(RunState)
     builder.add_node("ingest", traced("ingest", ingest_node))
+    builder.add_node("candidates", traced("candidates", candidates_node))
+    builder.add_node("triage", traced("triage", triage_node))
+    builder.add_node("pack", traced("pack", pack_node))
     builder.add_node("extract", traced("extract", extract_node), input_schema=BatchState)
     builder.add_node("verify", traced("verify", verify_node))
     builder.add_node("approach", traced("approach", approach_node))
@@ -293,7 +383,9 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
     builder.add_node("draft", traced("draft", draft_node))
     builder.add_node("render", traced("render", render_node))
     builder.add_edge(START, "ingest")
-    builder.add_conditional_edges("ingest", fan_out, ["extract"])
+    for first, second in (("ingest", "candidates"), ("candidates", "triage"), ("triage", "pack")):
+        builder.add_edge(first, second)
+    builder.add_conditional_edges("pack", fan_out, ["extract"])
     builder.add_edge("extract", "verify")
     for first, second in (("verify", "approach"), ("approach", "risk"), ("risk", "draft")):
         builder.add_edge(first, second)
@@ -332,6 +424,8 @@ def _degraded(state: dict[str, Any]) -> str | None:
     ]
     sections = [s["id"] for s in state.get("sections", []) if s.get("status") == "FAILED"]
     reasons = []
+    if state.get("triage_fallback"):
+        reasons.append(state["triage_fallback"])
     if failed:
         reasons.append(f"{len(failed)} extraction batch(es) failed")
     for node in ("approach", "risk"):
@@ -347,6 +441,7 @@ def run_prompts(config: Config) -> dict[str, Prompt]:
     """Each agent's pinned prompt, plus the EX0 baseline prompt."""
     prompts = {name: load_prompt_ref(agent.prompt) for name, agent in config.agents.agents.items()}
     prompts["extract_oneshot"] = load_prompt("extract_oneshot")
+    prompts["extract_noexamples"] = load_prompt("extract_noexamples")
     return prompts
 
 

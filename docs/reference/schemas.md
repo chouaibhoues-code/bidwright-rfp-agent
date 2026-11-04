@@ -206,6 +206,10 @@ The assignment's output. Lists hold record ids; the JSON twin adds full records.
 | `section_path` | str | yes |  |  |
 | `text` | str | yes |  |  |
 | `lead_in` | str \| None | no | None |  |
+| `zone` | one of 'INSTRUCTION', 'EVALUATION', 'ELIGIBILITY', 'OBLIGATION', 'CONTRACT', 'BACKGROUND' \| None | no | None |  |
+| `cues` | list[one of 'MODAL', 'PROHIBITION', 'CONDITION', 'RIGHT', 'DEADLINE', 'REJECTION', 'REFERENCE', 'AMOUNT', 'DATE', 'TABLE_ROW'] | no | [] |  |
+| `small_print` | bool | no | False |  |
+| `suspect` | bool | no | False |  |
 
 ## `ContextPassageView`
 
@@ -229,13 +233,17 @@ A neighbor the model may read but never cite.
 |---|---|---|---|---|
 | `batch_id` | str | yes |  |  |
 | `passages` | list[PassageView] | yes |  |  |
+| `context` | list[ContextPassageView] | no | [] |  |
+| `terms` | list[TermView] | no | [] |  |
 
 ## `ExtractItem`
 
+One obligation. `settle` enforces the 3-id and 300-character limits per item, so one long quote never fails its whole pack (ADR-024).
+
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `src_ids` | list[str] (min length 1, max length 3) | yes |  |  |
-| `quote` | str (max length 300) | yes |  |  |
+| `src_ids` | list[str] (min length 1) | yes |  |  |
+| `quote` | str | yes |  |  |
 | `statement` | str | yes |  |  |
 | `modality` | one of 'shall', 'must', 'will', 'should', 'may', 'none' | yes |  |  |
 | `disposition` | one of 'BINDING', 'OPTIONAL', 'BACKGROUND', 'NOT_BINDING', 'OUT_OF_SCOPE' | yes |  |  |
