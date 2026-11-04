@@ -1,10 +1,10 @@
 """The `bidwright` command line.
 
     bidwright run <file or folder> [--profile free|local|paid] [--baseline ex0|b0]
-                  [--allow-non-corpus=i-accept-free-tier-terms] [--cache] [--second-pass]
-                  [--until NODE] [--outputs DIR]
+                  [--allow-non-corpus=i-accept-free-tier-terms] [--cache]
+                  [--second-pass | --no-second-pass] [--until NODE] [--outputs DIR]
     bidwright demo       replays a recorded development run; needs no keys
-    bidwright record <file or folder> [--name demo] [--until NODE]
+    bidwright record <file or folder> [--name demo] [--profile free|local|paid] [--until NODE]
                          runs live and writes LLM and Docling cassettes, on the host
     bidwright purge <run> | --expired
                          deletes a run's folder and its cache entries, or every client run
@@ -24,6 +24,7 @@ import argparse
 import json
 import os
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -35,7 +36,9 @@ if TYPE_CHECKING:
 
 DEMO_SOURCE = HOME / "inputs" / "dev" / "dev_rfp.pdf"
 CASSETTES = HOME / "tests" / "cassettes"
-RECORDING = "recording.json"  # which profile, input and stop a cassette folder was recorded from
+# Which profile, input, stop and run settings a cassette folder was recorded with.
+RECORDING = "recording.json"
+DEMO_RECORD = "inputs/dev/dev_rfp.pdf"
 PROFILES = ["free", "local", "paid"]
 UNTIL = ["verify", "coverage", "consolidate", "render"]
 
@@ -58,6 +61,21 @@ def _report(result: "RunResult") -> int:
     if summary.exists():
         print(f"  summary: {summary}")
     return 0 if result.status in ("COMPLETED", "DEGRADED") else 1
+
+
+def stale_recording(
+    recording: Mapping[str, object], batch_size: int, second_pass: bool
+) -> str | None:
+    """Why a recording cannot replay under the current settings, or None. The pack size and
+    the second pass change which calls a run makes without changing any cassette key, so a
+    replay under other values would miss its cassettes."""
+    for key, now in (("batch_size", batch_size), ("second_pass", second_pass)):
+        if recording.get(key) != now:
+            return (
+                f"recorded with {key} {recording.get(key)!r}, and config/limits.yaml sets"
+                f" {now!r}; record again"
+            )
+    return None
 
 
 def _purge(args: argparse.Namespace) -> int:
@@ -153,9 +171,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "demo":
         store = CASSETTES / "demo"
         if not (store / RECORDING).exists():
-            print("No demo cassettes. Record them with: bidwright record inputs/dev/dev_rfp.pdf")
+            print(f"No demo cassettes. Record them with: bidwright record {DEMO_RECORD}")
             return 1
         recording = json.loads((store / RECORDING).read_text(encoding="utf-8"))
+        from bidwright.config import load_config
+
+        limits = load_config().limits
+        stale = stale_recording(recording, limits.batch_size, limits.second_pass)
+        if stale:
+            print(f"The demo cassettes are stale: {stale}, with: bidwright record {DEMO_RECORD}")
+            return 1
         result = execute(
             source=HOME / recording["source"],
             profile=recording["profile"],
@@ -193,6 +218,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Refused: {exc}", file=sys.stderr)
         return 2
     if args.command == "record" and result.status in ("COMPLETED", "DEGRADED"):
+        from bidwright.config import load_config
+
+        # `record` passes neither setting, so the run used the configured values; a replay
+        # checks them, since neither is part of a cassette key.
+        limits = load_config().limits
         source = args.file.resolve()
         recording = {
             "profile": args.profile,
@@ -200,6 +230,8 @@ def main(argv: list[str] | None = None) -> int:
             if source.is_relative_to(HOME)
             else str(source),
             "until": args.until,
+            "batch_size": limits.batch_size,
+            "second_pass": limits.second_pass,
             "run_id": result.run_id,
             "status": result.status,
         }

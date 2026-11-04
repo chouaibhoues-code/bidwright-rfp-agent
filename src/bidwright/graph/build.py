@@ -813,11 +813,31 @@ def _degraded(state: dict[str, Any]) -> str | None:
 
 
 def _second_pass(asked: bool | None, baseline: bool, config: Config) -> bool:
-    """The flag a caller passed; otherwise off for a baseline, whose one call is its
-    definition, and `limits.yaml`'s value for any other run (S-13, ADR-028)."""
-    if asked is not None:
-        return asked
-    return False if baseline else config.limits.second_pass
+    """Off for a baseline, whose one call is its definition, and refused when a caller asks
+    for it there (ADR-028); for any other run, the caller's flag, or `limits.yaml`'s value
+    (S-13)."""
+    if baseline:
+        if asked:
+            raise Refused(
+                "a baseline runs without the second pass, since its one call is its definition"
+                " (ADR-028): drop --second-pass"
+            )
+        return False
+    return config.limits.second_pass if asked is None else asked
+
+
+def extract_prompt_ids(prompts: dict[str, Prompt]) -> list[str]:
+    """The loaded prompts the `extract` step may use: those that answer with `ExtractResult`."""
+    return sorted(
+        name for name, prompt in prompts.items() if prompt.meta.output_schema == "ExtractResult"
+    )
+
+
+def check_extract_prompt(name: str, prompts: dict[str, Prompt]) -> None:
+    """Refuse an extract prompt the run does not load, before anything starts."""
+    known = extract_prompt_ids(prompts)
+    if name not in known:
+        raise Refused(f"no extract prompt {name!r}: a run loads {', '.join(known)}")
 
 
 def run_prompts(config: Config) -> dict[str, Prompt]:
@@ -887,6 +907,10 @@ def execute(
         until = chosen.until
     docling_mode = docling_mode or mode
     config = load_config()
+    prompts = run_prompts(config)
+    extract_id = extract_prompt or (chosen.extract_prompt if chosen else "extract")
+    check_extract_prompt(extract_id, prompts)
+    second = _second_pass(second_pass, chosen is not None, config)
     docling = DoclingClient.from_config(
         config, docling_mode, store=docling_cassettes or DOCLING_CASSETTES
     )
@@ -935,7 +959,6 @@ def execute(
         fallback=fallback,
     )
     budget = RunBudget(config.limits.run(limits or preflight.tier, profile))
-    prompts = run_prompts(config)
     tracing = Tracing(
         run_id,
         run_dir,
@@ -948,9 +971,9 @@ def execute(
         config=config,
         source=source,
         run_dir=run_dir,
-        extract_prompt=extract_prompt or (chosen.extract_prompt if chosen else "extract"),
+        extract_prompt=extract_id,
         one_batch=chosen.one_batch if chosen else False,
-        second_pass=_second_pass(second_pass, chosen is not None, config),
+        second_pass=second,
         until=until,
         batch_size=batch_size,
         baseline=baseline,

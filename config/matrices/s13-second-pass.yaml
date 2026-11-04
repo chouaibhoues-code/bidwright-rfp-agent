@@ -5,7 +5,8 @@
 # rungs use `extract_noexamples` until `extract.md` takes that text. The free quota was spent,
 # so the matrix runs on `paid` (CH-82), with the same models and settings.
 # `extract_noexamples` was retired after this run, since `extract.md` 0.4.0 holds its text
-# (ADR-028); to run this file again, drop the `extract_prompt` flags.
+# (ADR-028); to run this file again, drop the `extract_prompt` flags. Until then the matrix
+# runner refuses it before anything starts.
 name: s13-second-pass
 rfp: inputs/hero
 profile: paid

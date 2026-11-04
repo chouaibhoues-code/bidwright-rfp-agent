@@ -1,12 +1,16 @@
 """The command line: argument handling, refusals and the `.env` reader."""
 
+import json
 import os
 from pathlib import Path
 
 import pytest
 
 from bidwright import cli
-from bidwright.graph.build import RunResult
+from bidwright.config import load_config
+from bidwright.graph.build import RunResult, execute
+from bidwright.preflight import Refused
+from tests.node_fakes import DEV_RFP, RuleBackend
 
 
 def test_free_refuses_a_non_corpus_file_before_any_run(
@@ -47,7 +51,7 @@ def test_unknown_profiles_are_rejected_by_argparse() -> None:
 def test_run_passes_its_flags_to_the_run_entry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A package folder, `--until`, `--baseline b0`, `--cache`, `--second-pass`, and `paid`
+    """A package folder, `--until`, `--baseline b0`, `--cache`, `--no-second-pass`, and `paid`
     with the paid key."""
     seen: dict[str, object] = {}
 
@@ -59,14 +63,14 @@ def test_run_passes_its_flags_to_the_run_entry(
     monkeypatch.setenv("GEMINI_PAID_API_KEY", "test-paid-key")
     folder = cli.HOME / "inputs" / "hero"
     arguments = ["run", str(folder), "--profile", "paid", "--baseline", "b0", "--cache"]
-    arguments += ["--second-pass", "--until", "coverage", "--outputs", str(tmp_path)]
+    arguments += ["--no-second-pass", "--until", "coverage", "--outputs", str(tmp_path)]
     assert cli.main(arguments) == 0
     assert seen["source"] == folder and seen["profile"] == "paid"
     assert (seen["baseline"], seen["until"], seen["cache"], seen["second_pass"]) == (
         "b0",
         "coverage",
         True,
-        True,
+        False,
     )
     backends = seen["backends"]
     assert isinstance(backends, dict) and backends["gemini"].paid is True
@@ -87,8 +91,50 @@ def test_record_passes_until_and_writes_it_to_the_recording(
     source = cli.HOME / "inputs" / "hero"
     assert cli.main(["record", str(source), "--name", "probe", "--until", "consolidate"]) == 0
     assert seen["until"] == "consolidate" and seen["mode"] == "record"
-    recording = (tmp_path / "probe" / cli.RECORDING).read_text(encoding="utf-8")
-    assert '"until": "consolidate"' in recording and '"source": "inputs/hero"' in recording
+    recording = json.loads((tmp_path / "probe" / cli.RECORDING).read_text(encoding="utf-8"))
+    assert recording["until"] == "consolidate" and recording["source"] == "inputs/hero"
+    limits = load_config().limits
+    assert (recording["batch_size"], recording["second_pass"]) == (
+        limits.batch_size,
+        limits.second_pass,
+    )
+    assert cli.stale_recording(recording, limits.batch_size, limits.second_pass) is None
+
+
+def test_a_stale_recording_names_the_setting_to_record_again() -> None:
+    recording = {"batch_size": 40, "second_pass": True}
+    assert cli.stale_recording(recording, 40, True) is None
+    stale = cli.stale_recording(recording, 20, True)
+    assert stale is not None and "batch_size 40" in stale and "record again" in stale
+    stale = cli.stale_recording({"batch_size": 40}, 40, False)
+    assert stale is not None and "second_pass None" in stale
+
+
+def test_a_baseline_asked_for_the_second_pass_is_refused_before_a_run_folder_exists(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "out"
+    arguments = ["run", str(DEV_RFP), "--baseline", "ex0", "--second-pass", "--outputs", str(out)]
+    assert cli.main(arguments) == 2
+    assert "ADR-028" in capsys.readouterr().err
+    assert not out.exists()
+
+
+def test_an_extract_prompt_a_run_does_not_load_is_refused_before_a_run_folder_exists(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(Refused, match="no extract prompt 'extract_noexamples'"):
+        execute(
+            docling_mode="replay",
+            source=DEV_RFP,
+            profile="free",
+            outputs=tmp_path / "out",
+            backends={"gemini": RuleBackend()},
+            extract_prompt="extract_noexamples",
+        )
+    assert not (tmp_path / "out").exists()
+    with pytest.raises(Refused, match="no extract prompt 'approach'"):
+        execute(source=DEV_RFP, profile="free", outputs=tmp_path / "out", extract_prompt="approach")
 
 
 def test_load_env_never_overrides_and_skips_empty_values(

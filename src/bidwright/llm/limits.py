@@ -106,8 +106,9 @@ class Limiter:
         return _read(self.path(provider, model))
 
     def acquire(self, provider: str, model: str, tokens: int) -> None:
-        """Return once an attempt may go, counting it; raise `QuotaExhausted` when the day's
-        allowance is spent."""
+        """Return once an attempt may go, counting it; on a row with `daily: enforce`, raise
+        `QuotaExhausted` when the day's allowance is spent. A row with `daily: observe` only
+        counts, and the provider's own daily 429 stops the calls (ADR-029)."""
         quota = self.limits.quota_for(provider, self.tier, model)
         if quota is None:
             return

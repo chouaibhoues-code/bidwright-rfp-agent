@@ -2,6 +2,8 @@
  "profile": "paid",
  "source": "inputs/hero",
  "until": "consolidate",
+ "batch_size": 40,
+ "second_pass": true,
  "run_id": "20261104T211602Z-hero-paid",
  "status": "COMPLETED"
 }

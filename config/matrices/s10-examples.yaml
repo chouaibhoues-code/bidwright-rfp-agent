@@ -4,12 +4,13 @@
 name: s10-examples
 # Ran on 2026-11-04 against `extract` 0.3.0: the examples failed `superiority`, so `extract.md`
 # 0.4.0 took the text of `extract_noexamples`, which was then retired (ADR-028). Running this
-# file again needs a variant with examples in place of `extract_noexamples`.
+# file again needs a variant with examples in place of `extract_noexamples`; until then the
+# matrix runner refuses it before anything starts. Both rungs ran without the second pass.
 rfp: inputs/hero
 profile: free
 repeats: 5
 until: coverage
 max_cost_usd: 10
 rungs:
-  - {name: noexamples, flags: {extract_prompt: extract_noexamples}}
-  - {name: examples, flags: {}}
+  - {name: noexamples, flags: {extract_prompt: extract_noexamples, second_pass: false}}
+  - {name: examples, flags: {second_pass: false}}

@@ -9,6 +9,9 @@ other flag is refused. Every run gets its repeat index, which is in every casset
 key, and the response cache is on, so a run started again answers the calls it already made
 from the cache. Runs go to `outputs/matrices/<matrix>/<matrix>-<rung>-r<repeat>/`.
 
+- Before anything starts, a rung that `execute` would refuse is refused: an `extract_prompt`
+  a run does not load, such as a retired one, or a baseline asked for the second pass, which a
+  baseline never runs (ADR-028). Nothing is created, and no run is spent first.
 - Every run stays on its roles' primary models (`fallback=False`): a second model would change
   what the matrix measures. A spent quota pauses the run instead, and a call that exhausts its
   retries faults it.
@@ -168,6 +171,25 @@ class MatrixRefused(ValueError):
     """The matrix cannot start as asked."""
 
 
+def check_rungs(matrix: MatrixFile) -> None:
+    """Refuse, before anything starts, a rung that `execute` would refuse at its first run."""
+    from bidwright.graph.build import extract_prompt_ids, run_prompts
+
+    known = extract_prompt_ids(run_prompts(load_config()))
+    for rung in matrix.rungs:
+        name = rung.flags.get("extract_prompt")
+        if name is not None and name not in known:
+            raise MatrixRefused(
+                f"rung {rung.name} names the extract prompt {name!r}, which a run does not"
+                f" load; a run loads {', '.join(known)}"
+            )
+        if rung.flags.get("baseline") is not None and rung.flags.get("second_pass"):
+            raise MatrixRefused(
+                f"rung {rung.name} sets a baseline and the second pass; a baseline runs"
+                " without the second pass (ADR-028)"
+            )
+
+
 def run_matrix(
     path: Path,
     *,
@@ -184,6 +206,7 @@ def run_matrix(
 
         execute = run_entry
     matrix = load_matrix(path)
+    check_rungs(matrix)
     root = matrix_dir(matrix.name, outputs)
     command = f"bidwright matrix run {path.as_posix()} --resume"
     if not resume and root.is_dir() and any(p.is_dir() for p in root.iterdir()):
@@ -256,6 +279,7 @@ __all__ = [
     "MatrixRefused",
     "MatrixRun",
     "Rung",
+    "check_rungs",
     "fell_back",
     "load_matrix",
     "matrix_dir",

@@ -52,7 +52,7 @@ Based on the passages above, list any obligation on the supplier in passages $id
 ## Why it works
 
 - **It is the control.** EX0, the first rung of the extraction ladder, sends every passage of the RFP in one call with this plain instruction. Each later rung is judged against it.
-- **Same examples, same schema, same checks.** Like `extract.md` 0.4.0, it carries no examples since S-10 (ADR-028); the response schema and the repair messages match `extract.md`, and `verify` checks this rung's quotes too. EX1 therefore measures batching and the prompt contract (rules, decision table, the coverage check), not a change in examples or in quote checking.
+- **No examples, the same schema, the same checks.** Like `extract.md` 0.4.0, it carries no examples since S-10 (ADR-028); the response schema and the repair messages match `extract.md`, and `verify` checks this rung's quotes too. EX1 therefore measures batching and the prompt contract (rules, decision table, the coverage check), not a change in examples or in quote checking.
 - **Deliberately minimal.** No rules beyond the output format, and no decision table. Adding them here would hide what the contract buys.
 - **Version 0.4.0** drops the examples with `extract.md`. **Version 0.3.0** added only what the code around every extract prompt needs: the repair messages for values not in the source and for quotes over 300 characters, and the second-pass task. The instruction stays plain, so EX0 remains the control the Master-Plan's ablation table describes, and EX1 still measures batching and the prompt contract together.
 - **Decoding** matches `extract.md`, so the rungs differ only in what they test.

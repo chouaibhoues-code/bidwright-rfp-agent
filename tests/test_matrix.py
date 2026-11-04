@@ -133,6 +133,34 @@ def test_the_committed_matrix_files_load() -> None:
 
 
 @pytest.mark.parametrize(
+    ("flags", "reason"),
+    [
+        ("{extract_prompt: extract_noexamples}", "extract_noexamples"),
+        ("{baseline: ex0, second_pass: true}", "ADR-028"),
+    ],
+)
+def test_a_rung_that_execute_would_refuse_is_refused_before_anything_starts(
+    tmp_path: Path, flags: str, reason: str
+) -> None:
+    entry = FakeEntry()
+    path = _matrix(tmp_path, rungs=f"  - {{name: bad, flags: {flags}}}\n")
+    with pytest.raises(MatrixRefused, match=reason):
+        run_matrix(path, execute=entry, outputs=tmp_path / "out", say=lambda _: None)
+    assert entry.calls == [] and not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize("name", ["s10-examples", "s13-second-pass"])
+def test_the_committed_matrices_naming_a_retired_prompt_are_refused_up_front(
+    tmp_path: Path, name: str
+) -> None:
+    entry = FakeEntry()
+    path = cli.HOME / "config" / "matrices" / f"{name}.yaml"
+    with pytest.raises(MatrixRefused, match="extract_noexamples"):
+        run_matrix(path, execute=entry, outputs=tmp_path, say=lambda _: None)
+    assert entry.calls == [] and not any(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize(
     ("kind", "control", "rung", "secondary", "passed"),
     [
         ("within_noise", [2, 3, 4], [4, 4, 5], None, True),
