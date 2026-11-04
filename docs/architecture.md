@@ -415,7 +415,7 @@ Every prompt follows one layout: the system instruction first, with role, rules,
 
 From `config/limits.yaml` and `config/agents.yaml`:
 - Per run, by corpus tier and profile: 60 requests and 300,000 tokens for the development RFPs, with 20 active minutes on `free` and 60 on `local`; 250 requests, 2,000,000 tokens and 90 minutes for the hero package on `free` and `paid`. The clock counts the run's active time.
-- The request limit counts provider attempts, retries and fallback attempts included, because that is what the quota counts (ADR-022). The limiter keeps each model's daily count under `outputs/.quota/`, by the provider's quota day, and keeps a 20% reserve of the free quota for development.
+- The request limit counts provider attempts, retries and fallback attempts included, because that is what the quota counts (ADR-022). The limiter keeps each model's daily count under `outputs/.quota/`, by the provider's quota day. On `paid` it stops at the published daily limit; on `free` it only observes the count, and Google's own daily 429 stops the calls, after which runs move to `paid` (ADR-029). The per-minute limits apply on both tiers: 15 requests a minute on `free`, and the paid project's 4,000 (V-03).
 - Per call: a 120-second timeout on `free` and `paid`, 300 seconds on `local`, with 3 retries.
 - Context packs hold at most `batch_size` passages within 12,000 tokens for `extract`, 8,000 for `triage` and `consolidate`. Clusters hold at most 12 members and 8 context requirements. `coverage` runs at most 2 rounds. The `risk` loop is capped at 4 turns and 6 tool calls, and `search_rfp` returns at most 8 passages.
 

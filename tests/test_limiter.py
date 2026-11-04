@@ -91,6 +91,18 @@ def test_the_daily_reserve_raises_before_any_call(tmp_path: Path) -> None:
     assert backend.requests == [], "no request reaches the provider"
 
 
+def test_an_observed_daily_count_never_stops_a_call(tmp_path: Path) -> None:
+    """With `daily: observe`, the count runs past the allowance, and the provider's own
+    daily 429 decides when calls stop (ADR-029)."""
+    observed = ModelQuota(rpm=15, tpm=250_000, rpd=10, reserve=0.2, daily="observe")
+    limits = _limits(rpd=10)
+    limits.providers["gemini"].tiers["free"][PRIMARY] = observed
+    limiter, _ = _limiter(tmp_path, limits)
+    for _ in range(12):
+        limiter.acquire("gemini", PRIMARY, 10)
+    assert limiter.count("gemini", PRIMARY) == 12, "past the allowance of 8, still counted"
+
+
 def _spend(limiter: Limiter, model: str) -> None:
     path = limiter.path("gemini", model)
     path.parent.mkdir(parents=True, exist_ok=True)

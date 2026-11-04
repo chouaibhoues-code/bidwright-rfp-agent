@@ -11,10 +11,12 @@ Ollama, is not limited. The limiter keeps the request times and input tokens of 
 seconds in memory and waits until the per-minute limits allow an attempt. It keeps the day's
 request count in `outputs/.quota/<provider>-<tier>-<model>-<YYYY-MM-DD>.json` under
 `HOME / "outputs"`, whatever `--outputs` says, because a quota belongs to the account rather
-than to an output folder. The date is the provider's quota day, in its `quota_day_tz`. Once the
-day's count reaches the daily limit less the reserve, `acquire` raises `QuotaExhausted`, which
-moves the call to its fallback model, whose limit is counted separately; when both are spent,
-the run ends `QUOTA_PAUSED`.
+than to an output folder. The date is the provider's quota day, in its `quota_day_tz`. With
+`daily: enforce`, once the day's count reaches the daily limit less the reserve, `acquire`
+raises `QuotaExhausted`, which moves the call to its fallback model, whose limit is counted
+separately; when both are spent, the run ends `QUOTA_PAUSED`. With `daily: observe`, the count
+is kept but never stops a call: the provider's own daily 429, which the adapter turns into the
+same `QuotaExhausted`, decides (ADR-029). The per-minute limits always apply.
 """
 
 import json
@@ -115,7 +117,7 @@ class Limiter:
                 day = self.quota_day(provider)
                 path = self.path(provider, model, day)
                 spent = _read(path)
-                if spent >= allowed:
+                if quota.daily == "enforce" and spent >= allowed:
                     raise QuotaExhausted(
                         f"{provider} {self.tier} quota for {model} spent today: {spent} of"
                         f" {allowed} requests, with {quota.reserve:.0%} of {quota.rpd} in reserve"

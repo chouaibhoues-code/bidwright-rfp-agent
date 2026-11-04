@@ -28,12 +28,15 @@ providers:
   gemini:
     quota_day_tz: America/Los_Angeles
     tiers:
+      # The free tier's daily count is observed, not enforced: Google's own daily 429 stops
+      # the calls, and only then do runs move to `paid` (ADR-029, the owner's decision).
       free:
-        gemini-3.5-flash-lite: {rpm: 15, tpm: 250000, rpd: 500, reserve: 0.2}
-        gemini-3.1-flash-lite: {rpm: 15, tpm: 250000, rpd: 500, reserve: 0.2}
-      paid:   # the free values until V-03 reads the paid tier's limits
-        gemini-3.5-flash-lite: {rpm: 15, tpm: 250000, rpd: 500, reserve: 0.0}
-        gemini-3.1-flash-lite: {rpm: 15, tpm: 250000, rpd: 500, reserve: 0.0}
+        gemini-3.5-flash-lite: {rpm: 15, tpm: 250000, rpd: 500, reserve: 0.2, daily: observe}
+        gemini-3.1-flash-lite: {rpm: 15, tpm: 250000, rpd: 500, reserve: 0.2, daily: observe}
+      # The paid project's limits, read in AI Studio on 2026-11-04 (V-03).
+      paid:
+        gemini-3.5-flash-lite: {rpm: 4000, tpm: 4000000, rpd: 150000, reserve: 0.0}
+        gemini-3.1-flash-lite: {rpm: 4000, tpm: 4000000, rpd: 150000, reserve: 0.0}
 coverage: {max_rounds: 2, gap_pack_size: 5}
 clusters: {max_members: 12, max_context: 8, duplicate_jaccard: 0.6}
 context: {budgets: {triage: 8000, extract: 12000, consolidate: 8000}, chars_per_token: 4, neighbors: 1, max_terms: 10}

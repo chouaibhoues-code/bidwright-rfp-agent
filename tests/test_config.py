@@ -141,6 +141,10 @@ def test_the_paid_profile_mirrors_free_with_its_own_limits(config: Config) -> No
     for tier in ("free", "paid"):
         quota = config.limits.quota_for("gemini", tier, "gemini-3.5-flash-lite")
         assert quota is not None and quota.rpd > 0, tier
+    free = config.limits.quota_for("gemini", "free", "gemini-3.5-flash-lite")
+    paid = config.limits.quota_for("gemini", "paid", "gemini-3.5-flash-lite")
+    assert free is not None and free.daily == "observe", "Google's own 429 decides (ADR-029)"
+    assert paid is not None and (paid.rpm, paid.rpd, paid.daily) == (4000, 150_000, "enforce")
     assert config.limits.quota_for("ollama", "free", "qwen3.5:4b") is None
 
 

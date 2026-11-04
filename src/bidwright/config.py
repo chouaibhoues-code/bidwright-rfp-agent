@@ -105,6 +105,9 @@ class ModelQuota(Strict):
     tpm: int = Field(gt=0)
     rpd: int = Field(gt=0)
     reserve: float = Field(ge=0, lt=1)  # the share of the daily quota kept free
+    # `enforce`: the limiter stops at the daily limit less the reserve. `observe`: it only
+    # counts, and the provider's own daily 429 stops the calls (ADR-029).
+    daily: Literal["enforce", "observe"] = "enforce"
 
 
 class ProviderLimits(Strict):

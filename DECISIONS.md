@@ -45,6 +45,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 026 | Client documents: the data class, retention, the privacy invariant, the text view and the egress register | accepted |
 | 027 | Iteration 1's spike decisions: Docling stays, and packs of 40 | accepted |
 | 028 | The `extract` prompt drops its examples, and the second pass is on | accepted |
+| 029 | On the free tier, Google's daily 429 decides, not the local count | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -711,6 +712,27 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** The Iteration 3 extraction ladder, with its bootstrap rule, shows the examples lowering the misses beyond noise, or the second pass costing more precision than it saves misses.
 
 **Provenance.** S-10 and S-13, 2026-11-04; the decision rules of `docs/designs/iteration-1.md`, step 20; CH-86.
+
+### ADR-029: On the free tier, Google's daily 429 decides, not the local count
+
+**Status:** accepted, 2026-11-04, by the owner.
+
+**Context.** The limiter counts every provider attempt per model and quota day, and on the free tier it stopped at 400 of Google's 500 daily requests, keeping 20% in reserve for development. The local count can drift from Google's: it misses calls the same key makes outside Bidwright, and scratch runs with fake backends once added 48 attempts that never reached Google. On 2026-11-04 the spikes moved to the paid key on the local count alone. The owner asked that runs leave the free tier only when Google itself reports the daily quota spent.
+
+**Decision.**
+- A quota row in `config/limits.yaml` takes `daily: enforce` (the default) or `daily: observe`. With `observe`, the limiter keeps counting but never stops a call on its own count; Google's daily 429, which the Gemini adapter already turns into `QuotaExhausted`, stops the calls, and a matrix then pauses in `QUOTA_PAUSED` and moves to `paid`.
+- The free rows observe; the paid rows enforce, with the paid project's limits read in AI Studio (V-03): 4,000 requests a minute, 4M tokens a minute and 150,000 requests a day for both Flash-Lite models.
+- The per-minute limits stay enforced on both tiers.
+
+**Consequences.** The free tier's 20% reserve no longer holds requests back for development; the owner accepted that. A run that reaches Google's daily limit mid-run falls back or pauses as before, since the adapter's handling is unchanged. The paid tier now runs at its own limits instead of the free values it borrowed.
+
+**Options.** Keeping the local cap with a smaller reserve, which still trusts the local count; reading the remaining quota from Google, which the API does not expose.
+
+**Confirmation.** `tests/test_limiter.py` (an observed count runs past the allowance), `tests/test_config.py`, `tests/test_adapters.py` (a daily 429 becomes `QuotaExhausted`).
+
+**Reverse if.** Google's daily 429 stops arriving reliably, or a shared key needs a reserve kept for other users.
+
+**Provenance.** The owner's decision, 2026-11-04; V-03 in `context/Research-Register.md`.
 
 ## Failure modes hit
 

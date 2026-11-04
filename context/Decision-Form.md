@@ -37,7 +37,7 @@ Not decisions, but work only the owner can do.
 | When | Input |
 |---|---|
 | Iteration 0b | The first Goldfish architecture review is triaged (2026-11-03, ADR-022 to ADR-025). Start the drift report at the tag, `/egm:egm-drift-report docs`, limited to `architecture.md`, `agents.md` and `security.md`, and triage it with Claude |
-| Iteration 1 | Review gold v2, about 1 hour; write the held-out list, about 1 hour; confirm the 555-01XX fiction block before step 4; read the paid-tier limits in AI Studio (V-03) before step 9; confirm CrackedPDFs access and license (V-02) before step 19; the NotebookLM login for the step-1 research launches; decide D-01 at the exit. The Stage 9 review was triaged on 2026-11-03; gold v2 was reviewed and hashed, V-02 confirmed and D-01 decided on 2026-11-04. The held-out list is still to come. |
+| Iteration 1 | Review gold v2, about 1 hour; write the held-out list, about 1 hour; confirm the 555-01XX fiction block before step 4; read the paid-tier limits in AI Studio (V-03) before step 9; confirm CrackedPDFs access and license (V-02) before step 19; the NotebookLM login for the step-1 research launches; decide D-01 at the exit. The Stage 9 review was triaged on 2026-11-03; gold v2 was reviewed and hashed, V-02 confirmed, D-01 decided, the held-out list written and its gold hashed, and the paid limits read (V-03) on 2026-11-04. |
 | Iteration 2 | The NotebookLM login for `live` research; triage Stage 9 |
 | Iteration 3 | The Cerebras key (D-03); approve one manifest at the gate; triage Stage 9 |
 | Iteration 4 | Review the two skills and one drafted section; triage Stage 9 |
