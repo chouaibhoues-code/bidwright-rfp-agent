@@ -89,6 +89,21 @@ The repeated misses sit in the hero's designed traps: an implicit requirement, a
 
 The hero recording made with the Iteration 1 configuration (packs of 40, `extract` 0.4.0 without examples, the second pass on), replayed through `consolidate` and scored against gold v2 (`9e6f4ecc6ef6`): 8 of 45 mandatory requirements missed, the trap clauses of S-03 (GR-0030, GR-0031, GR-0032, GR-0042, GR-0045 and GR-0051 to GR-0053), and none of the 9 submission hazards; recall 0.818, low precision 0.648 and F1 0.723 ([`evals/baselines/hero.json`](../evals/baselines/hero.json)). The first baseline, written earlier that day with the examples and no second pass, missed 7; one replay of each sits inside the spikes' spreads. Later runs are gated against it under `config/thresholds.yaml`: one more missed mandatory requirement blocks.
 
+### The pipeline against B0
+
+The three recordings' live runs, made on 2026-11-04 with the Iteration 1 configuration, and B0, the rule-only floor with no model call, on the same files, each scored against gold v2 and committed under `evals/results/runs/`:
+
+| Run | Missed mandatory | Missed hazards | Recall | Precision range | F1 | Risk seeds | Requests | Cost |
+|---|---|---|---|---|---|---|---|---|
+| Development PDF, the full pipeline (`20261104T211354Z-dev-rfp-db9eeb00-paid`) | 0 of 8 | 0 of 1 | 100% | 100% | 1.00 | 1 of 3 | 13 | $0.074 |
+| Development PDF, B0 (`20261104T230353Z-dev-rfp-db9eeb00-free-b0`) | 2 of 8 | 0 of 1 | 83% | 67% to 100% | 0.74 | Not run | 0 | $0 |
+| Development DOCX, the full pipeline (`20261104T211518Z-dev-docx-rfp-1fc7453f-paid`) | 0 of 9 | 0 of 1 | 100% | 100% | 1.00 | 0 of 2 | 12 | $0.040 |
+| Development DOCX, B0 (`20261104T230353Z-dev-docx-rfp-1fc7453f-free-b0`) | 2 of 9 | 0 of 1 | 82% | 69% to 100% | 0.75 | Not run | 0 | $0 |
+| Hero package to `consolidate` (`20261104T211602Z-hero-paid`) | 8 of 45 | 0 of 9 | 82% | 65% to 97% | 0.72 | Not run | 25 | $0.234 |
+| Hero package, B0 (`20261104T230353Z-hero-free-b0`) | 13 of 45 | 1 of 9 | 73% | 68% to 90% | 0.70 | Not run | 0 | $0 |
+
+The funnel charges every miss in all six runs to `extract`, or to the rule that stands in for it under B0; none was lost at `guard`, parsing or `verify`. On the hero package the pipeline misses 5 fewer mandatory requirements than B0 and no submission hazard, for 25 requests; its low precision, 0.65 against B0's 0.68, and an F1 close to B0's show that the model's gain is in recall, not yet in precision. The hero run scores exactly as its replayed baseline, and each line is one run, so the differences on the two development RFPs are not claimed as real.
+
 ### `guard` on CrackedPDFs
 
 `bidwright-eval external crackedpdfs` ran `guard`'s PDF scan on the 2,919 files of the CrackedPDFs test split (revision `245bc98`, MIT License), with no parser and no model call, in about 0.02 seconds a file ([`evals/results/external/crackedpdfs.md`](../evals/results/external/crackedpdfs.md)). It flagged all 973 injected files, all 973 benign files the benchmark built as matched confounders, and none of the 973 untouched benign originals: precision 0.500, recall 1.000 and F1 0.667, against a published F1 of 0.960 for the hybrid structural detector, 0.623 for the rule baseline and 0.390 for PromptGuard on extracted text. The confounders are built to match the injected files' structure, and the scan found the same kinds of hidden text, in the same numbers, in both groups, so `guard` detects hiding, not intent. That suits its role: a flagged file is not rejected, its hidden text is quarantined for a person to review, and an instruction in visible text is left to the other controls.

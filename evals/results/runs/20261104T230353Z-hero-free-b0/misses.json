@@ -1,0 +1,106 @@
+[
+ {
+  "gold_id": "GR-0004",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0071"
+  ]
+ },
+ {
+  "gold_id": "GR-0009",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0102"
+  ]
+ },
+ {
+  "gold_id": "GR-0018",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0134"
+  ]
+ },
+ {
+  "gold_id": "GR-0030",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0168"
+  ]
+ },
+ {
+  "gold_id": "GR-0031",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0176"
+  ]
+ },
+ {
+  "gold_id": "GR-0032",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0177"
+  ]
+ },
+ {
+  "gold_id": "GR-0038",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0190"
+  ]
+ },
+ {
+  "gold_id": "GR-0039",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0191"
+  ]
+ },
+ {
+  "gold_id": "GR-0042",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0225"
+  ]
+ },
+ {
+  "gold_id": "GR-0045",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0231"
+  ]
+ },
+ {
+  "gold_id": "GR-0051",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0270"
+  ]
+ },
+ {
+  "gold_id": "GR-0052",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0271"
+  ]
+ },
+ {
+  "gold_id": "GR-0053",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0272"
+  ]
+ }
+]

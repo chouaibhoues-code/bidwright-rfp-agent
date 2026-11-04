@@ -1,0 +1,13 @@
+{
+ "funnel": {
+  "guard": [],
+  "parse": [],
+  "extract": [
+   "GR-0004",
+   "GR-0005"
+  ],
+  "verify": [],
+  "consolidate": []
+ },
+ "cue_recall": 0.7778
+}

@@ -263,13 +263,13 @@ The WBS is held as this register. Estimates are Claude's judgment (section 2.6).
 | WP-0b.5 | Documentation checks in CI | 0.5 | A9 | `scripts/check_docs.py`; CI jobs `docs-generated` and `docs-links` green | Done `v0.0.1` |
 | WP-0b.6 | Iteration 1 design doc | 0.5 | A1, A7, A8; CH-44 | `docs/designs/iteration-1.md` with a Detailed Implementation Plan and its open decisions closed as ADRs | Done `v0.0.1`; Stage 9 passed on 2026-11-03 after two rounds, every finding resolved; D-02 pending |
 | WP-0b.7 | First Goldfish architecture review | 0.5 | A13; CH-28 | Findings triaged; accepted ones became ADR-022 to ADR-025 and CH-75 to CH-78 | Done `v0.0.1` |
-| WP-1.1 | `guard` and package input | 2.0 | A10, A11; CH-40 | Limits, scanned-PDF report, PDF and Office hidden-content quarantine; `guard` on CrackedPDFs | Planned |
-| WP-1.2 | Docling `ingest` and the control register | 1.5 | A10 | Package folder with an addendum runs end to end; Docling responses replay | Planned |
-| WP-1.3 | `candidates`, `triage`, full `extract`, second-pass trial | 2.5 | A7, A10; CH-46 | Every candidate has a disposition; S-03, S-10, S-13 decided | Planned |
-| WP-1.4 | `lint`, `consolidate`, `coverage` | 2.0 | A7, A10 | Contract flags, requirement groups, closure checks | Planned |
-| WP-1.5 | Corpus v2: hero, held-out and development DOCX RFPs, supplier knowledge base, gold v2 | 1.5 | A3, A8, A11; CH-49, CH-65 | Gold v2 hashed before its first score; the owner's held-out list frozen | Planned |
-| WP-1.6 | Evaluation v1: funnel, regression gate, B0, matrix runner, hypotheses | 1.5 | A3, A8 | Full scorecard with funnel; the regression gate blocks a deliberate rise in misses | Planned |
-| WP-1.7 | Compliance outputs; limiter, cache, `ContextManager`; partial hero run | 1.0 | A4, A10; CH-59 | Compliance matrix, questions and checklist; measured cost for the budget decision | Planned |
+| WP-1.1 | `guard` and package input | 2.0 | A10, A11; CH-40 | Limits, scanned-PDF report, PDF and Office hidden-content quarantine; `guard` on CrackedPDFs | Done `v0.1` |
+| WP-1.2 | Docling `ingest` and the control register | 1.5 | A10 | Package folder with an addendum runs end to end; Docling responses replay | Done `v0.1` |
+| WP-1.3 | `candidates`, `triage`, full `extract`, second-pass trial | 2.5 | A7, A10; CH-46 | Every candidate has a disposition; S-03, S-10, S-13 decided | Done `v0.1` |
+| WP-1.4 | `lint`, `consolidate`, `coverage` | 2.0 | A7, A10 | Contract flags, requirement groups, closure checks | Done `v0.1` |
+| WP-1.5 | Corpus v2: hero, held-out and development DOCX RFPs, supplier knowledge base, gold v2 | 1.5 | A3, A8, A11; CH-49, CH-65 | Gold v2 hashed before its first score; the owner's held-out list frozen | Done `v0.1` |
+| WP-1.6 | Evaluation v1: funnel, regression gate, B0, matrix runner, hypotheses | 1.5 | A3, A8 | Full scorecard with funnel; the regression gate blocks a deliberate rise in misses | Done `v0.1` |
+| WP-1.7 | Compliance outputs; limiter, cache, `ContextManager`; partial hero run | 1.0 | A4, A10; CH-59 | Compliance matrix, questions and checklist; measured cost for the budget decision | Done `v0.1` |
 | WP-2.1 | Control-plane core: supervisor, policy, gateway rules, budget, recovery, stop control | 3.0 | A7, A9; CH-26, CH-58 | Stop and resume without re-spend; FI-01, FI-02, FI-09, FI-10, FI-11 pass | Planned |
 | WP-2.2 | `brief` | 1.0 | A7 | Factors and weights copied exactly; price factor `OUT_OF_SCOPE` | Planned |
 | WP-2.3 | MCP client, `discover`, research packs and modes | 2.5 | A7, A15; CH-02 | `pack` mode needs no login; outbound overlap rule tested | Planned |
@@ -337,10 +337,11 @@ Each iteration's gate. Entry must hold before work starts; Items are its package
 - Exit: the four `context/` documents; ADRs; the architecture document for `v0.0`; the decision matrix; the one-page threat model; the evaluation stub; the generators and checks in CI; the Iteration 1 design doc; the first architecture review triaged.
 - Verify: every assignment item appears in the assignment trace, and every package maps to an item or an approved change; `DECISIONS.md` holds the ADRs in the short form; no internal marker or second-person pronoun remains in `context/` or `docs/`; `docs/architecture.md` describes `v0.0` only; CI regenerates `docs/agents.md` and fails on a difference; every link and wikilink resolves; the quality scenarios carry their measures; the review is triaged, with accepted findings as ADRs; `docs/designs/iteration-1.md` is ready for its Stage 9 review.
 
-**Iteration 1, `v0.1`.**
+**Iteration 1, `v0.1`. Closed on 2026-11-04.**
 - Entry: `v0.0.1` tagged; the Iteration 1 design doc passed its Stage 9 review; DR-01, DR-03 and DR-16 read.
 - Items: WP-1.1 to 1.7.
 - Exit and Verify: a package folder with an addendum runs end to end, and the control register lists every document; oversized files, paths outside `inputs/` and zip bombs are refused before parsing, and a scanned PDF is reported; hidden injections are removed before parsing and reported, the visible one is flagged and its requested action is not taken, and visible small print is extracted and flagged; the XLSX annex's hidden sheet is quarantined; every passage has a disposition, and rejected candidates are visible (CH-79 replaced the unflagged sample); a "shall:" list keeps its lead-in on every item; the union of the context packs equals the passage set (a property test); gold v2 is hashed before its first score, and the scorecard shows missed mandatory requirements for the hero and the development DOCX, with the funnel and B0 beside it; the compliance matrix, clarification questions and submission checklist are produced, and planted contract terms appear only as contract flags; every packed LLM call (`triage`, `extract`, `consolidate`) has a context manifest (CH-81), and the limiter and the cache are tested on a fake clock and a repeated call; `guard` runs on the CrackedPDFs test split and its F1 sits beside the published figures; the regression gate blocks a deliberate rise in missed mandatory requirements; Docling responses replay with no network; the matrix runner runs a rung with its repeats, and `evals/hypotheses.yaml` is hashed before the first ablation run; S-03 sets the batch size on the hero; the owner's held-out requirement list is rendered and frozen; a measured partial hero run gives the token and cost figures for the budget decision.
+- Result: every check passed, with no exception; section 9.3 gives the evidence.
 
 **Iteration 2, `v0.2`.**
 - Entry: `v0.1`; Stage 9 passed on its design doc; the NotebookLM login for `live`.
@@ -593,6 +594,51 @@ Tagged on 2026-11-03, with CI green on all 11 jobs.
 | Cost performance index, estimate at completion | Pending the owner's hours | Actual cost needed |
 
 Two tags still give no trend; the review and its fixes took more of the iteration than the 0.5 hours planned for WP-0b.7, which the owner's hours will show.
+
+### 9.3 Iteration 1, `v0.1`
+
+Closed on 2026-11-04, with CI green on all 11 jobs; the tag `v0.1` marks the commit that adds these notes.
+
+**Planned against delivered.**
+
+| Planned | Delivered | Note |
+|---|---|---|
+| WP-1.1, `guard` and package input | Size, page, path, archive and macro limits; scanned files reported; hidden content in PDF, DOCX and XLSX quarantined before parsing; `guard` on the 2,919 files of the CrackedPDFs test split, F1 0.667 beside the published 0.960, 0.623 and 0.390 | It flagged every injected file and every matched confounder, and no untouched original: it detects hiding, not intent |
+| WP-1.2, Docling `ingest` and the control register | Package folders with roles and precedence; Docling for PDF, DOCX and XLSX, its responses replayed in every test | S-01 kept Docling: 66 of 66 visible hero clauses located, against 55 for pdfplumber (ADR-027) |
+| WP-1.3, `candidates`, `triage`, full `extract`, the second-pass trial | Every passage reaches `extract` with cue and zone hints (ADR-017, ADR-018); S-03, S-10 and S-13 decided under rules hashed with the gold | Packs of 40 (ADR-027); no examples in `extract`, and the second pass on (ADR-028) |
+| WP-1.4, `lint`, `consolidate`, `coverage` | Lint rules and seven contract-flag categories; clusters with one `consolidate` call each; coverage rounds over the gaps | — |
+| WP-1.5, corpus v2 and gold v2 | The development PDF with traps and planted personal data, the development DOCX, the hero package with its addendum and XLSX annex, the held-out DOCX from the owner's list of 27 requirements, and the supplier knowledge base; gold v2 reviewed and hashed by the owner before its first score | The held-out list was frozen before S-10 and S-13 tuned anything on the hero (CH-86) |
+| WP-1.6, evaluation v1 | Matcher, funnel, scorecard, gate, explain, B0, the matrix runner and `evals/hypotheses.yaml`; the scorecards of the hero package and the development DOCX, with B0 beside them, in `docs/evaluation.md` | CI gates the replayed hero against its committed baseline of 8 of 45 missed; B0 misses 13 |
+| WP-1.7, compliance outputs, limiter, cache, context packs and a measured run | Compliance matrix, clarification questions and submission checklist; the limiter, the response cache and `ContextManager`, with a manifest for every packed call; one full hero run on `free`, 33 requests and $0.26 at the paid list price | That run sized the paid budget, D-01 (CH-84) |
+| D-05's Iteration 1 parts (ADR-026) | The data class, purge with a retention period, the privacy invariant, the text-view seam and the egress register | D-06, raised while adding `host.docker.internal` to the register, is open and deferred |
+| Research and checks | Library claims checked through Context7 before their modules and logged in `docs/verification_log.md` (C7-08 to C7-10 at design time; C7-09, C7-10, C7-14's Hypothesis part and C7-19 at the build); S-01, S-02, S-03, S-10 and S-13; V-02 and V-03; Q-10; DR-01, DR-03 and DR-16 read; DR-05 and DR-18 complete and saved | The register schedules DR-18's reading for Iteration 2 and DR-05's for Iteration 3, where they are used; DR-02 and DR-04 were not needed, since S-03 and S-01 were conclusive |
+
+**Exit checks with accepted exceptions.** None. The B0 runs and the development DOCX scorecard the gate asks for were scored at the close, with no model call, and are committed under `evals/results/runs/`.
+
+**Definition of Done with an accepted exception.** `TIMELOG.md` and the actual cost in the snapshot below wait for the owner's hours: on 2026-11-04 the owner chose to close the iteration first. The drift report was triaged and every fix validated step by step before it was applied; the two medium code reviews of the iteration's work, before and after the spike decisions, were fixed, with three findings of the second declined for reasons recorded in its commit.
+
+**Decisions taken during the iteration.** ADR-027 to ADR-029 and CH-84 to CH-86: Docling and packs of 40; no examples and the second pass on; Google's own daily 429 on the free tier; the paid budget, D-01; and S-10 and S-13 deferred, then run after all. D-06 was opened and deferred until before the first run on client documents. ADR-017 to ADR-021, ADR-026 and CH-79 to CH-83 were taken before the build, at the Stage 9 review and with D-05.
+
+**Lessons learned.**
+- A setting that nothing reads is a silent defect: `second_pass` sat in `config/limits.yaml` while `execute` never read it, until S-13 needed it.
+- A fallback model can contaminate a measurement: one S-03 repeat fell back to 3.1 Flash-Lite after four failures, so matrix runs now stay on their primary models, and the report leaves out any run a fallback answered.
+- A local quota count drifts from the provider's: scratch runs with fake backends added 48 attempts that never reached Google, so on the free tier Google's own daily 429 now decides (ADR-029).
+- A cache keyed by the call serves identical calls across experiments: two spike rungs reused earlier rungs' runs, so the three decisions share samples, which `docs/evaluation.md` now states.
+- What a replay needs depends on settings outside the cassette key: the recordings now name their pack size and second-pass setting, and replays check both first.
+- A cheap measurement can settle a parser choice: pdfplumber lost a whole two-column section that Docling kept (S-01).
+
+**Earned-value snapshot at `v0.1`.**
+
+| Measure | Value | Basis |
+|---|---|---|
+| Budget at completion | 68 hours to the release target (84 with Iterations 6 and 7) | Section 3 |
+| Planned value | 25.0 hours: 8.0 for Iteration 0a, 5.0 for 0b and 12.0 for Iteration 1 | The packages due by `v0.1` |
+| Earned value | 25.0 hours | Every package due by `v0.1` passed its Exit and Verify |
+| Actual cost | Pending the owner's hours in `TIMELOG.md`, deferred on 2026-11-04 | — |
+| Schedule performance index | 1.0 | Earned value over planned value at the tag |
+| Cost performance index, estimate at completion | Pending the owner's hours | Actual cost needed |
+
+Three tags give the schedule index only, since a package earns nothing until it closes; the cost index, which the owner's hours give, is where a trend would show.
 
 ## 10. Full vision
 

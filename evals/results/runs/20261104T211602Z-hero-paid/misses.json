@@ -1,0 +1,66 @@
+[
+ {
+  "gold_id": "GR-0030",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0168"
+  ]
+ },
+ {
+  "gold_id": "GR-0031",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0176"
+  ]
+ },
+ {
+  "gold_id": "GR-0032",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0177"
+  ]
+ },
+ {
+  "gold_id": "GR-0042",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0225"
+  ]
+ },
+ {
+  "gold_id": "GR-0045",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0231"
+  ]
+ },
+ {
+  "gold_id": "GR-0051",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0270"
+  ]
+ },
+ {
+  "gold_id": "GR-0052",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0271"
+  ]
+ },
+ {
+  "gold_id": "GR-0053",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0272"
+  ]
+ }
+]
