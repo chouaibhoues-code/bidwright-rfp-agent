@@ -72,7 +72,7 @@ def test_risk_generic_is_rejected_then_replaced_on_retry(tmp_path: Path) -> None
                 {
                     "risks": [GOOD_RISK],
                     "open_questions": [
-                        {"text": "Paper forms too?", "src_ids": ["SRC-0024", "SRC-9999"]}
+                        {"text": "Paper forms too?", "src_ids": ["SRC-0026", "SRC-9999"]}
                     ],
                 }
             ),
@@ -81,15 +81,15 @@ def test_risk_generic_is_rejected_then_replaced_on_retry(tmp_path: Path) -> None
     outcome = risk(context(backend), dev_requirements(), [], gateway(tmp_path), RISK_LIMITS)
     assert "were rejected" in backend.requests[2].messages[-1].content
     assert [r.id for r in outcome.risks] == ["RSK-001"] and outcome.rejected == []
-    assert outcome.risks[0].evidence_src_ids == ["SRC-0030", "SRC-0024"]
-    assert outcome.questions[0].src_ids == ["SRC-0024"]
+    assert outcome.risks[0].evidence_src_ids == ["SRC-0032", "SRC-0026"]
+    assert outcome.questions[0].src_ids == ["SRC-0026"]
 
 
 @pytest.mark.parametrize(
     ("change", "reason"),
     [
         ({"evidence_src_ids": []}, "cites no passage"),
-        ({"evidence_src_ids": ["SRC-0037"]}, "shares no content word"),
+        ({"evidence_src_ids": ["SRC-0039"]}, "shares no content word"),
         ({"residual_exposure": "High"}, "rating"),
         ({"residual_exposure": "Low if tested early; an outage could still hit."}, "rating"),
         ({"residual_exposure": "It remains a medium-to-high risk until testing."}, "rating"),

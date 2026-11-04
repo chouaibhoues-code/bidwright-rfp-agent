@@ -22,7 +22,7 @@ def _p(run: IngestResult, src_id: str) -> Passage:
 
 def test_a_quote_inside_its_only_passage_is_a_strict_and_relaxed_hit(run: IngestResult) -> None:
     item = record(
-        1, "The Supplier shall keep an audit record of every signature event", [_p(run, "SRC-0018")]
+        1, "The Supplier shall keep an audit record of every signature event", [_p(run, "SRC-0020")]
     )
     result = match([item], gold_clauses(gold(), run.frozen_text), {p.id: p for p in run.passages})
     assert result.captured == {"GR-0002": ["REQ-0001"]}
@@ -30,7 +30,7 @@ def test_a_quote_inside_its_only_passage_is_a_strict_and_relaxed_hit(run: Ingest
 
 
 def test_citing_a_second_clause_is_flagged_merged(run: IngestResult) -> None:
-    cited = [_p(run, "SRC-0023"), _p(run, "SRC-0024")]
+    cited = [_p(run, "SRC-0025"), _p(run, "SRC-0026")]
     item = record(1, "The Supplier shall store signed documents for ten (10) years.", cited)
     result = match([item], gold_clauses(gold(), run.frozen_text), {p.id: p for p in run.passages})
     assert result.captured == {"GR-0006": ["REQ-0001"]} and result.merged == {"REQ-0001"}
@@ -40,7 +40,7 @@ def test_a_list_item_is_its_own_clause(run: IngestResult) -> None:
     item = record(
         1,
         "send a reminder to each signer who has not signed within 72 hours",
-        [_p(run, "SRC-0021")],
+        [_p(run, "SRC-0023")],
     )
     result = match([item], gold_clauses(gold(), run.frozen_text), {p.id: p for p in run.passages})
     assert result.captured == {"GR-0004": ["REQ-0001"]}
@@ -49,7 +49,7 @@ def test_a_list_item_is_its_own_clause(run: IngestResult) -> None:
 def test_a_table_header_captures_nothing_and_background_is_a_false_positive(
     run: IngestResult,
 ) -> None:
-    header = record(1, "Criterion | Weight", [_p(run, "SRC-0032")])
+    header = record(1, "Criterion | Weight", [_p(run, "SRC-0034")])
     background = record(
         2, "Previous suppliers have generally held ISO 27001 certification.", [_p(run, "SRC-0011")]
     )
@@ -61,7 +61,7 @@ def test_a_table_header_captures_nothing_and_background_is_a_false_positive(
 
 
 def test_a_second_record_on_a_clause_is_a_duplicate(run: IngestResult) -> None:
-    passage = [_p(run, "SRC-0018")]
+    passage = [_p(run, "SRC-0020")]
     first = record(1, "The Supplier shall keep an audit record of every signature event", passage)
     second = record(
         2, "keep an audit record of every signature event, including the signer's identity", passage
@@ -75,7 +75,7 @@ def test_a_second_record_on_a_clause_is_a_duplicate(run: IngestResult) -> None:
 
 
 def test_optional_records_count_and_other_dispositions_do_not(run: IngestResult) -> None:
-    passage = [_p(run, "SRC-0026")]
+    passage = [_p(run, "SRC-0028")]
     optional = record(
         1, "Bidders may propose an on-premises deployment option.", passage, "OPTIONAL"
     )

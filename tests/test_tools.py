@@ -57,20 +57,20 @@ def test_search_finds_the_go_live_and_migration_passages(index: PassageIndex) ->
 
 
 def test_a_requirement_id_returns_the_passages_it_quotes(index: PassageIndex) -> None:
-    tool = search_tool(index, {"REQ-0011": ["SRC-0015"], "REQ-0025": ["SRC-0030"]})
+    tool = search_tool(index, {"REQ-0011": ["SRC-0015"], "REQ-0025": ["SRC-0032"]})
     only_ids = tool.run(SearchArgs(query="REQ-0011 REQ-0025", k=5))
-    assert [hit["src_id"] for hit in only_ids.data] == ["SRC-0015", "SRC-0030"]
+    assert [hit["src_id"] for hit in only_ids.data] == ["SRC-0015", "SRC-0032"]
     mixed = tool.run(SearchArgs(query="REQ-0025 migration", k=3))
     ids = [hit["src_id"] for hit in mixed.data]
-    assert ids[0] == "SRC-0030" and "SRC-0024" in ids and len(ids) <= 3
+    assert ids[0] == "SRC-0032" and "SRC-0026" in ids and len(ids) <= 3
     unknown = search_tool(index).run(SearchArgs(query="REQ-0011", k=3))
     assert unknown.status == "EMPTY"
 
 
 def test_ids_joined_by_function_words_return_only_their_passages(index: PassageIndex) -> None:
-    tool = search_tool(index, {"REQ-0011": ["SRC-0015"], "REQ-0025": ["SRC-0030"]})
+    tool = search_tool(index, {"REQ-0011": ["SRC-0015"], "REQ-0025": ["SRC-0032"]})
     result = tool.run(SearchArgs(query="REQ-0011 and REQ-0025 for the", k=5))
-    assert [hit["src_id"] for hit in result.data] == ["SRC-0015", "SRC-0030"]
+    assert [hit["src_id"] for hit in result.data] == ["SRC-0015", "SRC-0032"]
 
 
 @pytest.mark.parametrize("written", ["req-0011", "REQ-11", "Req 11", "REQ0011"])

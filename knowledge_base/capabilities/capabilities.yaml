@@ -1,0 +1,21 @@
+# The fictional supplier's capabilities, for the capability map from Iteration 3. Synthetic:
+# the supplier, its products and its clients do not exist. A capability tagged `partner` is
+# delivered through a partner product. `evidence` lists the case studies and certifications
+# that support a capability.
+capabilities:
+  - {id: CAP-001, name: "Case management workflow configuration", summary: "Configurable case types, stages, forms and service levels, changed by trained customer staff without changes to the code.", evidence: [CS-001, CS-002], tags: [own]}
+  - {id: CAP-002, name: "Resident portal", summary: "A web portal where residents open cases, upload documents and follow progress, tested against WCAG 2.2 at level AA.", evidence: [CS-001], tags: [own]}
+  - {id: CAP-003, name: "Notifications", summary: "Automatic acknowledgments and updates to residents by e-mail and text message, with the history of every message kept on the case.", evidence: [CS-002], tags: [own]}
+  - {id: CAP-004, name: "Audit trail and retention", summary: "Every change to a case is logged with the user, the time and the previous value, and retention periods are set for each case type.", evidence: [CS-001, CS-003], tags: [own]}
+  - {id: CAP-005, name: "Document management and archiving", summary: "Documents attached to cases are stored with their version history, and the documents of closed cases are converted to PDF/A with the pdfplumber library's to_pdfa() export.", evidence: [CS-003], tags: [own]}
+  - {id: CAP-006, name: "REST API integration", summary: "A documented REST API and webhooks for exchanging data with other line-of-business systems.", evidence: [CS-002], tags: [own]}
+  - {id: CAP-007, name: "Data migration service", summary: "Migration of historic records and documents, with trial runs, reconciliation reports and a final cut-over.", evidence: [CS-001, CS-004], tags: [own]}
+  - {id: CAP-008, name: "Hosting in United Kingdom data centers", summary: "Hosted in two data centers in the United Kingdom, 80 kilometers apart, with data replicated between them.", evidence: [CERT-001], tags: [own]}
+  - {id: CAP-009, name: "Single sign-on", summary: "Single sign-on for customer staff through SAML 2.0 or OpenID Connect.", evidence: [], tags: [own]}
+  - {id: CAP-010, name: "Card payments", summary: "Card payments through a partner payment gateway, so that card numbers never reach the supplier's systems.", evidence: [], tags: [partner]}
+  - {id: CAP-011, name: "Mapping", summary: "Map layers and address lookups through a partner GIS product.", evidence: [], tags: [partner]}
+  - {id: CAP-012, name: "Electronic signature", summary: "Electronic signature of forms and decisions through a partner e-signature product.", evidence: [], tags: [partner]}
+  - {id: CAP-013, name: "Charity donor and volunteer records", summary: "Donor, gift and volunteer records for charities, with consent tracking and session reminders.", evidence: [CS-005], tags: [own]}
+  - {id: CAP-014, name: "Reporting dashboards", summary: "Dashboards of open, overdue and closed cases and of performance against service levels, refreshed every five minutes.", evidence: [CS-002], tags: [own]}
+  - {id: CAP-015, name: "Security testing and operations", summary: "An independent penetration test each year, and a security operations team that triages alerts at any time of day.", evidence: [CERT-002], tags: [own]}
+  - {id: CAP-016, name: "Training and adoption", summary: "Role-based training for customer staff, delivered on site or by video, with guides for each role.", evidence: [CS-004], tags: [own]}

@@ -205,12 +205,12 @@ def dev_requirements() -> list[Requirement]:
             hazard=True,
         ),
         requirement(
-            2, "SRC-0025", "The service must integrate with the College's student records system"
+            2, "SRC-0027", "The service must integrate with the College's student records system"
         ),
-        requirement(3, "SRC-0030", "The service must be live for students by 2027-01-11"),
+        requirement(3, "SRC-0032", "The service must be live for students by 2027-01-11"),
         requirement(
             4,
-            "SRC-0024",
+            "SRC-0026",
             "The Supplier should migrate the signed records held in the current tool",
             modality="should",
             mandatory=False,
@@ -229,7 +229,7 @@ GOOD_RISK = {
     "trigger": "The migration plan ends after 2027-01-11.",
     "responses": ["Migrate the most used records before go-live."],
     "residual_exposure": "Some lookups need the current tool for seven weeks.",
-    "evidence_src_ids": ["SRC-0030", "SRC-0024"],
+    "evidence_src_ids": ["SRC-0032", "SRC-0026"],
 }
 GENERIC_RISK = {
     "condition": "Projects are complex.",

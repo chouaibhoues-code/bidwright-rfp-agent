@@ -1,0 +1,7 @@
+# The fictional supplier's delivery roles. Synthetic: no role names a person.
+roles:
+  - {id: ROLE-001, title: "Delivery lead", summary: "Leads an implementation from the contract start until three months after go-live.", capability_ids: [CAP-001, CAP-007]}
+  - {id: ROLE-002, title: "Data migration manager", summary: "Plans and runs the trial and final migrations, with a reconciliation report for each batch.", capability_ids: [CAP-007]}
+  - {id: ROLE-003, title: "Solution architect", summary: "Designs the configuration of case types and the integrations with other systems.", capability_ids: [CAP-001, CAP-006]}
+  - {id: ROLE-004, title: "Trainer", summary: "Delivers role-based training and writes the guides for each role.", capability_ids: [CAP-016]}
+  - {id: ROLE-005, title: "Service desk analyst", summary: "Answers calls from customer staff and resolves incidents against the agreed targets.", capability_ids: []}

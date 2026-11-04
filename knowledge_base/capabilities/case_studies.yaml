@@ -1,0 +1,7 @@
+# The fictional supplier's case studies. Synthetic: every client is fictional and unnamed.
+case_studies:
+  - {id: CS-001, client: "A fictional county council", sector: "local government", year: 2025, summary: "Replaced three case systems with one configurable service for 420 staff, and migrated 900,000 historic records in four batches.", capability_ids: [CAP-001, CAP-002, CAP-004, CAP-007]}
+  - {id: CS-002, client: "A fictional city council", sector: "local government", year: 2024, summary: "Connected the case service to five line-of-business systems through the REST API, and cut duplicate data entry by half.", capability_ids: [CAP-001, CAP-003, CAP-006, CAP-014]}
+  - {id: CS-003, client: "A fictional housing association", sector: "housing", year: 2023, summary: "Moved 300,000 scanned documents into the document store, with retention periods set for each case type.", capability_ids: [CAP-004, CAP-005]}
+  - {id: CS-004, client: "A fictional district council", sector: "local government", year: 2026, summary: "Ran four trial migrations and trained 150 staff before a phased go-live across three teams.", capability_ids: [CAP-007, CAP-016]}
+  - {id: CS-005, client: "A fictional children's charity", sector: "charity", year: 2025, summary: "Replaced donor spreadsheets with a donor and volunteer system for 3,000 donors and 400 volunteers.", capability_ids: [CAP-013]}

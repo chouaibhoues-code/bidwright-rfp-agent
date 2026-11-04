@@ -1,0 +1,6 @@
+# The fictional supplier's certifications. Synthetic: the names are real schemes, the
+# certificates are not.
+certifications:
+  - {id: CERT-001, name: "ISO/IEC 27001", holder: "the supplier", valid_until: 2027-06-30}
+  - {id: CERT-002, name: "Cyber Essentials Plus", holder: "the supplier", valid_until: 2027-03-31}
+  - {id: CERT-003, name: "ISO 9001", holder: "the supplier", valid_until: 2028-01-31}

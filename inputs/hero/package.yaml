@@ -1,0 +1,5 @@
+package: hero
+documents:
+  - {file: hero_rfp.pdf, role: main, precedence: 2}
+  - {file: hero_addendum_1.pdf, role: addendum, precedence: 1}
+  - {file: hero_annex_b_requirements.xlsx, role: annex, precedence: 3}

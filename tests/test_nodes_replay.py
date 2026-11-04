@@ -32,7 +32,7 @@ SECTION_4 = [p for p in dev_ingest().passages if "4 Requirements >" in p.section
 EXTRACT = {
     "items": [
         {
-            "src_ids": ["SRC-0018"],
+            "src_ids": ["SRC-0020"],
             "quote": "The Supplier shall keep an audit record of every signature event",
             "statement": "Keep an audit record of every signature event.",
             "modality": "shall",
@@ -40,7 +40,7 @@ EXTRACT = {
             "hazard": False,
         }
     ],
-    "no_obligation_src_ids": [f"SRC-{n:04d}" for n in range(19, 27)],
+    "no_obligation_src_ids": [f"SRC-{n:04d}" for n in range(21, 29)],
 }
 APPROACH = {
     "items": [{"text": "Audit log.", "requirement_ids": ["REQ-0001"], "basis": "Stated."}],

@@ -19,6 +19,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import (
     BaseDocTemplate,
@@ -40,6 +41,7 @@ from evals.render.spec import (
     Para,
     Section,
     TableBlock,
+    TableSpec,
     Text,
     TrapBlock,
 )
@@ -95,7 +97,9 @@ def _styles(font_size: float) -> dict[str, ParagraphStyle]:
         "Small", parent=body, fontSize=SMALL_PRINT_PT, leading=SMALL_PRINT_PT * 1.3, spaceAfter=3
     )
     cell = ParagraphStyle("Cell", parent=body, leading=font_size * 1.25, spaceAfter=0)
+    cell_bold = ParagraphStyle("CellBold", parent=cell, fontName="Helvetica-Bold")
     return {
+        "cell_bold": cell_bold,
         "body": body,
         "item": item,
         "small": small,
@@ -136,25 +140,43 @@ def _text(text: str, layer: str, styles: dict[str, ParagraphStyle], style: str) 
     return HiddenText(text, layer)
 
 
+def _natural_widths(spec: TableSpec, font_size: float, columns: int) -> list[float]:
+    """Each column's width when no cell wraps: its widest text, in bold, plus the padding."""
+    widths = [0.0] * columns
+    for row in [*spec.header, *spec.rows]:
+        for index, cell in enumerate(row):
+            text = cell.text if isinstance(cell, Clause) else cell
+            width = stringWidth(text, "Helvetica-Bold", font_size) + 2 * FRAME_PADDING
+            widths[index] = max(widths[index], width)
+    return widths
+
+
+def _cell(cell: str | Clause, styles: dict[str, ParagraphStyle], header: bool) -> Paragraph:
+    if isinstance(cell, Clause):
+        style = "cell_small" if cell.layer == "small_print" else "cell"
+        return Paragraph(escape(cell.text), styles[style])
+    return Paragraph(escape(cell), styles["cell_bold" if header else "cell"])
+
+
 def _table(block: TableBlock, font_size: float, styles: dict[str, ParagraphStyle], avail: float):
+    """A table whose text fits is drawn as plain strings at their natural widths. A table that
+    holds a clause, or whose text is wider than the frame, wraps every cell in a paragraph:
+    clause columns share the room the other columns leave, and a table with no clause column
+    scales its natural widths to the frame."""
     spec = block.table
     columns = max(len(row) for row in [*spec.header, *spec.rows])
     clause_columns = {
         i for row in spec.rows for i, cell in enumerate(row) if isinstance(cell, Clause)
     }
-    data: list[list[object]] = [list(row) for row in spec.header]
-    for row in spec.rows:
-        data.append(
-            [
-                Paragraph(
-                    escape(cell.text),
-                    styles["cell_small" if cell.layer == "small_print" else "cell"],
-                )
-                if isinstance(cell, Clause)
-                else cell
-                for cell in row
-            ]
-        )
+    natural = _natural_widths(spec, font_size, columns)
+    wrapped = bool(clause_columns) or sum(natural) > avail
+    data: list[list[object]] = []
+    for header, rows in ((True, spec.header), (False, spec.rows)):
+        for row in rows:
+            cells: list[object] = (
+                [_cell(cell, styles, header=header) for cell in row] if wrapped else list(row)
+            )
+            data.append(cells)
     widths = None
     if clause_columns:
         rest = avail - FIXED_COLUMN * (columns - len(clause_columns))
@@ -162,6 +184,8 @@ def _table(block: TableBlock, font_size: float, styles: dict[str, ParagraphStyle
             rest / len(clause_columns) if i in clause_columns else FIXED_COLUMN
             for i in range(columns)
         ]
+    elif wrapped:
+        widths = [avail * width / sum(natural) for width in natural]
     table = Table(data, colWidths=widths, hAlign="LEFT")
     commands = [
         ("FONTNAME", (0, 0), (-1, len(spec.header) - 1), "Helvetica-Bold"),
@@ -170,7 +194,7 @@ def _table(block: TableBlock, font_size: float, styles: dict[str, ParagraphStyle
         ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]
-    if clause_columns:
+    if wrapped:
         commands.append(("VALIGN", (0, 0), (-1, -1), "TOP"))
     table.setStyle(TableStyle(commands))
     return [table, Spacer(1, 6)]

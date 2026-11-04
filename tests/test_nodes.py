@@ -14,7 +14,7 @@ from bidwright.graph.nodes import (
 )
 from tests.node_fakes import ScriptBackend, context, dev_ingest, dev_requirements, text
 
-# The 4.1 to 4.3 requirement passages of the development RFP: SRC-0018 to SRC-0026.
+# The 4.1 to 4.3 requirement passages of the development RFP: SRC-0020 to SRC-0028.
 SECTION_4 = [p for p in dev_ingest().passages if "4 Requirements >" in p.section_path]
 
 
@@ -30,33 +30,33 @@ def item(src: str, quote: str, disposition: str = "BINDING", modality: str = "sh
 
 
 GOOD_ITEMS = [
-    item("SRC-0018", "The Supplier shall keep an audit record of every signature event"),
-    item("SRC-0020", "support signing on current desktop and mobile browsers"),
-    item("SRC-0021", "send a reminder to each signer who has not signed within 72 hours"),
-    item("SRC-0022", "The Supplier should provide templates", "OPTIONAL", "should"),
-    item("SRC-0023", "The Supplier shall store signed documents for ten (10) years."),
+    item("SRC-0020", "The Supplier shall keep an audit record of every signature event"),
+    item("SRC-0022", "support signing on current desktop and mobile browsers"),
+    item("SRC-0023", "send a reminder to each signer who has not signed within 72 hours"),
+    item("SRC-0024", "The Supplier should provide templates", "OPTIONAL", "should"),
+    item("SRC-0025", "The Supplier shall store signed documents for ten (10) years."),
     item(
-        "SRC-0024",
+        "SRC-0026",
         "should migrate the signed records held in the current tool",
         "OPTIONAL",
         "should",
     ),
     item(
-        "SRC-0025",
+        "SRC-0027",
         "The service must integrate with the College's student records system",
         modality="must",
     ),
-    item("SRC-0026", "Bidders may propose an on-premises deployment option.", "OPTIONAL", "may"),
+    item("SRC-0028", "Bidders may propose an on-premises deployment option.", "OPTIONAL", "may"),
 ]
 
 
 def test_section_4_is_one_batch_of_nine_passages() -> None:
-    assert [p.id for p in SECTION_4] == [f"SRC-{n:04d}" for n in range(18, 27)]
+    assert [p.id for p in SECTION_4] == [f"SRC-{n:04d}" for n in range(20, 29)]
     assert len(batches(dev_ingest().passages, 20)) == 2
 
 
 def test_a_clean_batch_needs_no_repair() -> None:
-    backend = ScriptBackend([text({"items": GOOD_ITEMS, "no_obligation_src_ids": ["SRC-0019"]})])
+    backend = ScriptBackend([text({"items": GOOD_ITEMS, "no_obligation_src_ids": ["SRC-0021"]})])
     outcome = extract_batch(context(backend), SECTION_4, "B01")
     assert len(backend.requests) == 1
     assert len(outcome.accepted) == 8 and outcome.rejected == []
@@ -65,29 +65,29 @@ def test_a_clean_batch_needs_no_repair() -> None:
 
 
 def test_verify_repair_fixes_a_quote_and_a_missing_id() -> None:
-    wrong = item("SRC-0023", "The Supplier shall store signed documents for twelve years.")
-    first = [i for i in GOOD_ITEMS if i["src_ids"] != ["SRC-0023"] and i["src_ids"] != ["SRC-0026"]]
+    wrong = item("SRC-0025", "The Supplier shall store signed documents for twelve years.")
+    first = [i for i in GOOD_ITEMS if i["src_ids"] != ["SRC-0025"] and i["src_ids"] != ["SRC-0028"]]
     repaired = [GOOD_ITEMS[4], GOOD_ITEMS[7]]
     backend = ScriptBackend(
         [
-            text({"items": [*first, wrong], "no_obligation_src_ids": ["SRC-0019"]}),
+            text({"items": [*first, wrong], "no_obligation_src_ids": ["SRC-0021"]}),
             text({"items": repaired, "no_obligation_src_ids": []}),
         ]
     )
     outcome = extract_batch(context(backend), SECTION_4, "B01")
     repair = backend.requests[1].messages[-1].content
     assert "were not found in their cited passages" in repair
-    assert '["SRC-0023", "The Supplier shall store signed documents for twelve years."]' in repair
-    assert 'missing from your answer: ["SRC-0026"]' in repair
+    assert '["SRC-0025", "The Supplier shall store signed documents for twelve years."]' in repair
+    assert 'missing from your answer: ["SRC-0028"]' in repair
     assert len(outcome.accepted) == 8 and outcome.rejected == []
 
 
 def test_a_quote_still_wrong_after_repair_is_rejected_and_logged() -> None:
-    wrong = item("SRC-0023", "The Supplier shall store signed documents for twelve years.")
-    first = [i for i in GOOD_ITEMS if i["src_ids"] != ["SRC-0023"]]
+    wrong = item("SRC-0025", "The Supplier shall store signed documents for twelve years.")
+    first = [i for i in GOOD_ITEMS if i["src_ids"] != ["SRC-0025"]]
     backend = ScriptBackend(
         [
-            text({"items": [*first, wrong], "no_obligation_src_ids": ["SRC-0019"]}),
+            text({"items": [*first, wrong], "no_obligation_src_ids": ["SRC-0021"]}),
             text({"items": [wrong], "no_obligation_src_ids": []}),
         ]
     )
@@ -96,7 +96,7 @@ def test_a_quote_still_wrong_after_repair_is_rejected_and_logged() -> None:
     assert outcome.rejected == [
         {
             "batch_id": "B01",
-            "src_ids": ["SRC-0023"],
+            "src_ids": ["SRC-0025"],
             "quote": wrong["quote"],
             "reason": "not found in the cited passages",
         }
@@ -104,22 +104,22 @@ def test_a_quote_still_wrong_after_repair_is_rejected_and_logged() -> None:
 
 
 def test_a_withdrawn_quote_and_an_unaccounted_id_are_logged() -> None:
-    wrong = item("SRC-0023", "store signed documents for a decade")
-    first = [i for i in GOOD_ITEMS if i["src_ids"] not in (["SRC-0023"], ["SRC-0026"])]
+    wrong = item("SRC-0025", "store signed documents for a decade")
+    first = [i for i in GOOD_ITEMS if i["src_ids"] not in (["SRC-0025"], ["SRC-0028"])]
     backend = ScriptBackend(
         [
-            text({"items": [*first, wrong], "no_obligation_src_ids": ["SRC-0019"]}),
-            text({"items": [item("SRC-0023", "")], "no_obligation_src_ids": []}),
+            text({"items": [*first, wrong], "no_obligation_src_ids": ["SRC-0021"]}),
+            text({"items": [item("SRC-0025", "")], "no_obligation_src_ids": []}),
         ]
     )
     outcome = extract_batch(context(backend), SECTION_4, "B01")
     reasons = sorted((r["src_ids"][0], r["reason"]) for r in outcome.rejected)
-    assert reasons == [("SRC-0023", "withdrawn"), ("SRC-0026", "unaccounted")]
+    assert reasons == [("SRC-0025", "withdrawn"), ("SRC-0028", "unaccounted")]
 
 
 def test_fi02_malformed_output_gets_one_format_repair() -> None:
     backend = ScriptBackend(
-        ['{"items": [', text({"items": GOOD_ITEMS, "no_obligation_src_ids": ["SRC-0019"]})]
+        ['{"items": [', text({"items": GOOD_ITEMS, "no_obligation_src_ids": ["SRC-0021"]})]
     )
     outcome = extract_batch(context(backend), SECTION_4, "B01")
     assert "did not match the response schema" in backend.requests[1].messages[-1].content
@@ -135,17 +135,17 @@ def test_fi02_malformed_twice_rejects_the_whole_batch() -> None:
 
 
 def test_an_id_from_another_batch_is_dropped_from_the_item() -> None:
-    """SRC-0030 is a real passage, but not one this batch showed the model."""
-    stray = dict(GOOD_ITEMS[0], src_ids=["SRC-0018", "SRC-0030"])
+    """SRC-0032 is a real passage, but not one this batch showed the model."""
+    stray = dict(GOOD_ITEMS[0], src_ids=["SRC-0020", "SRC-0032"])
     backend = ScriptBackend([text({"items": [stray], "no_obligation_src_ids": []})])
     outcome = extract_batch(context(backend), SECTION_4[:1], "B01")
     [(item, check)] = outcome.accepted
-    assert item.src_ids == ["SRC-0018"] and check.status == "VERBATIM_VERIFIED"
+    assert item.src_ids == ["SRC-0020"] and check.status == "VERBATIM_VERIFIED"
 
 
 def test_requirements_are_numbered_in_reading_order() -> None:
     backend = ScriptBackend(
-        [text({"items": GOOD_ITEMS[::-1], "no_obligation_src_ids": ["SRC-0019"]})]
+        [text({"items": GOOD_ITEMS[::-1], "no_obligation_src_ids": ["SRC-0021"]})]
     )
     outcome = extract_batch(context(backend), SECTION_4, "B01")
     requirements, rejected = assign_requirements([outcome], dev_ingest().passages, "dev-rfp")
@@ -177,10 +177,10 @@ def test_approach_keeps_known_ids_and_lists_what_is_unmapped() -> None:
         ("APP-001", ["REQ-0001"]),
         ("APP-002", ["REQ-0002"]),
     ]
-    assert outcome.items[1].source_ids == ["SRC-0025"]
+    assert outcome.items[1].source_ids == ["SRC-0027"]
     assert outcome.items[0].evidence_class == "ASSUMPTION"
     assert outcome.unmapped == ["REQ-0003", "REQ-0004"]
-    assert outcome.questions[0].src_ids == ["SRC-0025"]
+    assert outcome.questions[0].src_ids == ["SRC-0027"]
 
 
 def test_approach_degrades_after_two_schema_failures() -> None:
