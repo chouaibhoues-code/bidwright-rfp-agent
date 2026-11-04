@@ -1,12 +1,22 @@
 """Config tests: every file loads, validates, and agrees with the others."""
 
+import re
 from datetime import date
 
 import pytest
 from pydantic import ValidationError
 
 from bidwright import schemas
-from bidwright.config import AgentConfig, AgentLimits, Config, load_config
+from bidwright.config import (
+    CUE_KINDS,
+    ZONE_NAMES,
+    AgentConfig,
+    AgentLimits,
+    Config,
+    CuesConfig,
+    LintConfig,
+    load_config,
+)
 
 TOOLS_IN_0A = {"search_rfp", "date_calc"}
 
@@ -18,10 +28,15 @@ def config() -> Config:
 
 def test_every_file_loads(config: Config) -> None:
     assert config.models.profiles
-    assert config.limits.batch_size == 20
+    assert config.limits.batch_size >= 1  # the value is S-03's to set, so it is read, not pinned
     assert config.agents.agents
     assert config.thresholds.block
     assert config.pricing.models
+    assert config.ingest.parsers.pdf == "docling"
+    assert set(config.cues.kinds) == set(CUE_KINDS)
+    assert tuple(config.zones.zones) == ZONE_NAMES and config.zones.default in config.zones.zones
+    assert config.lint.rules and config.lint.contract and config.lint.checks and config.lint.units
+    assert config.egress.destinations
 
 
 def test_every_agent_role_has_a_model_in_every_profile(config: Config) -> None:
@@ -93,7 +108,7 @@ def test_run_limits_exist_for_the_dev_rfp(config: Config) -> None:
     assert config.limits.run("dev", "free").requests == 60
     assert config.limits.run("dev", "local").active_minutes == 60
     with pytest.raises(KeyError):
-        config.limits.run("dev", "paid")
+        config.limits.run("dev", "unknown")
 
 
 def test_every_profile_has_a_call_timeout(config: Config) -> None:
@@ -107,4 +122,65 @@ def test_every_profile_has_a_concurrency(config: Config) -> None:
         assert config.limits.concurrency_for(profile) >= 1, profile
     assert config.limits.concurrency_for("local") == 1  # Ollama serves one request at a time
     with pytest.raises(KeyError):
-        config.limits.concurrency_for("paid")
+        config.limits.concurrency_for("unknown")
+
+
+def test_the_paid_profile_mirrors_free_with_its_own_limits(config: Config) -> None:
+    """CH-82: the free models under the paid key, with a row in every limits table."""
+    for role, free in config.models.profiles["free"].items():
+        paid = config.models.role("paid", role)
+        assert (paid.provider, paid.model) == (free.provider, free.model)
+        assert (paid.fallback, paid.thinking) == (free.fallback, free.thinking)
+    assert config.limits.run("dev", "paid") == config.limits.run("dev", "free")
+    assert config.limits.run("hero", "paid") == config.limits.run("hero", "free")
+    assert config.limits.call.timeout_for("paid") == config.limits.call.timeout_for("free")
+    assert config.limits.concurrency_for("paid") == 4
+    for tier in ("free", "paid"):
+        quota = config.limits.quota_for("gemini", tier, "gemini-3.5-flash-lite")
+        assert quota is not None and quota.rpd > 0, tier
+    assert config.limits.quota_for("ollama", "free", "qwen3.5:4b") is None
+
+
+def test_every_cue_and_lint_pattern_compiles(config: Config) -> None:
+    patterns = [p for kind in config.cues.kinds.values() for p in kind]
+    patterns += [p for rule in config.lint.rules for p in rule.patterns]
+    patterns += [p for rule in config.lint.contract for p in rule.patterns]
+    patterns += config.ingest.suspect_patterns
+    for pattern in patterns:
+        assert re.compile(pattern, re.IGNORECASE)
+    assert re.search(config.cues.kinds["MODAL"][0], "The Supplier shall keep records")
+    assert re.search(config.lint.rules[0].patterns[0], "an appropriate response")
+
+
+def test_lint_rule_ids_are_unique_and_templates_name_known_fields(config: Config) -> None:
+    ids = [r.id for r in config.lint.rules] + [c.id for c in config.lint.contract]
+    ids += list(config.lint.checks)
+    assert len(ids) == len(set(ids))
+    for rule in config.lint.rules:
+        assert rule.question and "{requirement_id}" in rule.question
+
+
+def test_a_pattern_that_does_not_compile_names_its_file_and_rule() -> None:
+    with pytest.raises(ValidationError, match=r"config/cues\.yaml: cue kind MODAL"):
+        CuesConfig.model_validate({"kinds": {"MODAL": ["("]}, "table_row_headers": []})
+    bad = {
+        "rules": [{"id": "vague", "kind": "VAGUE", "severity": "question", "patterns": ["(?P<x"]}],
+        "contract": [],
+        "units": ["day"],
+        "checks": {},
+    }
+    with pytest.raises(ValidationError, match=r"config/lint\.yaml: rule vague"):
+        LintConfig.model_validate(bad)
+    with pytest.raises(ValidationError, match="unknown cue kinds"):
+        CuesConfig.model_validate({"kinds": {"SMELL": ["x"]}, "table_row_headers": []})
+
+
+def test_every_destination_names_its_hosts_and_whether_it_is_local(config: Config) -> None:
+    """ADR-026: the egress register."""
+    for name, destination in config.egress.destinations.items():
+        assert destination.hosts, name
+        assert isinstance(destination.local, bool), name
+    assert config.egress.destinations["gemini"].local is False
+    for local in ("ollama", "phoenix", "docling"):
+        assert config.egress.destinations[local].local is True
+        assert "localhost" in config.egress.destinations[local].hosts

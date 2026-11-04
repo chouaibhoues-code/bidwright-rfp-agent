@@ -48,3 +48,15 @@ def test_the_image_never_receives_gold() -> None:
 def test_offline_services_have_no_network() -> None:
     for name in ("test", "demo"):
         assert COMPOSE["services"][name]["network_mode"] == "none"
+
+
+def test_docling_is_pinned_by_digest_and_published_on_loopback_only() -> None:
+    """The parser service of Iteration 1: a pinned image, loopback only, reached by app alone."""
+    docling = COMPOSE["services"]["docling"]
+    pinned = r"ghcr\.io/docling-project/docling-serve-cpu:v[\d.]+@sha256:[0-9a-f]{64}"
+    assert re.fullmatch(pinned, docling["image"])
+    assert docling["ports"] == ["127.0.0.1:5001:5001"]
+    assert "docling" in COMPOSE["services"]["app"]["depends_on"]
+    assert COMPOSE["services"]["app"]["environment"]["DOCLING_URL"] == "http://docling:5001"
+    for name in ("test", "demo"):
+        assert "docling" not in COMPOSE["services"][name].get("depends_on", [])

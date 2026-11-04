@@ -100,4 +100,4 @@ def test_a_replayed_run_needs_no_backend_and_no_corpus_check(tmp_path: Path) -> 
 def test_an_unknown_profile_is_refused() -> None:
     config: Config = load_config()
     with pytest.raises(Refused, match="no models"):
-        _check(profile="paid", config=config)
+        _check(profile="unknown", config=config)

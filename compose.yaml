@@ -1,4 +1,4 @@
-# docker compose up -d starts the app and Phoenix. Profiles add the rest:
+# docker compose up -d starts the app, Phoenix and the Docling parser service. Profiles add the rest:
 #   docker compose run --rm demo     replay the recorded run, with no network and no LLM call
 #   docker compose run --rm test     the replay tests, with no network and no LLM call
 # Compose refuses every command while GEMINI_API_KEY is unset, these two included (ADR-002);
@@ -21,12 +21,20 @@ services:
       PHOENIX_ENDPOINT: http://phoenix:6006
       PHOENIX_API_KEY: ${PHOENIX_API_KEY:-}
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+      DOCLING_URL: http://docling:5001
     volumes:
       - ./inputs:/app/inputs:ro
       - ./config:/app/config:ro
       - ./prompts:/app/prompts:ro
       - ./outputs:/app/outputs
-    depends_on: [phoenix]
+    depends_on: [phoenix, docling]
+
+  # The parser service (Iteration 1): PDF, DOCX and XLSX through its v1 API, on loopback only.
+  # V-08 (2026-11-03) pinned the current release by digest. The demo and test services never
+  # reach it: Docling responses replay from tests/cassettes/docling/.
+  docling:
+    image: ghcr.io/docling-project/docling-serve-cpu:v1.38.2@sha256:7a480a1604fa3b42efeddc7db9527690d9f9bc903226136013e2bfe6b1a4dfb0
+    ports: ["127.0.0.1:5001:5001"]
 
   phoenix:
     image: arizephoenix/phoenix:version-21.0.0@sha256:1f9a144a5357b4973e93a15718f050247cb7a4ee7b7c6c06ecb91b5eed3fbaad

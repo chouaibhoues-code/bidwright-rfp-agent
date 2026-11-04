@@ -1,18 +1,40 @@
-# Per-run limits by RFP and profile. The clock counts only time spent RUNNING.
+# Per-run limits by RFP and profile. The clock counts only time spent RUNNING. The `paid`
+# profile runs the free models under the paid key (CH-82) with the free limits and a higher
+# concurrency; its rate limits below carry the free values until V-03 reads the paid tier's.
 runs:
   dev:
     free:  {requests: 60, tokens: 300000, active_minutes: 20}
     local: {requests: 60, tokens: 300000, active_minutes: 60}
+    paid:  {requests: 60, tokens: 300000, active_minutes: 20}
   hero:
     free:  {requests: 250, tokens: 2000000, active_minutes: 90}
+    paid:  {requests: 250, tokens: 2000000, active_minutes: 90}
 call:
   # Per profile. A 4B model on CPU needs more than 60 s for a cold load or a long answer (S-04),
   # and gemini-3.8-flash answered in 55-60 s under load, then hit the 60 s deadline (504).
-  timeout_s: {free: 120, local: 300}
+  timeout_s: {free: 120, local: 300, paid: 120}
   retries: 3
   backoff_base_s: 2
   backoff_cap_s: 30
 # Send workers at once, per profile. Ollama here serves one request at a time, so a second
 # worker only queues, and its wait counts against the call timeout.
-concurrency: {free: 2, local: 1}
+concurrency: {free: 2, local: 1, paid: 4}
 batch_size: 20
+# The limiter (step 9), keyed by provider, tier and model. The tier is the profile's, `free` or
+# `paid`. A provider or model with no row here, such as Ollama, has no limiter.
+providers:
+  gemini:
+    quota_day_tz: America/Los_Angeles
+    tiers:
+      free:
+        gemini-3.5-flash-lite: {rpm: 15, tpm: 250000, rpd: 500, reserve: 0.2}
+        gemini-3.1-flash-lite: {rpm: 15, tpm: 250000, rpd: 500, reserve: 0.2}
+      paid:   # the free values until V-03 reads the paid tier's limits
+        gemini-3.5-flash-lite: {rpm: 15, tpm: 250000, rpd: 500, reserve: 0.0}
+        gemini-3.1-flash-lite: {rpm: 15, tpm: 250000, rpd: 500, reserve: 0.0}
+coverage: {max_rounds: 2, gap_pack_size: 5}
+clusters: {max_members: 12, max_context: 8, duplicate_jaccard: 0.6}
+context: {budgets: {triage: 8000, extract: 12000, consolidate: 8000}, chars_per_token: 4, neighbors: 1, max_terms: 10}
+cache: {matrix: true, single: false}
+second_pass: false
+retention: {client_days: 30}        # D-05

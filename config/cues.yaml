@@ -1,0 +1,18 @@
+# The cue kinds `candidates` annotates passages with (ADR-017). Cues are hints for `extract`
+# and the rule behind the B0 baseline; they never filter a passage out. Patterns are Python
+# regular expressions, matched case-insensitively against each passage's display text, and
+# written without nested quantifiers. A pattern that does not compile fails start-up.
+kinds:
+  MODAL: ['\bshall\b', '\bmust\b', '\bwill\b', '\bshould\b', '\bmay\b', '\b(?:is|are) required to\b',
+          '\b(?:is|are) responsible for\b', '\bundertakes? to\b', '\bagrees? to\b', '\b(?:is|are) subject to\b',
+          '\b(?:is|are) obliged to\b']
+  PROHIBITION: ['\b(?:shall|must|may) not\b', '\b(?:is|are) (?:not permitted|prohibited)\b']
+  CONDITION: ['\bprovided that\b', '\bon condition that\b', '\bin the event (?:that|of)\b']
+  RIGHT: ['\breserves? the right\b', '\bis entitled to\b']
+  DEADLINE: ['\bno later than\b', '\bnot later than\b', '\bprior to\b', '\bwithin \d+ (?:calendar |business |working )?(?:days|weeks|months|hours)\b', '\bdeadline\b']
+  REJECTION: ['\bwill (?:be rejected|not be considered|be disqualified)\b', '\bdisqualif\w*', '\bmandatory\b', '\bpass/fail\b']
+  REFERENCE: ['\bin accordance with\b', '\bcomply with\b', '\bas set out in\b', '\b(?:Annex|Appendix|Schedule) [A-Z0-9]+\b', '\b(?:Section|Clause) \d+(?:\.\d+)*\b']
+  AMOUNT: ['(?:[$€£]|\b(?:USD|EUR|GBP)\b) ?\d[\d,]*(?:\.\d+)?']
+  DATE: ['\b\d{4}-\d{2}-\d{2}\b', '\b\d{1,2} (?:January|February|March|April|May|June|July|August|September|October|November|December) \d{4}\b', '\b\d{1,2}:\d{2} ?(?:UTC|GMT|CET|CEST|[A-Z]{2,4})\b']
+# TABLE_ROW is added by code for every table_row passage whose header matches one of these.
+table_row_headers: ['requir', 'mandatory', 'must', 'shall', 'criteri', 'specification', 'capabilit']

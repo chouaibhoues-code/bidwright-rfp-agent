@@ -4,6 +4,11 @@ profiles:
     extract: {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: medium}
     # ADR-003: Flash allows 20 requests a day on the free tier; 3.5 Flash-Lite allows 500.
     reason:  {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: low}
+  paid:
+    # CH-82: the free models under the paid key, whose terms do not use prompts for training,
+    # with real cost in the ledger. For the hero run and the spikes when the free quota is spent.
+    extract: {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: medium}
+    reason:  {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: low}
   local:
     # ADR-004: thinking is off for every local role. On a 4 GB card both models run mostly on
     # CPU at this context, and thinking pushed every reason call past the 300 s call timeout.

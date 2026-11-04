@@ -31,6 +31,8 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 |---|---|---|---|---|---|
 | `free` | extract | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | thinking medium |
 | `free` | reason | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | thinking low |
+| `paid` | extract | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | thinking medium |
+| `paid` | reason | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | thinking low |
 | `local` | extract | ollama | `qwen3.5:4b` | `qwen3.5:2b` | num_ctx 16384, think False |
 | `local` | reason | ollama | `qwen3.5:4b` | `qwen3.5:2b` | num_ctx 16384, think False |
 

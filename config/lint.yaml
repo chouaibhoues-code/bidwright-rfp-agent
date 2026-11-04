@@ -1,0 +1,30 @@
+# Requirement-quality rules and contract-flag categories for `lint` (Iteration 1, step 13).
+# Pattern rules run over the quotes of binding and optional requirements; contract rules over
+# every passage. Patterns are Python regular expressions, matched case-insensitively. Every
+# rule and check takes its severity from this file; `question` templates take {match} and
+# {requirement_id}. A pattern that does not compile fails start-up.
+rules:
+  - {id: vague-terms, kind: VAGUE, severity: question, patterns: ['\bappropriate\b', '\badequate\b', '\buser[- ]friendly\b', '\brobust\b', '\bas required\b', '\bstate[- ]of[- ]the[- ]art\b', '\bbest practice\b', '\bsufficient\b'],
+     question: "What measurable level does \"{match}\" in {requirement_id} mean"}
+  - {id: escape-clauses, kind: ESCAPE, severity: question, patterns: ['\bas far as possible\b', '\bwhere (?:practicable|possible|applicable)\b', '\bif (?:practicable|possible)\b'],
+     question: "In which cases does \"{match}\" in {requirement_id} allow the requirement not to be met"}
+  - {id: open-lists, kind: OPEN_LIST, severity: question, patterns: ['\betc\.?(?:\s|$)', '\band so on\b', '\bor similar\b', '\bamong others\b', '\b(?:including|such as)\b[^.]*\bbut not limited to\b'],
+     question: "What else does the open list ending in \"{match}\" in {requirement_id} cover"}
+  - {id: tbd, kind: TBD, severity: question, patterns: ['\bTB[CD]\b', '\bto be (?:confirmed|determined|agreed)\b', '\[insert'],
+     question: "When will the value marked \"{match}\" in {requirement_id} be given"}
+contract:
+  - {id: uncapped-liability, category: LIABILITY, patterns: ['\bunlimited liability\b', '\buncapped\b', '\bliability shall not be limited\b']}
+  - {id: indemnity, category: INDEMNITY, patterns: ['\bindemnif\w*', '\bhold harmless\b']}
+  - {id: intellectual-property, category: IP, patterns: ['\bintellectual property\b', '\bforeground IP\b', '\bassign(?:s|ment of)? (?:all )?rights\b']}
+  - {id: data-terms, category: DATA, patterns: ['\bdata (?:controller|processor)\b', '\bpersonal data\b', '\bdata protection\b']}
+  - {id: service-credits, category: SERVICE_CREDITS, patterns: ['\bservice credits?\b', '\bliquidated damages\b']}
+  - {id: termination, category: TERMINATION, patterns: ['\bterminat(?:e|ion) (?:for|without) (?:cause|convenience)\b', '\bright to terminate\b']}
+  - {id: flow-down, category: FLOW_DOWN, patterns: ['\bflow[- ]down\b', '\bsub-?contractors? (?:shall|must) (?:be bound|comply)\b', '\bback[- ]to[- ]back\b']}
+# The unit words MISSING_UNIT looks for within the 2 tokens after a number; plurals match too.
+units: [second, minute, hour, day, week, month, year, business day, working day, page, word, character, user, site, record, instance, item, GB, MB, ms, '%', percent, EUR, GBP, USD, '£', '€', '$']
+# The coded checks: each takes its severity and question template here.
+checks:
+  missing-unit: {kind: MISSING_UNIT, severity: question, question: "What unit applies to \"{match}\" in {requirement_id}"}
+  broken-reference: {kind: BROKEN_REFERENCE, severity: question, question: "Where is \"{match}\", cited in {requirement_id}, in the package"}
+  non-singular: {kind: NON_SINGULAR, severity: note}
+  undefined-term: {kind: UNDEFINED_TERM, severity: note}

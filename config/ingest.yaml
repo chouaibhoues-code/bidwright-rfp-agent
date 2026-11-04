@@ -1,0 +1,20 @@
+# The guard's limits and thresholds, the parser per format, the Docling service and the
+# suspect-instruction patterns (Iteration 1, ADR-020 and ADR-026). Values from the Iteration 1
+# design doc, section 6.1; the limiter and the model budgets live in limits.yaml.
+limits: {file_mb: 50, pages: 300, files: 20}
+archive: {max_members: 5000, max_ratio: 100, max_total_mb: 500}
+input_root: inputs                  # relative to the repository root; tests pass their own
+hidden_pdf: {render_mode: 3, white_tolerance: 0.05, max_pt: 2.0}
+small_print: {min_pt: 2.0, max_pt: 6.0}   # from min_pt up to, but not including, max_pt
+line_tolerance_pt: 3.0              # characters this close in `top` share a line
+scanned: {min_chars_per_page: 20}
+parsers: {pdf: docling, docx: docling, xlsx: docling}   # pdf also accepts pdfplumber
+docling:
+  url: http://localhost:5001        # DOCLING_URL overrides it; an empty variable means this default
+  timeout_s: 180
+  retries: 3
+  health_timeout_s: 5
+  options: {to_formats: [json], do_ocr: false, do_table_structure: true, table_mode: accurate, do_pdf_heading_hierarchy: true}
+# Visible text that reads like an instruction to a model. Such a passage stays in the text,
+# marked suspect, and is classified like any other.
+suspect_patterns: ['ignore (?:all )?(?:previous|prior) instructions', '\byou are now\b', '\bsystem prompt\b', '\bdisregard the above\b']

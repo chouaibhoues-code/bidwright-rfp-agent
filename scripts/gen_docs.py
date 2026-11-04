@@ -263,6 +263,19 @@ PROVIDER_HOSTING = {
     "cerebras": "Cerebras's API: prompts leave the machine",
     "groq": "Groq's API: prompts leave the machine",
 }
+# The same provider under a key whose tier has different terms (CH-82, ADR-026).
+PROFILE_HOSTING = {
+    ("paid", "gemini"): "Google's Gemini API under the paid key: prompts leave the machine, the"
+    " paid terms do not use them to improve the service, and the egress register and the run's"
+    " data class decide what may be sent (ADR-026)",
+}
+
+
+def hosting_note(profile: str, provider: str) -> str:
+    return PROFILE_HOSTING.get(
+        (profile, provider), PROVIDER_HOSTING.get(provider, "See `config/models.yaml`")
+    )
+
 
 # What each tool can reach. Tools are code; the gateway decides who may call them.
 TOOL_ACCESS = {
@@ -318,7 +331,7 @@ def ai_bom_md() -> str:
     for profile, roles in config.models.profiles.items():
         for role, rc in roles.items():
             fallback = f"`{rc.fallback}`" if rc.fallback else "None"
-            hosting = PROVIDER_HOSTING.get(rc.provider, "See `config/models.yaml`")
+            hosting = hosting_note(profile, rc.provider)
             lines.append(
                 f"| `{profile}` | {role} | {rc.provider} | `{rc.model}` | {fallback}"
                 f" | {_cell(hosting)} |"

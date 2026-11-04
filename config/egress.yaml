@@ -1,0 +1,9 @@
+# The egress register (ADR-026, D-05): every destination a run may reach, with its hosts,
+# whether it is local, and what it may receive. Every outbound client, the trace endpoint and
+# the parser service are checked against it and the run's data class (Iteration 1, step 9).
+# A host is local when it is a loopback address, `localhost`, or a Compose service named here.
+destinations:
+  gemini:  {hosts: [generativelanguage.googleapis.com], local: false, receives: prompts}
+  ollama:  {hosts: [localhost, "127.0.0.1", ollama], local: true, receives: prompts}
+  phoenix: {hosts: [localhost, "127.0.0.1", phoenix], local: true, receives: spans}
+  docling: {hosts: [localhost, "127.0.0.1", docling], local: true, receives: documents}
