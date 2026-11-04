@@ -1,0 +1,25 @@
+{
+ "files": [
+  {
+   "file": "dev_rfp.pdf",
+   "doc_id": "dev-rfp-db9eeb00",
+   "sha256": "db9eeb004e718077678cddd9976b53895f9d7d009044f6b59c8a8d75213d2bd3",
+   "format": "pdf",
+   "bytes": 6350,
+   "pages": 4,
+   "scanned": false,
+   "accepted": true,
+   "reason": null
+  }
+ ],
+ "quarantined": 1,
+ "small_print_chars": 0,
+ "limits": {
+  "file_mb": 50,
+  "pages": 300,
+  "files": 20,
+  "archive_max_members": 5000,
+  "archive_max_ratio": 100,
+  "archive_max_total_mb": 500
+ }
+}

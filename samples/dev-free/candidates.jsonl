@@ -1,0 +1,39 @@
+{"src_id": "SRC-0001", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0002", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0003", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": ["DATE"], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0004", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0005", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0006", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0007", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0008", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0009", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": ["DATE"], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0010", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0011", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0012", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0013", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": ["DATE"], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0014", "doc_id": "dev-rfp-db9eeb00", "zone": "INSTRUCTION", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0015", "doc_id": "dev-rfp-db9eeb00", "zone": "INSTRUCTION", "cues": ["MODAL", "DATE"], "dispositions": ["BINDING"], "requirement_ids": ["REQ-0001"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0016", "doc_id": "dev-rfp-db9eeb00", "zone": "INSTRUCTION", "cues": ["REFERENCE"], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0017", "doc_id": "dev-rfp-db9eeb00", "zone": "INSTRUCTION", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0018", "doc_id": "dev-rfp-db9eeb00", "zone": "INSTRUCTION", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0019", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0020", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": ["MODAL"], "dispositions": ["BINDING"], "requirement_ids": ["REQ-0002"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0021", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": ["MODAL"], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0022", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": [], "dispositions": ["BINDING"], "requirement_ids": ["REQ-0003"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0023", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": ["DEADLINE"], "dispositions": ["BINDING"], "requirement_ids": ["REQ-0004"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0024", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": ["MODAL"], "dispositions": ["OPTIONAL"], "requirement_ids": ["REQ-0005"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0025", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": ["MODAL"], "dispositions": ["BINDING"], "requirement_ids": ["REQ-0006"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0026", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": ["MODAL", "DATE"], "dispositions": ["OPTIONAL"], "requirement_ids": ["REQ-0007"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0027", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": ["MODAL"], "dispositions": ["BINDING"], "requirement_ids": ["REQ-0008"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0028", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": ["MODAL"], "dispositions": ["OPTIONAL"], "requirement_ids": ["REQ-0009"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0029", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": ["MODAL"], "dispositions": ["BINDING"], "requirement_ids": ["REQ-0010"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0030", "doc_id": "dev-rfp-db9eeb00", "zone": "OBLIGATION", "cues": ["MODAL"], "dispositions": ["OPTIONAL"], "requirement_ids": ["REQ-0011"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0031", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": ["DATE"], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0032", "doc_id": "dev-rfp-db9eeb00", "zone": "BACKGROUND", "cues": ["MODAL", "DATE"], "dispositions": ["BINDING"], "requirement_ids": ["REQ-0012"], "reasons": [""], "round": 0}
+{"src_id": "SRC-0033", "doc_id": "dev-rfp-db9eeb00", "zone": "EVALUATION", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0034", "doc_id": "dev-rfp-db9eeb00", "zone": "EVALUATION", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0035", "doc_id": "dev-rfp-db9eeb00", "zone": "EVALUATION", "cues": ["TABLE_ROW"], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0036", "doc_id": "dev-rfp-db9eeb00", "zone": "EVALUATION", "cues": ["TABLE_ROW"], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0037", "doc_id": "dev-rfp-db9eeb00", "zone": "EVALUATION", "cues": ["TABLE_ROW"], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0038", "doc_id": "dev-rfp-db9eeb00", "zone": "EVALUATION", "cues": ["TABLE_ROW"], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}
+{"src_id": "SRC-0039", "doc_id": "dev-rfp-db9eeb00", "zone": "CONTRACT", "cues": [], "dispositions": ["NO_OBLIGATION"], "requirement_ids": [], "reasons": [""], "round": 0}

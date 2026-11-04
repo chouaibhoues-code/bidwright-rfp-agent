@@ -1,0 +1,39 @@
+{"src_id":"SRC-0001","kinds":[],"matches":[]}
+{"src_id":"SRC-0002","kinds":[],"matches":[]}
+{"src_id":"SRC-0003","kinds":["DATE"],"matches":["2026-11-03"]}
+{"src_id":"SRC-0004","kinds":[],"matches":[]}
+{"src_id":"SRC-0005","kinds":[],"matches":[]}
+{"src_id":"SRC-0006","kinds":[],"matches":[]}
+{"src_id":"SRC-0007","kinds":[],"matches":[]}
+{"src_id":"SRC-0008","kinds":[],"matches":[]}
+{"src_id":"SRC-0009","kinds":["DATE"],"matches":["2027-03-31"]}
+{"src_id":"SRC-0010","kinds":[],"matches":[]}
+{"src_id":"SRC-0011","kinds":[],"matches":[]}
+{"src_id":"SRC-0012","kinds":[],"matches":[]}
+{"src_id":"SRC-0013","kinds":["DATE"],"matches":["2026-12-19"]}
+{"src_id":"SRC-0014","kinds":[],"matches":[]}
+{"src_id":"SRC-0015","kinds":["MODAL","DATE"],"matches":["must","2026-12-01","12:00 UTC"]}
+{"src_id":"SRC-0016","kinds":["REFERENCE"],"matches":["Section 7"]}
+{"src_id":"SRC-0017","kinds":[],"matches":[]}
+{"src_id":"SRC-0018","kinds":[],"matches":[]}
+{"src_id":"SRC-0019","kinds":[],"matches":[]}
+{"src_id":"SRC-0020","kinds":["MODAL"],"matches":["shall"]}
+{"src_id":"SRC-0021","kinds":["MODAL"],"matches":["shall"]}
+{"src_id":"SRC-0022","kinds":[],"matches":[]}
+{"src_id":"SRC-0023","kinds":["DEADLINE"],"matches":["within 72 hours"]}
+{"src_id":"SRC-0024","kinds":["MODAL"],"matches":["should"]}
+{"src_id":"SRC-0025","kinds":["MODAL"],"matches":["shall"]}
+{"src_id":"SRC-0026","kinds":["MODAL","DATE"],"matches":["should","2027-02-28"]}
+{"src_id":"SRC-0027","kinds":["MODAL"],"matches":["must"]}
+{"src_id":"SRC-0028","kinds":["MODAL"],"matches":["may"]}
+{"src_id":"SRC-0029","kinds":["MODAL"],"matches":["shall"]}
+{"src_id":"SRC-0030","kinds":["MODAL"],"matches":["should"]}
+{"src_id":"SRC-0031","kinds":["DATE"],"matches":["2026-12-15"]}
+{"src_id":"SRC-0032","kinds":["MODAL","DATE"],"matches":["must","2027-01-11"]}
+{"src_id":"SRC-0033","kinds":[],"matches":[]}
+{"src_id":"SRC-0034","kinds":[],"matches":[]}
+{"src_id":"SRC-0035","kinds":["TABLE_ROW"],"matches":[]}
+{"src_id":"SRC-0036","kinds":["TABLE_ROW"],"matches":[]}
+{"src_id":"SRC-0037","kinds":["TABLE_ROW"],"matches":[]}
+{"src_id":"SRC-0038","kinds":["TABLE_ROW"],"matches":[]}
+{"src_id":"SRC-0039","kinds":[],"matches":[]}

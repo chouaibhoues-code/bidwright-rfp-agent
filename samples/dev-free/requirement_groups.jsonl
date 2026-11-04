@@ -1,0 +1,4 @@
+{"id":"RG-001","member_ids":["REQ-0001"],"context_ids":[],"topic":"3 Instructions to bidders","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":[],"llm":false}
+{"id":"RG-002","member_ids":["REQ-0002","REQ-0003","REQ-0004","REQ-0005","REQ-0006","REQ-0007","REQ-0008","REQ-0009"],"context_ids":[],"topic":"Signing, records, integration, and deployment requirements","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":[],"llm":true}
+{"id":"RG-003","member_ids":["REQ-0010","REQ-0011"],"context_ids":[],"topic":"Service availability and severity-one incident response levels","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":[],"llm":true}
+{"id":"RG-004","member_ids":["REQ-0012"],"context_ids":[],"topic":"6 Timeline","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":[],"llm":false}

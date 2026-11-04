@@ -1,34 +1,66 @@
 {
- "run_id": "20261103T030541Z-dev-rfp-3c582e4c-free",
- "commit": "22a4e11",
+ "run_id": "20261104T195655Z-dev-rfp-db9eeb00-free",
+ "commit": "d6d7fb3",
  "profile": "free",
  "models": {
   "extract": "gemini-3.5-flash-lite",
   "reason": "gemini-3.5-flash-lite"
  },
+ "models_used": {
+  "approach": [
+   "gemini-3.5-flash-lite"
+  ],
+  "consolidate": [
+   "gemini-3.5-flash-lite"
+  ],
+  "draft": [
+   "gemini-3.5-flash-lite"
+  ],
+  "extract": [
+   "gemini-3.5-flash-lite"
+  ],
+  "risk": [
+   "gemini-3.5-flash-lite"
+  ],
+  "triage": [
+   "gemini-3.5-flash-lite"
+  ]
+ },
  "prompt_hashes": {
-  "extract": "sha256:bdd57daa7875f823f62040caca3f641bc42517676eeccb9a68ff1a2b02e4e327",
+  "triage": "sha256:7e154ae7564a4bb42d66c6ae88c4f2a31d6cb8e78258bebccbb8ccf99eb7522c",
+  "extract": "sha256:7674b27de84ff31274cef47ee79eb711a39d7d2c3b7c77f91b196765ec50df75",
   "approach": "sha256:d95f06596240c28e2ee54fc87f60447acd442e9c691cce71d9a8c1e86060de12",
   "risk": "sha256:10c255fbf785bdb25f990ff7e823e2d26d2287cd0aa9116f5ceda4f03959e699",
   "draft": "sha256:e565f6bb6f35db882d19b334c2f7f42488d80d891249bd444ef0f5e784fafec0",
-  "extract_oneshot": "sha256:75f414cc19f2e32fc4901e9c2c632d0d9848b120cec0b5ee293d91f1241499fc"
+  "consolidate": "sha256:0e4706513b48c033f21e2d0ed9b1429c9fbf763eb87ea46e7a061835d0c1dfab",
+  "extract_oneshot": "sha256:e9c4727841247f656adbf008a1ce56187e8c27a2331244194807934a63a36414",
+  "extract_noexamples": "sha256:7c9558909f0dccb8440257035a5613377961fe2cb1eb963646d218f9b1ef3388"
  },
  "input_hashes": {
-  "dev_rfp.pdf": "sha256:3c582e4cd5caba8431b968b0f20379535c996c45a02316e7f78fee8024a1b71b"
+  "dev_rfp.pdf": "sha256:db9eeb004e718077678cddd9976b53895f9d7d009044f6b59c8a8d75213d2bd3"
  },
- "started": "2026-11-03T03:05:41.361890Z",
- "ended": "2026-11-03T03:06:07.379119Z",
+ "started": "2026-11-04T19:56:55.081942Z",
+ "ended": "2026-11-04T19:59:00.475541Z",
  "status": "COMPLETED",
  "status_reason": null,
  "overrides": [],
  "totals": {
-  "requests": 11,
-  "tokens_in": 25474,
-  "tokens_out": 4936,
+  "requests": 12,
+  "tokens_in": 31097,
+  "tokens_out": 6255,
   "tokens_cached": 0,
-  "tokens_thinking": 4702,
+  "tokens_thinking": 9581,
   "cost_usd": 0.0,
-  "shadow_cost_usd": 0.0317372,
-  "active_seconds": 25.734
- }
+  "shadow_cost_usd": 0.0489191,
+  "active_seconds": 124.844
+ },
+ "documents": [
+  {
+   "doc_id": "dev-rfp-db9eeb00",
+   "file": "dev_rfp.pdf",
+   "sha256": "db9eeb004e718077678cddd9976b53895f9d7d009044f6b59c8a8d75213d2bd3"
+  }
+ ],
+ "data_class": "synthetic",
+ "refused_destinations": []
 }

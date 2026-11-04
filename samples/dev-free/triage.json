@@ -1,0 +1,109 @@
+{
+ "zones": [
+  {
+   "section_path": "Request for Proposal: Electronic Signature Service",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "BACKGROUND",
+   "confidence": 0.8,
+   "reason": "States basic information about the RFP document and reference.",
+   "source": "model"
+  },
+  {
+   "section_path": "1 Introduction",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "BACKGROUND",
+   "confidence": 0.9,
+   "reason": "Introduces the college and the general procurement need without binding obligations.",
+   "source": "model"
+  },
+  {
+   "section_path": "2 Background",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "BACKGROUND",
+   "confidence": 0.95,
+   "reason": "Describes past tool usage and historical context.",
+   "source": "model"
+  },
+  {
+   "section_path": "3 Instructions to bidders",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "INSTRUCTION",
+   "confidence": 0.95,
+   "reason": "Explains proposal submission format and deadline.",
+   "source": "model"
+  },
+  {
+   "section_path": "4 Requirements",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "OBLIGATION",
+   "confidence": 0.85,
+   "reason": "Outlines general requirements for the contract term.",
+   "source": "model"
+  },
+  {
+   "section_path": "4 Requirements > 4.1 Signing",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "OBLIGATION",
+   "confidence": 0.95,
+   "reason": "Specifies operational duties for the supplier regarding signature records.",
+   "source": "model"
+  },
+  {
+   "section_path": "4 Requirements > 4.2 Records",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "OBLIGATION",
+   "confidence": 0.95,
+   "reason": "Defines supplier duties for document storage and record migration.",
+   "source": "model"
+  },
+  {
+   "section_path": "4 Requirements > 4.3 Integration",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "OBLIGATION",
+   "confidence": 0.9,
+   "reason": "Details technical integration requirements.",
+   "source": "model"
+  },
+  {
+   "section_path": "5 Service levels",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "OBLIGATION",
+   "confidence": 0.9,
+   "reason": "Establishes service availability and incident response obligations.",
+   "source": "model"
+  },
+  {
+   "section_path": "6 Timeline",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "BACKGROUND",
+   "confidence": 0.75,
+   "reason": "Outlines planned dates and milestones.",
+   "source": "model"
+  },
+  {
+   "section_path": "7 Evaluation",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "EVALUATION",
+   "confidence": 0.95,
+   "reason": "Describes the scoring criteria.",
+   "source": "model"
+  },
+  {
+   "section_path": "8 Contract",
+   "doc_id": "dev-rfp-db9eeb00",
+   "zone": "CONTRACT",
+   "confidence": 0.95,
+   "reason": "States contract duration and extension options.",
+   "source": "model"
+  }
+ ],
+ "profile": {
+  "buyer": "Kestrel Vale Community College",
+  "procurement": "cloud electronic signature service",
+  "submission_deadline": "2026-12-01 12:00 UTC",
+  "submission_format": "single PDF of no more than 20 pages",
+  "evaluation_method": "not_stated",
+  "contract_length": "three years from award, with an option to extend it by one year"
+ },
+ "fallback_sections": 0
+}

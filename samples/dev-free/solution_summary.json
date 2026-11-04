@@ -1,221 +1,89 @@
 {
  "summary": {
-  "run_id": "20261103T030541Z-dev-rfp-3c582e4c-free",
+  "run_id": "20261104T195655Z-dev-rfp-db9eeb00-free",
   "status": "UNREVIEWED_DRAFT",
   "hazards": [
-   "REQ-0009",
-   "REQ-0023"
+   "REQ-0001",
+   "REQ-0012"
   ],
   "requirements": [
-   "REQ-0012",
-   "REQ-0013",
-   "REQ-0014",
-   "REQ-0016",
-   "REQ-0018",
-   "REQ-0020",
-   "REQ-0001",
-   "REQ-0015",
-   "REQ-0017",
-   "REQ-0019",
-   "REQ-0021"
+   "REQ-0002",
+   "REQ-0003",
+   "REQ-0004",
+   "REQ-0006",
+   "REQ-0008",
+   "REQ-0010",
+   "REQ-0005",
+   "REQ-0007",
+   "REQ-0009",
+   "REQ-0011"
   ],
   "approach": [
    "APP-001",
    "APP-002",
    "APP-003",
-   "APP-004"
+   "APP-004",
+   "APP-005"
   ],
   "risks": [
    "RSK-001",
-   "RSK-002"
+   "RSK-002",
+   "RSK-003"
   ],
   "open_questions": [
    {
-    "text": "Does the College require a pure cloud electronic signature service, or should bidders price the optional on-premises deployment?",
+    "text": "Which specific documents comprise the College's twelve most used forms for template provision?",
     "src_ids": [
-     "SRC-0006",
-     "SRC-0026"
-    ]
-   },
-   {
-    "text": "Should the scope include providing templates for the twelve most used forms and migrating signed records from the current tool by 2027-02-28?",
-    "src_ids": [
-     "SRC-0022",
      "SRC-0024"
     ]
    },
    {
-    "text": "What are the specific support channels and escalation paths expected for responding to severity-one incidents within one hour at any time of day?",
+    "text": "What is the data structure and volume of the signed records in the current tool to be migrated by 2027-02-28?",
+    "src_ids": [
+     "SRC-0026"
+    ]
+   },
+   {
+    "text": "Should the optional on-premises deployment be priced separately, and what infrastructure constraints apply?",
     "src_ids": [
      "SRC-0028"
     ]
    },
    {
-    "text": "Does the student records system REST API support sandbox testing prior to the 2027-01-11 go-live date?",
+    "text": "What support ticketing system or communication channel should be used for responding to severity-one incidents within one hour?",
     "src_ids": [
      "SRC-0030"
+    ]
+   },
+   {
+    "text": "What is the exact schema and rate limit of the College's existing REST API for the student records system mentioned in REQ-0008?",
+    "src_ids": [
+     "SRC-0027"
+    ]
+   },
+   {
+    "text": "Will the College grant immediate contract award notification after the 2026-12-01 submission to allow sufficient lead time for the 2027-01-11 go-live?",
+    "src_ids": [
+     "SRC-0015",
+     "SRC-0032"
     ]
    }
   ],
   "counts": {
-   "verbatim_verified": 30,
+   "verbatim_verified": 12,
    "normalized_match": 0,
    "rejected": 0,
-   "background": 17,
+   "background": 0,
    "not_binding": 0,
    "out_of_scope": 0,
-   "unmapped": 5
+   "unmapped": 4
   }
  },
  "requirements": [
   {
    "id": "REQ-0001",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The College invites proposals for a cloud electronic signature service.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "OPTIONAL",
-   "src_ids": [
-    "SRC-0006"
-   ],
-   "quote": "Kestrel Vale Community College (the College) invites proposals for a cloud electronic signature service.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    258,
-    362
-   ]
-  },
-  {
-   "id": "REQ-0002",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The service replaces paper forms for enrollment, financial aid and staff contracts.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0007"
-   ],
-   "quote": "The service replaces paper forms for enrollment, financial aid and staff contracts.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    363,
-    446
-   ]
-  },
-  {
-   "id": "REQ-0003",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The College serves about 6,400 students on two campuses and employs 410 staff.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0008"
-   ],
-   "quote": "The College serves about 6,400 students on two campuses and employs 410 staff.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    447,
-    525
-   ]
-  },
-  {
-   "id": "REQ-0004",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Since 2019 the College has collected signatures with a hosted forms tool whose contract ends on 2027-03-31.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0009"
-   ],
-   "quote": "Since 2019 the College has collected signatures with a hosted forms tool whose contract ends on 2027-03-31.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    541,
-    648
-   ]
-  },
-  {
-   "id": "REQ-0005",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "About 38,000 signed records are held in that tool.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0010"
-   ],
-   "quote": "About 38,000 signed records are held in that tool.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    649,
-    699
-   ]
-  },
-  {
-   "id": "REQ-0006",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Previous suppliers have generally held ISO 27001 certification.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0011"
-   ],
-   "quote": "Previous suppliers have generally held ISO 27001 certification.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    701,
-    764
-   ]
-  },
-  {
-   "id": "REQ-0007",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The College plans to replace its student records system during 2027, and the replacement has not yet been chosen.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0012"
-   ],
-   "quote": "The College plans to replace its student records system during 2027, and the replacement has not yet been chosen.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    766,
-    879
-   ]
-  },
-  {
-   "id": "REQ-0008",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The College is closed from 2026-12-19 to 2027-01-04, and no staff are available for testing or training in that period.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0013"
-   ],
-   "quote": "The College is closed from 2026-12-19 to 2027-01-04, and no staff are available for testing or training in that period.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    880,
-    999
-   ]
-  },
-  {
-   "id": "REQ-0009",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC.",
+   "doc_id": "dev-rfp-db9eeb00",
+   "statement": "Each bidder submits its proposal through the College's procurement portal as a single PDF of at most 20 pages by 2026-12-01 12:00 UTC.",
    "modality": "must",
    "mandatory": true,
    "hazard": true,
@@ -228,66 +96,16 @@
    "quote_span": [
     1067,
     1201
-   ]
-  },
-  {
-   "id": "REQ-0010",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Section 7 describes how proposals are scored.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0016"
    ],
-   "quote": "Section 7 describes how proposals are scored.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    1203,
-    1248
-   ]
+   "zone": "INSTRUCTION",
+   "page": 2,
+   "small_print": false,
+   "repaired": false
   },
   {
-   "id": "REQ-0011",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The requirements in this section apply for the whole contract term.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0017"
-   ],
-   "quote": "The requirements in this section apply for the whole contract term.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    1266,
-    1333
-   ]
-  },
-  {
-   "id": "REQ-0012",
-   "doc_id": "dev-rfp-3c582e4c",
+   "id": "REQ-0002",
+   "doc_id": "dev-rfp-db9eeb00",
    "statement": "The Supplier keeps an audit record of every signature event, including the signer's identity, the time and the document version.",
-   "modality": "shall",
-   "mandatory": true,
-   "hazard": false,
-   "disposition": "BINDING",
-   "src_ids": [
-    "SRC-0018"
-   ],
-   "quote": "The Supplier shall keep an audit record of every signature event, including the signer's identity, the time and the document version.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    1348,
-    1481
-   ]
-  },
-  {
-   "id": "REQ-0013",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The Supplier supports signing on current desktop and mobile browsers.",
    "modality": "shall",
    "mandatory": true,
    "hazard": false,
@@ -295,53 +113,43 @@
    "src_ids": [
     "SRC-0020"
    ],
-   "quote": "support signing on current desktop and mobile browsers",
+   "quote": "The Supplier shall keep an audit record of every signature event, including the signer's identity, the time and the document version.",
    "quote_status": "VERBATIM_VERIFIED",
    "quote_span": [
-    1508,
-    1562
-   ]
+    1546,
+    1679
+   ],
+   "zone": "OBLIGATION",
+   "page": 2,
+   "small_print": false,
+   "repaired": false
   },
   {
-   "id": "REQ-0014",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The Supplier sends a reminder to each signer who has not signed within 72 hours.",
+   "id": "REQ-0003",
+   "doc_id": "dev-rfp-db9eeb00",
+   "statement": "The Supplier supports signing on current desktop and mobile browsers.",
    "modality": "shall",
    "mandatory": true,
    "hazard": false,
    "disposition": "BINDING",
    "src_ids": [
-    "SRC-0021"
-   ],
-   "quote": "send a reminder to each signer who has not signed within 72 hours.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    1569,
-    1635
-   ]
-  },
-  {
-   "id": "REQ-0015",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The Supplier should provide templates for the College's twelve most used forms.",
-   "modality": "should",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "OPTIONAL",
-   "src_ids": [
     "SRC-0022"
    ],
-   "quote": "The Supplier should provide templates for the College's twelve most used forms.",
+   "quote": "support signing on current desktop and mobile browsers;",
    "quote_status": "VERBATIM_VERIFIED",
    "quote_span": [
-    1637,
-    1716
-   ]
+    1706,
+    1761
+   ],
+   "zone": "OBLIGATION",
+   "page": 2,
+   "small_print": false,
+   "repaired": false
   },
   {
-   "id": "REQ-0016",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The Supplier stores signed documents for ten years.",
+   "id": "REQ-0004",
+   "doc_id": "dev-rfp-db9eeb00",
+   "statement": "The Supplier sends a reminder to each signer who has not signed within 72 hours.",
    "modality": "shall",
    "mandatory": true,
    "hazard": false,
@@ -349,17 +157,21 @@
    "src_ids": [
     "SRC-0023"
    ],
-   "quote": "The Supplier shall store signed documents for ten (10) years.",
+   "quote": "send a reminder to each signer who has not signed within 72 hours.",
    "quote_status": "VERBATIM_VERIFIED",
    "quote_span": [
-    1731,
-    1792
-   ]
+    1767,
+    1833
+   ],
+   "zone": "OBLIGATION",
+   "page": 2,
+   "small_print": false,
+   "repaired": false
   },
   {
-   "id": "REQ-0017",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The Supplier should migrate the signed records held in the current tool by 2027-02-28.",
+   "id": "REQ-0005",
+   "doc_id": "dev-rfp-db9eeb00",
+   "statement": "The Supplier should provide templates for the College's twelve most used forms.",
    "modality": "should",
    "mandatory": false,
    "hazard": false,
@@ -367,350 +179,303 @@
    "src_ids": [
     "SRC-0024"
    ],
-   "quote": "The Supplier should migrate the signed records held in the current tool by 2027-02-28.",
+   "quote": "The Supplier should provide templates for the College's twelve most used forms.",
    "quote_status": "VERBATIM_VERIFIED",
    "quote_span": [
-    1793,
-    1879
-   ]
+    1835,
+    1914
+   ],
+   "zone": "OBLIGATION",
+   "page": 2,
+   "small_print": false,
+   "repaired": false
   },
   {
-   "id": "REQ-0018",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The service must integrate with the College's student records system through its existing REST API.",
-   "modality": "must",
+   "id": "REQ-0006",
+   "doc_id": "dev-rfp-db9eeb00",
+   "statement": "The Supplier stores signed documents for ten years.",
+   "modality": "shall",
    "mandatory": true,
    "hazard": false,
    "disposition": "BINDING",
    "src_ids": [
     "SRC-0025"
    ],
-   "quote": "The service must integrate with the College's student records system through its existing REST API.",
+   "quote": "The Supplier shall store signed documents for ten (10) years.",
    "quote_status": "VERBATIM_VERIFIED",
    "quote_span": [
-    1898,
-    1997
-   ]
+    1929,
+    1990
+   ],
+   "zone": "OBLIGATION",
+   "page": 2,
+   "small_print": false,
+   "repaired": false
   },
   {
-   "id": "REQ-0019",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Bidders may propose an on-premises deployment option.",
-   "modality": "may",
+   "id": "REQ-0007",
+   "doc_id": "dev-rfp-db9eeb00",
+   "statement": "The Supplier should migrate the signed records held in the current tool by 2027-02-28.",
+   "modality": "should",
    "mandatory": false,
    "hazard": false,
    "disposition": "OPTIONAL",
    "src_ids": [
     "SRC-0026"
    ],
-   "quote": "Bidders may propose an on-premises deployment option.",
+   "quote": "The Supplier should migrate the signed records held in the current tool by 2027-02-28.",
    "quote_status": "VERBATIM_VERIFIED",
    "quote_span": [
-    1999,
-    2052
-   ]
+    1991,
+    2077
+   ],
+   "zone": "OBLIGATION",
+   "page": 2,
+   "small_print": false,
+   "repaired": false
   },
   {
-   "id": "REQ-0020",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The service shall be available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance.",
-   "modality": "shall",
+   "id": "REQ-0008",
+   "doc_id": "dev-rfp-db9eeb00",
+   "statement": "The service must integrate with the College's student records system through its existing REST API.",
+   "modality": "must",
    "mandatory": true,
    "hazard": false,
    "disposition": "BINDING",
    "src_ids": [
     "SRC-0027"
    ],
-   "quote": "The service shall be available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance.",
+   "quote": "The service must integrate with the College's student records system through its existing REST API.",
    "quote_status": "VERBATIM_VERIFIED",
    "quote_span": [
-    2072,
-    2214
-   ]
+    2096,
+    2195
+   ],
+   "zone": "OBLIGATION",
+   "page": 2,
+   "small_print": false,
+   "repaired": false
   },
   {
-   "id": "REQ-0021",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The Supplier should respond to severity-one incidents within one hour, at any time of day.",
-   "modality": "should",
+   "id": "REQ-0009",
+   "doc_id": "dev-rfp-db9eeb00",
+   "statement": "A bidder may propose an on-premises deployment option.",
+   "modality": "may",
    "mandatory": false,
    "hazard": false,
    "disposition": "OPTIONAL",
    "src_ids": [
     "SRC-0028"
    ],
-   "quote": "The Supplier should respond to severity-one incidents within one hour, at any time of day.",
+   "quote": "Bidders may propose an on-premises deployment option.",
    "quote_status": "VERBATIM_VERIFIED",
    "quote_span": [
-    2216,
-    2306
-   ]
+    2196,
+    2249
+   ],
+   "zone": "OBLIGATION",
+   "page": 2,
+   "small_print": false,
+   "repaired": false
   },
   {
-   "id": "REQ-0022",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Contract award is planned for 2026-12-15, which is background information.",
-   "modality": "none",
-   "mandatory": false,
+   "id": "REQ-0010",
+   "doc_id": "dev-rfp-db9eeb00",
+   "statement": "The service is available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance.",
+   "modality": "shall",
+   "mandatory": true,
    "hazard": false,
-   "disposition": "BACKGROUND",
+   "disposition": "BINDING",
    "src_ids": [
     "SRC-0029"
    ],
-   "quote": "Contract award is planned for 2026-12-15.",
+   "quote": "The service shall be available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance.",
    "quote_status": "VERBATIM_VERIFIED",
    "quote_span": [
-    2320,
-    2361
-   ]
+    2269,
+    2411
+   ],
+   "zone": "OBLIGATION",
+   "page": 3,
+   "small_print": false,
+   "repaired": false
   },
   {
-   "id": "REQ-0023",
-   "doc_id": "dev-rfp-3c582e4c",
+   "id": "REQ-0011",
+   "doc_id": "dev-rfp-db9eeb00",
+   "statement": "The Supplier should respond to severity-one incidents within one hour, at any time of day.",
+   "modality": "should",
+   "mandatory": false,
+   "hazard": false,
+   "disposition": "OPTIONAL",
+   "src_ids": [
+    "SRC-0030"
+   ],
+   "quote": "The Supplier should respond to severity-one incidents within one hour, at any time of day.",
+   "quote_status": "VERBATIM_VERIFIED",
+   "quote_span": [
+    2413,
+    2503
+   ],
+   "zone": "OBLIGATION",
+   "page": 3,
+   "small_print": false,
+   "repaired": false
+  },
+  {
+   "id": "REQ-0012",
+   "doc_id": "dev-rfp-db9eeb00",
    "statement": "The service must be live for students by 2027-01-11, the first day of spring enrollment.",
    "modality": "must",
    "mandatory": true,
    "hazard": true,
    "disposition": "BINDING",
    "src_ids": [
-    "SRC-0030"
+    "SRC-0032"
    ],
    "quote": "The service must be live for students by 2027-01-11, the first day of spring enrollment.",
    "quote_status": "VERBATIM_VERIFIED",
    "quote_span": [
-    2362,
-    2450
-   ]
-  },
-  {
-   "id": "REQ-0024",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Proposals are scored on the criteria below, stating background evaluation details.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0031"
+    2559,
+    2647
    ],
-   "quote": "Proposals are scored on the criteria below.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    2466,
-    2509
-   ]
-  },
-  {
-   "id": "REQ-0025",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Criterion and Weight table header provides background context.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0032"
-   ],
-   "quote": "Criterion | Weight",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    2511,
-    2529
-   ]
-  },
-  {
-   "id": "REQ-0026",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Technical approach weight is 40%, serving as background information.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0033"
-   ],
-   "quote": "Technical approach | 40%",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    2530,
-    2554
-   ]
-  },
-  {
-   "id": "REQ-0027",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Service levels and support weight is 20%, serving as background information.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0034"
-   ],
-   "quote": "Service levels and support | 20%",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    2555,
-    2587
-   ]
-  },
-  {
-   "id": "REQ-0028",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Integration and migration weight is 20%, serving as background information.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0035"
-   ],
-   "quote": "Integration and migration | 20%",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    2588,
-    2619
-   ]
-  },
-  {
-   "id": "REQ-0029",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "Price weight is 20%, serving as background information.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0036"
-   ],
-   "quote": "Price | 20%",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    2620,
-    2631
-   ]
-  },
-  {
-   "id": "REQ-0030",
-   "doc_id": "dev-rfp-3c582e4c",
-   "statement": "The contract runs for three years from award, with an option to extend it by one year, which describes contract terms.",
-   "modality": "none",
-   "mandatory": false,
-   "hazard": false,
-   "disposition": "BACKGROUND",
-   "src_ids": [
-    "SRC-0037"
-   ],
-   "quote": "The contract runs for three years from award, with an option to extend it by one year.",
-   "quote_status": "VERBATIM_VERIFIED",
-   "quote_span": [
-    2645,
-    2731
-   ]
+   "zone": "BACKGROUND",
+   "page": 3,
+   "small_print": false,
+   "repaired": false
   }
  ],
  "approach": [
   {
    "id": "APP-001",
-   "text": "Bid compliance and project delivery: submit the proposal as a single PDF of no more than 20 pages through the College's procurement portal by 2026-12-01 12:00 UTC, and ensure the service is live for students by 2027-01-11 for spring enrollment.",
+   "text": "Bid compliance and delivery: assemble the proposal as a single PDF of at most 20 pages and submit it through the College's procurement portal by 2026-12-01 12:00 UTC, and ensure the service is live for students by 2027-01-11, the first day of spring enrollment.",
    "requirement_ids": [
-    "REQ-0009",
-    "REQ-0023"
+    "REQ-0001",
+    "REQ-0012"
    ],
-   "basis": "The submission channel, PDF format, page limit, deadline, and live date are explicitly specified.",
+   "basis": "The portal submission deadline, file format, and page limit are explicitly stated, as is the mandatory go-live date for spring enrollment.",
    "evidence_class": "ASSUMPTION",
    "source_ids": [
     "SRC-0015",
-    "SRC-0030"
+    "SRC-0032"
    ]
   },
   {
    "id": "APP-002",
-   "text": "Core signature and records: support signing on current desktop and mobile browsers, maintain an audit record of every signature event with signer identity, time, and document version, and store signed documents for ten years.",
+   "text": "Signing platform: support signing on current desktop and mobile browsers, and send a reminder to each signer who has not signed within 72 hours.",
    "requirement_ids": [
-    "REQ-0012",
-    "REQ-0013",
-    "REQ-0016"
+    "REQ-0003",
+    "REQ-0004"
    ],
-   "basis": "Browser compatibility, audit requirements, and the ten-year retention period are stated.",
+   "basis": "The browser environments and the 72-hour reminder window are specified in the requirements.",
    "evidence_class": "ASSUMPTION",
    "source_ids": [
-    "SRC-0018",
-    "SRC-0020",
+    "SRC-0022",
     "SRC-0023"
    ]
   },
   {
    "id": "APP-003",
-   "text": "Integration and workflow: send automated reminders to signers who have not signed within 72 hours, and integrate the service with the College's student records system via its existing REST API.",
+   "text": "Audit and records: maintain an audit record of every signature event including signer identity, time, and document version, and store signed documents for ten years.",
    "requirement_ids": [
-    "REQ-0014",
-    "REQ-0018"
+    "REQ-0002",
+    "REQ-0006"
    ],
-   "basis": "The 72-hour reminder window and the requirement to use the existing REST API are defined.",
+   "basis": "The required audit details and the ten-year retention period are defined.",
    "evidence_class": "ASSUMPTION",
    "source_ids": [
-    "SRC-0021",
+    "SRC-0020",
     "SRC-0025"
    ]
   },
   {
    "id": "APP-004",
-   "text": "Service availability: maintain 99.5% service availability each calendar month, excluding planned maintenance announced five working days in advance.",
+   "text": "System integration: integrate the service with the College's student records system through its existing REST API.",
    "requirement_ids": [
-    "REQ-0020"
+    "REQ-0008"
    ],
-   "basis": "The uptime percentage and planned maintenance notice period are explicitly specified.",
+   "basis": "The integration target and method via existing REST API are defined.",
    "evidence_class": "ASSUMPTION",
    "source_ids": [
     "SRC-0027"
    ]
+  },
+  {
+   "id": "APP-005",
+   "text": "Operations and availability: ensure the service is available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance.",
+   "requirement_ids": [
+    "REQ-0010"
+   ],
+   "basis": "The availability percentage, calculation period, and planned maintenance notification lead time are stated.",
+   "evidence_class": "ASSUMPTION",
+   "source_ids": [
+    "SRC-0029"
+   ]
   }
  ],
  "unmapped_requirement_ids": [
-  "REQ-0001",
-  "REQ-0015",
-  "REQ-0017",
-  "REQ-0019",
-  "REQ-0021"
+  "REQ-0005",
+  "REQ-0007",
+  "REQ-0009",
+  "REQ-0011"
  ],
  "risks": [
   {
    "id": "RSK-001",
-   "condition": "Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC under REQ-0009.",
-   "event": "The final bid document exceeds 20 pages or portal congestion delays the upload past 2026-12-01 12:00 UTC.",
-   "effect": "The bid is disqualified immediately without evaluation.",
+   "condition": "Proposal submission is restricted to a single PDF of at most 20 pages, due by 2026-12-01 12:00 UTC (SRC-0015).",
+   "event": "The final assembled proposal exceeds 20 pages or the upload is delayed past 2026-12-01 12:00 UTC.",
+   "effect": "The proposal is rejected outright without evaluation.",
    "assumptions": [
-    "The formatting can be condensed into 20 pages without losing required content."
+    "The team can format all required technical and pricing details within 20 pages."
    ],
    "owner_role": "Bid manager",
-   "trigger": "The draft bid exceeds 18 pages one week before submission.",
+   "trigger": "Draft proposal exceeds 18 pages one week before the deadline, or portal upload is attempted less than 4 hours before 12:00 UTC.",
    "responses": [
-    "Enforce a strict 18-page budget for all sections immediately.",
-    "Upload the PDF 24 hours before the deadline."
+    "Enforce a strict 18-page budget for the draft to leave a two-page safety margin.",
+    "Perform a dry-run upload of a dummy PDF via the procurement portal one week prior to the deadline."
    ],
-   "residual_exposure": "A technical outage of the procurement portal on the final day.",
+   "residual_exposure": "A technical portal outage during the final upload window.",
    "evidence_src_ids": [
     "SRC-0015"
    ]
   },
   {
    "id": "RSK-002",
-   "condition": "The service must be live for students by 2027-01-11 for spring enrollment under REQ-0023, leaving only 41 calendar days from the proposal deadline of 2026-12-01.",
-   "event": "Integration with the student records system REST API or environment setup experiences delays during the winter break.",
-   "effect": "Students cannot sign documents when spring enrollment opens, breaching the go-live requirement.",
+   "condition": "The service must go live by 2027-01-11 for spring enrollment, leaving only 41 calendar days from the bid deadline of 2026-12-01 (SRC-0032).",
+   "event": "Integration, testing, or user acceptance delays push the deployment past the spring enrollment start date.",
+   "effect": "Students cannot sign enrollment documents digitally during the peak spring enrollment period.",
    "assumptions": [
-    "The College's REST API documentation is complete and accessible immediately upon contract award."
+    "Contract award and mobilization happen immediately upon bid submission without negotiation delays."
    ],
-   "owner_role": "Technical delivery lead",
-   "trigger": "API integration testing is not completed by 2026-12-20.",
+   "owner_role": "Delivery lead",
+   "trigger": "API integration testing is not completed two weeks before the go-live date.",
    "responses": [
-    "Begin mock API integration prior to formal contract award.",
-    "Negotiate a staged rollout prioritizing critical enrollment forms first."
+    "Pre-build and test the student records system REST API integration connector during the bid phase before formal award.",
+    "Establish a fallback manual paper signing process for spring enrollment day if the digital service launch slips."
    ],
-   "residual_exposure": "Limited time to resolve edge cases discovered during live student usage.",
+   "residual_exposure": "Student friction and manual administrative overhead if the go-live date is missed.",
    "evidence_src_ids": [
-    "SRC-0030"
+    "SRC-0032"
+   ]
+  },
+  {
+   "id": "RSK-003",
+   "condition": "The migration of signed records held in the current tool is scheduled for completion by 2027-02-28 (SRC-0026), which is after the go-live date of 2027-01-11 (SRC-0032).",
+   "event": "Students or staff require access to historical signed records during the gap between go-live and migration completion, but the records are still trapped in the legacy tool.",
+   "effect": "Inability to reference past documents leads to administrative compliance failures and user confusion.",
+   "assumptions": [
+    "Users will not need access to historical records during the transition period."
+   ],
+   "owner_role": "Data migration lead",
+   "trigger": "A support ticket requests a historical record stored in the legacy tool during January 2027.",
+   "responses": [
+    "Accelerate the migration of signed records to finish prior to the 2027-01-11 go-live date.",
+    "Provide designated staff with read-only access to the legacy tool until migration is fully complete."
+   ],
+   "residual_exposure": "Dual-system lookup overhead for staff during the transition period.",
+   "evidence_src_ids": [
+    "SRC-0026",
+    "SRC-0032"
    ]
   }
  ]

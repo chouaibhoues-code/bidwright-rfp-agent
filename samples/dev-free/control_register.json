@@ -1,0 +1,18 @@
+{
+ "package": "dev_rfp.pdf",
+ "documents": [
+  {
+   "doc_id": "dev-rfp-db9eeb00",
+   "file": "dev_rfp.pdf",
+   "sha256": "db9eeb004e718077678cddd9976b53895f9d7d009044f6b59c8a8d75213d2bd3",
+   "format": "pdf",
+   "role": "main",
+   "title": "Request for Proposal: Electronic Signature Service",
+   "precedence": 1,
+   "pages": 4,
+   "sanitized": false,
+   "parser": "docling"
+  }
+ ],
+ "precedence_source": "rules"
+}
