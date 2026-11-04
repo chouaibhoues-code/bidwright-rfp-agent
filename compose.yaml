@@ -22,6 +22,10 @@ services:
       PHOENIX_API_KEY: ${PHOENIX_API_KEY:-}
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
       DOCLING_URL: http://docling:5001
+    # host.docker.internal is the host machine, so OLLAMA_HOST=http://host.docker.internal:11434
+    # reaches the host's own Ollama. Docker Desktop resolves the name already; this line adds it
+    # on Linux, where that Ollama must also listen beyond loopback.
+    extra_hosts: ["host.docker.internal:host-gateway"]
     volumes:
       - ./inputs:/app/inputs:ro
       - ./config:/app/config:ro

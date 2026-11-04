@@ -110,7 +110,7 @@ flowchart LR
 | RFP input | In | One file or a folder under `inputs/`: PDF, DOCX or XLSX, with an optional `package.yaml` naming roles and precedence. On `free`, every file's sha256 must be listed in `inputs/CORPUS.sha256`, or the run is started with `--allow-non-corpus=i-accept-free-tier-terms`, which the manifest records beside the data class `client` (ADR-026). The run entry checks the rule before the run folder exists. |
 | Docling | Out | HTTP to `DOCLING_URL` (`http://localhost:5001` on the host, `http://docling:5001` in Compose), after `guard` has sanitized the file; only for live and record runs |
 | Gemini | Out | The native `google-genai` SDK (ADR-001), with `GEMINI_API_KEY`, or `GEMINI_PAID_API_KEY` on the `paid` profile, from `.env` |
-| Ollama | Out | HTTP to `OLLAMA_HOST`: `http://localhost:11434` on the host and `http://ollama:11434` in Compose |
+| Ollama | Out | HTTP to `OLLAMA_HOST`: `http://localhost:11434` on the host and `http://ollama:11434` in Compose, or `http://host.docker.internal:11434` from Compose for the host's own Ollama |
 | Phoenix | Out | OTLP over HTTP to `PHOENIX_ENDPOINT` when it is set, answers and is allowed for the run's data class; otherwise spans go to `outputs/<run>/spans.jsonl` |
 | Egress register | Check | `config/egress.yaml` lists every destination, its hosts, whether it is local and what it may receive. Before a run, each backend, the trace endpoint and the parser are checked against it and the data class; a client run reaches no remote destination except through the consent override (ADR-026). |
 | Run folder | Out | `outputs/<run>/`, gitignored; `bidwright purge` deletes a run and its cache entries, and `--expired` every client run past the retention period |
@@ -370,7 +370,7 @@ Two ways to run, from one codebase.
 
 | Compose service | Image | Job | Network and mounts |
 |---|---|---|---|
-| `app` | Built from the `Dockerfile` in stages with uv, running as a non-root user | The `bidwright` CLI, through `docker compose run` | `inputs/`, `config/` and `prompts/` read-only; `outputs/` read-write |
+| `app` | Built from the `Dockerfile` in stages with uv, running as a non-root user | The `bidwright` CLI, through `docker compose run` | `inputs/`, `config/` and `prompts/` read-only; `outputs/` read-write. `host.docker.internal` names the host machine, so `docker compose run -e OLLAMA_HOST=http://host.docker.internal:11434` reaches the host's own Ollama. |
 | `docling` | `docling-serve-cpu`, pinned by digest in `compose.yaml` | Parses PDF, DOCX and XLSX through its v1 API | Published on `127.0.0.1` only; the demo and test services never reach it |
 | `phoenix` | `arizephoenix/phoenix`, pinned by digest in `compose.yaml` | Traces on port 6006 | Published on `127.0.0.1` only. Authentication is disabled by default for this local collector of synthetic runs; `.env` can enable it, and Bidwright then sends `PHOENIX_API_KEY` as a bearer token. |
 | `eval` | The same image, Compose profile `eval` | `bidwright-eval` | The only service that mounts `evals/gold` and `evals/corpus`, read-only |

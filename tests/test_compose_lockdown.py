@@ -60,3 +60,13 @@ def test_docling_is_pinned_by_digest_and_published_on_loopback_only() -> None:
     assert COMPOSE["services"]["app"]["environment"]["DOCLING_URL"] == "http://docling:5001"
     for name in ("test", "demo"):
         assert "docling" not in COMPOSE["services"][name].get("depends_on", [])
+
+
+def test_only_the_app_service_names_the_host_machine() -> None:
+    """host.docker.internal lets `app` reach the host's own Ollama; no other service maps it."""
+    for name, service in COMPOSE["services"].items():
+        mapped = service.get("extra_hosts", [])
+        if name == "app":
+            assert mapped == ["host.docker.internal:host-gateway"]
+        else:
+            assert not mapped, name

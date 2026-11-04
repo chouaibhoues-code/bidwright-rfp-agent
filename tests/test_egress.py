@@ -63,6 +63,17 @@ def test_a_client_run_refuses_a_remote_host_and_allows_localhost() -> None:
         check_run(remote, None, None, "client", register=REGISTER)
 
 
+def test_the_host_machines_ollama_is_local_and_nothing_else_is() -> None:
+    """From a container, host.docker.internal is the machine running it, so a client run may
+    use the Ollama installed there. The register grants that name to Ollama alone."""
+    host_ollama = {"ollama": OllamaBackend("http://host.docker.internal:11434")}
+    assert check_run(host_ollama, None, None, "client", register=REGISTER) == []
+    with pytest.raises(EgressRefused, match="host.docker.internal"):
+        check("docling", "http://host.docker.internal:5001", "client", register=REGISTER)
+    with pytest.raises(EgressRefused, match="host.docker.internal"):
+        check("phoenix", "http://host.docker.internal:6006", "synthetic", register=REGISTER)
+
+
 def test_a_backend_with_no_host_attribute_passes() -> None:
     assert not hasattr(FakeBackend(), "host")
     assert check_run({"gemini": FakeBackend()}, None, None, "client", register=REGISTER) == []
