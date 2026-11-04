@@ -1,0 +1,26 @@
+{
+ "key": "sha256:53cc1f6d216e3474702c1dff88a3436755716a463c385c5ee9279dedbd1b6919",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ExtractResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"items\": [{\"src_ids\": [\"SRC-0257\"], \"quote\": \"Issued 2026-12-04.\", \"statement\": \"Addendum 1 was issued on 2026-12-04.\", \"modality\": \"none\", \"disposition\": \"BACKGROUND\", \"hazard\": false}], \"no_obligation_src_ids\": []}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 5417,
+   "tokens_out": 86,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:49:41Z"
+}

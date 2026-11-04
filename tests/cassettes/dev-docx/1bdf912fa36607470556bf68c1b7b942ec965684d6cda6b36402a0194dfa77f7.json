@@ -1,0 +1,26 @@
+{
+ "key": "sha256:1bdf912fa36607470556bf68c1b7b942ec965684d6cda6b36402a0194dfa77f7",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ExtractResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"items\": [\n    {\n      \"src_ids\": [\"SRC-0021\"],\n      \"quote\": \"The system should import the Trust's existing donor spreadsheet without manual retyping.\",\n      \"statement\": \"The system should import the Trust's existing donor spreadsheet without manual retyping.\",\n      \"modality\": \"should\",\n      \"disposition\": \"OPTIONAL\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\"SRC-0022\"],\n      \"quote\": \"The system must keep all personal data in the United Kingdom.\",\n      \"statement\": \"The system must keep all personal data in the United Kingdom.\",\n      \"modality\": \"must\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": true\n    },\n    {\n      \"src_ids\": [\"SRC-0023\"],\n      \"quote\": \"Bidders may offer a mobile app for volunteers as an optional extra.\",\n      \"statement\": \"Bidders may offer a mobile app for volunteers as an optional extra.\",\n      \"modality\": \"may\",\n      \"disposition\": \"OPTIONAL\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\"SRC-0024\"],\n      \"quote\": \"The system shall be available 99% of the time in each calendar month.\",\n      \"statement\": \"The system shall be available 99% of the time in each calendar month.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\"SRC-0025\"],\n      \"quote\": \"The supplier shall train the Trust's staff before the system goes live.\",\n      \"statement\": \"The supplier shall train the Trust's staff before the system goes live.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\"SRC-0026\"],\n      \"quote\": \"The system must be live by 2027-06-30.\",\n      \"statement\": \"The system must be live by 2027-06-30.\",\n      \"modality\": \"must\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": true\n    },\n    {\n      \"src_ids\": [\"SRC-0027\"],\n      \"quote\": \"The Trust scores proposals on the criteria below.\",\n      \"statement\": \"The Trust scores proposals on the criteria below; this describes the buyer's evaluation process.\",\n      \"modality\": \"none\",\n      \"disposition\": \"BACKGROUND\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\"SRC-0028\"],\n      \"quote\": \"Criterion | Weight\",\n      \"statement\": \"Criterion | Weight; this is a table header.\",\n      \"modality\": \"none\",\n      \"disposition\": \"BACKGROUND\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\"SRC-0029\"],\n      \"quote\": \"Fit to requirements | 50%\",\n      \"statement\": \"Fit to requirements weighs 50%; this is part of evaluation criteria.\",\n      \"modality\": \"none\",\n      \"disposition\": \"BACKGROUND\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\"SRC-0030\"],\n      \"quote\": \"Ease of use for volunteers | 20%\",\n      \"statement\": \"Ease of use for volunteers weighs 20%; this is part of evaluation criteria.\",\n      \"modality\": \"none\",\n      \"disposition\": \"BACKGROUND\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\"SRC-0031\"],\n      \"quote\": \"Price | 30%\",\n      \"statement\": \"Price weighs 30%; this is part of evaluation criteria.\",\n      \"modality\": \"none\",\n      \"disposition\": \"BACKGROUND\",\n      \"hazard\": false\n    }\n  ],\n  \"no_obligation_src_ids\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3011,
+   "tokens_out": 951,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:47:10Z"
+}

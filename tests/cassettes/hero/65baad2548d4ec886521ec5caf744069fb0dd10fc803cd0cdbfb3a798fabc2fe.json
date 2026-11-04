@@ -1,0 +1,26 @@
+{
+ "key": "sha256:65baad2548d4ec886521ec5caf744069fb0dd10fc803cd0cdbfb3a798fabc2fe",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Functional requirements for case handling, resident portal, and reporting\",\n  \"duplicates\": [\n    {\n      \"requirement_id\": \"REQ-0088\",\n      \"duplicate_of\": \"REQ-0185\"\n    }\n  ],\n  \"discrepancies\": [\n    {\n      \"requirement_ids\": [\n        \"REQ-0094\",\n        \"REQ-0184\"\n      ],\n      \"kind\": \"INCONSISTENT_VALUE\",\n      \"state\": \"established\",\n      \"description\": \"Section 6.1 requires keeping audit records for seven years, while Annex B requires five years.\",\n      \"resolved_by\": null\n    }\n  ],\n  \"questions\": [\n    {\n      \"text\": \"What specific response times are expected for each case type?\",\n      \"requirement_ids\": [\n        \"REQ-0089\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0010\"\n      ],\n      \"reason\": \"The required response times are vague.\"\n    },\n    {\n      \"text\": \"What unit of measurement applies to the 500 document storage requirement per year?\",\n      \"requirement_ids\": [\n        \"REQ-0099\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0011\"\n      ],\n      \"reason\": \"The storage amount lacks a unit.\"\n    },\n    {\n      \"text\": \"What is the peak concurrent named users count for the service?\",\n      \"requirement_ids\": [\n        \"REQ-0100\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0012\"\n      ],\n      \"reason\": \"The concurrent user count is TBC.\"\n    },\n    {\n      \"text\": \"Where can Schedule 7 be found for the statutory return formats?\",\n      \"requirement_ids\": [\n        \"REQ-0101\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0013\"\n      ],\n      \"reason\": \"Schedule 7 is missing or broken.\"\n    },\n    {\n      \"text\": \"Should audit records be kept for seven years, as in section 6.1, or five years, as in Annex B?\",\n      \"requirement_ids\": [\n        \"REQ-0094\",\n        \"REQ-0184\"\n      ],\n      \"lint_finding_ids\": [],\n      \"reason\": \"The retention periods disagree.\"\n    }\n  ],\n  \"references\": [\n    {\n      \"requirement_id\": \"REQ-0101\",\n      \"target\": \"Schedule 7\",\n      \"resolved_ids\": []\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3805,
+   "tokens_out": 648,
+   "tokens_cached": 0,
+   "tokens_thinking": 3582,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:50:21Z"
+}

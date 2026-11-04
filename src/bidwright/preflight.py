@@ -19,7 +19,8 @@ corpus, and a package is a client package when any of its documents is not. The 
 is the folder name for a synthetic package and `pkg-` with 8 hex digits of the package digest
 for a client package; a single file keeps its `v0.0` id when synthetic and gets `doc-` with 8
 hex digits of its hash when client, so a client document's name never reaches a run id. A
-profile with no run-limits row for the input's tier is refused here.
+profile with no run-limits row for the input's tier is refused here. A run that makes no model
+call, the B0 baseline, passes `models=False` and skips the backend checks.
 """
 
 import hashlib
@@ -190,6 +191,7 @@ def check_preconditions(
     backends: Mapping[str, Backend],
     config: Config,
     docling: DoclingHealth | None = None,
+    models: bool = True,
 ) -> Preflight:
     """What the run may log and rely on. Raises `Refused` when the run must not start."""
     if mode == "replay":
@@ -220,7 +222,7 @@ def check_preconditions(
     tier = Preflight(overrides, documents[0].corpus, digest).tier
     if profile not in config.limits.runs.get(tier, {}):
         raise Refused(f"no run limits for {tier} on {profile}")
-    for role_name, role in roles.items():
+    for role_name, role in roles.items() if models else []:
         if role.provider not in backends:
             hint = KEY_HINTS.get(profile, {}).get(
                 role.provider, f"configure a backend for {role.provider!r}"
@@ -230,7 +232,7 @@ def check_preconditions(
                 f" role: {hint}"
             )
     pulled: dict[str, set[str]] = {}
-    for role in roles.values():
+    for role in roles.values() if models else []:
         backend = backends[role.provider]
         if not isinstance(backend, ModelLister):
             continue

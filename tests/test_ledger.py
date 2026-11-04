@@ -14,6 +14,7 @@ from tests.node_fakes import DEV_RFP, RuleBackend
 def test_ledger_totals_match_the_manifest(tmp_path: Path) -> None:
     model = RuleBackend()
     result = execute(
+        docling_mode="replay",
         source=DEV_RFP,
         profile="free",
         outputs=tmp_path,
@@ -30,7 +31,8 @@ def test_ledger_totals_match_the_manifest(tmp_path: Path) -> None:
     assert manifest.totals == totals_of(ledger, manifest.totals.active_seconds)
     assert manifest.totals.requests == len(ledger) == len(model.requests)
     assert manifest.totals.cost_usd == 0.0 and manifest.totals.shadow_cost_usd > 0
-    assert {entry.node for entry in ledger} == {"triage", "extract", "approach", "risk", "draft"}
+    nodes = {"triage", "extract", "consolidate", "approach", "risk", "draft"}
+    assert {entry.node for entry in ledger} == nodes
 
 
 def test_the_manifest_lists_the_models_that_answered(tmp_path: Path) -> None:
@@ -38,6 +40,7 @@ def test_the_manifest_lists_the_models_that_answered(tmp_path: Path) -> None:
     answered."""
     model = ProviderSimulator(RuleBackend(), [{"call": 1, "fault": "quota_exhausted"}])
     result = execute(
+        docling_mode="replay",
         source=DEV_RFP,
         profile="free",
         outputs=tmp_path,

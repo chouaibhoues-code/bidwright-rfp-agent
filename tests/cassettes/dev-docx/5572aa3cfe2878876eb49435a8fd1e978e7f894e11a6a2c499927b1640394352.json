@@ -1,0 +1,26 @@
+{
+ "key": "sha256:5572aa3cfe2878876eb49435a8fd1e978e7f894e11a6a2c499927b1640394352",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ApproachResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"items\": [\n    {\n      \"text\": \"Assemble the proposal as one document of no more than 15 pages and send it by e-mail to the Trust's office by 17:00 GMT on 2027-02-12. Ensure the system goes live by 2027-06-30 while hosting and keeping all personal data exclusively within the United Kingdom.\",\n      \"requirement_ids\": [\n        \"REQ-0001\",\n        \"REQ-0008\",\n        \"REQ-0012\"\n      ],\n      \"basis\": \"The submission constraints, data residency rule, and go-live deadline are explicitly stated; email gateway reliability and hosting provider selection are assumptions.\"\n    },\n    {\n      \"text\": \"Maintain a comprehensive record for each donor containing their contact details and complete gift history. Record each donor's consent to be contacted by e-mail, post, and telephone, along with the specific date the consent was given.\",\n      \"requirement_ids\": [\n        \"REQ-0003\",\n        \"REQ-0004\"\n      ],\n      \"basis\": \"The required data fields and consent channels are explicitly defined; the underlying database architecture is an assumption.\"\n    },\n    {\n      \"text\": \"Track and record the exact hours each volunteer contributes to each club. Send each volunteer an automated reminder two days before every session they are booked to attend.\",\n      \"requirement_ids\": [\n        \"REQ-0005\",\n        \"REQ-0006\"\n      ],\n      \"basis\": \"The tracking metrics and reminder timeline are specified; the communication channel for reminders is an assumption.\"\n    },\n    {\n      \"text\": \"Ensure the system achieves 99% availability in each calendar month and deliver comprehensive training to the Trust's staff before the system goes live.\",\n      \"requirement_ids\": [\n        \"REQ-0010\",\n        \"REQ-0011\"\n      ],\n      \"basis\": \"The availability target and training timing are stated; the curriculum length and delivery mode are assumptions.\"\n    }\n  ],\n  \"unmapped_requirement_ids\": [\n    \"REQ-0007\",\n    \"REQ-0009\"\n  ],\n  \"open_questions\": [\n    {\n      \"text\": \"What file format and structure does the Trust's existing donor spreadsheet use for the import process?\",\n      \"requirement_ids\": [\n        \"REQ-0007\"\n      ]\n    },\n    {\n      \"text\": \"Should the optional mobile app for volunteers be priced separately, and which mobile operating systems must it support?\",\n      \"requirement_ids\": [\n        \"REQ-0009\"\n      ]\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1499,
+   "tokens_out": 632,
+   "tokens_cached": 0,
+   "tokens_thinking": 1846,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:47:22Z"
+}

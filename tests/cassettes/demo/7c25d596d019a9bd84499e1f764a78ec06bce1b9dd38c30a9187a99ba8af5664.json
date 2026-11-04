@@ -1,0 +1,26 @@
+{
+ "key": "sha256:7c25d596d019a9bd84499e1f764a78ec06bce1b9dd38c30a9187a99ba8af5664",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"title\": \"Our understanding of the College's needs\",\n  \"text\": \"The College requires proposals to be submitted via its procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC [REQ-0002]. The service must go live for students by 2027-01-11, the first day of spring enrollment [REQ-0014]. Furthermore, the solution must maintain an audit record of every signature event [REQ-0003], support current desktop and mobile browsers [REQ-0004], send reminders to signers within 72 hours [REQ-0005], and store signed documents for ten years [REQ-0007]. Integration with the student records system via the existing REST API is required [REQ-0009], alongside 99.5% monthly availability excluding planned maintenance announced five working days in advance [REQ-0011]. The scope also includes providing templates for twelve forms [REQ-0006], migrating records by 2027-02-28 [REQ-0008], proposing an on-premises deployment option [REQ-0010], and responding to severity-one incidents within one hour [REQ-0012].\",\n  \"cited_ids\": [\n    \"REQ-0002\",\n    \"REQ-0014\",\n    \"REQ-0003\",\n    \"REQ-0004\",\n    \"REQ-0005\",\n    \"REQ-0007\",\n    \"REQ-0009\",\n    \"REQ-0011\",\n    \"REQ-0006\",\n    \"REQ-0008\",\n    \"REQ-0010\",\n    \"REQ-0012\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1576,
+   "tokens_out": 427,
+   "tokens_cached": 0,
+   "tokens_thinking": 1442,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:45:56Z"
+}

@@ -5,35 +5,41 @@
 ## `bidwright`
 
 ```text
-usage: bidwright [-h] {run,demo,record} ...
+usage: bidwright [-h] {run,demo,record,purge} ...
 
 Bidwright: RFP to proposal.
 
 positional arguments:
-  {run,demo,record}
-    run              run one RFP live
-    demo             replay the recorded development run, with no keys
-    record           run live and record cassettes, on the host
+  {run,demo,record,purge}
+    run                 run one RFP file or package folder live
+    demo                replay the recorded development run, with no keys
+    record              run live and record cassettes, on the host
+    purge               delete a run and its cache entries, or expired runs
 
 options:
-  -h, --help         show this help message and exit
+  -h, --help            show this help message and exit
 ```
 
 ## `bidwright run`
 
 ```text
-usage: bidwright run [-h] [--profile {free,local}] [--baseline {b0,ex0}]
-                     [--allow-non-corpus CONSENT] [--outputs OUTPUTS]
+usage: bidwright run [-h] [--profile {free,local,paid}] [--baseline {b0,ex0}]
+                     [--allow-non-corpus CONSENT] [--cache] [--second-pass]
+                     [--until {verify,coverage,consolidate,render}] [--outputs OUTPUTS]
                      file
 
 positional arguments:
-  file
+  file                  an RFP file, or a folder holding a package
 
 options:
   -h, --help            show this help message and exit
-  --profile {free,local}
+  --profile {free,local,paid}
   --baseline {b0,ex0}
   --allow-non-corpus CONSENT
+  --cache               answer repeated calls from the cache
+  --second-pass         re-read OBLIGATION zones (S-13)
+  --until {verify,coverage,consolidate,render}
+                        the last node to run
   --outputs OUTPUTS
 ```
 
@@ -50,16 +56,33 @@ options:
 ## `bidwright record`
 
 ```text
-usage: bidwright record [-h] [--name NAME] [--profile {free,local}] [--outputs OUTPUTS] file
+usage: bidwright record [-h] [--name NAME] [--profile {free,local,paid}]
+                        [--until {verify,coverage,consolidate,render}] [--outputs OUTPUTS]
+                        file
 
 positional arguments:
-  file
+  file                  an RFP file, or a folder holding a package
 
 options:
   -h, --help            show this help message and exit
   --name NAME
-  --profile {free,local}
+  --profile {free,local,paid}
+  --until {verify,coverage,consolidate,render}
+                        the last node to run
   --outputs OUTPUTS
+```
+
+## `bidwright purge`
+
+```text
+usage: bidwright purge [-h] [--expired] [run]
+
+positional arguments:
+  run         a run id under outputs/, or a run folder
+
+options:
+  -h, --help  show this help message and exit
+  --expired   every client run past the retention period
 ```
 
 ## `bidwright-eval`

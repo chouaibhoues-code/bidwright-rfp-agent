@@ -1,0 +1,29 @@
+{
+ "key": "sha256:3090369d0a2c468d16176063696d5665a518aa24c4b8fd1ef88ddd676568c408",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "date_calc",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "```json\n{\n  \"risks\": [\n    {\n      \"condition\": \"Proposals must be sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12 as one document of no more than 15 pages under REQ-0001.\",\n      \"event\": \"The submission email is delayed in transit or exceeds the 15-page limit when attachments are rendered by the recipient's mail server.\",\n      \"effect\": \"The proposal is disqualified and rejected without evaluation.\",\n      \"assumptions\": [\n        \"Email delivery is instantaneous and reliable up to the deadline.\"\n      ],\n      \"owner_role\": \"Bid manager\",\n      \"trigger\": \"The proposal PDF is compiled at 14 pages with tight margins, or the submission email is sent after 16:30 GMT on 2027-02-12.\",\n      \"responses\": [\n        \"Cap the proposal at 12 pages to allow margin for format conversions.\",\n        \"Submit the proposal 24 hours in advance of the deadline and request an acknowledgement.\"\n      ],\n      \"residual_exposure\": \"Minor formatting risks; email gateway rejection on the day of submission remains.\",\n      \"evidence_src_ids\": [\n        \"SRC-0013\"\n      ]\n    },\n    {\n      \"condition\": \"All personal data must be kept in the United Kingdom under REQ-0008, while cloud hosting or third-party support tools may use global infrastructure.\",\n      \"event\": \"A third-party monitoring or support tool routes diagnostic logs or database backups through servers outside the United Kingdom.\",\n      \"effect\": \"Breach of statutory data residency requirements, leading to contract termination and regulatory penalties.\",\n      \"assumptions\": [\n        \"Standard cloud provider regions in London satisfy all data residency duties without explicit sub-processor restrictions.\"\n      ],\n      \"owner_role\": \"Technical architect\",\n      \"trigger\": \"Sub-processor data flow diagrams show telemetry data leaving the UK region.\",\n      \"responses\": [\n        \"Audit all third-party SaaS and support integrations for data residency compliance.\",\n        \"Contractually restrict all backup and log storage to UK-only availability zones.\"\n      ],\n      \"residual_exposure\": \"Ongoing vendor compliance monitoring required for all software updates.\",\n      \"evidence_src_ids\": [\n        \"SRC-0022\"\n      ]\n    },\n    {\n      \"condition\": \"The system must be live by 2027-06-30 under REQ-0012, requiring data import, volunteer notifications under REQ-0006, and staff training under REQ-0011.\",\n      \"event\": \"Data migration from the existing donor spreadsheet (REQ-0007) encounters formatting errors, compressing the schedule for staff training prior to go-live.\",\n      \"effect\": \"System goes live with untrained staff and unverified data, resulting in operational failures during volunteer scheduling.\",\n      \"assumptions\": [\n        \"The existing donor spreadsheet is clean and requires no data cleansing before import.\"\n      ],\n      \"owner_role\": \"Delivery lead\",\n      \"trigger\": \"Data import testing reveals discrepancies more than 30 days before the go-live deadline.\",\n      \"responses\": [\n        \"Perform a dry-run import of the donor spreadsheet this month.\",\n        \"Decouple staff training from the final data migration cutover.\"\n      ],\n      \"residual_exposure\": \"Schedule compression if data cleanup takes longer than expected.\",\n      \"evidence_src_ids\": [\n        \"SRC-0026\",\n        \"SRC-0020\",\n        \"SRC-0021\"\n      ]\n    }\n  ],\n  \"open_questions\": [\n    {\n      \"text\": \"Does the 15-page limit for the proposal under REQ-0001 exclude the cover page and appendices, or must everything fit within the 15 pages?\",\n      \"src_ids\": [\n        \"SRC-0013\"\n      ]\n    },\n    {\n      \"text\": \"What specific format is the Trust's existing donor spreadsheet in, and does it require custom parsing scripts for import under REQ-0007?\",\n      \"src_ids\": [\n        \"SRC-0021\"\n      ]\n    }\n  ]\n}\n```",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3131,
+   "tokens_out": 985,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:47:26Z"
+}

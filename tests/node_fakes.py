@@ -29,7 +29,16 @@ from bidwright.schemas import (
 from bidwright.tools import date_tool, search_tool
 
 DEV_RFP = Path(__file__).resolve().parents[1] / "inputs" / "dev" / "dev_rfp.pdf"
-PROMPT_IDS = ("extract", "extract_oneshot", "approach", "risk", "draft")
+PROMPT_IDS = (
+    "extract",
+    "extract_oneshot",
+    "extract_noexamples",
+    "triage",
+    "consolidate",
+    "approach",
+    "risk",
+    "draft",
+)
 RISK_LIMITS = AgentLimits(max_turns=4, max_tool_calls=6, stop_on_no_progress=True)
 USAGE = Usage(tokens_in=500, tokens_out=100)
 
@@ -73,6 +82,13 @@ _DATA = re.compile(r"<(data-[0-9a-f]{8})>\n(.*)\n</\1>", re.DOTALL)
 _MODAL = re.compile(r"\b(shall|must|should|may)\b")
 
 
+def data_of(request: Request) -> dict[str, Any]:
+    """The JSON inside the first user turn's delimited data block, or an empty dict."""
+    user = next((m.content for m in request.messages if m.role == "user"), "")
+    found = _DATA.search(user)
+    return json.loads(found.group(2)) if found else {}
+
+
 class RuleBackend:
     """A deterministic stand-in for a model, for whole-run tests: it reads the data block
     and answers each node's schema with simple rules, so every reply is valid and every
@@ -86,9 +102,7 @@ class RuleBackend:
 
     def call(self, request: Request) -> Response:
         self.requests.append(request)
-        user = next(m.content for m in request.messages if m.role == "user")
-        found = _DATA.search(user)
-        data = json.loads(found.group(2)) if found else {}
+        data = data_of(request)
         name = request.schema_name
         if request.tools:
             if any(m.role == "tool" for m in request.messages):
@@ -98,6 +112,8 @@ class RuleBackend:
             return Response(text=json.dumps(_extract(data)), usage=USAGE)
         if name == "TriageResult":
             return Response(text=json.dumps(_triage(data)), usage=USAGE)
+        if name == "ConsolidationResult":
+            return Response(text=json.dumps(_consolidate(data)), usage=USAGE)
         if name == "ApproachResult":
             items = [
                 {
@@ -162,6 +178,18 @@ def _triage(outline: dict[str, Any]) -> dict[str, Any]:
         ],
         "profile": {},
         "hazards": [],
+    }
+
+
+def _consolidate(task: dict[str, Any]) -> dict[str, Any]:
+    """The first member's section title as topic, and nothing else."""
+    title = task["members"][0]["section_path"].split(" > ")[-1] or "Untitled section"
+    return {
+        "topic": " ".join(title.split()[:12]),
+        "duplicates": [],
+        "discrepancies": [],
+        "questions": [],
+        "references": [],
     }
 
 

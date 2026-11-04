@@ -50,6 +50,7 @@ def test_local_never_refuses(stranger: Path) -> None:
 def test_free_refuses_a_non_corpus_file_at_the_run_entry(stranger: Path, tmp_path: Path) -> None:
     with pytest.raises(Refused, match="--profile local"):
         execute(
+            docling_mode="replay",
             source=stranger,
             profile="free",
             outputs=tmp_path / "out",
@@ -58,11 +59,14 @@ def test_free_refuses_a_non_corpus_file_at_the_run_entry(stranger: Path, tmp_pat
     assert not (tmp_path / "out").exists()
 
 
-def test_the_override_runs_a_non_corpus_file_and_the_manifest_records_it(tmp_path: Path) -> None:
+def test_the_override_runs_a_non_corpus_file_and_the_manifest_records_it(
+    tmp_path: Path, client_root: Path
+) -> None:
     twin = tmp_path / "my_tender.pdf"
     twin.write_bytes(DEV_RFP.read_bytes() + b"\n% a trailing comment changes the hash only\n")
     assert corpus_name(twin) is None
     result = execute(
+        docling_mode="replay",
         source=twin,
         profile="free",
         outputs=tmp_path / "out",
@@ -76,3 +80,5 @@ def test_the_override_runs_a_non_corpus_file_and_the_manifest_records_it(tmp_pat
     )
     digest = hashlib.sha256(twin.read_bytes()).hexdigest()
     assert manifest.overrides == [f"allow-non-corpus: my_tender.pdf sha256:{digest}"]
+    assert manifest.data_class == "client", "D-05: the override never makes a file synthetic"
+    assert [(d.file, d.sha256) for d in manifest.documents] == [("my_tender.pdf", digest)]

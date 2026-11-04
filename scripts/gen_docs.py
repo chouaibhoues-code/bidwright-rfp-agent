@@ -140,17 +140,24 @@ def agents_md() -> str:
 
         cassettes = CassetteStore(Path(tmp) / "c")
         client = LLMClient(config, "free", {}, mode="replay", cassettes=cassettes, run_id="docs")
-        ctx = RunContext("docs", client, RunBudget(config.limits.run("dev", "free")), prompts, {})
+        ctx = RunContext(
+            run_id="docs",
+            client=client,
+            budget=RunBudget(config.limits.run("dev", "free")),
+            prompts=prompts,
+            passages={},
+        )
         rfp = ROOT / "inputs" / "dev" / "dev_rfp.pdf"
-        graph = build_graph(Runtime(ctx, config, rfp, Path(tmp)))
+        graph = build_graph(Runtime(ctx=ctx, config=config, source=rfp, run_dir=Path(tmp)))
         mermaid = graph.get_graph().draw_mermaid().strip()
 
     lines += [
         "",
         "## Runtime graph",
         "",
-        "Drawn from the compiled LangGraph graph. The dotted edge is the `Send` fan-out, one"
-        " `extract` worker per batch.",
+        "Drawn from the compiled LangGraph graph. The dotted edges are conditional: the `Send`"
+        " fan-outs, one `extract` worker per pack and one `consolidate` worker per cluster the"
+        " model step takes, and the stops that `until` and `--baseline b0` choose.",
         "",
         "```mermaid",
         mermaid,
@@ -172,7 +179,7 @@ def cli_md() -> str:
     from evals.cli import main as eval_main
 
     sections = [
-        ("bidwright", bidwright_main, [[], ["run"], ["demo"], ["record"]]),
+        ("bidwright", bidwright_main, [[], ["run"], ["demo"], ["record"], ["purge"]]),
         ("bidwright-eval", eval_main, [[], ["score"], ["hash-gold"]]),
     ]
     lines = ["# Command-line reference", "", GENERATED.strip(), ""]

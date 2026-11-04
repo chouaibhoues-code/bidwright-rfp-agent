@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from bidwright import cli
+from bidwright.graph.build import RunResult
 
 
 def test_free_refuses_a_non_corpus_file_before_any_run(
@@ -40,7 +41,54 @@ def test_a_bad_consent_string_is_refused(tmp_path: Path) -> None:
 
 def test_unknown_profiles_are_rejected_by_argparse() -> None:
     with pytest.raises(SystemExit):
-        cli.main(["run", "x.pdf", "--profile", "paid"])
+        cli.main(["run", "x.pdf", "--profile", "gold"])
+
+
+def test_run_passes_its_flags_to_the_run_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A package folder, `--until`, `--baseline b0`, `--cache`, `--second-pass`, and `paid`
+    with the paid key."""
+    seen: dict[str, object] = {}
+
+    def fake_execute(**kwargs: object) -> RunResult:
+        seen.update(kwargs)
+        return RunResult("run", tmp_path, "COMPLETED", None)
+
+    monkeypatch.setattr("bidwright.graph.build.execute", fake_execute)
+    monkeypatch.setenv("GEMINI_PAID_API_KEY", "test-paid-key")
+    folder = cli.HOME / "inputs" / "hero"
+    arguments = ["run", str(folder), "--profile", "paid", "--baseline", "b0", "--cache"]
+    arguments += ["--second-pass", "--until", "coverage", "--outputs", str(tmp_path)]
+    assert cli.main(arguments) == 0
+    assert seen["source"] == folder and seen["profile"] == "paid"
+    assert (seen["baseline"], seen["until"], seen["cache"], seen["second_pass"]) == (
+        "b0",
+        "coverage",
+        True,
+        True,
+    )
+    backends = seen["backends"]
+    assert isinstance(backends, dict) and backends["gemini"].paid is True
+
+
+def test_record_passes_until_and_writes_it_to_the_recording(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_execute(**kwargs: object) -> RunResult:
+        seen.update(kwargs)
+        return RunResult("run", tmp_path, "COMPLETED", None)
+
+    monkeypatch.setattr("bidwright.graph.build.execute", fake_execute)
+    monkeypatch.setattr(cli, "CASSETTES", tmp_path)
+    (tmp_path / "probe").mkdir()
+    source = cli.HOME / "inputs" / "hero"
+    assert cli.main(["record", str(source), "--name", "probe", "--until", "consolidate"]) == 0
+    assert seen["until"] == "consolidate" and seen["mode"] == "record"
+    recording = (tmp_path / "probe" / cli.RECORDING).read_text(encoding="utf-8")
+    assert '"until": "consolidate"' in recording and '"source": "inputs/hero"' in recording
 
 
 def test_load_env_never_overrides_and_skips_empty_values(

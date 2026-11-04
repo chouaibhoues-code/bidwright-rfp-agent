@@ -21,7 +21,7 @@ REGISTER = load_config().egress
 
 
 @pytest.fixture
-def client_document(tmp_path: Path) -> Path:
+def client_document(tmp_path: Path, client_root: Path) -> Path:
     """The development PDF with one more line, so its hash is not in the corpus."""
     path = tmp_path / "my_tender.pdf"
     path.write_bytes(DEV_RFP.read_bytes() + b"\n% a trailing comment changes the hash only\n")
@@ -86,6 +86,7 @@ def test_a_remote_trace_endpoint_on_a_client_run_falls_back_to_spans_jsonl(
 
     monkeypatch.setattr(bidwright.obs.tracing, "reachable", no_connection)
     result = execute(
+        docling_mode="replay",
         source=client_document,
         profile="free",
         outputs=tmp_path / "out",
@@ -107,6 +108,7 @@ def test_a_client_run_on_the_paid_tier_is_refused_before_its_folder_exists(
 ) -> None:
     with pytest.raises(EgressRefused, match="local destinations only"):
         execute(
+            docling_mode="replay",
             source=client_document,
             profile="paid",
             outputs=tmp_path / "out",
@@ -120,6 +122,7 @@ def test_a_backend_the_profile_does_not_use_is_neither_checked_nor_kept(
 ) -> None:
     """A local run with a Gemini key in the environment still runs a client document."""
     result = execute(
+        docling_mode="replay",
         source=client_document,
         profile="local",
         outputs=tmp_path / "out",

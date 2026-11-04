@@ -35,6 +35,7 @@ def test_without_a_collector_spans_land_in_jsonl(
 ) -> None:
     monkeypatch.setenv("PHOENIX_ENDPOINT", "http://127.0.0.1:9")  # nothing listens there
     result = execute(
+        docling_mode="replay",
         source=DEV_RFP,
         profile="free",
         outputs=tmp_path,
@@ -88,6 +89,7 @@ def test_spans_a_collector_refuses_land_in_jsonl(tmp_path: Path) -> None:
 
 def test_a_failed_call_leaves_an_error_span(tmp_path: Path) -> None:
     result = execute(
+        docling_mode="replay",
         source=DEV_RFP,
         profile="free",
         outputs=tmp_path,

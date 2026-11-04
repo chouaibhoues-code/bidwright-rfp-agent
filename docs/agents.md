@@ -50,7 +50,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 
 ## Runtime graph
 
-Drawn from the compiled LangGraph graph. The dotted edge is the `Send` fan-out, one `extract` worker per batch.
+Drawn from the compiled LangGraph graph. The dotted edges are conditional: the `Send` fan-outs, one `extract` worker per pack and one `consolidate` worker per cluster the model step takes, and the stops that `until` and `--baseline b0` choose.
 
 ```mermaid
 ---
@@ -60,30 +60,47 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
+	guard(guard)
 	ingest(ingest)
 	candidates(candidates)
+	b0(b0)
 	triage(triage)
 	pack(pack)
-	extract(extract)
 	verify(verify)
 	coverage(coverage)
+	lint(lint)
+	consolidate_plan(consolidate_plan)
+	consolidate_join(consolidate_join)
 	approach(approach)
 	risk(risk)
 	draft(draft)
 	render(render)
+	extract(extract)
+	consolidate(consolidate)
 	__end__([<p>__end__</p>]):::last
-	__start__ --> ingest;
+	__start__ --> guard;
 	approach --> risk;
-	candidates --> triage;
-	coverage -.-> approach;
+	b0 --> verify;
+	candidates -.-> b0;
+	candidates -.-> triage;
+	consolidate --> consolidate_join;
+	consolidate_join -.-> __end__;
+	consolidate_join -.-> approach;
+	consolidate_plan -.-> consolidate;
+	consolidate_plan -.-> consolidate_join;
+	coverage -.-> __end__;
 	coverage -.-> extract;
+	coverage -.-> lint;
 	draft --> render;
 	extract --> verify;
+	guard --> ingest;
 	ingest --> candidates;
+	lint --> consolidate_plan;
 	pack -.-> extract;
 	risk --> draft;
 	triage --> pack;
-	verify --> coverage;
+	verify -.-> __end__;
+	verify -.-> coverage;
 	render --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0

@@ -83,6 +83,7 @@ class GapBackend(RuleBackend):
 
 def _run(tmp_path: Path, model: RuleBackend, name: str) -> Path:
     result = execute(
+        docling_mode="replay",
         source=DEV_RFP,
         profile="free",
         outputs=tmp_path,

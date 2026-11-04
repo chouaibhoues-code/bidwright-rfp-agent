@@ -1,15 +1,20 @@
 """The `bidwright` command line.
 
-    bidwright run <file> [--profile free|local] [--baseline ex0]
-                         [--allow-non-corpus=i-accept-free-tier-terms]
+    bidwright run <file or folder> [--profile free|local|paid] [--baseline ex0|b0]
+                  [--allow-non-corpus=i-accept-free-tier-terms] [--cache] [--second-pass]
+                  [--until NODE] [--outputs DIR]
     bidwright demo       replays a recorded development run; needs no keys
-    bidwright record <file> [--name demo]   runs live and writes cassettes, on the host
+    bidwright record <file or folder> [--name demo] [--until NODE]
+                         runs live and writes LLM and Docling cassettes, on the host
+    bidwright purge <run> | --expired
+                         deletes a run's folder and its cache entries, or every client run
+                         past the retention period
 
 The command line parses arguments and prints what the run entry refuses. The rules themselves
 sit at the run entry, in `preflight.py`: on `free`, a file is refused unless its hash is
 listed in `inputs/CORPUS.sha256`, because the free tier's terms let the provider use prompt
 content. Your own files belong on `--profile local`; the override exists for informed use,
-and the run manifest logs it.
+and the run manifest logs it. `paid` runs the same models under `GEMINI_PAID_API_KEY`.
 """
 
 import argparse
@@ -27,7 +32,9 @@ if TYPE_CHECKING:
 
 DEMO_SOURCE = HOME / "inputs" / "dev" / "dev_rfp.pdf"
 CASSETTES = HOME / "tests" / "cassettes"
-RECORDING = "recording.json"  # which profile and input a cassette folder was recorded from
+RECORDING = "recording.json"  # which profile, input and stop a cassette folder was recorded from
+PROFILES = ["free", "local", "paid"]
+UNTIL = ["verify", "coverage", "consolidate", "render"]
 
 
 def load_env(path: Path) -> None:
@@ -50,26 +57,60 @@ def _report(result: "RunResult") -> int:
     return 0 if result.status in ("COMPLETED", "DEGRADED") else 1
 
 
+def _purge(args: argparse.Namespace) -> int:
+    from bidwright.config import load_config
+    from bidwright.purge import outputs_root, purge_expired, purge_run
+
+    if args.expired:
+        deleted = purge_expired(load_config().limits.retention.client_days)
+    elif args.run:
+        candidate = Path(args.run)
+        run_dir = candidate if candidate.is_dir() else outputs_root() / args.run
+        if not run_dir.is_dir():
+            print(f"No run folder {run_dir}", file=sys.stderr)
+            return 1
+        deleted = purge_run(run_dir)
+    else:
+        print("Name a run, or pass --expired.", file=sys.stderr)
+        return 2
+    for path in deleted:
+        print(f"deleted {path}")
+    if not deleted:
+        print("Nothing to delete.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="bidwright", description="Bidwright: RFP to proposal.")
     sub = parser.add_subparsers(dest="command", required=True)
-    run = sub.add_parser("run", help="run one RFP live")
-    run.add_argument("file", type=Path)
-    run.add_argument("--profile", choices=["free", "local"], default="free")
+    run = sub.add_parser("run", help="run one RFP file or package folder live")
+    run.add_argument("file", type=Path, help="an RFP file, or a folder holding a package")
+    run.add_argument("--profile", choices=PROFILES, default="free")
     run.add_argument("--baseline", choices=sorted(BASELINES))
     run.add_argument("--allow-non-corpus", dest="consent", metavar="CONSENT")
+    run.add_argument("--cache", action="store_true", help="answer repeated calls from the cache")
+    run.add_argument("--second-pass", action="store_true", help="re-read OBLIGATION zones (S-13)")
+    run.add_argument("--until", choices=UNTIL, default="render", help="the last node to run")
     run.add_argument("--outputs", type=Path, default=HOME / "outputs")
     demo = sub.add_parser("demo", help="replay the recorded development run, with no keys")
     demo.add_argument("--outputs", type=Path, default=HOME / "outputs")
     record = sub.add_parser("record", help="run live and record cassettes, on the host")
-    record.add_argument("file", type=Path)
+    record.add_argument("file", type=Path, help="an RFP file, or a folder holding a package")
     record.add_argument("--name", default="demo")
-    record.add_argument("--profile", choices=["free", "local"], default="free")
+    record.add_argument("--profile", choices=PROFILES, default="free")
+    record.add_argument("--until", choices=UNTIL, default="render", help="the last node to run")
     record.add_argument("--outputs", type=Path, default=HOME / "outputs")
+    purge = sub.add_parser("purge", help="delete a run and its cache entries, or expired runs")
+    purge.add_argument("run", nargs="?", help="a run id under outputs/, or a run folder")
+    purge.add_argument(
+        "--expired", action="store_true", help="every client run past the retention period"
+    )
     args = parser.parse_args(argv)
 
     os.environ.setdefault("LANGGRAPH_STRICT_MSGPACK", "true")
     load_env(HOME / ".env")
+    if args.command == "purge":
+        return _purge(args)
     from bidwright.graph.build import execute
     from bidwright.llm.client import default_backends
     from bidwright.llm.replay import CassetteStore
@@ -86,6 +127,7 @@ def main(argv: list[str] | None = None) -> int:
             outputs=args.outputs,
             mode="replay",
             cassettes=CassetteStore(store),
+            until=recording.get("until", "render"),
         )
         return _report(result)
     try:
@@ -98,6 +140,7 @@ def main(argv: list[str] | None = None) -> int:
                 mode="record",
                 cassettes=CassetteStore(store),
                 backends=default_backends(paid=args.profile == "paid"),
+                until=args.until,
             )
         else:
             result = execute(
@@ -107,6 +150,9 @@ def main(argv: list[str] | None = None) -> int:
                 backends=default_backends(paid=args.profile == "paid"),
                 baseline=args.baseline,
                 consent=args.consent,
+                until=args.until,
+                second_pass=args.second_pass,
+                cache=args.cache,
             )
     except Refused as exc:
         print(f"Refused: {exc}", file=sys.stderr)
@@ -118,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
             "source": source.relative_to(HOME).as_posix()
             if source.is_relative_to(HOME)
             else str(source),
+            "until": args.until,
             "run_id": result.run_id,
             "status": result.status,
         }

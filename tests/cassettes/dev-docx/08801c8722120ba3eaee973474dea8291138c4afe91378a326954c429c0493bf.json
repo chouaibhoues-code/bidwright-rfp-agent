@@ -1,0 +1,26 @@
+{
+ "key": "sha256:08801c8722120ba3eaee973474dea8291138c4afe91378a326954c429c0493bf",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"title\": \"Our understanding of the Trust's needs\", \"text\": \"The Trust requires proposals to be sent by e-mail to its office by 17:00 GMT on 2027-02-12, formatted as one document of no more than 15 pages [REQ-0001]. The system must keep all personal data in the United Kingdom and go live by 2027-06-30 [REQ-0008, REQ-0012]. The system shall also hold donor records, track contact consent, record volunteer hours, send volunteer reminders two days before sessions, achieve 99% monthly availability, and include staff training prior to launch [REQ-0003, REQ-0004, REQ-0005, REQ-0006, REQ-0010, REQ-0011]. Additionally, the system should import existing donor spreadsheets without manual retyping, and bidders may offer an optional mobile app for volunteers [REQ-0007, REQ-0009].\", \"cited_ids\": [\"REQ-0001\", \"REQ-0008\", \"REQ-0012\", \"REQ-0003\", \"REQ-0004\", \"REQ-0005\", \"REQ-0006\", \"REQ-0010\", \"REQ-0011\", \"REQ-0007\", \"REQ-0009\"]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1531,
+   "tokens_out": 335,
+   "tokens_cached": 0,
+   "tokens_thinking": 1984,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:47:34Z"
+}

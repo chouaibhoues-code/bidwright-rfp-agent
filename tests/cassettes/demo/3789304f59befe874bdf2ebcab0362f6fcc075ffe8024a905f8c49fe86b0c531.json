@@ -1,0 +1,26 @@
+{
+ "key": "sha256:3789304f59befe874bdf2ebcab0362f6fcc075ffe8024a905f8c49fe86b0c531",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Signing service requirements, records retention, and integration\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [\n    {\n      \"text\": \"Which specific desktop and mobile browser versions must be supported?\",\n      \"requirement_ids\": [\n        \"REQ-0004\"\n      ],\n      \"lint_finding_ids\": [],\n      \"reason\": \"Current desktop and mobile browsers is vague.\"\n    },\n    {\n      \"text\": \"Which twelve forms are the College's most used forms requiring templates?\",\n      \"requirement_ids\": [\n        \"REQ-0006\"\n      ],\n      \"lint_finding_ids\": [],\n      \"reason\": \"The specific forms are not identified.\"\n    },\n    {\n      \"text\": \"What is the current tool and data format for the signed records to be migrated?\",\n      \"requirement_ids\": [\n        \"REQ-0008\"\n      ],\n      \"lint_finding_ids\": [],\n      \"reason\": \"The current tool is not specified.\"\n    }\n  ],\n  \"references\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2470,
+   "tokens_out": 259,
+   "tokens_cached": 0,
+   "tokens_thinking": 1479,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:45:35Z"
+}

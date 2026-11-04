@@ -19,3 +19,15 @@ def _isolated_quota_and_cache(
     monkeypatch.setattr(bidwright.llm.limits, "QUOTA_DIR", quota)
     monkeypatch.setattr(bidwright.llm.cache, "CACHE_DIR", cache)
     return quota, cache
+
+
+@pytest.fixture
+def client_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    """For whole runs on a client document: `tmp_path` as the client root, outside the
+    repository, and pdfplumber for its PDF, since Docling cassettes exist for corpus files only."""
+    from bidwright.graph import build
+    from bidwright.parsers.pdfplumber_parser import PdfplumberParser
+
+    monkeypatch.setenv("BIDWRIGHT_CLIENT_ROOT", str(tmp_path))
+    monkeypatch.setattr(build, "DoclingParser", lambda client: PdfplumberParser())
+    return tmp_path

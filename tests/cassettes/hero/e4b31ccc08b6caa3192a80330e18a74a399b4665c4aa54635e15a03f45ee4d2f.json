@@ -1,0 +1,26 @@
+{
+ "key": "sha256:e4b31ccc08b6caa3192a80330e18a74a399b4665c4aa54635e15a03f45ee4d2f",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ExtractResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"items\": [\n    {\n      \"src_ids\": [\n        \"SRC-0204\"\n      ],\n      \"quote\": \"The Contractor should place at least a quarter of its subcontracted spend with small businesses based in the region.\",\n      \"statement\": \"The Contractor should place at least a quarter of its subcontracted spend with small businesses based in the region.\",\n      \"modality\": \"should\",\n      \"disposition\": \"OPTIONAL\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0218\"\n      ],\n      \"quote\": \"A tender that scores 0 or 1 on any quality criterion is excluded from the evaluation.\",\n      \"statement\": \"A tender that scores 0 or 1 on any quality criterion is excluded from the evaluation, which is an eligibility condition.\",\n      \"modality\": \"none\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": true\n    }\n  ],\n  \"no_obligation_src_ids\": [\n    \"SRC-0201\",\n    \"SRC-0202\",\n    \"SRC-0203\",\n    \"SRC-0205\",\n    \"SRC-0206\",\n    \"SRC-0207\",\n    \"SRC-0208\",\n    \"SRC-0209\",\n    \"SRC-0210\",\n    \"SRC-0211\",\n    \"SRC-0212\",\n    \"SRC-0213\",\n    \"SRC-0214\",\n    \"SRC-0215\",\n    \"SRC-0216\",\n    \"SRC-0217\",\n    \"SRC-0219\",\n    \"SRC-0220\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3839,
+   "tokens_out": 421,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:49:32Z"
+}

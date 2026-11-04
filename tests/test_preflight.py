@@ -55,6 +55,15 @@ def test_the_paid_profile_names_its_own_key() -> None:
         _check(profile="paid", backends={})
 
 
+def test_a_run_with_no_model_call_needs_no_key_but_keeps_the_corpus_rule(tmp_path: Path) -> None:
+    """B0 makes no model call, so `models=False` skips the backend checks, and nothing else."""
+    assert _check(backends={}, models=False).data_class == "synthetic"
+    stranger = tmp_path / "my_tender.pdf"
+    stranger.write_bytes(b"%PDF-1.4 not in the corpus")
+    with pytest.raises(Refused, match="--profile local"):
+        _check(source=stranger, backends={}, models=False)
+
+
 def test_a_missing_local_model_is_refused_with_the_pull_command(tmp_path: Path) -> None:
     ollama = FakeOllama(pulled={"qwen3.5:4b"})
     with pytest.raises(Refused, match=r"ollama pull qwen3\.5:2b") as refused:

@@ -9,10 +9,7 @@ import pytest
 from bidwright.baselines import BASELINES, b0_outcome
 from bidwright.candidates import CompiledCues, cue_hits, defined_terms, write_candidates
 from bidwright.config import load_config
-from bidwright.graph.build import execute
-from bidwright.preflight import Refused
 from bidwright.schemas import Passage
-from tests.node_fakes import DEV_RFP
 
 CUES = CompiledCues.load(load_config().cues)
 
@@ -195,9 +192,6 @@ def test_b0_counts_a_table_row_under_a_requirements_header() -> None:
     assert item.disposition == "BINDING" and item.modality == "none"
 
 
-def test_b0_is_registered_and_waits_for_the_graph(tmp_path: Path) -> None:
+def test_b0_is_registered_as_a_model_free_rung_that_stops_after_verify() -> None:
     b0 = BASELINES["b0"]
     assert (b0.llm, b0.until, b0.one_batch) == (False, "verify", False)
-    with pytest.raises(Refused, match="step 16"):
-        execute(source=DEV_RFP, profile="free", outputs=tmp_path, baseline="b0")
-    assert not any(tmp_path.iterdir())

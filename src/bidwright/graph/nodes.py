@@ -100,6 +100,7 @@ class RunContext:
     ledger: list[LedgerEntry] = field(default_factory=list)
     tracing: Tracing | None = None
     view: TextView | None = None  # the run's text view (D-05); None is the frozen text
+    repeat: int = 0  # the repeat index every call passes, so repeats never share a cassette
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
     def __post_init__(self) -> None:
@@ -123,7 +124,7 @@ class RunContext:
         node: str,
         input_hash: str,
         tools: Sequence[Any] = (),
-        repeat: int = 0,
+        repeat: int | None = None,
     ) -> Completion:
         attributes = {
             "bidwright.node": node,
@@ -141,7 +142,7 @@ class RunContext:
                 agent=prompt.meta.id,
                 prompt_hash=prompt.hash,
                 input_hash=input_hash,
-                repeat=repeat,
+                repeat=self.repeat if repeat is None else repeat,
                 decoding=prompt.decoding,
             )
             with self._lock:

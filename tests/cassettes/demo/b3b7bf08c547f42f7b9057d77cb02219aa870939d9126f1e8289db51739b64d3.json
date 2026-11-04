@@ -1,0 +1,26 @@
+{
+ "key": "sha256:b3b7bf08c547f42f7b9057d77cb02219aa870939d9126f1e8289db51739b64d3",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "RiskRegister",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"risks\": [\n    {\n      \"condition\": \"Proposal submission is bound by REQ-0002 to be a single PDF of no more than 20 pages, uploaded via the procurement portal by 2026-12-01 12:00 UTC.\",\n      \"event\": \"The proposal exceeds 20 pages or portal congestion delays the final PDF upload past the deadline.\",\n      \"effect\": \"The bid is rejected outright without evaluation, causing total loss of pursuit effort.\",\n      \"assumptions\": [\n        \"The procurement portal will remain accessible without interruption up to the deadline.\"\n      ],\n      \"owner_role\": \"Bid manager\",\n      \"trigger\": \"Draft proposal exceeds 18 pages or upload is not initiated two hours prior to the deadline.\",\n      \"responses\": [\n        \"Enforce a strict 18-page budget across all sections during drafting.\",\n        \"Perform a dry-run test upload of the proposal PDF one working day prior to the deadline.\"\n      ],\n      \"residual_exposure\": \"Low on document length once enforced, but external portal downtime remains a residual hazard.\",\n      \"evidence_src_ids\": [\n        \"SRC-0015\"\n      ]\n    },\n    {\n      \"condition\": \"The service must go live for students by 2027-01-11 per REQ-0014, leaving a very tight deployment window after award.\",\n      \"event\": \"Integration with the College's student records system via REST API (REQ-0009) encounters undocumented API constraints or delayed credential provisioning.\",\n      \"effect\": \"The service fails to go live on the first day of spring enrollment, breaching the contract timeline.\",\n      \"assumptions\": [\n        \"The College will provide immediate access to a sandbox REST API environment upon contract award.\"\n      ],\n      \"owner_role\": \"Integration lead\",\n      \"trigger\": \"API documentation is not made available within five days of contract award.\",\n      \"responses\": [\n        \"Request the REST API documentation and sandbox endpoint specifications during the pre-award clarification period.\",\n        \"Build a mock API wrapper to enable parallel frontend and backend integration testing.\"\n      ],\n      \"residual_exposure\": \"Dependence on the responsiveness of the College's IT staff to resolve API integration blocks.\",\n      \"evidence_src_ids\": [\n        \"SRC-0027\",\n        \"SRC-0032\"\n      ]\n    },\n    {\n      \"condition\": \"REQ-0008 states the Supplier should migrate approximately 38,000 signed records held in the current tool by 2027-02-28.\",\n      \"event\": \"Legacy data formats are inconsistent or export functions from the current tool are constrained, causing migration scripts to fail or corrupt audit metadata.\",\n      \"effect\": \"Historical records are missing or inaccessible, undermining compliance with the ten-year retention mandate.\",\n      \"assumptions\": [\n        \"The current tool provides a structured export mechanism for all 38,000 records.\"\n      ],\n      \"owner_role\": \"Data migration lead\",\n      \"trigger\": \"Sample data extract from the current tool reveals unmapped fields or missing audit trails.\",\n      \"responses\": [\n        \"Request a sample data extract from the legacy tool prior to finalising the migration schedule.\",\n        \"Develop automated data cleansing and validation scripts early in the delivery phase.\"\n      ],\n      \"residual_exposure\": \"Manual intervention required to clean corrupt legacy records if automated scripts fail.\",\n      \"evidence_src_ids\": [\n        \"SRC-0010\",\n        \"SRC-0025\",\n        \"SRC-0026\"\n      ]\n    }\n  ],\n  \"open_questions\": [\n    {\n      \"text\": \"What is the specific technology stack and rate-limiting policy of the College's existing REST API referenced in REQ-0009?\",\n      \"src_ids\": [\n        \"SRC-0027\"\n      ]\n    },\n    {\n      \"text\": \"In what format are the 38,000 signed records currently stored in the legacy tool for migration under REQ-0008?\",\n      \"src_ids\": [\n        \"SRC-0010\",\n        \"SRC-0026\"\n      ]\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2900,
+   "tokens_out": 981,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:45:48Z"
+}

@@ -20,6 +20,10 @@ from bidwright.schemas import Passage
 
 
 class TextView(Protocol):
+    def bind(self, passages: Iterable[Passage]) -> None:
+        """Learn the run's passages, once `ingest` has made them, for `to_frozen`."""
+        ...
+
     def text(self, passage: Passage) -> str:
         """The text a model sees for this passage."""
         ...
@@ -32,8 +36,12 @@ class TextView(Protocol):
 class IdentityView:
     """The frozen text as a model has always seen it: line breaks as spaces, offsets kept."""
 
-    def __init__(self, passages: Iterable[Passage]) -> None:
-        self._starts = {passage.id: passage.start for passage in passages}
+    def __init__(self, passages: Iterable[Passage] = ()) -> None:
+        self._starts: dict[str, int] = {}
+        self.bind(passages)
+
+    def bind(self, passages: Iterable[Passage]) -> None:
+        self._starts.update({passage.id: passage.start for passage in passages})
 
     def text(self, passage: Passage) -> str:
         return display_text(passage.text)

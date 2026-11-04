@@ -1,0 +1,26 @@
+{
+ "key": "sha256:58e6fe95aced06487cbc063445f4c7c1909c2df15fa093b589326eb076785c99",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"title\":\"Risks and assumptions\",\"text\":\"The main submission risk is email delay or exceeding the 15-page limit, leading to disqualification [RSK-001]. We would cap the proposal at 12 pages and submit it 24 hours in advance with an acknowledgement request [RSK-001]. Third-party monitoring or support tools routing logs outside the United Kingdom risk statutory data residency breaches, contract termination, and penalties [RSK-002]. We would audit all third-party SaaS and support integrations for compliance and restrict all backup and log storage to UK-only availability zones [RSK-002]. Donor spreadsheet migration errors risk compressing training schedules and causing operational failures during volunteer scheduling [RSK-003]. We would perform a dry-run import of the donor spreadsheet this month and decouple staff training from the final data migration cutover [RSK-003]. Open questions are the file format and structure of the Trust's existing donor spreadsheet for the import process, whether the optional mobile app for volunteers should be priced separately and which mobile operating systems it must support, whether the 15-page limit for the proposal under REQ-0001 excludes the cover page and appendices or if everything must fit within 15 pages, and what specific format the Trust's existing donor spreadsheet is in and whether it requires custom parsing scripts for import under REQ-0007 [Q-01, Q-02, Q-03, Q-04].\",\"cited_ids\":[\"RSK-001\",\"RSK-002\",\"RSK-003\",\"Q-01\",\"Q-02\",\"Q-03\",\"Q-04\"]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1484,
+   "tokens_out": 366,
+   "tokens_cached": 0,
+   "tokens_thinking": 1458,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:47:44Z"
+}

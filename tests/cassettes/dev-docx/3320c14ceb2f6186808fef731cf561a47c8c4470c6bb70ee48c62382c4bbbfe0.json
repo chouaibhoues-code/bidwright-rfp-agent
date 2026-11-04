@@ -1,0 +1,26 @@
+{
+ "key": "sha256:3320c14ceb2f6186808fef731cf561a47c8c4470c6bb70ee48c62382c4bbbfe0",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "TriageResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"zones\":[{\"section_path\":\"Request for Proposal: Donor and Volunteer Management System\",\"doc_id\":\"dev-docx-rfp-1fc7453f\",\"zone\":\"BACKGROUND\",\"confidence\":0.8,\"reason\":\"Names the buyer and reference without obliging anyone.\"},{\"section_path\":\"1 Introduction\",\"doc_id\":\"dev-docx-rfp-1fc7453f\",\"zone\":\"BACKGROUND\",\"confidence\":0.9,\"reason\":\"Introduces the Trust and the procurement context.\"},{\"section_path\":\"2 Background\",\"doc_id\":\"dev-docx-rfp-1fc7453f\",\"zone\":\"BACKGROUND\",\"confidence\":0.95,\"reason\":\"Describes current recordkeeping and future plans.\"},{\"section_path\":\"3 Instructions\",\"doc_id\":\"dev-docx-rfp-1fc7453f\",\"zone\":\"INSTRUCTION\",\"confidence\":0.95,\"reason\":\"Specifies submission deadline, method, and format limits.\"},{\"section_path\":\"4 Requirements\",\"doc_id\":\"dev-docx-rfp-1fc7453f\",\"zone\":\"OBLIGATION\",\"confidence\":0.95,\"reason\":\"Details the functional requirements of the system.\"},{\"section_path\":\"5 Timeline\",\"doc_id\":\"dev-docx-rfp-1fc7453f\",\"zone\":\"OBLIGATION\",\"confidence\":0.85,\"reason\":\"Sets supplier obligations regarding training and go-live dates.\"},{\"section_path\":\"6 Evaluation\",\"doc_id\":\"dev-docx-rfp-1fc7453f\",\"zone\":\"EVALUATION\",\"confidence\":0.95,\"reason\":\"Describes the scoring criteria for proposals.\"}],\"profile\":{\"buyer\":\"The Fennick Lantern Trust\",\"procurement\":\"cloud system to manage its donors, volunteers and events\",\"submission_deadline\":\"17:00 GMT on 2027-02-12\",\"submission_format\":\"one document of no more than 15 pages\",\"evaluation_method\":\"The Trust scores proposals on the criteria below\",\"contract_length\":\"not_stated\"},\"hazards\":[{\"kind\":\"FORMAT\",\"src_ids\":[\"SRC-0013\"],\"summary\":\"Proposals must be sent as one document of no more than 15 pages.\"},{\"kind\":\"DEADLINE\",\"src_ids\":[\"SRC-0013\"],\"summary\":\"Proposals must be sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12.\"}]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2306,
+   "tokens_out": 537,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:47:07Z"
+}

@@ -1,0 +1,26 @@
+{
+ "key": "sha256:8153ea8ca8c46069e51a0b919044f4a25e7d4cda007527ef557a99b97483d4d8",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "TriageResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"zones\": [\n    {\n      \"section_path\": \"Request for Proposal: Electronic Signature Service\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"BACKGROUND\",\n      \"confidence\": 0.8,\n      \"reason\": \"Provides the document title, buyer name, and reference number.\"\n    },\n    {\n      \"section_path\": \"1 Introduction\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"BACKGROUND\",\n      \"confidence\": 0.9,\n      \"reason\": \"Introduces the college and general need for an electronic signature service.\"\n    },\n    {\n      \"section_path\": \"2 Background\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"BACKGROUND\",\n      \"confidence\": 0.95,\n      \"reason\": \"Describes past tools and existing records, obliging no bidder.\"\n    },\n    {\n      \"section_path\": \"3 Instructions to bidders\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"INSTRUCTION\",\n      \"confidence\": 1.0,\n      \"reason\": \"Explains how to respond and gives submission format and deadline.\"\n    },\n    {\n      \"section_path\": \"4 Requirements\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"OBLIGATION\",\n      \"confidence\": 0.85,\n      \"reason\": \"Introduces requirements applying for the contract term.\"\n    },\n    {\n      \"section_path\": \"4 Requirements > 4.1 Signing\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"OBLIGATION\",\n      \"confidence\": 0.95,\n      \"reason\": \"Details supplier obligations regarding signature audit records.\"\n    },\n    {\n      \"section_path\": \"4 Requirements > 4.2 Records\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"OBLIGATION\",\n      \"confidence\": 0.95,\n      \"reason\": \"Specifies storage and migration obligations for signed documents.\"\n    },\n    {\n      \"section_path\": \"4 Requirements > 4.3 Integration\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"OBLIGATION\",\n      \"confidence\": 0.95,\n      \"reason\": \"Outlines system integration requirements.\"\n    },\n    {\n      \"section_path\": \"5 Service levels\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"OBLIGATION\",\n      \"confidence\": 0.9,\n      \"reason\": \"Defines required service availability and incident response times.\"\n    },\n    {\n      \"section_path\": \"6 Timeline\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"BACKGROUND\",\n      \"confidence\": 0.8,\n      \"reason\": \"Outlines estimated award and go-live dates.\"\n    },\n    {\n      \"section_path\": \"7 Evaluation\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"EVALUATION\",\n      \"confidence\": 1.0,\n      \"reason\": \"Explains proposal scoring criteria and weights.\"\n    },\n    {\n      \"section_path\": \"8 Contract\",\n      \"doc_id\": \"dev-rfp-db9eeb00\",\n      \"zone\": \"CONTRACT\",\n      \"confidence\": 0.95,\n      \"reason\": \"Defines contract duration and extension options.\"\n    }\n  ],\n  \"profile\": {\n    \"buyer\": \"Kestrel Vale Community College\",\n    \"procurement\": \"cloud electronic signature service\",\n    \"submission_deadline\": \"2026-12-01 12:00 UTC\",\n    \"submission_format\": \"single PDF of no more than 20 pages\",\n    \"evaluation_method\": \"scored on the criteria below\",\n    \"contract_length\": \"three years from award, with an option to extend it by one year\"\n  },\n  \"hazards\": [\n    {\n      \"kind\": \"FORMAT\",\n      \"src_ids\": [\n        \"SRC-0015\"\n      ],\n      \"summary\": \"Proposals must be submitted as a single PDF of no more than 20 pages through the procurement portal.\"\n    },\n    {\n      \"kind\": \"DEADLINE\",\n      \"src_ids\": [\n        \"SRC-0015\"\n      ],\n      \"summary\": \"Proposals must be submitted by 2026-12-01 12:00 UTC.\"\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2719,
+   "tokens_out": 1162,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:45:18Z"
+}

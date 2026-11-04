@@ -1,0 +1,26 @@
+{
+ "key": "sha256:8fb75600ffc4d368f1f93c66e4ac1aa41a79750b30bb7bf23f604ea0ac1b62cf",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"title\": \"How we would deliver\", \"text\": \"We would deliver the solution by submitting the proposal as one document of no more than 15 pages sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12 [APP-001]. Email gateway reliability and hosting provider selection are assumptions [APP-001]. The system goes live by 2027-06-30, hosting and keeping all personal data exclusively within the United Kingdom [APP-001]. We would maintain a comprehensive record for each donor containing their contact details and complete gift history, recording their consent to be contacted by e-mail, post, and telephone, along with the specific date the consent was given [APP-002]. The underlying database architecture is an assumption [APP-002]. We would track and record the exact hours each volunteer contributes to each club and send an automated reminder two days before every session [APP-003]. The communication channel for reminders is an assumption [APP-003]. The system achieves 99% availability in each calendar month, and we would deliver comprehensive training to the Trust's staff before the system goes live [APP-004]. Curriculum length and delivery mode are assumptions [APP-004].\", \"cited_ids\": [\"APP-001\", \"APP-002\", \"APP-003\", \"APP-004\"]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1433,
+   "tokens_out": 317,
+   "tokens_cached": 0,
+   "tokens_thinking": 1804,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:47:40Z"
+}

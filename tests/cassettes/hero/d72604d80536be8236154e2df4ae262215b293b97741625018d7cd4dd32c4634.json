@@ -1,0 +1,26 @@
+{
+ "key": "sha256:d72604d80536be8236154e2df4ae262215b293b97741625018d7cd4dd32c4634",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"topic\": \"Tender submission procedures and requirements on the portal\", \"duplicates\": [], \"discrepancies\": [], \"questions\": [{\"text\": \"What is the exact URL or system name for the Halverton e-Tendering Portal?\", \"requirement_ids\": [\"REQ-0035\", \"REQ-0044\"], \"lint_finding_ids\": [\"LF-0001\", \"LF-0002\"], \"reason\": \"The portal term is undefined.\"}, {\"text\": \"Where can bidders find Annex C containing the completed price schedule?\", \"requirement_ids\": [\"REQ-0047\"], \"lint_finding_ids\": [\"LF-0003\"], \"reason\": \"Annex C is an undefined term.\"}, {\"text\": \"Where can bidders find Annex D containing the Form of Tender?\", \"requirement_ids\": [\"REQ-0047\"], \"lint_finding_ids\": [\"LF-0004\"], \"reason\": \"Annex D is an undefined term.\"}, {\"text\": \"What unit of measurement applies to the minimum type size of 11 points?\", \"requirement_ids\": [\"REQ-0050\"], \"lint_finding_ids\": [\"LF-0005\"], \"reason\": \"The unit for type size is missing.\"}], \"references\": [{\"requirement_id\": \"REQ-0047\", \"target\": \"Annex C\", \"resolved_ids\": []}, {\"requirement_id\": \"REQ-0047\", \"target\": \"Annex D\", \"resolved_ids\": []}]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3093,
+   "tokens_out": 333,
+   "tokens_cached": 0,
+   "tokens_thinking": 3148,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T08:50:01Z"
+}
