@@ -19,10 +19,12 @@ from evals.matcher import GoldClause, Match, gold_clauses, match
 ROOT = Path(__file__).resolve().parents[1]
 GOLD_DIR = ROOT / "evals" / "gold"
 RESULTS_DIR = ROOT / "evals" / "results" / "runs"
+# evals/hypotheses.yaml, as MANIFEST.sha256 names it: frozen with the gold (step 5).
+HYPOTHESES_ENTRY = "../hypotheses.yaml"
 
 
 class GoldChanged(Exception):
-    """The gold file no longer matches its recorded hash."""
+    """A gold file, or the hypotheses frozen with it, no longer matches its recorded hash."""
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -31,13 +33,31 @@ def _jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
 
 
-def gold_for(doc_id: str, gold_dir: Path = GOLD_DIR) -> tuple[str, list[dict[str, Any]]]:
-    """The corpus whose gold doc id prefixes the run's doc id, after checking its hash."""
-    manifest = gold_dir / "MANIFEST.sha256"
+def recorded_hashes(gold_dir: Path = GOLD_DIR) -> dict[str, str]:
+    """The hashes in MANIFEST.sha256, by the name each line gives."""
     recorded: dict[str, str] = {}
-    for line in manifest.read_text(encoding="utf-8").splitlines():
+    for line in (gold_dir / "MANIFEST.sha256").read_text(encoding="utf-8").splitlines():
         digest, _, name = line.partition("  ")
-        recorded[name.strip()] = digest
+        if name.strip():
+            recorded[name.strip()] = digest
+    return recorded
+
+
+def check_hypotheses(recorded: dict[str, str], gold_dir: Path = GOLD_DIR) -> None:
+    """Refuse to score when the hypotheses changed after they were frozen with the gold."""
+    path = gold_dir / HYPOTHESES_ENTRY
+    if not path.exists():
+        return
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if recorded.get(HYPOTHESES_ENTRY) != digest:
+        raise GoldChanged("hypotheses.yaml does not match MANIFEST.sha256; version the change")
+
+
+def gold_for(doc_id: str, gold_dir: Path = GOLD_DIR) -> tuple[str, list[dict[str, Any]]]:
+    """The corpus whose gold doc id prefixes the run's doc id, after checking its hash and the
+    hash of the hypotheses frozen with it."""
+    recorded = recorded_hashes(gold_dir)
+    check_hypotheses(recorded, gold_dir)
     for path in sorted(gold_dir.glob("*/gold.jsonl")):
         lines = _jsonl(path)
         if lines and doc_id.startswith(lines[0]["doc_id"]):

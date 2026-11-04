@@ -1,0 +1,21 @@
+# The hypotheses of Iteration 1's spikes, one block per matrix file in config/matrices/
+# (Iteration 1, steps 5 and 18). Each names its control rung and, per rung, the scorer's
+# metric, the decision kind and the hypothesis in words. The decision kinds are defined in
+# step 18: `within_noise` keeps the cheaper rung when it stays within the control's spread,
+# `superiority` needs the rung to beat the control by more than that spread, and
+# `improvement` needs the metric to improve while the `secondary` metric loses at most
+# `max_drop`. bidwright-eval hash-gold freezes this file with the gold, before the first
+# matrix run. Rung names are quoted, because YAML reads a bare on and off as booleans.
+s03-batch:
+  control: "b10"
+  rungs:
+    "b20": {metric: missed_mandatory_count, kind: within_noise, hypothesis: "Packs of 20 lose no more mandatory requirements than packs of 10, within the control's spread"}
+    "b40": {metric: missed_mandatory_count, kind: within_noise, hypothesis: "Packs of 40 lose no more mandatory requirements than packs of 10, within the control's spread"}
+s10-examples:
+  control: "noexamples"
+  rungs:
+    "examples": {metric: missed_mandatory_count, kind: superiority, hypothesis: "The examples lower the median misses by more than the control's spread"}
+s13-second-pass:
+  control: "off"
+  rungs:
+    "on": {metric: missed_mandatory_count, kind: improvement, secondary: {metric: precision_low, max_drop: 0.03}, hypothesis: "The second pass lowers the median misses and costs at most 3 points of precision"}
