@@ -102,7 +102,7 @@ options:
 ## `bidwright-eval`
 
 ```text
-usage: bidwright-eval [-h] {score,gate,baseline,explain,report,hash-gold} ...
+usage: bidwright-eval [-h] {score,gate,baseline,explain,report,hash-gold,external} ...
 
 `bidwright-eval`: score frozen runs against gold. It never changes a run.
 
@@ -117,15 +117,20 @@ bidwright-eval report <matrix>       scores every run of outputs/matrices/<matri
                                      writes evals/results/<matrix>/ with each rung's decision
 bidwright-eval hash-gold             records the hashes of the gold files and of
                                      evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
+bidwright-eval external crackedpdfs --data <folder>
+                                     runs guard's PDF scan on the CrackedPDFs test split,
+                                     kept outside the repository, and writes only the scores
+                                     to evals/results/external/crackedpdfs.md
 
 positional arguments:
-  {score,gate,baseline,explain,report,hash-gold}
+  {score,gate,baseline,explain,report,hash-gold,external}
     score               score one run folder
     gate                gate one run folder against a committed baseline
     baseline            write a run's scores as the baseline
     explain             what happened to one gold item in a run
     report              score a matrix's runs and decide each rung
     hash-gold           freeze the current gold files' hashes
+    external            run one stage against a public benchmark
 
 options:
   -h, --help            show this help message and exit
@@ -201,4 +206,17 @@ usage: bidwright-eval hash-gold [-h]
 
 options:
   -h, --help  show this help message and exit
+```
+
+## `bidwright-eval external`
+
+```text
+usage: bidwright-eval external [-h] --data DATA {crackedpdfs}
+
+positional arguments:
+  {crackedpdfs}
+
+options:
+  -h, --help     show this help message and exit
+  --data DATA    the benchmark's folder, outside the repository
 ```

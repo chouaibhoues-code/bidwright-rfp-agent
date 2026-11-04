@@ -50,7 +50,7 @@ Research results become a seventh boundary in Iteration 2.
 
 ## Evidence behind the design
 
-Q-07 ([`context/Research-Register.md`](../context/Research-Register.md), section 7) found that prompt-layer defenses such as delimiters reduce indirect injection without removing it, and that the effect varies by model. Controls outside the model held where model decisions were manipulated. So delimiters stay as hygiene, and the weight sits on screening before parsing, the gateway, least privilege and `DRAFT_ONLY`. CrackedPDFs, confirmed at source, shows why screening must read the PDF's structure. Its hybrid structural detector reached F1 0.960 on held-out PDFs, against 0.623 for a rule baseline and 0.390 for PromptGuard on extracted text alone.
+Q-07 ([`context/Research-Register.md`](../context/Research-Register.md), section 7) found that prompt-layer defenses such as delimiters reduce indirect injection without removing it, and that the effect varies by model. Controls outside the model held where model decisions were manipulated. So delimiters stay as hygiene, and the weight sits on screening before parsing, the gateway, least privilege and `DRAFT_ONLY`. CrackedPDFs, confirmed at source, shows why screening must read the PDF's structure. Its hybrid structural detector reached F1 0.960 on held-out PDFs, against 0.623 for a rule baseline and 0.390 for PromptGuard on extracted text alone. On the same test split, `guard`'s PDF scan flagged every injected file and every benign file built to hide harmless text the same way, and no untouched original (F1 0.667, [`evaluation.md`](evaluation.md)): it detects hidden text, not intent, which is why a flagged file goes to a person's review instead of being rejected.
 
 ## Residual risks at `v0.0`
 

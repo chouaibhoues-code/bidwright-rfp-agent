@@ -11,6 +11,10 @@ bidwright-eval report <matrix>       scores every run of outputs/matrices/<matri
                                      writes evals/results/<matrix>/ with each rung's decision
 bidwright-eval hash-gold             records the hashes of the gold files and of
                                      evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
+bidwright-eval external crackedpdfs --data <folder>
+                                     runs guard's PDF scan on the CrackedPDFs test split,
+                                     kept outside the repository, and writes only the scores
+                                     to evals/results/external/crackedpdfs.md
 """
 
 import argparse
@@ -21,6 +25,7 @@ from pathlib import Path
 
 from bidwright.config import load_config
 from evals.explain import explain
+from evals.external import crackedpdfs
 from evals.gates import gate
 from evals.report import report
 from evals.score import GOLD_DIR, HYPOTHESES_ENTRY, ROOT, score_run, scorecard, write_results
@@ -75,9 +80,22 @@ def main(argv: list[str] | None = None) -> int:
     matrix = sub.add_parser("report", help="score a matrix's runs and decide each rung")
     matrix.add_argument("matrix", help="the matrix name, as in outputs/matrices/<matrix>/")
     sub.add_parser("hash-gold", help="freeze the current gold files' hashes")
+    external = sub.add_parser("external", help="run one stage against a public benchmark")
+    external.add_argument("benchmark", choices=["crackedpdfs"])
+    external.add_argument(
+        "--data", type=Path, required=True, help="the benchmark's folder, outside the repository"
+    )
     args = parser.parse_args(argv)
     if args.command == "hash-gold":
         print(f"wrote {hash_gold()}")
+        return 0
+    if args.command == "external":
+        try:
+            out = crackedpdfs.run(args.data)
+        except crackedpdfs.BenchmarkRefused as exc:
+            print(exc, file=sys.stderr)
+            return 1
+        print(out.read_text(encoding="utf-8"), end="")
         return 0
     if args.command == "report":
         out = report(args.matrix)

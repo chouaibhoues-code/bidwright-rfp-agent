@@ -79,6 +79,10 @@ The owner reviewed gold v2, and on 2026-11-04 it was hashed with `evals/hypothes
 
 The S-03, S-10 and S-13 decisions, the `v0.1` scores and the hero baseline follow.
 
+### `guard` on CrackedPDFs
+
+`bidwright-eval external crackedpdfs` ran `guard`'s PDF scan on the 2,919 files of the CrackedPDFs test split (revision `245bc98`, MIT License), with no parser and no model call, in 0.024 seconds a file on average ([`evals/results/external/crackedpdfs.md`](../evals/results/external/crackedpdfs.md)). It flagged all 973 injected files, all 973 benign files the benchmark built as matched confounders, and none of the 973 untouched benign originals: precision 0.500, recall 1.000 and F1 0.667, against a published F1 of 0.960 for the hybrid structural detector, 0.623 for the rule baseline and 0.390 for PromptGuard on extracted text. The confounders are built to match the injected files' structure, and the scan found the same kinds of hidden text, in the same numbers, in both groups, so `guard` detects hiding, not intent. That suits its role: a flagged file is not rejected, its hidden text is quarantined for a person to review, and an instruction in visible text is left to the other controls.
+
 ## Results at `v0.0`
 
 One live run each on the development RFP, scored against gold v1 and committed under `evals/results/runs/`:
@@ -97,4 +101,4 @@ CI blocks a merge on the unit tests, the replayed runs (including the demo, the 
 
 ## Still to come
 
-The held-out RFP, scored once at release; the ablation ladders with repeats under the Master-Plan's keep-or-drop rule, from Iteration 3; advisory judges calibrated on the owner's labels; and stage benchmarks against public datasets, starting with `guard` on CrackedPDFs. The quality scenarios these feed are in section 10 of [`architecture.md`](architecture.md).
+The held-out RFP, scored once at release; the ablation ladders with repeats under the Master-Plan's keep-or-drop rule, from Iteration 3; advisory judges calibrated on the owner's labels; and the other stage benchmarks against public datasets (QuRE, ContractScrub, CUAD, ContractNLI and FedProc-Bench), once V-02 checks their access and licenses. The quality scenarios these feed are in section 10 of [`architecture.md`](architecture.md).

@@ -187,7 +187,16 @@ def cli_md() -> str:
         (
             "bidwright-eval",
             eval_main,
-            [[], ["score"], ["gate"], ["baseline"], ["explain"], ["report"], ["hash-gold"]],
+            [
+                [],
+                ["score"],
+                ["gate"],
+                ["baseline"],
+                ["explain"],
+                ["report"],
+                ["hash-gold"],
+                ["external"],
+            ],
         ),
     ]
     lines = ["# Command-line reference", "", GENERATED.strip(), ""]
