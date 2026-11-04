@@ -19,6 +19,7 @@ WORKDIR /app
 COPY --from=build /app /app
 COPY config ./config
 COPY prompts ./prompts
+COPY knowledge_base ./knowledge_base
 COPY inputs ./inputs
 COPY tests ./tests
 ENV PATH="/app/.venv/bin:$PATH" BIDWRIGHT_HOME=/app LANGGRAPH_STRICT_MSGPACK=true
