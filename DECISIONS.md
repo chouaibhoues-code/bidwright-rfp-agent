@@ -13,7 +13,7 @@ Model and prompt ADRs also give the evaluation evidence and the model's expected
 
 ## ADRs
 
-ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 are proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and become accepted or change at its Stage 9 review. ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03.
+ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day.
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -33,15 +33,16 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 014 | A separate harness scores frozen runs against known answers | accepted |
 | 015 | Observability from a per-call ledger and OpenInference spans | accepted |
 | 016 | Docker Compose, with a host path for the demo and tests | accepted |
-| 017 | Every passage reaches `extract`; cues annotate and never filter | proposed |
-| 018 | Six zones, assigned per section, with a keyword fallback | proposed |
-| 019 | The `consolidate` cluster rule | proposed |
-| 020 | Review files for quarantined text, small print and suspect passages | proposed |
-| 021 | The compliance matrix layout | proposed |
+| 017 | Every passage reaches `extract`; cues annotate and never filter | accepted |
+| 018 | Six zones, assigned per section, with a keyword fallback | accepted |
+| 019 | The `consolidate` cluster rule | accepted |
+| 020 | Review files for quarantined text, small print and suspect passages | accepted |
+| 021 | The compliance matrix layout | accepted |
 | 022 | The request budget counts provider attempts, checked before each attempt | accepted |
 | 023 | Profile preconditions at the run entry | accepted |
 | 024 | Acceptance checks: degrade after the requirements, fault on a cut prompt | accepted |
 | 025 | Agent configuration declares only what code enforces | accepted |
+| 026 | Client documents: the data class, retention, the privacy invariant, the text view and the egress register | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -441,7 +442,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-017: Every passage reaches `extract`; cues annotate and never filter
 
-**Status:** proposed, 2026-11-02, in `docs/designs/iteration-1.md`. It would change the plan's `candidates` step, which sent only flagged passages and a 10% sample of the rest to `extract`. The owner decides at the Stage 9 review.
+**Status:** accepted, 2026-11-03, by the owner at the Stage 9 review of `docs/designs/iteration-1.md` (D-02). Proposed 2026-11-02. It changes the plan's `candidates` step, which sent only flagged passages and a 10% sample of the rest to `extract`. The owner's reasoning at the review: the filter was the one place in the design that discards an obligation before any check can recover it, on the headline metric; the cost is minutes of free-tier quota; and the decision is cheap to reverse because cues stay.
 
 **Context.** Research job DR-01 tested whether cue words flag nearly every mandatory obligation in an RFP, and refuted it. Obligations also appear as passive predicates ("is responsible for"), table cells that take their force from a header, declarative submission rules, conditions, rights the buyer reserves, cross-references and definitions. By the rule of three, a 10% sample of 600 unflagged passages, with no miss found, bounds the miss rate only below 5% at 95% confidence, which could leave dozens of obligations unseen. At this project's scale, sending every passage costs a few more calls per run: the 4-page development RFP has 37 passages, and its two extraction calls used about 2,600 input tokens each.
 
@@ -466,7 +467,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-018: Six zones, assigned per section, with a keyword fallback
 
-**Status:** proposed, 2026-11-02, in `docs/designs/iteration-1.md`.
+**Status:** accepted, 2026-11-03, by the owner at the Stage 9 review of `docs/designs/iteration-1.md` (D-02). Proposed 2026-11-02.
 
 **Context.** Bid practice separates instructions, evaluation criteria and contract obligations, and only obligations survive into the contract. Zones decide hazard ordering, the compliance matrix's zone column, the second extraction pass of S-13 and, from Iteration 2, the brief. A zone per passage would need a call per batch; a zone per section needs one small call for the whole outline.
 
@@ -487,7 +488,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-019: The `consolidate` cluster rule
 
-**Status:** proposed, 2026-11-02, in `docs/designs/iteration-1.md`.
+**Status:** accepted, 2026-11-03, by the owner at the Stage 9 review of `docs/designs/iteration-1.md` (D-02). Proposed 2026-11-02. The review added the link rules' detail: the receiving cluster of each link, the first cluster in reading order for a split section, and the RFP's own order-of-precedence clause attached to clusters that hold or link to an addendum member.
 
 **Context.** `consolidate` resolves references, precedence, duplicates and discrepancies one cluster at a time, so the cluster rule decides what each call can see. Aggressive merging loses exceptions, and published contract work finds cross-reference recall falling when linked clauses sit far apart.
 
@@ -510,7 +511,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-020: Review files for quarantined text, small print and suspect passages
 
-**Status:** proposed, 2026-11-02, in `docs/designs/iteration-1.md`. It extends ADR-010.
+**Status:** accepted, 2026-11-03, by the owner at the Stage 9 review of `docs/designs/iteration-1.md` (D-02). Proposed 2026-11-02. It extends ADR-010. The owner's reasoning at the review: every alternative loses on evidence (a warning tag would rest the no-trap-obeyed scenario on model obedience; silent deletion loses obligations; rewriting the PDF goes against pikepdf's warning; converting Office files drops content; repeating quarantined text in the summary carries a trap forward).
 
 **Context.** `guard` removes hidden content before any model sees it, but hidden text can hold a real obligation, so a person must see it. DR-03 found that Docling, python-docx and openpyxl keep hidden content by default, and that converting Office files to PDF drops content without a record. pikepdf's documentation warns against rebuilding a PDF content stream from its parser.
 
@@ -533,7 +534,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-021: The compliance matrix layout
 
-**Status:** proposed, 2026-11-02, in `docs/designs/iteration-1.md`.
+**Status:** accepted, 2026-11-03, by the owner at the Stage 9 review of `docs/designs/iteration-1.md` (D-02). Proposed 2026-11-02.
 
 **Context.** A bid manager works from a compliance matrix, often in a spreadsheet, and later iterations add response sections, delivery modes and evidence. A spreadsheet cell that starts with `=` can run as a formula when opened.
 
@@ -637,6 +638,31 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** A function's call or repair count becomes configurable, which first happens in Iteration 3.
 
 **Provenance.** The first architecture review, 2026-11-03, items A-06, A-13 and A-14.
+
+### ADR-026: Client documents: the data class, retention, the privacy invariant, the text view and the egress register
+
+**Status:** accepted, 2026-11-03, by the owner (D-05), with one part declined: the consent override of ADR-010 stays, so this ADR does not supersede it.
+
+**Context.** A real RFP is confidential and often holds personal data. Two first proposals, a scan that sets the routing and pseudonymization before hosted calls, were tested by DR-20 and DR-21 and dropped on evidence checked at source: a detector's own documentation gives no guarantee of finding all sensitive information; models alter, merge or invent placeholders on the way back, which would get a true requirement rejected by the exact-quote check; and pseudonymization lightens none of the sender's duties, which the Court of Justice judges from the controller's side. Google's free-tier terms say not to submit sensitive, confidential or personal information; the paid tier does not train on prompts but logs them for a limited period. Every outbound channel carries the same exposure, metadata such as file names included.
+
+**Decision.**
+- The data class (C1): a file is synthetic when its sha256 is listed in `inputs/CORPUS.sha256`, and a client document otherwise; a package is a client package when any of its files is. `preflight.py` computes it before the run folder exists, and the run manifest records it. Routing follows the provider's terms, never a detector.
+- Retention and purge (C4): a 30-day retention period for client runs; `bidwright purge <run>` deletes a run folder, its checkpoints and its cache entries, and `bidwright purge --expired` every client run past the period.
+- The privacy invariant (C5): synthetic personal data planted in the development PDF never reaches a span, the ledger, the manifest, a log, or a tracked file outside the folders that hold corpus content by design, tested on every replayed run.
+- The text view (C8's seam): every prompt and every tool result is built from a `TextView`, identity by default, so that Iteration 5's masking is a drop-in; a test view that swaps the planted values shows that nothing reaches a model without passing through it.
+- Egress (C9's first part): `config/egress.yaml` lists every destination a run may reach; every outbound client, the trace endpoint and the parser service are checked against it and the run's data class; a client run reaches local destinations only; a client document's id comes from its hash, and client documents live outside the repository, under a data root that `guard` checks.
+- Declined (C2): the consent override on `free` stays as ADR-010 defines it. A run that uses it is a client run on the free tier by the owner's explicit choice: it also satisfies the egress check for the Gemini destination, and its manifest records the override beside the data class.
+- Scheduled, not decided here: the AI-use disclosure (C7) in Iteration 4; a hosted path under client terms (C3) with the masking (C8) in Iteration 5; the register's research and documentation channels with the iterations that add them; detection as an audit signal (C6) optional.
+
+**Consequences.** Client documents are protected by routing and by code, not by inspection. The free tier's refusal is a rule with an audited exception rather than an absolute, and that exception's conflict with the free tier's terms is the owner's accepted risk, recorded here and in `docs/architecture.md`. Purge gives a client run an end. The text-view seam and the egress register cost one module each in Iteration 1 and carry the later parts.
+
+**Options.** Routing by a personal-data scan; pseudonymization as a basis for sending; removing the override, which was recommended and declined; no protection beyond `local`.
+
+**Confirmation.** From Iteration 1: `tests/test_preflight.py` (the data class and the package rule), `test_purge.py`, `test_privacy_invariant.py`, `test_text_view.py`, `test_egress.py` and `test_corpus_rule.py`.
+
+**Reverse if.** A client engagement's terms, under C3, make the free tier's exception unneeded, or a measured masking tier (C8, Iteration 5) changes what a hosted path may receive.
+
+**Provenance.** D-05 in `context/Decision-Form.md`; DR-20, DR-21 and the source checks in section 17 of `context/Research-Register.md`; the first architecture review's item A-31; `docs/designs/iteration-1.md` section 4.4.
 
 ## Failure modes hit
 

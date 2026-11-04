@@ -59,7 +59,7 @@ On `free`, prompts go to Google's Gemini API, whose free-tier terms let the prov
 
 ### Outbound channels
 
-Each place a run, or a tool around it, can send text. Rules marked D-05 are proposed, as C8 and C9 in [`context/Decision-Form.md`](../context/Decision-Form.md).
+Each place a run, or a tool around it, can send text. Rules marked D-05 were decided on 2026-11-03 (ADR-026 in [`DECISIONS.md`](../DECISIONS.md)): the Iteration 1 parts are built with that iteration, the consent override stays, and the later parts arrive with the iterations that add their channels.
 
 | Channel | From | What it receives | Rule |
 |---|---|---|---|

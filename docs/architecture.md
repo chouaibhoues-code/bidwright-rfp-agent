@@ -59,7 +59,7 @@ A bid team's problem is that one missed mandatory clause can disqualify a bid, a
 - the supervisor, policy and recovery components, with `bidwright stop` and `resume` (Iteration 2);
 - the research tools (Iteration 2) and the proposal pack (Iteration 4);
 - the two human gates (Iterations 3 and 4);
-- client documents on `free`: they run on `local`, and the consent override in section 3.1 is an open decision, D-05.
+- client documents on `free`: they run on `local`; the consent override in section 3.1 stays by the owner's decision of 2026-11-03 (D-05, ADR-026), which records its conflict with the free tier's terms as an accepted risk.
 
 ## 2. Constraints
 
@@ -104,7 +104,7 @@ flowchart LR
 
 | Interface | Direction | Form |
 |---|---|---|
-| RFP file | In | One PDF under `inputs/`. The corpus rule: on `free`, its sha256 must be listed in `inputs/CORPUS.sha256`, or the run is started with `--allow-non-corpus=i-accept-free-tier-terms`, which the manifest records (an open decision, D-05, proposes removing this override). The run entry checks the rule before the run folder exists (section 6.1). |
+| RFP file | In | One PDF under `inputs/`. The corpus rule: on `free`, its sha256 must be listed in `inputs/CORPUS.sha256`, or the run is started with `--allow-non-corpus=i-accept-free-tier-terms`, which the manifest records (kept by the owner at D-05, ADR-026). The run entry checks the rule before the run folder exists (section 6.1). |
 | Gemini | Out | The native `google-genai` SDK (ADR-001), with `GEMINI_API_KEY` from `.env` |
 | Ollama | Out | HTTP to `OLLAMA_HOST`: `http://localhost:11434` on the host and `http://ollama:11434` in Compose |
 | Phoenix | Out | OTLP over HTTP to `PHOENIX_ENDPOINT` when it is set and answers; otherwise spans go to `outputs/<run>/spans.jsonl`. The collector is probed once at start-up; one that answers later gets nothing, and `spans.jsonl` gets the run. |
