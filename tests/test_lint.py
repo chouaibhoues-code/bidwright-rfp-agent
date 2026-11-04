@@ -4,6 +4,8 @@ long random text."""
 
 import re
 import time
+from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -235,19 +237,30 @@ TEXT = st.lists(st.sampled_from(PIECES), min_size=2000, max_size=2000).map(
 )
 
 
+def _fastest(run: Callable[[], object], tries: int = 3) -> float:
+    """The best of a few timings. A pause on a busy machine only ever adds time, while
+    catastrophic backtracking on 2,000 characters is slow on every try."""
+    best = float("inf")
+    for _ in range(tries):
+        start = time.perf_counter()
+        run()
+        best = min(best, time.perf_counter() - start)
+    return best
+
+
+def _scan(patterns: list[str], text: str) -> None:
+    for pattern in patterns:
+        re.compile(pattern, re.IGNORECASE).findall(text)
+
+
 @settings(deadline=None, max_examples=25)
 @given(TEXT)
 def test_every_rule_finishes_on_long_random_text(text: str) -> None:
     context = lint_context(CONFIG, PASSAGES, [], REGISTER, frozen_text=text * 2)
     for name, check in CHECKS.items():
-        start = time.perf_counter()
-        check(text, context)
-        assert time.perf_counter() - start < 0.05, name
+        assert _fastest(partial(check, text, context)) < 0.05, name
     for rule in [*CONFIG.lint.rules, *CONFIG.lint.contract]:
-        start = time.perf_counter()
-        for pattern in rule.patterns:
-            re.compile(pattern, re.IGNORECASE).findall(text)
-        assert time.perf_counter() - start < 0.05, rule.id
+        assert _fastest(partial(_scan, list(rule.patterns), text)) < 0.05, rule.id
 
 
 def _broken(section: str) -> list[str]:
