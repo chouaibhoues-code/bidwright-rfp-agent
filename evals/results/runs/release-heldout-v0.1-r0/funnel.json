@@ -2,11 +2,7 @@
  "funnel": {
   "guard": [],
   "parse": [],
-  "extract": [
-   "GR-0015",
-   "GR-0016",
-   "GR-0017"
-  ],
+  "extract": [],
   "verify": [],
   "consolidate": []
  },

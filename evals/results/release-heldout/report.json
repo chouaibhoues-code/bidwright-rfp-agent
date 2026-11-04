@@ -37,21 +37,21 @@
     "n": 5
    },
    "disposition_accuracy": {
-    "median": 0.7742,
-    "min": 0.7742,
-    "max": 0.7742,
+    "median": 0.9677,
+    "min": 0.9677,
+    "max": 0.9677,
     "n": 5
    },
    "f1": {
-    "median": 0.7636,
-    "min": 0.7636,
-    "max": 0.7636,
+    "median": 0.9818,
+    "min": 0.9818,
+    "max": 0.9818,
     "n": 5
    },
    "f1_high": {
-    "median": 0.8611,
-    "min": 0.8611,
-    "max": 0.8611,
+    "median": 0.9818,
+    "min": 0.9818,
+    "max": 0.9818,
     "n": 5
    },
    "first_pass_citation_error": {
@@ -79,15 +79,15 @@
     "n": 5
    },
    "missed_mandatory_count": {
-    "median": 3.0,
-    "min": 3.0,
-    "max": 3.0,
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
     "n": 5
    },
    "missed_mandatory_strict_count": {
-    "median": 3.0,
-    "min": 3.0,
-    "max": 3.0,
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
     "n": 5
    },
    "modality_accuracy": {
@@ -109,15 +109,15 @@
     "n": 5
    },
    "precision_low": {
-    "median": 0.75,
-    "min": 0.75,
-    "max": 0.75,
+    "median": 0.9643,
+    "min": 0.9643,
+    "max": 0.9643,
     "n": 5
    },
    "recall": {
-    "median": 0.7778,
-    "min": 0.7778,
-    "max": 0.7778,
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
     "n": 5
    },
    "requests": {

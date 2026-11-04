@@ -13,7 +13,7 @@ Model and prompt ADRs also give the evaluation evidence and the model's expected
 
 ## ADRs
 
-ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day.
+ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring.
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -46,6 +46,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 027 | Iteration 1's spike decisions: Docling stays, and packs of 40 | accepted |
 | 028 | The `extract` prompt drops its examples, and the second pass is on | accepted |
 | 029 | On the free tier, Google's daily 429 decides, not the local count | accepted |
+| 030 | The matcher credits a quote of a table cell's row | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -734,6 +735,28 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 **Provenance.** The owner's decision, 2026-11-04; V-03 in `context/Research-Register.md`.
 
+### ADR-030: The matcher credits a quote of a table cell's row
+
+**Status:** accepted, 2026-11-04, by the owner (option B), after the release step's held-out scoring found the defect.
+
+**Context.** `extract` reads a table row as one passage, and its prompt does not ask for one cell, so the model quotes the whole row: its id, the requirement's cell and its priority. The matcher credited a quote only inside the requirement's cell (CH-56), so a table-row obligation that `extract` captured as `BINDING`, with a verified quote, scored as a missed mandatory requirement, and its record as a prediction that captured nothing. The held-out RFP's five repeats, scored once with the `v0.1` scorer (commit 3ba7dc7), missed 3 of 22 in every repeat, all three such rows; so were 5 of the hero baseline's 8 misses.
+
+**Decision.**
+- A clause inside a table-row passage takes that row as its context, as a list item takes its lead-in: a verified quote inside the row that reaches the clause captures it, and a quote of another cell alone captures nothing. The rule applies to every run, B0 included.
+- Every run of the `v0.1` era is scored again, and each reported figure is corrected, with the `v0.1` scorer's figure beside it: the hero baseline misses 3 of 45 (8 before), with recall 0.946 and low precision 0.747; B0 on the hero 10 (13 before); the held-out RFP 0 of 22 in every repeat (3 before). The hero baseline is written again, so the gate holds the corrected level.
+- Under the hashed rules, the corrected figures keep S-03's packs of 40 and S-13's second pass, and reverse S-10: with the examples, the median misses are 3 (2-4) against 6 (5-7) without, beyond the control's spread of 2, while the median low precision falls from 0.83 to 0.74. ADR-028's first decision therefore rested on the defect.
+- The shipped configuration stays the `v0.1` one, which the held-out RFP measured. Restoring the examples, and measuring the second pass on the prompt with them, is the first change after the delivery, under an ADR that supersedes ADR-028's first decision.
+
+**Consequences.** The figures now count what the runs captured. The hero's true misses are three: a buyer's reserved right, an obligation inside a definition and a passive predicate. The held-out RFP keeps its single scoring: its runs were scored again, not run again. S-13's five runs of the shipped configuration, whose prompt text `extract` 0.4.0 carries unchanged, missed a median of 5 of 45, against QS-2's target of at most 2 at the Iteration 3 exit. A configuration with the examples missed fewer on the hero, but it has no held-out score and no measurement with the second pass, which is why it waits.
+
+**Options.** Reconfiguring now as well (option A), which would ship a configuration with no held-out score and no measurement of the examples with the second pass; disclosing the defect without fixing the scorer (option C), which would leave every headline figure and the CI gate biased against the system; a prompt that asks for one cell, which would change the system after its held-out scoring.
+
+**Confirmation.** `tests/test_matcher.py` (a quote of the whole row captures its cell, and another row's quote does not); `evals/results/` scored again; `evals/baselines/hero.json`; the `gold` job's hero gate.
+
+**Reverse if.** A table row holds two obligation cells, so that a quote of the whole row no longer stands for one clause; the rule then needs each cell's own span.
+
+**Provenance.** The release step's held-out scoring and the owner's choice of option B, 2026-11-04; CH-33 and CH-56 in `context/Master-Plan.md`.
+
 ## Failure modes hit
 
 Only failures that actually happened, logged as they happen. Scripted test faults never count.
@@ -755,3 +778,4 @@ Only failures that actually happened, logged as they happen. Scripted test fault
 | 2026-11-04 | Logging, during the step 16 privacy test | With every logger at DEBUG, a replayed development run put the planted personal data into the captured logs: pdfminer, under pdfplumber and `guard`'s PDF scan, logs every token of a PDF's content streams at that level. Spans, the ledger and the manifest held none. Nothing in Bidwright sets DEBUG, but an operator who turns it on to troubleshoot a client run would have copied the document into the logs. | None: the test's captured log, `tests/test_privacy_invariant.py` | `bidwright/__init__.py` holds the `pdfminer` logger, and the `openai` logger, which logs each request body at DEBUG, at WARNING whatever the root level is; the privacy test captures at DEBUG and now passes. |
 | 2026-11-04 | The matrix runner, during S-03 on `free` | One `extract` call in the repeat `s03-batch-b20-r2` failed four times on `gemini-3.5-flash-lite` and was answered by its fallback, `gemini-3.1-flash-lite`, so one repeat of a single-model comparison mixed two models. Once the primary's daily allowance ran out, every remaining run would have gone to the fallback; the matrix was stopped at 396 of 400 requests, before that happened. Retries took about one attempt in five, and the ledger recorded how many, not why. | The run's ledger and manifest, `outputs/matrices/s03-batch/s03-batch-b20-r2/` | Matrix runs now pass `fallback=False`: a spent quota pauses the matrix, and a call that exhausts its retries faults its run. `--resume` runs again a finished run that a fallback model answered, and `bidwright-eval report` leaves such runs out and names them. Each ledger entry now records why every retry happened. |
 | 2026-11-04 | `extract` on the development DOCX, recording with packs of 40 | For two title-page lines of two words each, "Reference FLT-2026-07." and "Issued 2026-12-01.", the model returned records instead of listing them as holding no obligation. A quote needs at least three words, so both records were rejected; the `coverage` round asked again and got the same answers, and the run ended `DEGRADED` with two passages unaccounted. A second recording completed. | `outputs/20261104T195922Z-dev-docx-rfp-1fc7453f-free/rejected.jsonl` | None yet. A passage too short to quote can hold no capturable requirement, so code could mark it as holding no obligation before `extract`; proposed for the Iteration 3 extraction ladder. |
+| 2026-11-04 | The matcher, scoring the held-out RFP in the release step | Every repeat "missed" the same three table rows, which `extract` had captured as `BINDING` with verified quotes of the whole row: the matcher credited only a quote inside the requirement's cell. The same artifact made 5 of the hero baseline's 8 misses and decided S-10. | `evals/results/runs/release-heldout-v0.1-r0/misses.json` at commit 3ba7dc7 | ADR-030: a table cell's context is its row; every run of the `v0.1` era scored again, and the hero baseline written again. |

@@ -78,29 +78,5 @@
   "src_ids": [
    "SRC-0231"
   ]
- },
- {
-  "gold_id": "GR-0051",
-  "stage": "extract",
-  "reason": "no item captured it",
-  "src_ids": [
-   "SRC-0270"
-  ]
- },
- {
-  "gold_id": "GR-0052",
-  "stage": "extract",
-  "reason": "no item captured it",
-  "src_ids": [
-   "SRC-0271"
-  ]
- },
- {
-  "gold_id": "GR-0053",
-  "stage": "extract",
-  "reason": "no item captured it",
-  "src_ids": [
-   "SRC-0272"
-  ]
  }
 ]

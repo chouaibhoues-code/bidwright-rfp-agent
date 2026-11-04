@@ -13,12 +13,12 @@ Median, with the minimum and the maximum in brackets.
 
 | Metric | v0.1 |
 |---|---|
-| missed_mandatory_count | 3 (3-3) |
-| missed_mandatory_strict_count | 3 (3-3) |
-| recall | 0.7778 (0.7778-0.7778) |
-| precision_low | 0.75 (0.75-0.75) |
+| missed_mandatory_count | 0 (0-0) |
+| missed_mandatory_strict_count | 0 (0-0) |
+| recall | 1 (1-1) |
+| precision_low | 0.9643 (0.9643-0.9643) |
 | precision_high | 0.9643 (0.9643-0.9643) |
-| f1 | 0.7636 (0.7636-0.7636) |
+| f1 | 0.9818 (0.9818-0.9818) |
 | first_pass_citation_error | 0 (0-0) |
 | requests | 16 (14-16) |
 | tokens | 77140 (67173-83198) |

@@ -73,6 +73,30 @@ def test_a_table_header_captures_nothing_and_background_is_a_false_positive(
     assert result.unmatched == ["REQ-0001"] and result.false_positive == {"REQ-0002"}
 
 
+def test_a_quote_of_the_whole_row_captures_its_cell_and_no_other_row_does(
+    run: IngestResult,
+) -> None:
+    """ADR-030: a table cell's context is its row, as a list item's is its lead-in, so a
+    quote of the row passage, which `extract` reads whole, captures the cell's clause."""
+    cell = {
+        "gold_id": "GR-0900",
+        "doc_id": "dev-rfp",
+        "kind": "requirement",
+        "mandatory": True,
+        "hazard": False,
+        "text": "Integration and migration",
+    }
+    clauses = _clauses(run, [*gold(), cell])
+    whole = record(1, "Integration and migration | 20%", [_p(run, "SRC-0037")])
+    other = record(2, "Service levels and support | 20%", [_p(run, "SRC-0036")])
+    result = match([whole, other], clauses, _passages(run))
+    assert result.captured == {"GR-0900": ["REQ-0001"]} and "GR-0900" in result.strict
+    assert result.unmatched == ["REQ-0002"]
+    [located] = [c for c in clauses if c.gold_id == "GR-0900"]
+    row = _p(run, "SRC-0037")
+    assert located.context == (row.start, row.end) and located.span != located.context
+
+
 def test_a_second_record_on_a_clause_is_a_duplicate(run: IngestResult) -> None:
     passage = [_p(run, "SRC-0020")]
     first = record(1, "The Supplier shall keep an audit record of every signature event", passage)

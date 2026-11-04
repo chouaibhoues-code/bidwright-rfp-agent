@@ -33,7 +33,7 @@ Gold and `evals/hypotheses.yaml` are hashed together in `evals/gold/MANIFEST.sha
 The question is whether each gold obligation was captured. The rules, in `evals/matcher.py`:
 - Gold has four clause kinds: `requirement`, and the distractors `background`, `not_binding` and `out_of_scope`. Each clause maps to a span of the run's frozen text, searched only inside the passages of its own document. A clause that is not found has no span, and the funnel says why.
 - Predictions are records with disposition `BINDING` or `OPTIONAL` and a verified quote.
-- **Relaxed capture**, the headline: the verified quote lies inside the clause, or inside the clause and its lead-in for a list item, and reaches the clause itself. **Strict capture** also needs the cited passages to cover the whole clause.
+- **Relaxed capture**, the headline: the verified quote lies inside the clause, inside the clause and its lead-in for a list item, or inside the table row that holds the clause, for a table cell (ADR-030), and reaches the clause itself. A quote of the whole row captures the cell's clause, and a quote of another cell alone captures nothing. **Strict capture** also needs the cited passages to cover the whole clause.
 - A prediction that captures only distractor clauses is a false positive. A record whose passages reach a second clause is flagged `merged`, and extra records on a captured clause `duplicate`.
 - A prediction that captures no gold clause goes to `adjudication.csv`. Precision is therefore a range: the low end counts every such record as wrong, the high end as right.
 - A clause in a hidden layer is expected in `quarantine.jsonl` and scored on its own line, never as a miss.
@@ -72,22 +72,22 @@ A scorer that cannot fail shows nothing. `tests/test_scorer_selftest.py` checks 
 
 ## Results at `v0.1`
 
-The owner reviewed gold v2, and on 2026-11-04 it was hashed with `evals/hypotheses.yaml`, before the first matrix run.
+The owner reviewed gold v2, and on 2026-11-04 it was hashed with `evals/hypotheses.yaml`, before the first matrix run. After the tag, the held-out scoring found that the matcher credited a table row's obligation only when the quote held the requirement's cell alone, while `extract` quotes the whole row; ADR-030 corrected the matcher and every run below was scored again. Each figure is given as corrected, with the `v0.1` scorer's figure beside it where they differ.
 
 | Spike | Result | Decision |
 |---|---|---|
 | S-01, parse fidelity | On the hero package, Docling located 66 of 66 visible gold clauses in their own documents and pdfplumber 55, missing GR-0012 to GR-0022 in the two-column section 6 ([`evals/results/s01-parse-fidelity/`](../evals/results/s01-parse-fidelity/report.md)) | Docling stays the PDF parser |
-| S-03, pack size | Fifteen hero runs to `coverage`. Median missed mandatory, of 45: 7 (5-8) with packs of 10, 8 (5-9) with 20 and 7 (4-9) with 40, all within the control's spread of 3; packs of 40 also gave the highest median low precision, 0.69 against 0.61, with a quarter of the requests, 8 against 31. Every miss was lost at `extract`, on the same few clauses at every size ([`evals/results/s03-batch/`](../evals/results/s03-batch/report.md)) | Packs of 40 |
-| S-10, the prompt's examples | Ten hero runs to `coverage`, with packs of 40. Median missed mandatory: 9 (5-10) without the examples and 7 (4-9) with them, short of the control's spread of 5, so they do not pass `superiority`; without them, low precision rose from 0.69 to 0.81, F1 from 0.74 to 0.80, and the tokens fell by a third ([`evals/results/s10-examples/`](../evals/results/s10-examples/report.md)) | `extract.md` 0.4.0 drops its examples |
-| S-13, a second pass | Ten hero runs to `coverage`, on the prompt without examples. Median missed mandatory: 9 (5-10) without the pass and 8 (4-8) with it, while low precision fell 2.2 points, inside the 3 allowed, for 5 more requests a run ([`evals/results/s13-second-pass/`](../evals/results/s13-second-pass/report.md)) | The second pass is on |
+| S-03, pack size | Fifteen hero runs to `coverage`. Median missed mandatory, of 45: 2 (2-3) with packs of 10, 3 (3-5) with 20 and 3 (2-4) with 40, all within the control's spread of 1 (with the `v0.1` scorer: 7, 8 and 7, within a spread of 3); packs of 40 take a quarter of the requests, 8 against 31. Every miss was lost at `extract` ([`evals/results/s03-batch/`](../evals/results/s03-batch/report.md)) | Packs of 40, under both scorers |
+| S-10, the prompt's examples | Ten hero runs to `coverage`, with packs of 40. Median missed mandatory: 6 (5-7) without the examples and 3 (2-4) with them, beyond the control's spread of 2, so the examples pass `superiority`; without them, low precision is higher, 0.83 against 0.74, and the tokens a third lower. With the `v0.1` scorer the medians were 9 and 7, short of a spread of 5 ([`evals/results/s10-examples/`](../evals/results/s10-examples/report.md)) | `extract.md` 0.4.0 dropped its examples on the `v0.1` scorer's figures; corrected, they pass, and they return after the delivery (ADR-030) |
+| S-13, a second pass | Ten hero runs to `coverage`, on the prompt without examples. Median missed mandatory: 6 (5-7) without the pass and 5 (4-5) with it, while low precision fell 1.1 points, inside the 3 allowed, for 5 more requests a run (with the `v0.1` scorer: 9 and 8, and 2.2 points) ([`evals/results/s13-second-pass/`](../evals/results/s13-second-pass/report.md)) | The second pass is on, under both scorers; it was not measured with the examples |
 
 Two rungs drew no new sample. The response cache, keyed by each call rather than by the matrix, answered S-10's `examples` rung with the calls of S-03's `b40` rung, which ran the same prompt at the same pack size, and S-13's `off` rung with those of S-10's `noexamples` rung; both cost nothing and repeat their source runs exactly. Each decision still compares five runs of one configuration with five of another, but S-10 and S-13 each measured five new runs, not ten, and the three decisions share samples, so they are not independent measurements.
 
-The repeated misses sit in the hero's designed traps: an implicit requirement, a buyer's right, two rows of the service-level table, an obligation inside a definition, an ownership term and three rows of the Annex B workbook. The quality scenario QS-2 asks for at most 2 of 45 at the Iteration 3 exit, so the extraction ladder has a gap of about five clauses to close. S-10 (the prompt's examples) and S-13 (a second pass) were its first two tests, run with packs of 40 after the owner's held-out list was frozen (CH-86). Taken together under their rules, they leave the median misses where they were, 8 against S-03's 7 within the spread, and raise low precision from 0.69 to 0.79 (ADR-028); the gap to QS-2 is still about six clauses.
+The misses that remain are the hero's designed traps. The shipped configuration, S-13's `on` rung, misses a median of 5: a buyer's reserved right (GR-0030) and a passive predicate (GR-0045) in every run, an obligation inside a definition (GR-0042) in four of five, and the two rows of the service-level table (GR-0031 and GR-0032), which it marked as holding no obligation in every run. With the examples, S-10's `examples` rung, the service-level rows were captured, leaving 3 (2-4): GR-0030 every time, GR-0042 and GR-0045 in four runs of five, and a cross-reference (GR-0009) in two. The quality scenario QS-2 asks for at most 2 of 45 at the Iteration 3 exit, so the gap is two or three clauses, which the examples' return and the extraction ladder address. S-10 and S-13 ran with packs of 40 after the owner's held-out list was frozen (CH-86).
 
 ### The hero baseline
 
-The hero recording made with the Iteration 1 configuration (packs of 40, `extract` 0.4.0 without examples, the second pass on), replayed through `consolidate` and scored against gold v2 (`9e6f4ecc6ef6`): 8 of 45 mandatory requirements missed, the trap clauses of S-03 (GR-0030, GR-0031, GR-0032, GR-0042, GR-0045 and GR-0051 to GR-0053), and none of the 9 submission hazards; recall 0.818, low precision 0.648 and F1 0.723 ([`evals/baselines/hero.json`](../evals/baselines/hero.json)). The first baseline, written earlier that day with the examples and no second pass, missed 7; one replay of each sits inside the spikes' spreads. Later runs are gated against it under `config/thresholds.yaml`: one more missed mandatory requirement blocks.
+The hero recording made with the Iteration 1 configuration (packs of 40, `extract` 0.4.0 without examples, the second pass on), replayed through `consolidate` and scored against gold v2 (`9e6f4ecc6ef6`): 3 of 45 mandatory requirements missed (GR-0030, GR-0042 and GR-0045), and none of the 9 submission hazards; recall 0.946, low precision 0.747 and F1 0.834 ([`evals/baselines/hero.json`](../evals/baselines/hero.json)). The baseline was written again after ADR-030; with the `v0.1` scorer the same replay missed 8, the five others being table rows it had captured. This one run captured the two service-level rows that S-13's five runs missed. Later runs are gated against it under `config/thresholds.yaml`: one more missed mandatory requirement blocks.
 
 ### The pipeline against B0
 
@@ -99,10 +99,24 @@ The three recordings' live runs, made on 2026-11-04 with the Iteration 1 configu
 | Development PDF, B0 (`20261104T230353Z-dev-rfp-db9eeb00-free-b0`) | 2 of 8 | 0 of 1 | 83% | 67% to 100% | 0.74 | Not run | 0 | $0 |
 | Development DOCX, the full pipeline (`20261104T211518Z-dev-docx-rfp-1fc7453f-paid`) | 0 of 9 | 0 of 1 | 100% | 100% | 1.00 | 0 of 2 | 12 | $0.040 |
 | Development DOCX, B0 (`20261104T230353Z-dev-docx-rfp-1fc7453f-free-b0`) | 2 of 9 | 0 of 1 | 82% | 69% to 100% | 0.75 | Not run | 0 | $0 |
-| Hero package to `consolidate` (`20261104T211602Z-hero-paid`) | 8 of 45 | 0 of 9 | 82% | 65% to 97% | 0.72 | Not run | 25 | $0.234 |
-| Hero package, B0 (`20261104T230353Z-hero-free-b0`) | 13 of 45 | 1 of 9 | 73% | 68% to 90% | 0.70 | Not run | 0 | $0 |
+| Hero package to `consolidate` (`20261104T211602Z-hero-paid`) | 3 of 45 (8 with the `v0.1` scorer) | 0 of 9 | 95% | 75% to 97% | 0.83 | Not run | 25 | $0.234 |
+| Hero package, B0 (`20261104T230353Z-hero-free-b0`) | 10 of 45 (13) | 1 of 9 | 82% | 76% to 90% | 0.79 | Not run | 0 | $0 |
 
-The funnel charges every miss in all six runs to `extract`, or to the rule that stands in for it under B0; none was lost at `guard`, parsing or `verify`. On the hero package the pipeline misses 5 fewer mandatory requirements than B0 and no submission hazard, for 25 requests; its low precision, 0.65 against B0's 0.68, and an F1 close to B0's show that the model's gain is in recall, not yet in precision. The hero run scores exactly as its replayed baseline, and each line is one run, so the differences on the two development RFPs are not claimed as real.
+The funnel charges every miss in all six runs to `extract`, or to the rule that stands in for it under B0; none was lost at `guard`, parsing or `verify`. On the hero package the pipeline misses 7 fewer mandatory requirements than B0 and no submission hazard, for 25 requests; its low precision, 0.75 against B0's 0.76, shows that the model's gain is in recall, not yet in precision. The hero run scores exactly as its replayed baseline, and each line is one run, so the differences on the two development RFPs are not claimed as real.
+
+### The held-out RFP
+
+The release step scored the held-out RFP once: a fictional hospital group's document-management tender in DOCX, whose 27 requirements, 22 of them mandatory, and 3 submission hazards come from the owner's own list, written without the prompts in view and frozen before any prompt tuning on the hero package (CH-65, CH-86). Five repeats of the `v0.1` configuration, with research off, ran to `render` on the free key's primary model, at no cost; the matrix runner kept every call on that model ([`evals/results/release-heldout/`](../evals/results/release-heldout/report.md)).
+
+| Measure | Every one of the 5 repeats |
+|---|---|
+| Missed mandatory requirements | 0 of 22 (3 with the `v0.1` scorer, all table rows `extract` had captured, at commit 3ba7dc7) |
+| Missed submission hazards | 0 of 3 |
+| Recall, low precision, F1 | 1.00, 0.96, 0.98 |
+| Quotes verbatim; binding requirements mapped to an approach item | 100%; 100% |
+| Requests, and shadow cost at the paid price | 14 to 16; $0.08 to $0.10 |
+
+The held-out RFP is shorter and plainer than the hero package, with no injection traps and no risk seeds, so it tests extraction on a document its prompts never saw, not the hero's traps. Its runs were scored again after ADR-030, not run again: it keeps its single scoring.
 
 ### `guard` on CrackedPDFs
 

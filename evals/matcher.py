@@ -3,14 +3,17 @@
 1. Each gold clause of the four clause kinds (`requirement`, `background`, `not_binding`,
    `out_of_scope`) maps to a span of the run's frozen text, searched after whitespace
    normalization inside the passages of its own document: those whose `doc_id` starts with
-   the clause's `doc_id`. A list item's span can extend back over its lead-in. A clause that
-   is not found gets `span=None`; the funnel then charges it to `guard` or `parse`. Trap,
-   personal-data and seed lines are not clauses.
+   the clause's `doc_id`. A list item's context extends back over its lead-in, and a table
+   cell's context is the table row that holds it (ADR-030). A clause that is not found gets
+   `span=None`; the funnel then charges it to `guard` or `parse`. Trap, personal-data and
+   seed lines are not clauses.
 2. Predictions are records with disposition BINDING or OPTIONAL and a verified quote.
-3. Relaxed capture: the record's verified quote lies inside the clause span (or inside the
-   clause plus its lead-in, for a list item) and reaches the clause itself, so a quote of the
-   lead-in alone, or of an earlier item of the same list, captures nothing. Strict capture
-   also needs the record's cited passages to cover the whole clause.
+3. Relaxed capture: the record's verified quote lies inside the clause's context (the clause,
+   the clause with its lead-in, or the clause's table row) and reaches the clause itself, so
+   a quote of the lead-in alone, of an earlier item of the same list, or of another cell of
+   the row, such as its id or its priority, captures nothing. A quote of the whole row
+   captures the cell's clause: the row passage is what `extract` reads and quotes. Strict
+   capture also needs the record's cited passages to cover the whole clause.
 4. A record whose cited passages reach a second requirement clause is flagged `merged`.
    Extra records on an already captured clause are flagged `duplicate`.
 5. A prediction whose hits are all distractor clauses (`background`, `not_binding`,
@@ -44,7 +47,7 @@ class GoldClause:
     mandatory: bool
     hazard: bool
     span: Span | None  # None when the clause is not in the frozen text
-    context: Span | None  # the span plus the lead-in, for a list item
+    context: Span | None  # the span, with a list item's lead-in, or a table cell's row
     doc_id: str = ""
     disposition: str | None = None
     modality: str | None = None
@@ -97,6 +100,7 @@ def gold_clauses(
     lines: Sequence[dict[str, Any]], frozen: str, passages: Iterable[Passage]
 ) -> list[GoldClause]:
     passages = list(passages)
+    rows = [(p.start, p.end) for p in passages if p.kind == "table_row"]
     ranges: dict[str, Span | None] = {}
     clauses = []
     for line in lines:
@@ -107,7 +111,8 @@ def gold_clauses(
             ranges[doc_id] = document_range(doc_id, passages)
         bounds = ranges[doc_id]
         span = locate(line["text"], frozen, *bounds) if bounds else None
-        context = span
+        row = next((r for r in rows if span is not None and _inside(span, r)), None)
+        context = row or span
         if span is not None and line.get("lead_in"):
             low = bounds[0] if bounds else 0
             before = frozen.rfind(line["lead_in"].rstrip(), low, span[0])

@@ -9,4 +9,6 @@ gold.
 A baseline is a score, so none exists before its gold is hashed in
 `evals/gold/MANIFEST.sha256`. The hero baseline was written on 2026-11-04 from the replayed
 hero recording made with packs of 40, after gold v2 was hashed, and the `gold` CI job gates the
-hero replay against it (`tests/test_hero_replay.py`).
+hero replay against it (`tests/test_hero_replay.py`). It was written again the same day after
+ADR-030 corrected the matcher, since a gate must compare scores from one matcher: 3 of 45
+missed, where the first scoring of the same replay counted 8.

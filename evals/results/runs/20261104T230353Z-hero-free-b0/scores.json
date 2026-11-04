@@ -14,10 +14,7 @@
   "GR-0038",
   "GR-0039",
   "GR-0042",
-  "GR-0045",
-  "GR-0051",
-  "GR-0052",
-  "GR-0053"
+  "GR-0045"
  ],
  "missed_mandatory_strict": [
   "GR-0004",
@@ -29,13 +26,10 @@
   "GR-0038",
   "GR-0039",
   "GR-0042",
-  "GR-0045",
-  "GR-0051",
-  "GR-0052",
-  "GR-0053"
+  "GR-0045"
  ],
- "missed_mandatory_count": 13,
- "missed_mandatory_strict_count": 13,
+ "missed_mandatory_count": 10,
+ "missed_mandatory_strict_count": 10,
  "missed_hazards": [
   "GR-0004"
  ],
@@ -54,10 +48,7 @@
    "GR-0038",
    "GR-0039",
    "GR-0042",
-   "GR-0045",
-   "GR-0051",
-   "GR-0052",
-   "GR-0053"
+   "GR-0045"
   ],
   "verify": [],
   "consolidate": []
@@ -142,58 +133,34 @@
    "src_ids": [
     "SRC-0231"
    ]
-  },
-  {
-   "gold_id": "GR-0051",
-   "stage": "extract",
-   "reason": "no item captured it",
-   "src_ids": [
-    "SRC-0270"
-   ]
-  },
-  {
-   "gold_id": "GR-0052",
-   "stage": "extract",
-   "reason": "no item captured it",
-   "src_ids": [
-    "SRC-0271"
-   ]
-  },
-  {
-   "gold_id": "GR-0053",
-   "stage": "extract",
-   "reason": "no item captured it",
-   "src_ids": [
-    "SRC-0272"
-   ]
   }
  ],
  "cue_recall": 0.8444,
- "recall": 0.7273,
- "precision_low": 0.678,
+ "recall": 0.8182,
+ "precision_low": 0.7627,
  "precision_high": 0.8983,
- "f1": 0.7018,
- "f1_high": 0.8038,
+ "f1": 0.7895,
+ "f1_high": 0.8564,
  "recall_by_kind": {
-  "mandatory": 0.7111,
-  "optional": 0.8
+  "mandatory": 0.7778,
+  "optional": 1.0
  },
  "recall_by_implicit": {
   "condition": 0.0,
   "cross_reference": 0.0,
   "declarative_instruction": 0.0,
   "definition": 0.0,
-  "explicit": 0.8478,
+  "explicit": 0.9565,
   "passive_predicate": 0.5,
   "reserved_right": 0.0,
   "table_cell": 0.0
  },
- "disposition_accuracy": 0.6818,
+ "disposition_accuracy": 0.7273,
  "disposition_accuracy_by_kind": {
   "background": 0.8333,
   "not_binding": 0.0,
   "out_of_scope": 0.0,
-  "requirement": 0.7273
+  "requirement": 0.7818
  },
  "modality_accuracy": 1.0,
  "zone_accuracy": null,
@@ -215,12 +182,7 @@
   "REQ-0041",
   "REQ-0042",
   "REQ-0043",
-  "REQ-0044",
-  "REQ-0055",
-  "REQ-0056",
-  "REQ-0057",
-  "REQ-0058",
-  "REQ-0059"
+  "REQ-0044"
  ],
  "hidden_gold": {
   "clauses_total": 0,
