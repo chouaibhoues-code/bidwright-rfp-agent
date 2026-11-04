@@ -1,0 +1,26 @@
+{
+ "key": "sha256:6a4ea2a13e91d9f5c5b9f3b0b43b11e645c3e4bfc8cb9b34f480bc83f5f18940",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"title\": \"Risks and open questions\", \"text\": \"The main risks to the proposal are email delays or exceeding the 15-page limit, cloud storage outside the UK, and donor spreadsheet formatting issues [RSK-001, RSK-002, RSK-003]. To prevent disqualification, we would format the document within 14 pages, test PDF export, send the proposal 24 hours before the 17:00 GMT deadline, and request a delivery confirmation receipt [RSK-001]. To maintain compliance, we would contract UK-only data residency and audit sub-processor pathways prior to go-live on 2027-06-30 [RSK-002]. To prevent import failures, we would build a cleansing script and agree on a validation specification with the Trust [RSK-003]. Open questions include whether the optional mobile app for volunteers needs separate pricing and specific features, the email size limits enforced by the Trust's office mail server, and whether formal certification or audit rights are required to verify UK data residency [Q-01, Q-02, Q-03].\", \"cited_ids\": [\"RSK-001\", \"RSK-002\", \"RSK-003\", \"Q-01\", \"Q-02\", \"Q-03\"]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1431,
+   "tokens_out": 298,
+   "tokens_cached": 0,
+   "tokens_thinking": 1052,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:15:55Z"
+}

@@ -1,0 +1,26 @@
+{
+ "key": "sha256:4e0d69b7384e4bd58ee8e67d5672ca11beb8b7e7bca9dd173e3e90f937ab39a2",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"topic\":\"Form of Tender declarations and commitments\",\"duplicates\":[],\"discrepancies\":[],\"questions\":[{\"text\":\"Where can Annex E, detailing the exclusion grounds, be located?\",\"requirement_ids\":[\"REQ-0088\"],\"lint_finding_ids\":[\"LF-0019\"],\"reason\":\"Annex E is undefined in the RFP.\"}],\"references\":[]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2235,
+   "tokens_out": 76,
+   "tokens_cached": 0,
+   "tokens_thinking": 1896,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:18:08Z"
+}

@@ -1,0 +1,26 @@
+{
+ "key": "sha256:56ee48dc0132f120b5affc74d496c263d8724444c05483c3dae9f5abb7d3a63b",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"topic\":\"System requirements for donors, volunteers, data storage, and availability\",\"duplicates\":[],\"discrepancies\":[],\"questions\":[],\"references\":[]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2465,
+   "tokens_out": 31,
+   "tokens_cached": 0,
+   "tokens_thinking": 1651,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:15:34Z"
+}

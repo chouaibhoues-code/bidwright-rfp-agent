@@ -1,0 +1,26 @@
+{
+ "key": "sha256:51eacf6c6ca46306276b08b7646a897cc808bdcf164d805abb040aec7234fbbd",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"topic\":\"Integration, data migration, and network connection requirements\",\"duplicates\":[],\"discrepancies\":[],\"questions\":[{\"text\":\"What are the technical specifications and accreditation requirements for the Halverton Public Services Network?\",\"requirement_ids\":[\"REQ-0062\"],\"lint_finding_ids\":[\"LF-0013\"],\"reason\":\"The network term is undefined.\"}],\"references\":[]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2321,
+   "tokens_out": 81,
+   "tokens_cached": 0,
+   "tokens_thinking": 1528,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:17:46Z"
+}

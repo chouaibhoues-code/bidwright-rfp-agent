@@ -1,0 +1,26 @@
+{
+ "key": "sha256:004a05a96613316799df7a85a89a3bf6721b71bc715a878aea2d15612aa7ca99",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Optional services including training and portal translation\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [\n    {\n      \"text\": \"Who is the Contractor referred to in the optional services requirements?\",\n      \"requirement_ids\": [\n        \"REQ-0084\",\n        \"REQ-0085\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0017\",\n        \"LF-0018\"\n      ],\n      \"reason\": \"The term is undefined.\"\n    }\n  ],\n  \"references\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2073,
+   "tokens_out": 146,
+   "tokens_cached": 0,
+   "tokens_thinking": 1142,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:18:09Z"
+}

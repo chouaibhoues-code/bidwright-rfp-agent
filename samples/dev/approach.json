@@ -1,0 +1,93 @@
+{
+ "items": [
+  {
+   "id": "APP-001",
+   "text": "Bid compliance: assemble the proposal as a single PDF of no more than 20 pages and submit it through the College's procurement portal by 2026-12-01 12:00 UTC.",
+   "requirement_ids": [
+    "REQ-0001"
+   ],
+   "basis": "The instructions fix the format, page limit, and deadline. The submission timing is an assumption.",
+   "evidence_class": "ASSUMPTION",
+   "source_ids": [
+    "SRC-0015"
+   ]
+  },
+  {
+   "id": "APP-002",
+   "text": "Signature platform: support signing on current desktop and mobile browsers, keep an audit record of every signature event including signer identity, time, and document version, and store signed documents for ten (10) years.",
+   "requirement_ids": [
+    "REQ-0002",
+    "REQ-0003",
+    "REQ-0006"
+   ],
+   "basis": "Browser support, audit components, and the 10-year retention period are stated. The storage location is an assumption.",
+   "evidence_class": "ASSUMPTION",
+   "source_ids": [
+    "SRC-0020",
+    "SRC-0022",
+    "SRC-0025"
+   ]
+  },
+  {
+   "id": "APP-003",
+   "text": "Reminders and integrations: send a reminder to each signer who has not signed within 72 hours, and integrate with the College's student records system through its existing REST API.",
+   "requirement_ids": [
+    "REQ-0004",
+    "REQ-0008"
+   ],
+   "basis": "The 72-hour reminder and REST API integration requirement are specified. API credentials are an assumption.",
+   "evidence_class": "ASSUMPTION",
+   "source_ids": [
+    "SRC-0023",
+    "SRC-0027"
+   ]
+  },
+  {
+   "id": "APP-004",
+   "text": "Availability and go-live: ensure the service is live for students by 2027-01-11, the first day of spring enrollment, and maintain 99.5% availability in each calendar month excluding planned maintenance announced five working days in advance.",
+   "requirement_ids": [
+    "REQ-0010",
+    "REQ-0012"
+   ],
+   "basis": "The go-live date and 99.5% availability metric are stated. Maintenance scheduling details are an assumption.",
+   "evidence_class": "ASSUMPTION",
+   "source_ids": [
+    "SRC-0029",
+    "SRC-0032"
+   ]
+  }
+ ],
+ "unmapped": [
+  "REQ-0005",
+  "REQ-0007",
+  "REQ-0009",
+  "REQ-0011"
+ ],
+ "questions": [
+  {
+   "text": "Should templates for the College's twelve most used forms be included, and in what format are they?",
+   "src_ids": [
+    "SRC-0024"
+   ]
+  },
+  {
+   "text": "What format are the signed records held in the current tool, and what is the expected volume for migration by 2027-02-28?",
+   "src_ids": [
+    "SRC-0026"
+   ]
+  },
+  {
+   "text": "What infrastructure and licensing assumptions apply to the optional on-premises deployment option?",
+   "src_ids": [
+    "SRC-0028"
+   ]
+  },
+  {
+   "text": "Should the one-hour response time for severity-one incidents apply 24/7, and through what communication channel?",
+   "src_ids": [
+    "SRC-0030"
+   ]
+  }
+ ],
+ "failure": null
+}

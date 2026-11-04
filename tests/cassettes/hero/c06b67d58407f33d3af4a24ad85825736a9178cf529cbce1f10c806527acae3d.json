@@ -1,0 +1,26 @@
+{
+ "key": "sha256:c06b67d58407f33d3af4a24ad85825736a9178cf529cbce1f10c806527acae3d",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Case handling, resident portal, and reporting requirements\",\n  \"duplicates\": [\n    {\n      \"requirement_id\": \"REQ-0044\",\n      \"duplicate_of\": \"REQ-0096\"\n    }\n  ],\n  \"discrepancies\": [\n    {\n      \"requirement_ids\": [\n        \"REQ-0050\",\n        \"REQ-0095\"\n      ],\n      \"kind\": \"INCONSISTENT_VALUE\",\n      \"state\": \"established\",\n      \"description\": \"Section 6.1 requires audit records to be kept for seven years, whereas Annex B requires five years.\",\n      \"resolved_by\": null\n    }\n  ],\n  \"questions\": [\n    {\n      \"text\": \"Should audit records be kept for seven years, as stated in section 6.1, or five years, as stated in Annex B?\",\n      \"requirement_ids\": [\n        \"REQ-0050\",\n        \"REQ-0095\"\n      ],\n      \"lint_finding_ids\": [],\n      \"reason\": \"The retention periods in the main document and Annex B disagree.\"\n    },\n    {\n      \"text\": \"What response times are considered appropriate for each case type?\",\n      \"requirement_ids\": [\n        \"REQ-0045\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0009\"\n      ],\n      \"reason\": \"The term appropriate is vague.\"\n    },\n    {\n      \"text\": \"What unit of measurement applies to the document storage requirement of at least 500?\",\n      \"requirement_ids\": [\n        \"REQ-0055\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0010\"\n      ],\n      \"reason\": \"The storage requirement is missing a unit.\"\n    },\n    {\n      \"text\": \"What is the maximum number of concurrent named users the service must support at peak times?\",\n      \"requirement_ids\": [\n        \"REQ-0056\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0011\"\n      ],\n      \"reason\": \"The concurrent user count is marked as TBC.\"\n    },\n    {\n      \"text\": \"Where can Schedule 7 be found for the statutory return formats?\",\n      \"requirement_ids\": [\n        \"REQ-0057\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0012\"\n      ],\n      \"reason\": \"Schedule 7 is a broken reference.\"\n    }\n  ],\n  \"references\": [\n    {\n      \"requirement_id\": \"REQ-0057\",\n      \"target\": \"Schedule 7\",\n      \"resolved_ids\": []\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3812,
+   "tokens_out": 665,
+   "tokens_cached": 0,
+   "tokens_thinking": 2828,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:17:57Z"
+}

@@ -2,6 +2,9 @@
 # 1, step 18). The examples stay only if `examples` beats `noexamples` by more than the
 # control's spread (step 20).
 name: s10-examples
+# Ran on 2026-11-04 against `extract` 0.3.0: the examples failed `superiority`, so `extract.md`
+# 0.4.0 took the text of `extract_noexamples`, which was then retired (ADR-028). Running this
+# file again needs a variant with examples in place of `extract_noexamples`.
 rfp: inputs/hero
 profile: free
 repeats: 5

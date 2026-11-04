@@ -25,7 +25,7 @@ options:
 
 ```text
 usage: bidwright run [-h] [--profile {free,local,paid}] [--baseline {b0,ex0}]
-                     [--allow-non-corpus CONSENT] [--cache] [--second-pass]
+                     [--allow-non-corpus CONSENT] [--cache] [--second-pass | --no-second-pass]
                      [--until {verify,coverage,consolidate,render}] [--outputs OUTPUTS]
                      file
 
@@ -38,7 +38,8 @@ options:
   --baseline {b0,ex0}
   --allow-non-corpus CONSENT
   --cache               answer repeated calls from the cache
-  --second-pass         re-read OBLIGATION zones (S-13)
+  --second-pass, --no-second-pass
+                        re-read OBLIGATION zones (S-13); config/limits.yaml sets the default
   --until {verify,coverage,consolidate,render}
                         the last node to run
   --outputs OUTPUTS

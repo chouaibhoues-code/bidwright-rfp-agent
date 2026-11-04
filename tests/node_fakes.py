@@ -32,7 +32,6 @@ DEV_RFP = Path(__file__).resolve().parents[1] / "inputs" / "dev" / "dev_rfp.pdf"
 PROMPT_IDS = (
     "extract",
     "extract_oneshot",
-    "extract_noexamples",
     "triage",
     "consolidate",
     "approach",

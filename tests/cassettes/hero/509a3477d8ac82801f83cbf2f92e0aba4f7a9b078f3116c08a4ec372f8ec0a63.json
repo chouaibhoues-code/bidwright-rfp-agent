@@ -1,0 +1,26 @@
+{
+ "key": "sha256:509a3477d8ac82801f83cbf2f92e0aba4f7a9b078f3116c08a4ec372f8ec0a63",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Service scope and general requirements\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [\n    {\n      \"text\": \"What specific case types beyond repairs, licensing, complaints, and environmental health are included?\",\n      \"requirement_ids\": [\n        \"REQ-0030\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0006\"\n      ],\n      \"reason\": \"The list of case types is open-ended.\"\n    },\n    {\n      \"text\": \"Where can bidders access Annex B?\",\n      \"requirement_ids\": [\n        \"REQ-0031\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0007\"\n      ],\n      \"reason\": \"Annex B is an undefined term.\"\n    },\n    {\n      \"text\": \"Where can bidders access Annex C for pricing the chat assistant?\",\n      \"requirement_ids\": [\n        \"REQ-0036\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0008\"\n      ],\n      \"reason\": \"Annex C is an undefined term.\"\n    },\n    {\n      \"text\": \"Who does 'The Contractor' refer to before a contract is awarded?\",\n      \"requirement_ids\": [\n        \"REQ-0095\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0020\"\n      ],\n      \"reason\": \"The Contractor is an undefined term.\"\n    },\n    {\n      \"text\": \"Who does 'The Contractor' refer to in the context of flow-down obligations?\",\n      \"requirement_ids\": [\n        \"REQ-0097\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0021\"\n      ],\n      \"reason\": \"The Contractor is an undefined term.\"\n    }\n  ],\n  \"references\": [\n    {\n      \"requirement_id\": \"REQ-0031\",\n      \"target\": \"Annex B\",\n      \"resolved_ids\": [\n        \"REQ-0095\",\n        \"REQ-0096\",\n        \"REQ-0097\",\n        \"REQ-0098\",\n        \"REQ-0099\"\n      ]\n    },\n    {\n      \"requirement_id\": \"REQ-0036\",\n      \"target\": \"Annex C\",\n      \"resolved_ids\": []\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2936,
+   "tokens_out": 592,
+   "tokens_cached": 0,
+   "tokens_thinking": 2319,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:17:55Z"
+}

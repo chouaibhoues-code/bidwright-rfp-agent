@@ -1,0 +1,53 @@
+{
+ "key": "sha256:539f263942224e42513497726450cb5f95ee3c3b9a5113bafe2731cbba2a69ec",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "date_calc",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_15685572415015625461",
+    "name": "date_calc",
+    "arguments": {
+     "other_date": "2027-01-11",
+     "op": "diff",
+     "date": "2026-12-01"
+    }
+   },
+   {
+    "id": "call_15685572415015627732",
+    "name": "search_rfp",
+    "arguments": {
+     "query": "REQ-0010"
+    }
+   },
+   {
+    "id": "call_15685572415015625907",
+    "name": "search_rfp",
+    "arguments": {
+     "query": "REQ-0006"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 3079,
+   "tokens_out": 92,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:14:47Z"
+}

@@ -1,0 +1,26 @@
+{
+ "key": "sha256:48100edbfcc184f45516a4e0677b3e28b57ffffab3cd783f91f4cae34a2c5106",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"topic\":\"Contractor liability, data processing, indemnities, and professional indemnity insurance\",\"duplicates\":[],\"discrepancies\":[],\"questions\":[],\"references\":[]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2231,
+   "tokens_out": 33,
+   "tokens_cached": 0,
+   "tokens_thinking": 1145,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:18:04Z"
+}

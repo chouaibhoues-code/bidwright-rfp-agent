@@ -2,7 +2,8 @@
 # only: it never comes from gold or from a corpus RFP. Each set renders into one prompt's
 # <examples> block through src/bidwright/prompts.py, which checks it against the schemas.
 
-# For extract, extract_oneshot and extract_noexamples: one worked batch, with one correct output
+# For the extract prompts until S-10 dropped their examples (ADR-028); kept for the Iteration 3
+# extraction ladder: one worked batch, with one correct output
 # per disposition. Three obligations to record, then the traps that must not become binding:
 # background that reads like a requirement, a "may" clause, an unticked option box and an
 # obligation on another party. A lead-in and plain narrative carry no item. Each passage shows

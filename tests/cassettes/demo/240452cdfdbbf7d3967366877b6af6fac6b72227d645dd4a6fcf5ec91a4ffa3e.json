@@ -1,0 +1,26 @@
+{
+ "key": "sha256:240452cdfdbbf7d3967366877b6af6fac6b72227d645dd4a6fcf5ec91a4ffa3e",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ExtractResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"items\":[{\"src_ids\":[\"SRC-0015\"],\"quote\":\"Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC.\",\"statement\":\"Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC.\",\"modality\":\"must\",\"disposition\":\"BINDING\",\"hazard\":true},{\"src_ids\":[\"SRC-0020\"],\"quote\":\"The Supplier shall keep an audit record of every signature event, including the signer's identity, the time and the document version.\",\"statement\":\"The Supplier shall keep an audit record of every signature event, including the signer's identity, the time and the document version.\",\"modality\":\"shall\",\"disposition\":\"BINDING\",\"hazard\":false},{\"src_ids\":[\"SRC-0022\"],\"quote\":\"(a) support signing on current desktop and mobile browsers;\",\"statement\":\"The Supplier shall support signing on current desktop and mobile browsers.\",\"modality\":\"shall\",\"disposition\":\"BINDING\",\"hazard\":false},{\"src_ids\":[\"SRC-0023\"],\"quote\":\"(b) send a reminder to each signer who has not signed within 72 hours.\",\"statement\":\"The Supplier shall send a reminder to each signer who has not signed within 72 hours.\",\"modality\":\"shall\",\"disposition\":\"BINDING\",\"hazard\":false},{\"src_ids\":[\"SRC-0024\"],\"quote\":\"The Supplier should provide templates for the College's twelve most used forms.\",\"statement\":\"The Supplier should provide templates for the College's twelve most used forms.\",\"modality\":\"should\",\"disposition\":\"OPTIONAL\",\"hazard\":false},{\"src_ids\":[\"SRC-0025\"],\"quote\":\"The Supplier shall store signed documents for ten (10) years.\",\"statement\":\"The Supplier shall store signed documents for ten (10) years.\",\"modality\":\"shall\",\"disposition\":\"BINDING\",\"hazard\":false},{\"src_ids\":[\"SRC-0026\"],\"quote\":\"The Supplier should migrate the signed records held in the current tool by 2027-02-28.\",\"statement\":\"The Supplier should migrate the signed records held in the current tool by 2027-02-28.\",\"modality\":\"should\",\"disposition\":\"OPTIONAL\",\"hazard\":false},{\"src_ids\":[\"SRC-0027\"],\"quote\":\"The service must integrate with the College's student records system through its existing REST API.\",\"statement\":\"The service must integrate with the College's student records system through its existing REST API.\",\"modality\":\"must\",\"disposition\":\"BINDING\",\"hazard\":false},{\"src_ids\":[\"SRC-0028\"],\"quote\":\"Bidders may propose an on-premises deployment option.\",\"statement\":\"Bidders may propose an on-premises deployment option.\",\"modality\":\"may\",\"disposition\":\"OPTIONAL\",\"hazard\":false},{\"src_ids\":[\"SRC-0029\"],\"quote\":\"The service shall be available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance.\",\"statement\":\"The service shall be available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance.\",\"modality\":\"shall\",\"disposition\":\"BINDING\",\"hazard\":false},{\"src_ids\":[\"SRC-0030\"],\"quote\":\"The Supplier should respond to severity-one incidents within one hour, at any time of day.\",\"statement\":\"The Supplier should respond to severity-one incidents within one hour, at any time of day.\",\"modality\":\"should\",\"disposition\":\"OPTIONAL\",\"hazard\":false},{\"src_ids\":[\"SRC-0032\"],\"quote\":\"The service must be live for students by 2027-01-11, the first day of spring enrollment.\",\"statement\":\"The service must be live for students by 2027-01-11, the first day of spring enrollment.\",\"modality\":\"must\",\"disposition\":\"BINDING\",\"hazard\":false}],\"no_obligation_src_ids\":[\"SRC-0001\",\"SRC-0002\",\"SRC-0003\",\"SRC-0004\",\"SRC-0005\",\"SRC-0006\",\"SRC-0007\",\"SRC-0008\",\"SRC-0009\",\"SRC-0010\",\"SRC-0011\",\"SRC-0012\",\"SRC-0013\",\"SRC-0014\",\"SRC-0016\",\"SRC-0017\",\"SRC-0018\",\"SRC-0019\",\"SRC-0021\",\"SRC-0031\",\"SRC-0033\",\"SRC-0034\",\"SRC-0035\",\"SRC-0036\",\"SRC-0037\",\"SRC-0038\",\"SRC-0039\"]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3590,
+   "tokens_out": 1103,
+   "tokens_cached": 0,
+   "tokens_thinking": 5156,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:14:18Z"
+}

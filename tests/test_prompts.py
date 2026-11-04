@@ -154,12 +154,12 @@ def test_a_version_mismatch_in_a_ref_is_an_error() -> None:
         load_prompt_ref("extract@9.9.9")
 
 
-def test_extract_examples_show_every_route() -> None:
+def test_the_extract_prompt_names_every_route() -> None:
+    """Without examples since S-10, the decision table and the output format carry every route."""
     system = load_prompt("extract").system
     labels = ("BINDING", "OPTIONAL", "BACKGROUND", "NOT_BINDING", "OUT_OF_SCOPE")
-    for label in (*labels, "no_obligation_src_ids"):
+    for label in (*labels, "no_obligation_src_ids", "hazard"):
         assert label in system
-    assert '"hazard": true' in system
 
 
 def test_decoding_is_passed_on_per_provider() -> None:
@@ -185,19 +185,17 @@ def test_the_triage_prompt_renders_its_outline_example() -> None:
     assert "T01" in triage.task_text(data_tag="data-x", call_id="T01")
 
 
-def test_the_extract_prompts_are_at_0_3_0_and_share_their_tasks() -> None:
+def test_the_extract_prompts_are_at_0_4_0_without_examples_and_share_their_tasks() -> None:
+    """S-10 dropped the worked examples from both extract prompts (ADR-028)."""
     extract = load_prompt("extract")
-    for prompt_id in ("extract", "extract_oneshot", "extract_noexamples"):
+    for prompt_id in ("extract", "extract_oneshot"):
         prompt = load_prompt(prompt_id)
-        assert prompt.meta.version == "0.3.0", prompt_id
+        assert prompt.meta.version == "0.4.0", prompt_id
+        assert prompt.meta.examples is None and prompt.examples == "", prompt_id
+        assert "<examples>" not in prompt.system and "A batch:" not in prompt.system, prompt_id
         assert set(prompt.tasks) == set(extract.tasks), prompt_id
         asked = prompt.task_text("second_pass", data_tag="data-x", ids='["SRC-0001"]')
         assert "SRC-0001" in asked and "the first reading missed" in asked
-    bare = load_prompt("extract_noexamples")
-    assert bare.meta.examples is None and bare.examples == "" and "A batch:" not in bare.system
-    assert bare.system.replace("\n", "") in extract.system.replace(extract.examples, "").replace(
-        "\n", ""
-    ).replace("<examples></examples>", ""), "the same text, less the examples"
 
 
 def test_the_clause_examples_cover_every_disposition_with_valid_values() -> None:
@@ -213,5 +211,3 @@ def test_the_clause_examples_cover_every_disposition_with_valid_values() -> None
         sources = [expect["quote"], clause["text"], clause.get("lead_in") or ""]
         assert missing_values(expect["statement"], sources) == [], clause["src_id"]
         assert {"zone", "cues"} <= set(clause), clause["src_id"]
-    system = load_prompt("extract").system
-    assert '"zone": "OBLIGATION"' in system and '"suspect": false' in system

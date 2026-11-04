@@ -44,6 +44,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 025 | Agent configuration declares only what code enforces | accepted |
 | 026 | Client documents: the data class, retention, the privacy invariant, the text view and the egress register | accepted |
 | 027 | Iteration 1's spike decisions: Docling stays, and packs of 40 | accepted |
+| 028 | The `extract` prompt drops its examples, and the second pass is on | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -687,6 +688,29 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** A later matrix shows packs of 40 losing mandatory requirements beyond the noise of smaller packs, for example after S-10 or S-13 change the prompt, or a document Docling parses with fewer than 98% of its gold clauses located.
 
 **Provenance.** S-01 and S-03, 2026-11-04; the decision rules of `docs/designs/iteration-1.md`, step 20.
+
+### ADR-028: The `extract` prompt drops its examples, and the second pass is on
+
+**Status:** accepted, 2026-11-04, under the decision rules the plan fixed before each spike ran and hashed with the gold in `evals/hypotheses.yaml`; the owner chose to run both spikes in Iteration 1 (CH-86).
+
+**Context.** S-10 asks whether the worked examples in `extract.md` earn their tokens: they stay only if they lower the median missed mandatory requirements by more than the spread of the prompt without them (`superiority`). S-13 asks whether a second reading of `OBLIGATION` zones, over the passages the first reading found nothing binding in, lowers the median misses while costing at most 3 points of low precision (`improvement`). Both ran on the hero package to `coverage`, with packs of 40 and five repeats a rung, S-13 on the prompt S-10 chose.
+
+**Decision.**
+- `extract.md` and `extract_oneshot.md` move to 0.4.0, without examples, and `extract_noexamples.md` is retired. With the examples, the median misses were 7 (4-9) of 45 against 9 (5-10) without, short of the control's spread of 5; without them, low precision rose from 0.69 to 0.81 and the tokens fell by a third.
+- The second pass is on: `second_pass: true` in `config/limits.yaml`, which `execute` now reads as its default. The median misses fell from 9 (5-10) to 8 (4-8), and low precision by 2.2 points. Baselines keep it off, since EX0's single call is its definition.
+
+**Consequences.**
+- Taken together, the two rules leave the median misses where S-03 left them, 8 against 7 inside the spreads, raise low precision from 0.69 to 0.79 and F1 from 0.74 to 0.80, and cost 5 more requests a hero run to `coverage`.
+- The hero baseline was written again from a recording with this configuration: 8 of 45 missed, against 7 before, which the gate would otherwise have blocked. The trap clauses missed are the same, plus GR-0042, an obligation inside a definition.
+- The demo, development DOCX and hero recordings were made again, on the paid key with the same models, since the free quota was spent; replays and CI still need no key.
+
+**Options.** Keeping the examples, which did not show a gain beyond the noise and cost a third more tokens; leaving the second pass off, which missed one more requirement at the median.
+
+**Confirmation.** `evals/results/s10-examples/`, `evals/results/s13-second-pass/`; `tests/test_prompts.py`, `tests/test_cli.py`; the gold job's gate on the hero replay.
+
+**Reverse if.** The Iteration 3 extraction ladder, with its bootstrap rule, shows the examples lowering the misses beyond noise, or the second pass costing more precision than it saves misses.
+
+**Provenance.** S-10 and S-13, 2026-11-04; the decision rules of `docs/designs/iteration-1.md`, step 20; CH-86.
 
 ## Failure modes hit
 

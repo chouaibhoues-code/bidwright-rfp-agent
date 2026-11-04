@@ -1,0 +1,26 @@
+{
+ "key": "sha256:da2739f463bbc936ab8a3eb4f8172982291ced4bc7233851720ec75494f17134",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ExtractResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"items\": [\n    {\n      \"src_ids\": [\n        \"SRC-0013\"\n      ],\n      \"quote\": \"Proposals must be sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12, as one document of no more than 15 pages.\",\n      \"statement\": \"Proposals must be sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12, as one document of no more than 15 pages.\",\n      \"modality\": \"must\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": true\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0016\"\n      ],\n      \"quote\": \"The system shall hold a record for each donor with their contact details and the history of their gifts.\",\n      \"statement\": \"The system shall hold a record for each donor with their contact details and the history of their gifts.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0017\"\n      ],\n      \"quote\": \"The system shall record each donor's consent to be contacted by e-mail, by post and by telephone, with the date the consent was given.\",\n      \"statement\": \"The system shall record each donor's consent to be contacted by e-mail, by post and by telephone, with the date the consent was given.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0019\",\n        \"SRC-0018\"\n      ],\n      \"quote\": \"record the hours each volunteer gives to each club;\",\n      \"statement\": \"For volunteers, the system shall record the hours each volunteer gives to each club.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0020\",\n        \"SRC-0018\"\n      ],\n      \"quote\": \"send each volunteer a reminder two days before every session they are booked on.\",\n      \"statement\": \"For volunteers, the system shall send each volunteer a reminder two days before every session they are booked on.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0021\"\n      ],\n      \"quote\": \"The system should import the Trust's existing donor spreadsheet without manual retyping.\",\n      \"statement\": \"The system should import the Trust's existing donor spreadsheet without manual retyping.\",\n      \"modality\": \"should\",\n      \"disposition\": \"OPTIONAL\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0022\"\n      ],\n      \"quote\": \"The system must keep all personal data in the United Kingdom.\",\n      \"statement\": \"The system must keep all personal data in the United Kingdom.\",\n      \"modality\": \"must\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": true\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0023\"\n      ],\n      \"quote\": \"Bidders may offer a mobile app for volunteers as an optional extra.\",\n      \"statement\": \"Bidders may offer a mobile app for volunteers as an optional extra.\",\n      \"modality\": \"may\",\n      \"disposition\": \"OPTIONAL\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0024\"\n      ],\n      \"quote\": \"The system shall be available 99% of the time in each calendar month.\",\n      \"statement\": \"The system shall be available 99% of the time in each calendar month.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0025\"\n      ],\n      \"quote\": \"The supplier shall train the Trust's staff before the system goes live.\",\n      \"statement\": \"The supplier shall train the Trust's staff before the system goes live.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0026\"\n      ],\n      \"quote\": \"The system must be live by 2027-06-30.\",\n      \"statement\": \"The system must be live by 2027-06-30.\",\n      \"modality\": \"must\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": true\n    }\n  ],\n  \"no_obligation_src_ids\": [\n    \"SRC-0001\",\n    \"SRC-0002\",\n    \"SRC-0003\",\n    \"SRC-0004\",\n    \"SRC-0005\",\n    \"SRC-0006\",\n    \"SRC-0007\",\n    \"SRC-0008\",\n    \"SRC-0009\",\n    \"SRC-0010\",\n    \"SRC-0011\",\n    \"SRC-0012\",\n    \"SRC-0014\",\n    \"SRC-0015\",\n    \"SRC-0018\",\n    \"SRC-0027\",\n    \"SRC-0028\",\n    \"SRC-0029\",\n    \"SRC-0030\",\n    \"SRC-0031\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2996,
+   "tokens_out": 1395,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:15:29Z"
+}

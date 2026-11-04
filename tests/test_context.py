@@ -310,7 +310,7 @@ def test_a_cluster_call_is_named_by_its_group_and_lists_its_passages(tmp_path: P
 
 
 def test_the_prompt_layers_are_rules_examples_and_task() -> None:
-    prompt = load_prompt("extract")
+    prompt = load_prompt("triage")  # extract carries no examples since S-10 (ADR-028)
     assert prompt.examples and prompt.examples in prompt.system
     layers = prompt_tokens(prompt, 4)
     assert layers.rules == estimate_tokens(len(prompt.system) - len(prompt.examples), 4)
@@ -318,7 +318,8 @@ def test_the_prompt_layers_are_rules_examples_and_task() -> None:
     assert layers.task == estimate_tokens(len(prompt.tasks["task"].template), 4)
     assert layers.evidence == 0
     budgets = load_config().limits.context.budgets
-    assert layers.rules + layers.examples + layers.task < budgets["extract"]
+    assert layers.rules + layers.examples + layers.task < budgets["triage"]
+    assert prompt_tokens(load_prompt("extract"), 4).examples == 0
     with pytest.raises(KeyError, match="no_such_task"):
         prompt_tokens(prompt, 4, task="no_such_task")
 

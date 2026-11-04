@@ -1,0 +1,360 @@
+{
+ "matrix": "s13-second-pass",
+ "gold": "hero v2 9e6f4ecc6ef6",
+ "runs": 10,
+ "finished": 10,
+ "fell_back": [],
+ "rungs": {
+  "off": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.8182,
+    "min": 0.803,
+    "max": 0.8939,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.7963,
+    "min": 0.7521,
+    "max": 0.8696,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.8869,
+    "min": 0.8759,
+    "max": 0.937,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 9.0,
+    "min": 5.0,
+    "max": 10.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 9.0,
+    "min": 5.0,
+    "max": 10.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 0.9773,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 0.9683,
+    "min": 0.9667,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.8113,
+    "min": 0.7097,
+    "max": 0.8462,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.8,
+    "min": 0.7818,
+    "max": 0.9091,
+    "n": 5
+   },
+   "requests": {
+    "median": 8.0,
+    "min": 8.0,
+    "max": 8.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.0867464,
+    "min": 0.0554822,
+    "max": 0.0919001,
+    "n": 5
+   },
+   "tokens": {
+    "median": 64231.0,
+    "min": 51694.0,
+    "max": 66277.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.9091,
+    "min": 0.88,
+    "max": 0.9111,
+    "n": 5
+   }
+  },
+  "on": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.0586936,
+    "min": 0.0553754,
+    "max": 0.0800054,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.8485,
+    "min": 0.8182,
+    "max": 0.9091,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.8036,
+    "min": 0.7563,
+    "max": 0.8718,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9,
+    "min": 0.8869,
+    "max": 0.9471,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 8.0,
+    "min": 4.0,
+    "max": 8.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 8.0,
+    "min": 4.0,
+    "max": 8.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 0.9778,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 0.9688,
+    "min": 0.9677,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.7895,
+    "min": 0.7031,
+    "max": 0.8226,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.8182,
+    "min": 0.8182,
+    "max": 0.9273,
+    "n": 5
+   },
+   "requests": {
+    "median": 13.0,
+    "min": 13.0,
+    "max": 13.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.149544,
+    "min": 0.1141758,
+    "max": 0.1667518,
+    "n": 5
+   },
+   "tokens": {
+    "median": 107628.0,
+    "min": 93530.0,
+    "max": 114512.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.9111,
+    "min": 0.8824,
+    "max": 0.9111,
+    "n": 5
+   }
+  }
+ },
+ "decisions": [
+  {
+   "rung": "on",
+   "control": "off",
+   "metric": "missed_mandatory_count",
+   "kind": "improvement",
+   "passed": true,
+   "detail": "median 8 against 9; secondary drop 0.0218 (max 0.03)",
+   "hypothesis": "The second pass lowers the median misses and costs at most 3 points of precision"
+  }
+ ]
+}

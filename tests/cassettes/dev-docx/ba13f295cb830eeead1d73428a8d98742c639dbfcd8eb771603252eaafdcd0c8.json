@@ -1,0 +1,26 @@
+{
+ "key": "sha256:ba13f295cb830eeead1d73428a8d98742c639dbfcd8eb771603252eaafdcd0c8",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"System go-live timeline and staff training\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [\n    {\n      \"text\": \"How far in advance of the 2027-06-30 go-live date must the staff training be completed?\",\n      \"requirement_ids\": [\n        \"REQ-0010\"\n      ],\n      \"lint_finding_ids\": [],\n      \"reason\": \"The exact timing for the pre-live staff training is unspecified.\"\n    }\n  ],\n  \"references\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1937,
+   "tokens_out": 138,
+   "tokens_cached": 0,
+   "tokens_thinking": 1607,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:15:34Z"
+}

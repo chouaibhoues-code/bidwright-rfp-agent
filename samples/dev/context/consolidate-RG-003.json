@@ -1,0 +1,1 @@
+{"node":"consolidate","call_id":"RG-003","included_src_ids":["SRC-0029","SRC-0030"],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"tokens_by_layer":{"rules":627,"examples":778,"evidence":230,"task":90},"budget_tokens":8000,"utilization":0.2156}

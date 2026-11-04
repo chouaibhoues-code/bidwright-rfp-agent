@@ -1,0 +1,26 @@
+{
+ "key": "sha256:ccf0e59ccc1f3279d4c4ff7e9f5034cdc05ea48838d145704e3db3fd472fbff1",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ExtractResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"items\": [\n    {\n      \"src_ids\": [\n        \"SRC-0172\"\n      ],\n      \"quote\": \"The Contractor's service desk supports Council staff, and residents contact the Council rather than the Contractor.\",\n      \"statement\": \"The Contractor must ensure its service desk supports Council staff.\",\n      \"modality\": \"none\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": false\n    }\n  ],\n  \"no_obligation_src_ids\": [\n    \"SRC-0161\",\n    \"SRC-0162\",\n    \"SRC-0163\",\n    \"SRC-0164\",\n    \"SRC-0168\",\n    \"SRC-0169\",\n    \"SRC-0170\",\n    \"SRC-0171\",\n    \"SRC-0173\",\n    \"SRC-0174\",\n    \"SRC-0175\",\n    \"SRC-0178\",\n    \"SRC-0179\",\n    \"SRC-0181\",\n    \"SRC-0183\",\n    \"SRC-0184\",\n    \"SRC-0192\",\n    \"SRC-0193\",\n    \"SRC-0194\",\n    \"SRC-0195\",\n    \"SRC-0196\",\n    \"SRC-0197\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 4283,
+   "tokens_out": 342,
+   "tokens_cached": 0,
+   "tokens_thinking": 2832,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:17:20Z"
+}

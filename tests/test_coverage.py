@@ -92,6 +92,7 @@ def _run(tmp_path: Path, model: RuleBackend, name: str) -> Path:
         backends={"gemini": model},
         run_id=name,
         batch_size=20,  # the scenarios are written for two first-pass packs, B01 and B02
+        second_pass=False,  # and count the coverage calls alone
     )
     return result.run_dir
 

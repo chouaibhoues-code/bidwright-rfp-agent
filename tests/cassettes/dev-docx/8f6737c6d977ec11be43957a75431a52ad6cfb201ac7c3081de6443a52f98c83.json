@@ -1,0 +1,26 @@
+{
+ "key": "sha256:8f6737c6d977ec11be43957a75431a52ad6cfb201ac7c3081de6443a52f98c83",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ApproachResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"items\": [{\"text\": \"Bid compliance: send the proposal by e-mail to the Trust's office as one document of no more than 15 pages by 17:00 GMT on 2027-02-12, ensure all personal data is kept in the United Kingdom, and achieve system go-live by 2027-06-30.\", \"requirement_ids\": [\"REQ-0001\", \"REQ-0007\", \"REQ-0011\"], \"basis\": \"The instructions state the format, page limit, deadline, data location requirement, and go-live date. Compliance with these criteria is achieved by directly matching proposal delivery and hosting architecture to the requirements.\"}, {\"text\": \"Donor management: hold a record for each donor with their contact details and the history of their gifts, and record each donor's consent to be contacted by e-mail, by post and by telephone, with the date the consent was given.\", \"requirement_ids\": [\"REQ-0002\", \"REQ-0003\"], \"basis\": \"The system architecture incorporates dedicated data structures for donor profiles, gift histories, and granular contact consents with timestamps.\"}, {\"text\": \"Volunteer management: record the hours each volunteer gives to each club, and send each volunteer a reminder two days before every session they are booked on.\", \"requirement_ids\": [\"REQ-0004\", \"REQ-0005\"], \"basis\": \"Volunteer hours and booking schedules are tracked in the database, triggering automated reminders two days prior to sessions.\"}, {\"text\": \"Training services: train the Trust's staff before the system goes live.\", \"requirement_ids\": [\"REQ-0010\"], \"basis\": \"Training sessions will be scheduled and completed prior to the 2027-06-30 go-live date.\"}, {\"text\": \"Data migration: import the Trust's existing donor spreadsheet without manual retyping as part of the implementation option.\", \"requirement_ids\": [\"REQ-0006\"], \"basis\": \"An import utility script will process the existing spreadsheet format.\"}], \"unmapped_requirement_ids\": [\"REQ-0008\"], \"open_questions\": [{\"text\": \"Should the optional mobile app for volunteers be priced separately, and what specific features must it include?\", \"requirement_ids\": [\"REQ-0008\"]}]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1502,
+   "tokens_out": 509,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:15:36Z"
+}

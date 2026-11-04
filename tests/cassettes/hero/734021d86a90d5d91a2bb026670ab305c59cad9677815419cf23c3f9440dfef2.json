@@ -1,0 +1,26 @@
+{
+ "key": "sha256:734021d86a90d5d91a2bb026670ab305c59cad9677815419cf23c3f9440dfef2",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ExtractResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"items\": [\n    {\n      \"src_ids\": [\n        \"SRC-0204\"\n      ],\n      \"quote\": \"The Contractor should place at least a quarter of its subcontracted spend with small businesses based in the region.\",\n      \"statement\": \"The Contractor should place at least a quarter of its subcontracted spend with small businesses based in the region.\",\n      \"modality\": \"should\",\n      \"disposition\": \"OPTIONAL\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0229\"\n      ],\n      \"quote\": \"The Contractor shall accept unlimited liability for any loss of personal data caused by its breach of the contract.\",\n      \"statement\": \"The Contractor shall accept unlimited liability for any loss of personal data caused by its breach of the contract.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": true\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0230\"\n      ],\n      \"quote\": \"The Contractor shall indemnify the Council against any claim by a third party that the service infringes a patent, copyright or trade mark.\",\n      \"statement\": \"The Contractor shall indemnify the Council against any claim by a third party that the service infringes a patent, copyright or trade mark.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": true\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0232\"\n      ],\n      \"quote\": \"The Contractor shall process personal data only on the Council's documented instructions, as the Council's data processor.\",\n      \"statement\": \"The Contractor shall process personal data only on the Council's documented instructions, as the Council's data processor.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": true\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0235\"\n      ],\n      \"quote\": \"The Contractor shall keep professional indemnity insurance of at least £5,000,000 for six years after the contract ends.\",\n      \"statement\": \"The Contractor shall keep professional indemnity insurance of at least £5,000,000 for six years after the contract ends.\",\n      \"modality\": \"shall\",\n      \"disposition\": \"BINDING\",\n      \"hazard\": true\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0237\"\n      ],\n      \"quote\": \"[ ] The Contractor will provide on-site training for each team in the month after go-live (tick if offered).\",\n      \"statement\": \"The Contractor will provide on-site training for each team in the month after go-live if offered.\",\n      \"modality\": \"will\",\n      \"disposition\": \"OPTIONAL\",\n      \"hazard\": false\n    },\n    {\n      \"src_ids\": [\n        \"SRC-0238\"\n      ],\n      \"quote\": \"[ ] The Contractor will translate the resident portal into Polish and Urdu (tick if offered).\",\n      \"statement\": \"The Contractor will translate the resident portal into Polish and Urdu if offered.\",\n      \"modality\": \"will\",\n      \"disposition\": \"OPTIONAL\",\n      \"hazard\": false\n    }\n  ],\n  \"no_obligation_src_ids\": [\n    \"SRC-0201\",\n    \"SRC-0202\",\n    \"SRC-0203\",\n    \"SRC-0205\",\n    \"SRC-0206\",\n    \"SRC-0207\",\n    \"SRC-0208\",\n    \"SRC-0209\",\n    \"SRC-0210\",\n    \"SRC-0211\",\n    \"SRC-0212\",\n    \"SRC-0213\",\n    \"SRC-0214\",\n    \"SRC-0215\",\n    \"SRC-0216\",\n    \"SRC-0217\",\n    \"SRC-0218\",\n    \"SRC-0219\",\n    \"SRC-0220\",\n    \"SRC-0221\",\n    \"SRC-0222\",\n    \"SRC-0223\",\n    \"SRC-0224\",\n    \"SRC-0225\",\n    \"SRC-0226\",\n    \"SRC-0227\",\n    \"SRC-0228\",\n    \"SRC-0231\",\n    \"SRC-0233\",\n    \"SRC-0234\",\n    \"SRC-0236\",\n    \"SRC-0239\",\n    \"SRC-0240\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 4245,
+   "tokens_out": 1119,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:17:05Z"
+}

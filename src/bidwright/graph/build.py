@@ -812,11 +812,18 @@ def _degraded(state: dict[str, Any]) -> str | None:
     return "; ".join(reasons) or None
 
 
+def _second_pass(asked: bool | None, baseline: bool, config: Config) -> bool:
+    """The flag a caller passed; otherwise off for a baseline, whose one call is its
+    definition, and `limits.yaml`'s value for any other run (S-13, ADR-028)."""
+    if asked is not None:
+        return asked
+    return False if baseline else config.limits.second_pass
+
+
 def run_prompts(config: Config) -> dict[str, Prompt]:
     """Each agent's pinned prompt, plus the extraction baselines' prompts."""
     prompts = {name: load_prompt_ref(agent.prompt) for name, agent in config.agents.agents.items()}
     prompts["extract_oneshot"] = load_prompt("extract_oneshot")
-    prompts["extract_noexamples"] = load_prompt("extract_noexamples")
     return prompts
 
 
@@ -853,7 +860,7 @@ def execute(
     until: str = "render",
     batch_size: int | None = None,
     extract_prompt: str | None = None,
-    second_pass: bool = False,
+    second_pass: bool | None = None,
     repeat: int = 0,
     cache: bool = False,
     docling_mode: Mode | None = None,
@@ -943,7 +950,7 @@ def execute(
         run_dir=run_dir,
         extract_prompt=extract_prompt or (chosen.extract_prompt if chosen else "extract"),
         one_batch=chosen.one_batch if chosen else False,
-        second_pass=second_pass,
+        second_pass=_second_pass(second_pass, chosen is not None, config),
         until=until,
         batch_size=batch_size,
         baseline=baseline,

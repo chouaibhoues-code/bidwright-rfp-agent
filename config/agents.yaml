@@ -13,7 +13,7 @@ extract:
   kind: function
   input: ExtractBatch
   output: ExtractResult
-  prompt: extract@0.3.0
+  prompt: extract@0.4.0
   model_role: extract
   tools: []
 

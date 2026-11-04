@@ -110,7 +110,12 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--baseline", choices=sorted(BASELINES))
     run.add_argument("--allow-non-corpus", dest="consent", metavar="CONSENT")
     run.add_argument("--cache", action="store_true", help="answer repeated calls from the cache")
-    run.add_argument("--second-pass", action="store_true", help="re-read OBLIGATION zones (S-13)")
+    run.add_argument(
+        "--second-pass",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="re-read OBLIGATION zones (S-13); config/limits.yaml sets the default",
+    )
     run.add_argument("--until", choices=UNTIL, default="render", help="the last node to run")
     run.add_argument("--outputs", type=Path, default=HOME / "outputs")
     demo = sub.add_parser("demo", help="replay the recorded development run, with no keys")

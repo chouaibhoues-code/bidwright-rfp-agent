@@ -1,0 +1,26 @@
+{
+ "key": "sha256:4434ce4ec3c01abcfdf81dc97787a787907d22e481a06b58d487ae47d44928c1",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Service levels for availability and severity-one incident response\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [],\n  \"references\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1960,
+   "tokens_out": 48,
+   "tokens_cached": 0,
+   "tokens_thinking": 654,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:14:36Z"
+}

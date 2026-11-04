@@ -1,0 +1,26 @@
+{
+ "key": "sha256:c8457da84ebef00a9c541eac5f51a48f15ab59d72648494ed2943cb47baa00e4",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Bidding and tender submission instructions\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [\n    {\n      \"text\": \"Which URL or system should bidders use to access the Halverton e-Tendering Portal?\",\n      \"requirement_ids\": [\n        \"REQ-0008\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0001\"\n      ],\n      \"reason\": \"The tendering portal is undefined.\"\n    },\n    {\n      \"text\": \"Where can Annex C and Annex D be found?\",\n      \"requirement_ids\": [\n        \"REQ-0010\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0002\",\n        \"LF-0003\"\n      ],\n      \"reason\": \"Annex C and Annex D are undefined.\"\n    },\n    {\n      \"text\": \"What unit of measurement applies to the minimum type size of at least 11 for the quality response?\",\n      \"requirement_ids\": [\n        \"REQ-0012\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0004\"\n      ],\n      \"reason\": \"The unit for type size is missing.\"\n    }\n  ],\n  \"references\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3077,
+   "tokens_out": 315,
+   "tokens_cached": 0,
+   "tokens_thinking": 1761,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:17:31Z"
+}

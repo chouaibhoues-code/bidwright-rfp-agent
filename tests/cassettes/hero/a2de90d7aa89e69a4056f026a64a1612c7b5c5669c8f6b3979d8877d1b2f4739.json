@@ -1,0 +1,26 @@
+{
+ "key": "sha256:a2de90d7aa89e69a4056f026a64a1612c7b5c5669c8f6b3979d8877d1b2f4739",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Technical, security, and operational requirements\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [\n    {\n      \"text\": \"Does the requirement for data centers in the United Kingdom exclude any specific territories or require specific security standards?\",\n      \"requirement_ids\": [\n        \"REQ-0063\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0014\"\n      ],\n      \"reason\": \"The term United Kingdom is undefined.\"\n    },\n    {\n      \"text\": \"What unit of measurement applies to the disaster recovery site distance requirement?\",\n      \"requirement_ids\": [\n        \"REQ-0064\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0015\"\n      ],\n      \"reason\": \"The distance unit is missing.\"\n    }\n  ],\n  \"references\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2253,
+   "tokens_out": 217,
+   "tokens_cached": 0,
+   "tokens_thinking": 1648,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T21:17:53Z"
+}
