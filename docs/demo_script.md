@@ -1,22 +1,16 @@
 # Demo script (3-5 minutes)
 
-The full script is written at release. Its structure is fixed now, so every tag can be shown the same way.
+The owner records the demo at release, from a clean checkout of `v0.1` or later, with no keys: `bidwright demo` replays a recorded live run, so the recording calls no model and needs no network. The script follows the six parts fixed in Iteration 0a, so every tag is shown the same way.
 
-| Part | Time | What is shown |
-|---|---|---|
-| 1. The problem | 30 s | A bid team receives an RFP package and must not miss a mandatory requirement |
-| 2. The solution summary | 60 s | `outputs/<run>/solution_summary.md`: submission hazards first, then requirements with verified quotes, approach and risks |
-| 3. The agentic step | 60 s | The `risk` loop's tool calls in the trace, and where it stopped |
-| 4. Evaluation | 60 s | The scorecard: missed mandatory requirements, with the stage that lost each miss |
-| 5. Cost and latency | 30 s | Ledger totals per node and per run, with the shadow price |
-| 6. What a person still decides | 30 s | Every output stays `UNREVIEWED_DRAFT` until sign-off |
+**Before recording.** Run `uv sync`, open a terminal at the repository root and an editor beside it, and run `uv run bidwright demo` once, so its run folder is ready to open. To show the trace tree in Phoenix instead of `spans.jsonl`, start it with `docker compose up -d phoenix`, which needs `GEMINI_API_KEY` in `.env` (ADR-002), and set `PHOENIX_ENDPOINT=http://127.0.0.1:6006` in `.env` before the run.
 
-## Commands at `v0.1`
+| Part | Time | Show | Points to make |
+|---|---|---|---|
+| 1. The problem | 30 s | `inputs/hero/`: a main RFP, an addendum and an XLSX annex, with `package.yaml` giving their order of precedence | One missed mandatory clause can disqualify a bid. A real package hides obligations in tables, annexes and addenda, and can carry hidden text aimed at a model. Bidwright drafts what a bid team needs first: the requirements, an approach and the risks, every requirement traced to a quote that code has checked. |
+| 2. The solution summary | 60 s | `uv run bidwright demo`, then the `solution_summary.md` it names: submission hazards first, then mandatory and optional requirements, each with its verified quote and source passage, then approach items with the requirements they answer, risks with their evidence, and open questions. Beside it: `compliance_matrix.xlsx`, `submission_checklist.md` and `review/quarantine.md` | Code checked each quote, and each number and date, against the passage it cites before accepting it. The hidden instruction planted in the development RFP was kept out of the parsed text and listed for a person, so no model ever read it. |
+| 3. The agentic step | 60 s | `spans.jsonl` in the run folder, or Phoenix: the `node.risk` agent span, with `stop_reason` `tool_cap`, 2 turns and 7 tool calls, and its `tool.search_rfp` and `tool.date_calc` children, the seventh `DENIED` | The `risk` agent chooses its own searches and date arithmetic. A gateway outside the model checks every call against the agent's allowlist, the arguments and a cap of 6 calls, and denied the seventh. A graph in code, not a model, decides each next step. |
+| 4. Evaluation | 60 s | `uv run bidwright-eval score outputs/<run>`: none of the 8 mandatory requirements missed. Then the hero package's committed scorecard, `evals/results/runs/20261104T211602Z-hero-paid/scorecard.md`: 3 of 45 missed, each charged to `extract`, against 10 for B0, the rule-only floor. Then the held-out RFP in [`evaluation.md`](evaluation.md): none of 22 missed, in five repeats | Known answers come from the synthetic corpus's specs, hashed before the first score. The funnel names the stage that lost each miss, and the misses left are designed traps. The held-out RFP's requirement list was written by the owner, not by the author of the prompts. The scoring found a defect in its own matcher, and the correction is reported with the old figures beside the new (ADR-030). CI blocks any rise against the committed baseline. |
+| 5. Cost and latency | 30 s | `ledger.jsonl` and the `totals` in `run_manifest.json`: 13 requests, about 59,000 tokens with thinking, 69 seconds of active time, $0.07 on the paid key | Each call records its model, tokens, latency, retries with the reason for each, and its cost, with a shadow price at the paid rate, so free, paid and local runs compare on one ledger. |
+| 6. What a person still decides | 30 s | The `UNREVIEWED_DRAFT` status line at the top of the summary, the proposal and the review files, and `UNVERIFIED` on every row of the compliance matrix | Bidwright drafts and never submits, and a contract term it flags always goes to legal review, never into a compliance claim. A client's documents run on `--profile local`, where nothing leaves the machine; the free tier refuses any file outside the synthetic corpus unless the run records explicit consent. |
 
-| Part | Command or file |
-|---|---|
-| 2 | `uv run bidwright demo`, then open the `solution_summary.md` it names; beside it, `compliance_matrix.xlsx`, `clarification_questions.md`, `submission_checklist.md` and `review/quarantine.md`, which lists the hidden trap `guard` removed before parsing |
-| 3 | `spans.jsonl` in the same folder: the `node.risk` agent span with its `bidwright.stop_reason`, `turns` and `tool_calls`, and its `tool.search_rfp` and `tool.date_calc` children; with `PHOENIX_ENDPOINT` set, the same tree in Phoenix |
-| 4 | `uv run bidwright-eval score outputs/<run>` on the demo's run, which misses none of the 8 mandatory requirements, so its funnel is empty; for misses, the hero package's committed scorecard, `evals/results/runs/20261104T211602Z-hero-paid/scorecard.md`, with 3 of 45 charged to `extract`, the designed traps, against B0's 10, and the held-out RFP's 0 of 22 over five repeats ([`evaluation.md`](evaluation.md)); and `uv run bidwright-eval explain outputs/<run> GR-0003` for one gold item |
-| 5 | `ledger.jsonl` and the `totals` in `run_manifest.json`; each entry's `retry_reasons` says why an attempt was retried |
-| 6 | The status line at the top of `solution_summary.md`, `proposal.md` and the review files, and the compliance status `UNVERIFIED` on every row of the matrix |
+The six parts take 4 minutes 30 seconds, which leaves 30 seconds within the 5-minute limit.
