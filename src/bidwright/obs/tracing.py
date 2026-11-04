@@ -9,9 +9,15 @@ fallback. `PHOENIX_API_KEY`, when set, is sent as a bearer token. No prompt or r
 enters a span, only ids, hashes, models, counts and statuses. A failed call still leaves its
 span, with the error. `close` flushes with a 5-second timeout, because short CLI runs end
 before a batch export would.
+
+The run entry reads the endpoint with `trace_endpoint` and checks it against the egress
+register before any connection (D-05). An endpoint the register refuses, such as a remote
+collector on a client run, is never contacted: the run passes no endpoint here, so its spans
+go to `spans.jsonl`, and its manifest records the refusal in `refused_destinations`.
 """
 
 import json
+import os
 import socket
 import threading
 from collections.abc import Iterator, Sequence
@@ -35,6 +41,12 @@ from bidwright.schemas import LedgerEntry
 
 FLUSH_MS = 5000
 KIND = SpanAttributes.OPENINFERENCE_SPAN_KIND
+ENDPOINT_VARIABLE = "PHOENIX_ENDPOINT"
+
+
+def trace_endpoint() -> str | None:
+    """The collector `PHOENIX_ENDPOINT` names, or None when it is unset or empty."""
+    return os.environ.get(ENDPOINT_VARIABLE, "").strip() or None
 
 
 class JsonlExporter(SpanExporter):

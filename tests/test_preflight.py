@@ -50,6 +50,11 @@ def test_a_missing_key_is_refused_before_the_run_folder_exists(tmp_path: Path) -
     assert list(tmp_path.iterdir()) == []
 
 
+def test_the_paid_profile_names_its_own_key() -> None:
+    with pytest.raises(Refused, match="GEMINI_PAID_API_KEY"):
+        _check(profile="paid", backends={})
+
+
 def test_a_missing_local_model_is_refused_with_the_pull_command(tmp_path: Path) -> None:
     ollama = FakeOllama(pulled={"qwen3.5:4b"})
     with pytest.raises(Refused, match=r"ollama pull qwen3\.5:2b") as refused:

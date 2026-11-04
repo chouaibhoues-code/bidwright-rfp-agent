@@ -35,22 +35,23 @@ class OllamaBackend:
     paid = False
 
     def __init__(self, host: str | None = None) -> None:
-        self._host = host or os.environ.get("OLLAMA_HOST") or "http://localhost:11434"
+        # The address it was built with; the egress register checks its host (D-05).
+        self.host = host or os.environ.get("OLLAMA_HOST") or "http://localhost:11434"
 
     def models(self) -> set[str]:
         """The names of the models pulled on this host, for the run's preconditions."""
-        client = ollama.Client(host=self._host, timeout=10)
+        client = ollama.Client(host=self.host, timeout=10)
         try:
             listed = client.list()
         except (ollama.ResponseError, *_TRANSPORT_ERRORS) as exc:
-            raise ProviderError(f"ollama at {self._host} did not answer: {exc}") from exc
+            raise ProviderError(f"ollama at {self.host} did not answer: {exc}") from exc
         return {entry.model for entry in listed.models if entry.model}
 
     def call(self, request: Request) -> Response:
         num_ctx = request.settings.get("num_ctx")
         if not num_ctx:
             raise ProviderError("ollama calls must set num_ctx explicitly")
-        client = ollama.Client(host=self._host, timeout=request.timeout_s)
+        client = ollama.Client(host=self.host, timeout=request.timeout_s)
         try:
             response = client.chat(
                 model=request.model,

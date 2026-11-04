@@ -113,6 +113,11 @@ class DoclingClient:
             **kwargs,
         )
 
+    @property
+    def host(self) -> str:
+        """The service address, which the egress register checks like a backend's (D-05)."""
+        return self.url
+
     def _http(self, timeout: float) -> httpx.Client:
         return httpx.Client(base_url=self.url, timeout=timeout, transport=self.transport)
 

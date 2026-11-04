@@ -76,7 +76,9 @@ def search_tool(
 ) -> Tool:
     """`requirement_sources` maps requirement ids to the passages they quote, so a query that
     names a requirement id returns those passages first. Models do look requirements up by id:
-    the first live run searched only for ids, which match no RFP words."""
+    the first live run searched only for ids, which match no RFP words. Results carry the
+    index's text, which `ingest` builds from the run's text view (D-05), so a tool result shows
+    a model nothing the view does not."""
     sources = requirement_sources or {}
 
     def run(args: SearchArgs) -> ToolResult:

@@ -28,6 +28,7 @@ from bidwright.llm.types import (
 
 class GenaiBackend:
     provider = "gemini"
+    host = "generativelanguage.googleapis.com"  # for the egress register (D-05)
 
     def __init__(self, api_key: str, paid: bool = False) -> None:
         self.paid = paid

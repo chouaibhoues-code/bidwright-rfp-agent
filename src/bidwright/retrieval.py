@@ -8,6 +8,10 @@ its results with unrelated passages. The `unicode61 remove_diacritics 2` tokeniz
 accents, and the `porter` stemmer wrapped around it lets "migration" find "migrate", a miss
 the development RFP showed without it. BM25 returns lower values for better matches, so
 results sort ascending, and the score reported back is its negation, where higher is better.
+
+The index holds the text a model may see, so `search_rfp` results come from it (D-05):
+`build` takes the run's `TextView`, and with none it indexes the frozen text as every view of
+`v0.0` showed it, line breaks as spaces.
 """
 
 import re
@@ -15,9 +19,13 @@ import sqlite3
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from bidwright.ingest import display_text
 from bidwright.schemas import Passage
+
+if TYPE_CHECKING:
+    from bidwright.harness.view import TextView
 
 MAX_K = 8
 MAX_QUERY_WORDS = 32
@@ -58,14 +66,20 @@ class PassageIndex:
         self.path = path
 
     @classmethod
-    def build(cls, passages: Iterable[Passage], path: Path) -> "PassageIndex":
+    def build(
+        cls, passages: Iterable[Passage], path: Path, *, view: "TextView | None" = None
+    ) -> "PassageIndex":
+        """A fresh index of the passages, as `view` shows them; `None` means the frozen text."""
         path.parent.mkdir(parents=True, exist_ok=True)
         path.unlink(missing_ok=True)
+        rows = [
+            (p.id, p.section_path, view.text(p) if view is not None else display_text(p.text))
+            for p in passages
+        ]
         with sqlite3.connect(path) as db:
             db.execute(_SCHEMA)
             db.executemany(
-                "INSERT INTO passages (src_id, section_path, text) VALUES (?, ?, ?)",
-                [(p.id, p.section_path, display_text(p.text)) for p in passages],
+                "INSERT INTO passages (src_id, section_path, text) VALUES (?, ?, ?)", rows
             )
         return cls(path)
 

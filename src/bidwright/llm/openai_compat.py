@@ -25,6 +25,7 @@ class OpenAICompatBackend:
     def __init__(self, provider: str, base_url: str, api_key: str, paid: bool = False) -> None:
         self.provider = provider
         self.paid = paid
+        self.host = base_url  # for the egress register (D-05)
         self._client = openai.OpenAI(base_url=base_url, api_key=api_key, max_retries=0)
 
     def call(self, request: Request) -> Response:

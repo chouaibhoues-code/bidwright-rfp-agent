@@ -7,6 +7,14 @@ configured, records or replays cassettes, validates structured output against it
 model, and reports one `LedgerEntry` per call. The entry's `retries` counts the provider
 attempts beyond the first, across the primary and the fallback model, and `before_attempt`
 runs before every attempt, which is where the run budget is checked (ADR-022).
+
+Two optional parts sit in front of a provider (Iteration 1, step 9). The limiter
+(`llm/limits.py`) is called after `before_attempt` with the model and the request's estimated
+input tokens, its characters divided by `chars_per_token`; it waits for the per-minute limits
+and raises `QuotaExhausted` on a spent daily allowance, which moves the call to its fallback
+model. The response cache (`llm/cache.py`) is read before a live attempt and written after one;
+a hit is reported as replayed and skips the budget's attempt count and the limiter. Both apply
+to provider attempts only: a replayed call never reaches them, and `record` ignores the cache.
 """
 
 import os
@@ -20,6 +28,7 @@ from typing import Literal
 from pydantic import BaseModel, ValidationError
 
 from bidwright.config import Config, RoleConfig, TokenPrices
+from bidwright.llm.limits import Limiter
 from bidwright.llm.replay import CassetteStore, cache_key
 from bidwright.llm.schema import provider_schema, sha256_of
 from bidwright.llm.types import (
@@ -88,6 +97,8 @@ class LLMClient:
         run_id: str = "",
         on_ledger: Callable[[LedgerEntry], None] | None = None,
         before_attempt: Callable[[], None] | None = None,
+        limiter: Limiter | None = None,
+        cache: CassetteStore | None = None,
         sleep: Callable[[float], None] = time.sleep,
         rng: Callable[[], float] = random.random,
         clock: Callable[[], float] = time.perf_counter,
@@ -103,6 +114,8 @@ class LLMClient:
         self.run_id = run_id
         self.on_ledger = on_ledger
         self.before_attempt = before_attempt
+        self.limiter = limiter
+        self.cache = cache
         self._sleep = sleep
         self._rng = rng
         self._clock = clock
@@ -187,15 +200,23 @@ class LLMClient:
             if response is None:
                 raise CassetteMissing(f"no cassette {key} for {request.model}")
             return response, 0, True, None
+        cache = self.cache if self.mode == "live" else None
+        if cache is not None:
+            cached = cache.load(key)
+            if cached is not None:
+                return cached, 0, True, None
         backend = self.backends.get(role_config.provider)
         if backend is None:
             raise ProviderError(f"no backend configured for provider {role_config.provider!r}")
         call = self.config.limits.call
+        tokens = _estimated_tokens(request, self.config.limits.context.chars_per_token)
         retries = 0
         while True:
             if self.before_attempt is not None:
                 self.before_attempt()
             attempts.made += 1
+            if self.limiter is not None:
+                self.limiter.acquire(role_config.provider, request.model, tokens)
             started = self._clock()
             try:
                 response = backend.call(request)
@@ -212,20 +233,19 @@ class LLMClient:
                 continue
             latency_ms = int((self._clock() - started) * 1000)
             break
+        meta = {
+            "provider": role_config.provider,
+            "model": request.model,
+            "request": {
+                "schema_name": request.schema_name,
+                "tools": [t.name for t in request.tools],
+                "settings": request.settings,
+            },
+        }
         if self.mode == "record":
-            self._store().save(
-                key,
-                {
-                    "provider": role_config.provider,
-                    "model": request.model,
-                    "request": {
-                        "schema_name": request.schema_name,
-                        "tools": [t.name for t in request.tools],
-                        "settings": request.settings,
-                    },
-                },
-                response,
-            )
+            self._store().save(key, meta, response)
+        elif cache is not None:
+            cache.save(key, {**meta, "run_id": self.run_id}, response)
         return response, latency_ms, False, backend
 
     def _report(
@@ -273,6 +293,12 @@ class LLMClient:
                 retries=completion.retries,
             )
         )
+
+
+def _estimated_tokens(request: Request, chars_per_token: int) -> int:
+    """The request's input tokens as the limiter counts them: its characters, divided."""
+    chars = sum(len(message.content) for message in request.messages)
+    return -(-chars // chars_per_token)
 
 
 def _with_decoding(role_config: RoleConfig, decoding: Decoding | None) -> RoleConfig:

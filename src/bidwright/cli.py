@@ -97,14 +97,14 @@ def main(argv: list[str] | None = None) -> int:
                 outputs=args.outputs,
                 mode="record",
                 cassettes=CassetteStore(store),
-                backends=default_backends(),
+                backends=default_backends(paid=args.profile == "paid"),
             )
         else:
             result = execute(
                 source=args.file,
                 profile=args.profile,
                 outputs=args.outputs,
-                backends=default_backends(),
+                backends=default_backends(paid=args.profile == "paid"),
                 baseline=args.baseline,
                 consent=args.consent,
             )

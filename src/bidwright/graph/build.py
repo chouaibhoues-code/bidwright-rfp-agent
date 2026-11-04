@@ -5,6 +5,11 @@ ingest -> extract (one `Send` per batch, at most `concurrency` at once) -> verif
 in the run folder. The LLM client, budget, prompts and search index stay outside the state, in
 `Runtime`, so a checkpoint holds plain data only. Each node writes its own files; `render`
 writes the summary, the proposal, the manifest and the ledger.
+
+Before the run folder exists, `execute` checks the run's outbound channels against the egress
+register (D-05): the backends of the profile's providers, which are the only backends the client
+gets, and the trace endpoint, whose refusal sends spans to `spans.jsonl` and is recorded in the
+manifest. Live and recorded runs also get the limiter for the profile's tier (step 9).
 """
 
 import hashlib
@@ -37,14 +42,16 @@ from bidwright.graph.nodes import (
 )
 from bidwright.graph.state import BatchState, RunState
 from bidwright.harness.budget import BudgetExceeded, RunBudget
+from bidwright.harness.egress import check_run
 from bidwright.harness.gateway import ToolGateway
 from bidwright.ingest import doc_id_for, ingest_pdf
 from bidwright.llm.client import LLMClient, Mode
+from bidwright.llm.limits import Limiter, tier_for
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Backend, LLMError, QuotaExhausted
 from bidwright.obs.ledger import models_used, totals_of
-from bidwright.obs.tracing import Tracing, maybe_span, set_attribute
-from bidwright.preflight import Refused, check_preconditions
+from bidwright.obs.tracing import Tracing, maybe_span, set_attribute, trace_endpoint
+from bidwright.preflight import CONSENT, Refused, check_preconditions
 from bidwright.prompts import Prompt, load_prompt, load_prompt_ref
 from bidwright.render import RenderBlocked, RunRecords, render, write_manifest
 from bidwright.retrieval import PassageIndex
@@ -373,6 +380,19 @@ def execute(
         config=config,
     )
     overrides = preflight.overrides
+    used = {role.provider for role in config.models.profiles[profile].values()}
+    run_backends = (
+        {p: b for p, b in (backends or {}).items() if p in used} if mode != "replay" else {}
+    )
+    endpoint = trace_endpoint()
+    refused = check_run(
+        run_backends,
+        endpoint,
+        None,  # the v0.0 graph parses with pdfplumber; step 16 passes the Docling URL
+        preflight.data_class,
+        register=config.egress,
+        consent=profile == "free" and consent == CONSENT,
+    )
     started = datetime.now(UTC)
     suffix = f"-{baseline}" if baseline else ""
     run_id = run_id or f"{started:%Y%m%dT%H%M%SZ}-{doc_id_for(source)}-{profile}{suffix}"
@@ -381,17 +401,18 @@ def execute(
     client = LLMClient(
         config,
         profile,
-        backends if mode != "replay" else {},
+        run_backends,
         mode=mode,
         cassettes=cassettes,
         run_id=run_id,
+        limiter=Limiter(config.limits, tier_for(profile)) if mode != "replay" else None,
     )
     budget = RunBudget(config.limits.run(limits or preflight.tier, profile))
     prompts = run_prompts(config)
     tracing = Tracing(
         run_id,
         run_dir,
-        os.environ.get("PHOENIX_ENDPOINT") or None,
+        None if refused else endpoint,
         os.environ.get("PHOENIX_API_KEY") or None,
     )
     ctx = RunContext(run_id, client, budget, prompts, {}, tracing=tracing)
@@ -458,6 +479,8 @@ def execute(
                 status_reason=reason,
                 overrides=overrides,
                 totals=totals_of(ctx.ledger, budget.active_seconds),
+                data_class=preflight.data_class,
+                refused_destinations=refused,
             )
             write_manifest(run_dir, manifest, ctx.ledger)
     return RunResult(run_id, run_dir, status, reason)

@@ -87,6 +87,7 @@ class Prompt:
     tasks: dict[str, Template]
     notes: str
     path: Path
+    examples: str = ""  # the rendered examples, already inside `system`, kept for token counts
 
     @property
     def ref(self) -> str:
@@ -171,6 +172,7 @@ def load_prompt(prompt_id: str, root: Path = PROMPTS_DIR) -> Prompt:
         tasks=tasks,
         notes=notes.strip(),
         path=path,
+        examples=examples,
     )
 
 

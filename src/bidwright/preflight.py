@@ -5,7 +5,7 @@ entry meets the same rules and a run that cannot start leaves nothing behind (AD
 - `record` takes corpus files only, on any profile, because cassettes quote the document and
   Git tracks `tests/cassettes/`;
 - on `free`, the file is in the synthetic corpus, `inputs/CORPUS.sha256`, or the run passes
-  the exact consent string, which the manifest records (ADR-010; D-05 proposes removing it);
+  the exact consent string, which the manifest records (ADR-010, kept by ADR-026);
 - a backend exists for every provider the profile's roles use, so a missing key fails here,
   not at the first LLM call after ingest;
 - on Ollama, the primary and the fallback model of every role are pulled, so a fallback is
@@ -32,11 +32,16 @@ from typing import Protocol, runtime_checkable
 from bidwright.config import Config
 from bidwright.ingest import doc_id_for
 from bidwright.llm.types import Backend, LLMError
+from bidwright.schemas import DataClass
 
 HOME = Path(os.environ.get("BIDWRIGHT_HOME", Path(__file__).resolve().parents[2]))
 CORPUS_MANIFEST = HOME / "inputs" / "CORPUS.sha256"
 CONSENT = "i-accept-free-tier-terms"
-KEY_HINTS = {"gemini": "set GEMINI_API_KEY in .env"}
+# What to set when a profile's provider has no backend; `paid` runs under its own key (CH-82).
+KEY_HINTS = {
+    "free": {"gemini": "set GEMINI_API_KEY in .env"},
+    "paid": {"gemini": "set GEMINI_PAID_API_KEY in .env"},
+}
 LIMIT_TIERS = ("dev", "hero")
 PACKAGE_FILE = "package.yaml"
 
@@ -87,7 +92,7 @@ class Preflight:
     corpus: str | None  # the first document's entry in `inputs/CORPUS.sha256`
     digest: str | None  # the file's sha256 or the package digest; None in replay
     documents: list[PreflightDocument] = field(default_factory=list)
-    data_class: str = "synthetic"  # "synthetic" or "client" (D-05)
+    data_class: DataClass = "synthetic"  # D-05
     package_id: str | None = None  # None in replay, where the run entry derives it
 
     @property
@@ -191,7 +196,7 @@ def check_preconditions(
         return Preflight([], None, None)
     documents = _documents(source)
     synthetic = all(document.corpus is not None for document in documents)
-    data_class = "synthetic" if synthetic else "client"
+    data_class: DataClass = "synthetic" if synthetic else "client"
     if source.is_dir():
         digest = package_digest([document.sha256 for document in documents])
         package_id = source.name if synthetic else f"pkg-{digest[:8]}"
@@ -217,7 +222,9 @@ def check_preconditions(
         raise Refused(f"no run limits for {tier} on {profile}")
     for role_name, role in roles.items():
         if role.provider not in backends:
-            hint = KEY_HINTS.get(role.provider, f"configure a backend for {role.provider!r}")
+            hint = KEY_HINTS.get(profile, {}).get(
+                role.provider, f"configure a backend for {role.provider!r}"
+            )
             raise Refused(
                 f"the {profile} profile needs a {role.provider} backend for its {role_name}"
                 f" role: {hint}"
