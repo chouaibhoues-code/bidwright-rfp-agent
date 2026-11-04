@@ -202,6 +202,7 @@ def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
         "approach": _approach_examples,
         "risk": _risk_examples,
         "draft": _draft_examples,
+        "triage": _triage_examples,
     }
     if name not in renderers or name not in sets:
         raise ValueError(f"no example set {name!r} in {EXAMPLES_FILE}")
@@ -306,3 +307,31 @@ def _draft_examples(examples: list[dict[str, Any]]) -> str:
             )
         )
     return "\n\n".join(blocks)
+
+
+def _triage_examples(example: dict[str, Any]) -> str:
+    """One outline and its result. Every zone entry names an outline section, and every
+    hazard cites an id the outline shows in square brackets."""
+    outline = schemas.TriageInput.model_validate(example["input"])
+    result = schemas.TriageResult.model_validate(example["output"])
+    sections = {(s.doc_id, s.section_path) for s in outline.sections}
+    if {(z.doc_id, z.section_path) for z in result.zones} != sections:
+        raise ValueError("the triage example must give every section exactly one zone")
+    shown = " ".join(s.first_text for s in outline.sections)
+    for hazard in result.hazards:
+        missing = [i for i in hazard.src_ids if f"[{i}]" not in shown]
+        if missing:
+            raise ValueError(
+                f"triage example hazard cites ids the outline does not show: {missing}"
+            )
+    output = example["output"]
+    profile = f', "profile": {_dump(output["profile"])}'
+    return "\n".join(
+        [
+            "An outline:",
+            _json_list("{", "sections", example["input"]["sections"]),
+            "Its result:",
+            _json_list("{", "zones", output["zones"], profile)
+            + _json_list(", ", "hazards", output["hazards"]),
+        ]
+    )

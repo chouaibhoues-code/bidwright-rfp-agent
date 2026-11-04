@@ -52,7 +52,7 @@ def test_the_repository_has_the_0a_prompts() -> None:
 @pytest.mark.parametrize("prompt_id", PROMPT_IDS)
 def test_every_prompt_loads_and_renders(prompt_id: str) -> None:
     prompt = load_prompt(prompt_id)
-    values = {"batch_id": "B00", "section_id": "approach"}
+    values = {"batch_id": "B00", "section_id": "approach", "call_id": "T01"}
     needed = {
         name: values[name] for name in prompt.tasks["task"].get_identifiers() if name != "data_tag"
     }
@@ -172,3 +172,11 @@ def test_the_risk_prompt_has_a_final_task() -> None:
     assert "Return the final risk register" in risk.task_text("final_task")
     with pytest.raises(KeyError):
         load_prompt("extract").task_text("final_task")
+
+
+def test_the_triage_prompt_renders_its_outline_example() -> None:
+    triage = load_prompt("triage")
+    assert triage.meta.output_schema == "TriageResult" and triage.meta.role == "extract"
+    assert "An outline:" in triage.examples and '"hazards": [' in triage.examples
+    assert triage.decoding == {"gemini": {"thinking": "low"}, "ollama": {"think": False}}
+    assert "T01" in triage.task_text(data_tag="data-x", call_id="T01")

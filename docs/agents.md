@@ -8,6 +8,7 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 
 | Name | Kind | Input | Output | Prompt | Model role | Tools | Limits |
 |---|---|---|---|---|---|---|---|
+| `triage` | function | `TriageInput` | `TriageResult` | `triage@0.1.0` | extract | None | None |
 | `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.2.0` | extract | None | None |
 | `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
 | `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
@@ -24,6 +25,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | `extract` | 0.2.0 | extract | plain rules and decision table | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-02 |
 | `extract_oneshot` | 0.2.0 | extract | plain instruction | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-02 |
 | `risk` | 0.2.0 | reason | Multi-Perspective pre-mortem in one call | `RiskRegister` | gemini: thinking low; ollama: think False | 2026-11-02 |
+| `triage` | 0.1.0 | extract | plain rules and a zone table, positive directives | `TriageResult` | gemini: thinking low; ollama: think False | never |
 
 ## Models by profile and role
 

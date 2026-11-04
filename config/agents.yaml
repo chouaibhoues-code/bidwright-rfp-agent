@@ -1,6 +1,14 @@
 # What each LLM call may do. ExecutionPolicy and ToolGateway enforce this file,
 # and docs/agents.md is generated from it (from Iteration 0b). A function makes one call and
 # one repair, fixed in the node code, so only the agent's loop declares limits (ADR-025).
+triage:
+  kind: function
+  input: TriageInput
+  output: TriageResult
+  prompt: triage@0.1.0
+  model_role: extract
+  tools: []
+
 extract:
   kind: function
   input: ExtractBatch

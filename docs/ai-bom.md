@@ -24,11 +24,13 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `extract` | 0.2.0 | extract | `sha256:bdd57daa7875` |
 | `extract_oneshot` | 0.2.0 | extract | `sha256:75f414cc19f2` |
 | `risk` | 0.2.0 | reason | `sha256:10c255fbf785` |
+| `triage` | 0.1.0 | extract | `sha256:7e154ae7564a` |
 
 ## Agentic control factors
 
 | Agent or function | Kind | Tools it may call | Limits |
 |---|---|---|---|
+| `triage` | function | None | 1 call and 1 repair, fixed in code |
 | `extract` | function | None | 1 call and 1 repair, fixed in code |
 | `approach` | function | None | 1 call and 1 repair, fixed in code |
 | `risk` | agent | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |

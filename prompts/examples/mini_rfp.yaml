@@ -166,3 +166,44 @@ draft:
       title: "Risks and assumptions"
       text: "The main risk to this tender is the 40-page limit and the upload deadline [RSK-001]. We would hold the draft to 35 pages and upload one working day early, keeping the portal receipt [RSK-001]."
       cited_ids: [RSK-001]
+
+# For triage: one outline of three sections and its result. The instruction section carries
+# two hazards; the current-service section reads like an obligation but describes the buyer,
+# so it is BACKGROUND; the records section is an obligation. Each opening text shows its
+# passages' ids in square brackets, as the outline does.
+triage:
+  input:
+    sections:
+      - section_path: "2 Submitting a tender"
+        doc_id: example-rfp
+        role: main
+        first_text: "[SRC-0961] Tenders must be uploaded to the portal as one PDF of no more than 30 pages. [SRC-0962] Tenders received after 12:00 UTC on 2027-02-01 will be rejected."
+        passages: 6
+        cue_counts: {MODAL: 1, DEADLINE: 1, REJECTION: 1, DATE: 2}
+      - section_path: "3 Current service"
+        doc_id: example-rfp
+        role: main
+        first_text: "[SRC-0971] The Trust's current supplier must answer support calls within 30 seconds. [SRC-0972] It resolves most tickets within one working day under a contract that ends in 2027."
+        passages: 4
+        cue_counts: {MODAL: 1, DEADLINE: 1}
+      - section_path: "4 Service requirements > 4.1 Records"
+        doc_id: example-rfp
+        role: main
+        first_text: "[SRC-0981] The Supplier shall keep every signed record for seven (7) years. [SRC-0982] The Supplier shall export any record on request within 10 working days."
+        passages: 9
+        cue_counts: {MODAL: 2, DEADLINE: 1}
+  output:
+    zones:
+      - {section_path: "2 Submitting a tender", doc_id: example-rfp, zone: INSTRUCTION, confidence: 0.95, reason: "Sets the upload format, the page limit and the closing time for tenders."}
+      - {section_path: "3 Current service", doc_id: example-rfp, zone: BACKGROUND, confidence: 0.85, reason: "Describes the current supplier's service levels; the must binds that supplier, not this bid."}
+      - {section_path: "4 Service requirements > 4.1 Records", doc_id: example-rfp, zone: OBLIGATION, confidence: 0.95, reason: "States what the supplier must keep and deliver."}
+    profile:
+      buyer: "The Trust"
+      procurement: not_stated
+      submission_deadline: "12:00 UTC on 2027-02-01"
+      submission_format: "one PDF of no more than 30 pages"
+      evaluation_method: not_stated
+      contract_length: not_stated
+    hazards:
+      - {kind: FORMAT, src_ids: [SRC-0961], summary: "Tenders must be one PDF of no more than 30 pages, uploaded to the portal."}
+      - {kind: DEADLINE, src_ids: [SRC-0962], summary: "Tenders received after 12:00 UTC on 2027-02-01 are rejected."}
