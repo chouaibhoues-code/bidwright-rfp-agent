@@ -1,0 +1,13 @@
+# The release step: the held-out RFP, scored once, on 5 repeats with research off (Master-Plan,
+# release step; CH-65). Its requirement list is the owner's, frozen before any prompt tuning on
+# the hero package, and its gold was hashed by the owner. No hypothesis applies: the report gives
+# the median and the spread. The free key runs first; after Google's daily 429 the operator
+# moves the matrix to `paid`, with the same models and settings (ADR-029). Run once, at `v0.1`.
+name: release-heldout
+rfp: inputs/heldout/heldout_rfp.docx
+profile: free
+repeats: 5
+until: render
+max_cost_usd: 5
+rungs:
+  - {name: v0.1, flags: {}}

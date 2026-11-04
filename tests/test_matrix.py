@@ -129,7 +129,7 @@ def test_the_committed_matrix_files_load() -> None:
     names = {
         load_matrix(path).name for path in sorted((cli.HOME / "config" / "matrices").glob("*.yaml"))
     }
-    assert names == {"s03-batch", "s10-examples", "s13-second-pass"}
+    assert names == {"release-heldout", "s03-batch", "s10-examples", "s13-second-pass"}
 
 
 @pytest.mark.parametrize(
