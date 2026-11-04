@@ -67,7 +67,7 @@ A scorer that cannot fail shows nothing. `tests/test_scorer_selftest.py` checks 
 
 ### Spikes as matrices
 
-`bidwright matrix run` runs a matrix file's rungs and repeats in order, with the response cache on and the repeat index in every key; it resumes after a spent quota and stops before a run expected to pass the matrix's cost cap. `bidwright-eval report` scores every finished run and decides each rung by the rule `evals/hypotheses.yaml` names, fixed before the first matrix run: `within_noise`, `superiority` or `improvement`, each measured against the spread of the control rung's repeats. S-03 (pack size), S-10 (the prompt's examples) and S-13 (a second extraction pass) run this way on the hero package.
+`bidwright matrix run` runs a matrix file's rungs and repeats in order, with the response cache on and the repeat index in every key; it resumes after a spent quota and stops before a run expected to pass the matrix's cost cap. Every matrix run stays on its roles' primary models, because a fallback model would change what is measured: a spent quota pauses the matrix, a call that exhausts its retries faults its run, and a run that a fallback model answered is left out of the report and run again on `--resume`. `bidwright-eval report` scores every finished run and decides each rung by the rule `evals/hypotheses.yaml` names, fixed before the first matrix run: `within_noise`, `superiority` or `improvement`, each measured against the spread of the control rung's repeats. S-03 (pack size), S-10 (the prompt's examples) and S-13 (a second extraction pass) run this way on the hero package.
 
 ## Results at `v0.1`
 

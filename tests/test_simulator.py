@@ -172,3 +172,19 @@ def test_the_ledger_says_why_each_attempt_was_retried() -> None:
     assert [(e.retries, e.retry_reasons) for e in entries] == [(2, ["rate_limited", "timeout"])]
     earlier = entries[0].model_dump(exclude={"retry_reasons"})
     assert LedgerEntry.model_validate(earlier).retry_reasons == [], "older ledgers still load"
+
+
+def test_without_fallback_a_spent_quota_or_exhausted_retries_stay_on_the_primary() -> None:
+    """Matrix runs pass fallback=False, so no call is answered by a second model."""
+    quota = ProviderSimulator(FakeBackend(), [{"call": 1, "fault": "quota_exhausted"}])
+    client = LLMClient(load_config(), "free", {"gemini": quota}, fallback=False)
+    with pytest.raises(QuotaExhausted):
+        client.complete("extract", MESSAGES, ExtractResult, **CALL)
+    inner = FakeBackend()
+    timeouts = ProviderSimulator(inner, [{"call": n, "fault": "timeout"} for n in range(1, 5)])
+    client = LLMClient(
+        load_config(), "free", {"gemini": timeouts}, fallback=False, sleep=lambda _: None
+    )
+    with pytest.raises(UnrecoverableFault):
+        client.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert inner.models == [], "the fallback model was never called"

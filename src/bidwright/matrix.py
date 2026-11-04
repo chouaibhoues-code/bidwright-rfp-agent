@@ -9,9 +9,13 @@ other flag is refused. Every run gets its repeat index, which is in every casset
 key, and the response cache is on, so a run started again answers the calls it already made
 from the cache. Runs go to `outputs/matrices/<matrix>/<matrix>-<rung>-r<repeat>/`.
 
-- `--resume` skips a run whose manifest ended `COMPLETED` or `DEGRADED`; any other run folder
-  is cleared and the run starts again. Without it, a matrix whose folder already holds runs
-  is refused, so two matrices never mix.
+- Every run stays on its roles' primary models (`fallback=False`): a second model would change
+  what the matrix measures. A spent quota pauses the run instead, and a call that exhausts its
+  retries faults it.
+- `--resume` skips a run whose manifest ended `COMPLETED` or `DEGRADED` on its primary models;
+  any other run folder, including one with a call a fallback model answered, is cleared and
+  the run starts again. Without it, a matrix whose folder already holds runs is refused, so
+  two matrices never mix.
 - A run that ends `QUOTA_PAUSED` stops the matrix, and the command that resumes it is printed.
 - Before each run, the `cost_usd` of every run so far is summed, whatever its status, with the
   cost of the runs cleared to start again, which `matrix_manifest.json` keeps as `cleared_usd`.
@@ -94,6 +98,13 @@ class MatrixOutcome:
     spent_usd: float = 0.0
     cleared_usd: float = 0.0  # the spend of runs whose folders were cleared to start again
     resume: str = ""
+
+
+def fell_back(manifest: RunManifest) -> bool:
+    """Whether any call of the run was answered by a model that is no role's primary model,
+    that is, by a fallback."""
+    primary = set(manifest.models.values())
+    return any(model not in primary for used in manifest.models_used.values() for model in used)
 
 
 def _manifest(run_dir: Path) -> RunManifest | None:
@@ -179,7 +190,7 @@ def run_matrix(
             run_id = f"{matrix.name}-{rung.name}-r{repeat}"
             run_dir = root / run_id
             done = _manifest(run_dir)
-            if resume and done is not None and done.status in FINISHED:
+            if resume and done is not None and done.status in FINISHED and not fell_back(done):
                 outcome.runs.append(
                     MatrixRun(run_id, rung.name, repeat, done.status, done.totals.cost_usd, True)
                 )
@@ -211,6 +222,7 @@ def run_matrix(
                 repeat=repeat,
                 cache=True,
                 backends=backends,
+                fallback=False,
                 **rung.flags,
             )
             finished = _manifest(run_dir)
@@ -235,6 +247,7 @@ __all__ = [
     "MatrixRefused",
     "MatrixRun",
     "Rung",
+    "fell_back",
     "load_matrix",
     "matrix_dir",
     "run_matrix",

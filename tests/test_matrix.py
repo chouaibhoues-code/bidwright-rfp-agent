@@ -40,9 +40,12 @@ class FakeEntry:
     """Stands in for `execute`: keeps its arguments and writes a manifest with the next
     scripted status and cost, `COMPLETED` at no cost once the script runs out."""
 
-    def __init__(self, script: list[tuple[str, float]] | None = None) -> None:
+    def __init__(
+        self, script: list[tuple[str, float]] | None = None, fell_back: tuple[str, ...] = ()
+    ) -> None:
         self.calls: list[dict[str, Any]] = []
         self.script = list(script or [])
+        self.fell_back = fell_back  # runs whose manifest shows a call a fallback model answered
 
     def __call__(self, **kwargs: Any) -> RunResult:
         self.calls.append(kwargs)
@@ -53,7 +56,10 @@ class FakeEntry:
             run_id=kwargs["run_id"],
             commit="test",
             profile=kwargs["profile"],
-            models={},
+            models={"extract": "primary"},
+            models_used={
+                "extract": ["fallback" if kwargs["run_id"] in self.fell_back else "primary"]
+            },
             started=datetime(2026, 11, 4, tzinfo=UTC),
             status=status,  # type: ignore[arg-type]
             totals=RunTotals(cost_usd=cost),
@@ -82,6 +88,7 @@ def test_rungs_and_repeats_run_in_order_with_their_flags(tmp_path: Path) -> None
         (20, 1),
     ]
     assert all(c["cache"] and c["until"] == "coverage" for c in entry.calls)
+    assert all(c["fallback"] is False for c in entry.calls), "a matrix never changes model"
     manifest = json.loads(
         (tmp_path / "out" / "matrices" / "m" / "matrix_manifest.json").read_text(encoding="utf-8")
     )
@@ -205,3 +212,31 @@ def test_failed_and_cleared_runs_count_toward_the_cap(tmp_path: Path) -> None:
     outcome, _ = _run(roomy, FakeEntry(), tmp_path / "roomy", resume=True)
     assert outcome.status == "COMPLETED" and outcome.cleared_usd == 8.0
     assert outcome.spent_usd == 8.0, "the cleared runs' spend stays on the matrix's account"
+
+
+def test_a_run_a_fallback_model_answered_is_left_out_and_run_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = _matrix(tmp_path, rungs="  - {name: b10, flags: {batch_size: 10}}\n")
+    _run(path, FakeEntry(fell_back=("m-b10-r1",)), tmp_path)
+
+    def fake_score(run_dir: Path, gold_dir: Path) -> dict[str, Any]:
+        return {
+            "corpus": "hero",
+            "gold_version": 2,
+            "gold_sha256": "a" * 64,
+            "missed_mandatory_count": 1,
+        }
+
+    monkeypatch.setattr(evals.report, "score_run", fake_score)
+    out = report(
+        "m", outputs=tmp_path / "out", results=tmp_path / "res", hypotheses=tmp_path / "no"
+    )
+    data = json.loads((out / "report.json").read_text(encoding="utf-8"))
+    assert data["finished"] == 1 and data["fell_back"] == ["m-b10-r1"]
+    assert "Left out, because a fallback model answered a call: m-b10-r1" in (
+        out / "report.md"
+    ).read_text(encoding="utf-8")
+    again = FakeEntry()
+    _run(path, again, tmp_path, resume=True)
+    assert [c["run_id"] for c in again.calls] == ["m-b10-r1"], "only that run starts again"

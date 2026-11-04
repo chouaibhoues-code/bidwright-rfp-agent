@@ -859,6 +859,7 @@ def execute(
     docling_mode: Mode | None = None,
     docling_cassettes: Path | None = None,
     view: TextView | None = None,
+    fallback: bool = True,
 ) -> RunResult:
     """Run one RFP file or package end to end. A failed run still leaves its manifest and
     ledger.
@@ -869,7 +870,9 @@ def execute(
     `until` stops the run after `verify`, `coverage` or `consolidate`; `--baseline b0` makes no
     model call and stops after `verify`. Docling runs in `docling_mode`, the run's mode unless
     set, so a test can record its LLM cassettes while Docling replays. `view` is the run's text
-    view (D-05), the frozen text when None; Iteration 5's masking passes one."""
+    view (D-05), the frozen text when None; Iteration 5's masking passes one. `fallback=False`
+    keeps every call on its role's primary model: a spent quota then pauses the run, and a
+    call that exhausts its retries faults it, as matrix runs need."""
     if until not in UNTIL:
         raise Refused(f"--until takes one of {', '.join(UNTIL)}")
     chosen = BASELINES[baseline] if baseline is not None else None
@@ -922,6 +925,7 @@ def execute(
         run_id=run_id,
         limiter=Limiter(config.limits, tier_for(profile)) if mode != "replay" else None,
         cache=response_cache() if cache and mode == "live" else None,
+        fallback=fallback,
     )
     budget = RunBudget(config.limits.run(limits or preflight.tier, profile))
     prompts = run_prompts(config)

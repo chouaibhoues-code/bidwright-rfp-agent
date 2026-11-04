@@ -10,7 +10,9 @@ names. With spread(control) the control rung's maximum less its minimum:
   median(control) - median(rung) <= `max_drop`.
 
 The metrics count down (missed mandatory requirements), and the secondary metric counts up
-(precision). Only runs that finished, `COMPLETED` or `DEGRADED`, are scored. These are the
+(precision). Only runs that finished, `COMPLETED` or `DEGRADED`, on their roles' primary
+models are scored: a run with a call a fallback model answered is listed apart, and
+`bidwright matrix run <file> --resume` runs it again. These are the
 spikes' pass marks; the Master-Plan's bootstrap keep-or-drop rule applies to the ablation
 ladders from Iteration 3. Scoring checks the hash of the hypotheses with the gold's.
 """
@@ -25,6 +27,8 @@ from typing import Any
 
 import yaml
 
+from bidwright.matrix import fell_back
+from bidwright.schemas import RunManifest
 from evals.score import GOLD_DIR, ROOT, score_run
 
 HYPOTHESES = ROOT / "evals" / "hypotheses.yaml"
@@ -137,7 +141,13 @@ def _markdown(name: str, data: Mapping[str, Any]) -> str:
     lines = [
         f"# Matrix `{name}`",
         "",
-        f"Gold {data['gold']}. {data['finished']} of {data['runs']} runs finished and were scored.",
+        f"Gold {data['gold']}. {data['finished']} of {data['runs']} runs finished and were scored."
+        + (
+            f" Left out, because a fallback model answered a call: {', '.join(data['fell_back'])};"
+            " `bidwright matrix run <file> --resume` runs them again."
+            if data["fell_back"]
+            else ""
+        ),
         "",
         "## Decisions",
         "",
@@ -184,11 +194,17 @@ def report(
     root = (outputs or ROOT / "outputs") / "matrices" / name
     manifest = json.loads((root / "matrix_manifest.json").read_text(encoding="utf-8"))
     rows: list[dict[str, Any]] = []
+    left_out: list[str] = []
     by_rung: dict[str, list[dict[str, float]]] = {}
     gold = "not scored"
     for run in manifest["runs"]:
         row: dict[str, Any] = {k: run[k] for k in ("run_id", "rung", "repeat", "status")}
-        if run["status"] in FINISHED:
+        manifest_path = root / run["run_id"] / "run_manifest.json"
+        if run["status"] in FINISHED and manifest_path.exists():
+            if fell_back(RunManifest.model_validate_json(manifest_path.read_text("utf-8"))):
+                left_out.append(run["run_id"])
+                rows.append(row | {"status": f"{run['status']}, fallback model"})
+                continue
             scores = score_run(root / run["run_id"], gold_dir)
             gold = f"{scores['corpus']} v{scores['gold_version']} {scores['gold_sha256'][:12]}"
             values = numeric(scores)
@@ -203,6 +219,7 @@ def report(
         "gold": gold,
         "runs": len(rows),
         "finished": sum(len(v) for v in by_rung.values()),
+        "fell_back": left_out,
         "rungs": {
             rung: {
                 metric: summary([s[metric] for s in values if metric in s])

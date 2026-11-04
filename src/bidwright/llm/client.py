@@ -3,7 +3,8 @@
 The client picks the model for a role from `config/models.yaml`, applies a prompt's decoding
 block over the role's defaults, retries transient failures with full-jitter backoff (a
 provider's `Retry-After` wins), falls back once to the role's fallback model when one is
-configured, records or replays cassettes, validates structured output against its Pydantic
+configured (unless `fallback=False`, as in matrix runs, where a second model would change what
+is measured), records or replays cassettes, validates structured output against its Pydantic
 model, and reports one `LedgerEntry` per call. The entry's `retries` counts the provider
 attempts beyond the first, across the primary and the fallback model, and `retry_reasons`
 says why each failed attempt failed: `rate_limited`, `timeout`, `server_error`, `transport`,
@@ -104,6 +105,7 @@ class LLMClient:
         before_attempt: Callable[[], None] | None = None,
         limiter: Limiter | None = None,
         cache: CassetteStore | None = None,
+        fallback: bool = True,
         sleep: Callable[[float], None] = time.sleep,
         rng: Callable[[], float] = random.random,
         clock: Callable[[], float] = time.perf_counter,
@@ -121,6 +123,7 @@ class LLMClient:
         self.before_attempt = before_attempt
         self.limiter = limiter
         self.cache = cache
+        self.fallback = fallback
         self._sleep = sleep
         self._rng = rng
         self._clock = clock
@@ -150,7 +153,8 @@ class LLMClient:
             else None
         )
         settings = _settings(role_config)
-        models = [role_config.model] + ([role_config.fallback] if role_config.fallback else [])
+        fallback = role_config.fallback if self.fallback else None
+        models = [role_config.model] + ([fallback] if fallback else [])
         last_error: LLMError | None = None
         attempts = _Attempts()
         for model in models:
