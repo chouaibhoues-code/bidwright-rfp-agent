@@ -1,0 +1,126 @@
+# Held-out DOCX RFP, gold v2. The owner's requirement list of 2026-11-04
+# (`private/heldout/heldout_list.md`), written without the prompts in view, rendered with its
+# sentences unchanged. The gold labels come from the owner's tags: [M] mandatory, [H] a
+# submission rule (mandatory and a hazard), [O] optional, [B] background. Claude added only the
+# title page and the fictional notice, and chose the modality and implicit-type labels from
+# each sentence's own wording; zones follow the sections. Scored once, at release, on 5 repeats
+# with research off (CH-65). Fictional: St. Jude-in-the-Pines Health Network does not exist.
+# Producer code never reads this file.
+
+corpus: heldout
+gold_version: 2
+package: heldout
+documents:
+  - doc_id: heldout-rfp
+    file: heldout_rfp.docx
+    format: docx
+    role: main
+    precedence: 1
+    title: "Request for Proposal: Enterprise Electronic Health Record and Clinical Document Management System"
+    subtitle:
+      - "St. Jude-in-the-Pines Health Network"
+      - "Ref: SJHN-2027-EHR04, issued 2027-02-15"
+    notice: "This is a fictional document written to test software. St. Jude-in-the-Pines Health Network is not a real organization."
+    header: "St. Jude-in-the-Pines Health Network | RFP SJHN-2027-EHR04"
+    sections:
+      - heading: "1 Background"
+        blocks:
+          - id: GB-0001
+            text: "St. Jude-in-the-Pines Health Network operates a 450-bed acute care facility alongside three regional outpatient clinics serving Eastern Ontario."
+            gold: {kind: background, zone: BACKGROUND}
+          - id: GB-0002
+            text: "The health network processes approximately 120,000 patient admissions and clinical encounters annually across its inpatient and ambulatory departments."
+            gold: {kind: background, zone: BACKGROUND}
+          - id: GB-0003
+            text: "Current clinical and administrative records are maintained across two legacy platforms scheduled for retirement upon commissioning of the new solution."
+            gold: {kind: background, zone: BACKGROUND}
+          - id: GB-0004
+            text: "All diagnostic imaging files are managed through a central PACS system that will remain in service and requires direct integration."
+            gold: {kind: background, zone: BACKGROUND}
+
+      - heading: "2 Instructions to Bidders"
+        blocks:
+          - id: GR-0001
+            text: "Proposals must be submitted via the buyer's procurement portal no later than 2027-04-12 at 17:00 EST."
+            gold: {kind: requirement, modality: must, mandatory: true, hazard: true, zone: INSTRUCTION, tags: [date]}
+          - id: GR-0002
+            text: "Main narrative proposals are strictly limited to 40 pages, excluding financial schedules and mandatory compliance certificates."
+            gold: {kind: requirement, modality: none, mandatory: true, hazard: true, zone: INSTRUCTION, implicit: passive_predicate, tags: [format, numeric]}
+          - id: GR-0003
+            text: "Bidders are required to complete and sign Form B (Compliance Statement) and Form C (Security Clearance Verification) included in Appendix A."
+            gold: {kind: requirement, modality: none, mandatory: true, hazard: true, zone: INSTRUCTION, implicit: passive_predicate}
+
+      - heading: "3 Core Functional Requirements"
+        blocks:
+          - id: GR-0004
+            text: "The solution must provide a unified clinical record interface accessible across desktop and web browser environments."
+            gold: {kind: requirement, modality: must, mandatory: true, zone: OBLIGATION}
+          - id: GR-0005
+            text: "Bidders are required to supply end-to-end encryption for all patient health data at rest (AES-256) and in transit (TLS 1.3)."
+            gold: {kind: requirement, modality: none, mandatory: true, zone: OBLIGATION, implicit: passive_predicate}
+          - id: GR-0006
+            text: "Role-based access control (RBAC) must enforce granular permission levels matching hospital staff designations."
+            gold: {kind: requirement, modality: must, mandatory: true, zone: OBLIGATION}
+          - id: GR-0007
+            text: "Comprehensive audit logging tracks every user interaction, record viewing, export, and modification with NTP timestamp synchronization."
+            gold: {kind: requirement, modality: none, mandatory: true, zone: OBLIGATION, implicit: declarative_instruction}
+          - list:
+              lead_in: "The system shall:"
+              items:
+                - id: GR-0008
+                  text: "(a) Support native HL7 v2.x and FHIR R4 data exchange standards for external clinical interfaces."
+                  gold: {kind: requirement, modality: shall, mandatory: true, zone: OBLIGATION}
+                - id: GR-0009
+                  text: "(b) Execute real-time allergy cross-checks and drug-interaction warnings upon electronic order entry."
+                  gold: {kind: requirement, modality: shall, mandatory: true, zone: OBLIGATION}
+                - id: GR-0010
+                  text: "(c) Provide offline document queuing for home care nurses, automatically syncing when connection is restored."
+                  gold: {kind: requirement, modality: shall, mandatory: true, zone: OBLIGATION}
+          - id: GR-0011
+            text: "Suppliers must maintain 99.99% system availability during defined operational core hours (06:00 to 22:00 EST daily)."
+            gold: {kind: requirement, modality: must, mandatory: true, zone: OBLIGATION, tags: [numeric]}
+          - id: GR-0012
+            text: "Scheduled maintenance windows are limited to designated off-peak hours on the first Sunday of each calendar month."
+            gold: {kind: requirement, modality: none, mandatory: true, zone: OBLIGATION, implicit: passive_predicate}
+          - id: GR-0013
+            text: "Automated database backups must execute every 4 hours, with off-site disaster recovery replication occurring in under 15 minutes."
+            gold: {kind: requirement, modality: must, mandatory: true, zone: OBLIGATION, tags: [numeric]}
+          - id: GR-0014
+            text: "Implementation includes full migration of legacy patient records dating back to 2017-01-01."
+            gold: {kind: requirement, modality: none, mandatory: true, zone: OBLIGATION, implicit: declarative_instruction, tags: [date]}
+
+      - heading: "4 System Capabilities & Operations Table"
+        blocks:
+          - table:
+              header: [["ID", "Requirement Statement", "Classification"]]
+              rows:
+                - ["REQ-010", {id: GR-0015, text: "Full integration with hospital PACS for inline viewing of DICOM imaging files directly within patient charts", gold: {kind: requirement, modality: none, mandatory: true, zone: OBLIGATION, implicit: table_cell}}, "Mandatory"]
+                - ["REQ-011", {id: GR-0016, text: "Single Sign-On (SSO) integration supporting SAML 2.0 and Azure Active Directory / Entra ID", gold: {kind: requirement, modality: none, mandatory: true, zone: OBLIGATION, implicit: table_cell}}, "Mandatory"]
+                - ["REQ-012", {id: GR-0017, text: "Multi-factor authentication (MFA) enforcement for all remote access attempts originating outside the internal hospital subnet", gold: {kind: requirement, modality: none, mandatory: true, zone: OBLIGATION, implicit: table_cell}}, "Mandatory"]
+                - ["REQ-013", {id: GR-0018, text: "Mobile application support allowing clinical staff to view inpatient vitals on iOS and Android tablet devices", gold: {kind: requirement, modality: none, mandatory: false, zone: OBLIGATION, implicit: table_cell}}, "Optional"]
+                - ["REQ-014", {id: GR-0019, text: "Built-in ambient AI voice dictation tool for automated clinical progress note drafting", gold: {kind: requirement, modality: none, mandatory: false, zone: OBLIGATION, implicit: table_cell}}, "Optional"]
+                - ["REQ-015", {id: GR-0020, text: "Native patient portal feature allowing patients to schedule appointments and view laboratory results", gold: {kind: requirement, modality: none, mandatory: false, zone: OBLIGATION, implicit: table_cell}}, "Optional"]
+
+      - heading: "5 Training, Support and Vendor Qualification"
+        blocks:
+          - id: GR-0021
+            text: "On-site classroom training for up to 150 clinical super-users must be conducted prior to system Go-Live."
+            gold: {kind: requirement, modality: must, mandatory: true, zone: OBLIGATION, tags: [numeric]}
+          - id: GR-0022
+            text: "The vendor provides 24/7/365 Tier 3 technical support with a maximum initial response time of 15 minutes for Critical (Priority 1) incidents."
+            gold: {kind: requirement, modality: none, mandatory: true, zone: OBLIGATION, implicit: declarative_instruction, tags: [numeric]}
+          - id: GR-0023
+            text: "The supplier must hold active ISO 27001 and SOC 2 Type II certifications covering the offered platform throughout the contract duration."
+            gold: {kind: requirement, modality: must, mandatory: true, zone: OBLIGATION}
+          - id: GR-0024
+            text: "All customer data and system backup infrastructure must reside physically within Canadian data centres."
+            gold: {kind: requirement, modality: must, mandatory: true, zone: OBLIGATION}
+          - id: GR-0025
+            text: "Delivery of updated technical documentation and user guides with each major platform release is obligatory."
+            gold: {kind: requirement, modality: none, mandatory: true, zone: OBLIGATION, implicit: passive_predicate}
+          - id: GR-0026
+            text: "Bidders should offer optional sandbox environment access for sandbox testing up to 30 days post-implementation."
+            gold: {kind: requirement, modality: should, mandatory: false, zone: OBLIGATION, tags: [numeric]}
+          - id: GR-0027
+            text: "Bidders may include proposals for annual on-site system health checks and optimization reviews."
+            gold: {kind: requirement, modality: may, mandatory: false, zone: OBLIGATION}

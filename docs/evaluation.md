@@ -17,13 +17,14 @@ uv run bidwright-eval report s03-batch                     # evals/results/s03-b
 
 ### Gold v2
 
-Each corpus RFP is rendered from a YAML spec in `evals/corpus/`, so every clause's text and label are known by construction, and `evals/render/gold.py` writes its gold. Gold v2 holds three RFPs:
+Each corpus RFP is rendered from a YAML spec in `evals/corpus/`, so every clause's text and label are known by construction, and `evals/render/gold.py` writes its gold. Gold v2 holds four RFPs:
 
 | RFP | Documents | Requirements | Mandatory | Hazards | Other gold |
 |---|---|---|---|---|---|
 | Development | One PDF | 12 | 8 | 1 | 3 background clauses, a visible and a hidden trap, planted personal data, 3 risk seeds |
 | Development DOCX | One DOCX | 11 | 9 | 1 | 2 background clauses, 2 hidden traps, 2 risk seeds |
 | Hero | Main PDF, addendum PDF, XLSX annex | 55 | 45 | 9 | 11 distractor clauses (background, not binding, out of scope), 9 implicit requirements, one in small print, 10 traps (9 hidden), and seeds of seven kinds |
+| Held-out | One DOCX, from the owner's own requirement list, written without the prompts in view | 27 | 22 | 3 | 4 background clauses, 14 implicit requirements, 6 of them in a table; scored once, at release, on 5 repeats with research off |
 
 Gold and `evals/hypotheses.yaml` are hashed together in `evals/gold/MANIFEST.sha256`, and the scorer refuses gold or hypotheses that no longer match. No score is taken before that hash is recorded.
 
