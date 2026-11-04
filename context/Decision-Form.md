@@ -21,6 +21,17 @@ tags: [bidwright, decisions, governance]
 
 **Recommendation.** Create the key at the start of Iteration 3, so the trial covers the iteration that first uses it.
 
+### D-06: Container-only host names in the egress register, due before the `v0.1` tag
+
+**Context.** The egress register (ADR-026) decides whether a destination is local from its host name. `localhost` and `127.0.0.1` mean this machine everywhere. `ollama`, `phoenix` and `docling` exist only on the Compose network, and `host.docker.internal` means the machine running Docker only from inside a container. Outside Docker the operating system resolves these names through the hosts file and DNS, so on an office or client network a search suffix can turn `docling` into another computer. Bidwright reads `.env` outside Docker too: a Compose address copied there, such as `DOCLING_URL=http://docling:5001`, would let a client run send whole documents, or prompts to Ollama, to that computer while the register calls it local. Phoenix receives only hashes and counts.
+
+**Options.**
+- **A.** The four names count as local only inside Bidwright's container, flagged by a variable the Dockerfile sets; outside it, only `localhost` and `127.0.0.1` do, and any other name is refused with a message to use `localhost`.
+- **B.** Resolve the name at check time and require a private address. Rejected on the facts: office networks give other computers private addresses too, and the answer can change between the check and the connection.
+- **C.** Keep trusting names, and document that Compose addresses must not go in `.env`. This is the call-site trust ADR-026 set out to avoid.
+
+**Recommendation.** A. It only tightens a privacy control; no current setup breaks, since outside Docker the defaults are `localhost` and inside the container the image sets the flag; a misconfiguration becomes a clear refusal instead of a silent leak; and it costs about an hour, with an ADR beside ADR-026. Reasoned step by step with the sequential-thinking tool on 2026-11-04.
+
 ### Decisions closed in later design docs
 
 | Iteration | Decisions its design doc closes |
