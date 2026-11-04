@@ -1,0 +1,12 @@
+# S-10: the extract prompt with its examples against the same prompt without them (Iteration
+# 1, step 18). The examples stay only if `examples` beats `noexamples` by more than the
+# control's spread (step 20).
+name: s10-examples
+rfp: inputs/hero
+profile: free
+repeats: 5
+until: coverage
+max_cost_usd: 10
+rungs:
+  - {name: noexamples, flags: {extract_prompt: extract_noexamples}}
+  - {name: examples, flags: {}}

@@ -1,0 +1,12 @@
+# S-03: recall against pack size on the hero package (Iteration 1, step 18). The largest
+# batch size whose rung is within the noise of b10 becomes `batch_size` (step 20).
+name: s03-batch
+rfp: inputs/hero
+profile: free
+repeats: 5
+until: coverage
+max_cost_usd: 10
+rungs:
+  - {name: b10, flags: {batch_size: 10}}
+  - {name: b20, flags: {batch_size: 20}}
+  - {name: b40, flags: {batch_size: 40}}

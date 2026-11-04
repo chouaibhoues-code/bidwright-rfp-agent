@@ -7,6 +7,8 @@ bidwright-eval baseline <run_dir>    writes the run's scores, with the gold hash
                                      scored against, to evals/baselines/<rfp>.json
 bidwright-eval explain <run_dir> <gold_id>
                                      shows what happened to one gold item in the run
+bidwright-eval report <matrix>       scores every run of outputs/matrices/<matrix>/ and
+                                     writes evals/results/<matrix>/ with each rung's decision
 bidwright-eval hash-gold             records the hashes of the gold files and of
                                      evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
 """
@@ -20,6 +22,7 @@ from pathlib import Path
 from bidwright.config import load_config
 from evals.explain import explain
 from evals.gates import gate
+from evals.report import report
 from evals.score import GOLD_DIR, HYPOTHESES_ENTRY, ROOT, score_run, scorecard, write_results
 
 BASELINES = ROOT / "evals" / "baselines"
@@ -69,10 +72,17 @@ def main(argv: list[str] | None = None) -> int:
     why = sub.add_parser("explain", help="what happened to one gold item in a run")
     why.add_argument("run_dir", type=Path)
     why.add_argument("gold_id")
+    matrix = sub.add_parser("report", help="score a matrix's runs and decide each rung")
+    matrix.add_argument("matrix", help="the matrix name, as in outputs/matrices/<matrix>/")
     sub.add_parser("hash-gold", help="freeze the current gold files' hashes")
     args = parser.parse_args(argv)
     if args.command == "hash-gold":
         print(f"wrote {hash_gold()}")
+        return 0
+    if args.command == "report":
+        out = report(args.matrix)
+        print((out / "report.md").read_text(encoding="utf-8"), end="")
+        print(f"results: {out}")
         return 0
     if args.command == "explain":
         try:

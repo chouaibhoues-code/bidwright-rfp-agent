@@ -1,0 +1,12 @@
+# S-13: a second extraction pass over OBLIGATION zones (Iteration 1, step 18). It is turned on
+# only if `on` lowers the median misses while precision falls by at most 3 points (step 20).
+# The rung names are quoted, because YAML reads a bare on and off as booleans.
+name: s13-second-pass
+rfp: inputs/hero
+profile: free
+repeats: 5
+until: coverage
+max_cost_usd: 10
+rungs:
+  - {name: "off", flags: {second_pass: false}}
+  - {name: "on", flags: {second_pass: true}}

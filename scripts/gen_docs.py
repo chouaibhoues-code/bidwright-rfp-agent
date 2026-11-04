@@ -179,11 +179,15 @@ def cli_md() -> str:
     from evals.cli import main as eval_main
 
     sections = [
-        ("bidwright", bidwright_main, [[], ["run"], ["demo"], ["record"], ["purge"]]),
+        (
+            "bidwright",
+            bidwright_main,
+            [[], ["run"], ["demo"], ["record"], ["purge"], ["matrix", "run"]],
+        ),
         (
             "bidwright-eval",
             eval_main,
-            [[], ["score"], ["gate"], ["baseline"], ["explain"], ["hash-gold"]],
+            [[], ["score"], ["gate"], ["baseline"], ["explain"], ["report"], ["hash-gold"]],
         ),
     ]
     lines = ["# Command-line reference", "", GENERATED.strip(), ""]

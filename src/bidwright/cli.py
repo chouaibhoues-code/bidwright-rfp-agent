@@ -9,6 +9,9 @@
     bidwright purge <run> | --expired
                          deletes a run's folder and its cache entries, or every client run
                          past the retention period
+    bidwright matrix run <file> [--resume]
+                         runs a matrix file's rungs and repeats in order, under
+                         outputs/matrices/<name>/
 
 The command line parses arguments and prints what the run entry refuses. The rules themselves
 sit at the run entry, in `preflight.py`: on `free`, a file is refused unless its hash is
@@ -80,6 +83,20 @@ def _purge(args: argparse.Namespace) -> int:
     return 0
 
 
+def _matrix(args: argparse.Namespace) -> int:
+    from bidwright.llm.client import default_backends
+    from bidwright.matrix import MatrixRefused, load_matrix, run_matrix
+
+    try:
+        paid = load_matrix(args.file).profile == "paid"
+        outcome = run_matrix(args.file, resume=args.resume, backends=default_backends(paid=paid))
+    except (MatrixRefused, Refused, ValueError, OSError) as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    print(f"{outcome.status}: {len(outcome.runs)} runs, ${outcome.spent_usd:g} spent")
+    return 0 if outcome.status == "COMPLETED" else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="bidwright", description="Bidwright: RFP to proposal.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -105,12 +122,21 @@ def main(argv: list[str] | None = None) -> int:
     purge.add_argument(
         "--expired", action="store_true", help="every client run past the retention period"
     )
+    matrix = sub.add_parser("matrix", help="run a matrix of rungs and repeats")
+    matrix_sub = matrix.add_subparsers(dest="matrix_command", required=True)
+    matrix_run = matrix_sub.add_parser("run", help="run a matrix file's rungs and repeats")
+    matrix_run.add_argument("file", type=Path, help="a matrix file, as in config/matrices/")
+    matrix_run.add_argument(
+        "--resume", action="store_true", help="skip the runs that finished and go on"
+    )
     args = parser.parse_args(argv)
 
     os.environ.setdefault("LANGGRAPH_STRICT_MSGPACK", "true")
     load_env(HOME / ".env")
     if args.command == "purge":
         return _purge(args)
+    if args.command == "matrix":
+        return _matrix(args)
     from bidwright.graph.build import execute
     from bidwright.llm.client import default_backends
     from bidwright.llm.replay import CassetteStore

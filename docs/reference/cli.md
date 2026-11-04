@@ -5,16 +5,17 @@
 ## `bidwright`
 
 ```text
-usage: bidwright [-h] {run,demo,record,purge} ...
+usage: bidwright [-h] {run,demo,record,purge,matrix} ...
 
 Bidwright: RFP to proposal.
 
 positional arguments:
-  {run,demo,record,purge}
+  {run,demo,record,purge,matrix}
     run                 run one RFP file or package folder live
     demo                replay the recorded development run, with no keys
     record              run live and record cassettes, on the host
     purge               delete a run and its cache entries, or expired runs
+    matrix              run a matrix of rungs and repeats
 
 options:
   -h, --help            show this help message and exit
@@ -85,10 +86,23 @@ options:
   --expired   every client run past the retention period
 ```
 
+## `bidwright matrix run`
+
+```text
+usage: bidwright matrix run [-h] [--resume] file
+
+positional arguments:
+  file        a matrix file, as in config/matrices/
+
+options:
+  -h, --help  show this help message and exit
+  --resume    skip the runs that finished and go on
+```
+
 ## `bidwright-eval`
 
 ```text
-usage: bidwright-eval [-h] {score,gate,baseline,explain,hash-gold} ...
+usage: bidwright-eval [-h] {score,gate,baseline,explain,report,hash-gold} ...
 
 `bidwright-eval`: score frozen runs against gold. It never changes a run.
 
@@ -99,15 +113,18 @@ bidwright-eval baseline <run_dir>    writes the run's scores, with the gold hash
                                      scored against, to evals/baselines/<rfp>.json
 bidwright-eval explain <run_dir> <gold_id>
                                      shows what happened to one gold item in the run
+bidwright-eval report <matrix>       scores every run of outputs/matrices/<matrix>/ and
+                                     writes evals/results/<matrix>/ with each rung's decision
 bidwright-eval hash-gold             records the hashes of the gold files and of
                                      evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
 
 positional arguments:
-  {score,gate,baseline,explain,hash-gold}
+  {score,gate,baseline,explain,report,hash-gold}
     score               score one run folder
     gate                gate one run folder against a committed baseline
     baseline            write a run's scores as the baseline
     explain             what happened to one gold item in a run
+    report              score a matrix's runs and decide each rung
     hash-gold           freeze the current gold files' hashes
 
 options:
@@ -160,6 +177,18 @@ usage: bidwright-eval explain [-h] run_dir gold_id
 positional arguments:
   run_dir
   gold_id
+
+options:
+  -h, --help  show this help message and exit
+```
+
+## `bidwright-eval report`
+
+```text
+usage: bidwright-eval report [-h] matrix
+
+positional arguments:
+  matrix      the matrix name, as in outputs/matrices/<matrix>/
 
 options:
   -h, --help  show this help message and exit
