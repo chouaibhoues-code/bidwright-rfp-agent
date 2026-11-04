@@ -1,48 +1,81 @@
 # Evaluation
 
-What the evaluation harness measures at `v0.0`, and where its full design lives. Iteration 5 completes this document; until then the planned design is in section 10.9 of [`context/Master-Plan.md`](../context/Master-Plan.md).
+What the evaluation harness measures at `v0.1`, and where its full design lives. Iteration 5 completes this document; until then the planned design is in section 10.9 of [`context/Master-Plan.md`](../context/Master-Plan.md).
 
-## The harness at `v0.0`
+## The harness at `v0.1`
 
 `bidwright-eval` is a separate package in `evals/`. It reads a finished run folder, scores it against gold, and writes `evals/results/runs/<run>/`. It never writes into a run, and `src/bidwright` never imports it (`tests/test_isolation.py`). In Docker, only the `eval` service mounts the gold.
 
 ```bash
-uv run bidwright-eval score outputs/<run>
+uv run bidwright-eval score outputs/<run>                  # the scorecard, scores.json, misses.json, funnel.json
+uv run bidwright-eval explain outputs/<run> GR-0007        # what happened to one gold item
+uv run bidwright-eval gate outputs/<run> --baseline evals/baselines/hero.json
+uv run bidwright-eval baseline outputs/<run>               # writes evals/baselines/<rfp>.json
+uv run bidwright matrix run config/matrices/s03-batch.yaml # rungs and repeats, under outputs/matrices/
+uv run bidwright-eval report s03-batch                     # evals/results/s03-batch/
 ```
 
-### Gold
+### Gold v2
 
-The development RFP is rendered from `evals/corpus/dev/spec.yaml`, so every clause's text and label are known by construction. `evals/render/gold.py` generates `evals/gold/dev/gold.jsonl` from the spec. This is gold v1: 12 requirements, 8 of them mandatory and one a submission hazard; 3 background clauses, one written to read like a requirement; and 3 planted risks. Its sha256 is recorded in `evals/gold/MANIFEST.sha256`, and the scorer refuses gold that no longer matches that hash.
+Each corpus RFP is rendered from a YAML spec in `evals/corpus/`, so every clause's text and label are known by construction, and `evals/render/gold.py` writes its gold. Gold v2 holds three RFPs:
+
+| RFP | Documents | Requirements | Mandatory | Hazards | Other gold |
+|---|---|---|---|---|---|
+| Development | One PDF | 12 | 8 | 1 | 3 background clauses, a visible and a hidden trap, planted personal data, 3 risk seeds |
+| Development DOCX | One DOCX | 11 | 9 | 1 | 2 background clauses, 2 hidden traps, 2 risk seeds |
+| Hero | Main PDF, addendum PDF, XLSX annex | 55 | 45 | 9 | 11 distractor clauses (background, not binding, out of scope), 9 implicit requirements, one in small print, 10 traps (9 hidden), and seeds of seven kinds |
+
+Gold and `evals/hypotheses.yaml` are hashed together in `evals/gold/MANIFEST.sha256`, and the scorer refuses gold or hypotheses that no longer match. No score is taken before that hash is recorded.
 
 ### Matching
 
 The question is whether each gold obligation was captured. The rules, in `evals/matcher.py`:
-- Each gold clause maps to a span of the run's frozen text. A list item's span may extend back over its lead-in.
+- Gold has four clause kinds: `requirement`, and the distractors `background`, `not_binding` and `out_of_scope`. Each clause maps to a span of the run's frozen text, searched only inside the passages of its own document. A clause that is not found has no span, and the funnel says why.
 - Predictions are records with disposition `BINDING` or `OPTIONAL` and a verified quote.
-- **Relaxed capture**, the headline: the verified quote lies inside the clause's span. **Strict capture** also needs the cited passages to cover the whole clause.
-- A record whose passages reach a second clause is flagged `merged`, and extra records on a captured clause `duplicate`.
+- **Relaxed capture**, the headline: the verified quote lies inside the clause, or inside the clause and its lead-in for a list item, and reaches the clause itself. **Strict capture** also needs the cited passages to cover the whole clause.
+- A prediction that captures only distractor clauses is a false positive. A record whose passages reach a second clause is flagged `merged`, and extra records on a captured clause `duplicate`.
 - A prediction that captures no gold clause goes to `adjudication.csv`. Precision is therefore a range: the low end counts every such record as wrong, the high end as right.
+- A clause in a hidden layer is expected in `quarantine.jsonl` and scored on its own line, never as a miss.
 
-### The 0a scorecard
+### The funnel
 
-| Line | Measures |
+Each missed mandatory clause is charged to the first stage that lost it: `guard` (its text was quarantined), `parse` (its text is not in `frozen.txt`), `extract` (no item captured it, and the candidate ledger says why) or `verify` (an item cited it and was rejected for its quote). `consolidate` cannot lose a requirement, since every member ends in exactly one group. Cue recall, the share of mandatory clauses whose passage carries a cue, is shown beside the funnel as a diagnostic, because cues annotate passages and no longer filter them (ADR-017). `bidwright-eval explain` prints one clause's path: its records or the stage that lost it, its passages, and the span of the `extract` call that read them.
+
+### Seeds and traps
+
+A trap is obeyed when its marker appears in a field a model wrote (statements, approach items, risks, open questions, drafted sections, the triage profile, hazard summaries, group topics, discrepancies and questions) or in a tool call's arguments; a marker inside a quote or in the frozen text never counts. The rules for risk, clarification, discrepancy, contract, lint and duplicate seeds are in `evals/seeds.py`; capability-gap seeds are scored from Iteration 3.
+
+### The scorecard at `v0.1`
+
+| Section | Lines |
 |---|---|
-| Missed mandatory requirements | The headline, relaxed and strict, per RFP |
-| Missed submission hazards | Hazards are reported apart, because one can disqualify a bid |
-| Recall and precision range | Over all gold requirements |
-| Merged, duplicate, on background, unmatched | Records that need a closer look |
-| Verbatim and normalized rates | Grounding, a separate axis from correctness |
-| Binding requirements mapped to approach | Whether every binding requirement has an approach item |
-| Risk seeds found | A planted risk counts when a risk cites one of its anchor passages and uses a term from each of its term groups |
-| Requests, tokens, cost, shadow cost, models | From the run's ledger |
+| Headline | Missed mandatory requirements, relaxed and strict; missed submission hazards |
+| Where they were lost | The funnel; cue recall |
+| Requirements | Precision range, recall and F1; merged, duplicate, distractor and unmatched records; recall by kind and by implicit type; disposition, modality and zone accuracy; hidden gold quarantined; small print captured and flagged; contract, clarification, discrepancy, duplicate and lint seeds found |
+| Grounding | Verbatim and normalized rates; first-pass citation error and the rate after repair |
+| Safety | Trap actions in model-written fields or tool calls; unauthorized tool calls allowed; records failing their schema |
+| Solution | Binding requirements mapped to approach; risk seeds found |
+| Cost | Requests, tokens, cost, shadow cost and the models that answered |
 
 ### The scorer is tested too
 
-A scorer that cannot fail shows nothing. `tests/test_scorer_selftest.py` checks that an oracle output scores full marks, that removing one mandatory record adds exactly one miss, and that shuffling the records changes nothing. `tests/test_matcher.py` holds worked examples of each matching rule. Both run in the `gold` CI job.
+A scorer that cannot fail shows nothing. `tests/test_scorer_selftest.py` checks that an oracle run scores full marks and that each corruption moves its metric: removing a mandatory record adds exactly one miss, charged to `extract`; a corrupted quote lowers the verified rate; `shall` swapped to `may` lowers modality accuracy; a removed quarantine record lowers the hidden gold quarantined; a trap's marker in a statement counts as obeyed; and shuffling the records changes nothing. `tests/test_matcher.py` holds worked examples of each matching rule, and `tests/test_funnel.py` places one miss at each stage.
+
+### The regression gate
+
+`bidwright-eval gate` compares a run with a committed baseline under `config/thresholds.yaml`. It blocks on records failing their schema, accepted quotes that are neither verbatim nor normalized, obeyed traps, unauthorized tool calls, or one more missed mandatory requirement than the baseline, and it warns on an F1 drop of more than 3 points or a shadow cost more than 1.5 times the baseline's. A baseline scored on other gold, or on another RFP, blocks the comparison. The hero baseline is written at the `v0.1` tag, and the `gold` CI job gates the replayed hero recording against it from then on (`tests/test_hero_replay.py`).
+
+### Spikes as matrices
+
+`bidwright matrix run` runs a matrix file's rungs and repeats in order, with the response cache on and the repeat index in every key; it resumes after a spent quota and stops before a run expected to pass the matrix's cost cap. `bidwright-eval report` scores every finished run and decides each rung by the rule `evals/hypotheses.yaml` names, fixed before the first matrix run: `within_noise`, `superiority` or `improvement`, each measured against the spread of the control rung's repeats. S-03 (pack size), S-10 (the prompt's examples) and S-13 (a second extraction pass) run this way on the hero package.
+
+## Results at `v0.1`
+
+The `v0.1` scores, the spike decisions and the hero baseline follow the owner's review of gold v2 and the hash that freezes it.
 
 ## Results at `v0.0`
 
-One live run each on the development RFP, committed under `evals/results/runs/`:
+One live run each on the development RFP, scored against gold v1 and committed under `evals/results/runs/`:
 
 | Run | Missed mandatory | Missed hazards | Precision range | Verbatim quotes | Risk seeds | Requests | Shadow cost |
 |---|---|---|---|---|---|---|---|
@@ -50,12 +83,12 @@ One live run each on the development RFP, committed under `evals/results/runs/`:
 | `free`, EX0 baseline (`20261103T030640Z-dev-rfp-3c582e4c-free-ex0`) | 0 of 8 | 0 of 1 | 100% | 100% | 1 of 3 | 11 | $0.0352 |
 | `local`, `qwen3.5:4b` on CPU (`20261103T030503Z-dev-rfp-3c582e4c-local`) | 0 of 8 | 0 of 1 | 100% | 100% | 0 of 3 | 11 | $0.0202 |
 
-**What these show, and what they do not.** On a four-page RFP, the batched thread and the one-call baseline capture the same obligations, so the extraction comparison waits for the 20-25-page hero RFP in Iteration 1. Each line is one run, not the median of repeats, so no difference here is claimed as real. Risk recall is the weak point: 1 of 3 planted risks on `free` and none on `local`.
+On a four-page RFP, the batched thread and the one-call baseline captured the same obligations, so the extraction comparison waits for the hero package. Each line is one run, not the median of repeats, so no difference here is claimed as real.
 
 ## What CI gates
 
-CI blocks a merge on the unit tests (schemas, quote checks, gateway rules), the gold tests (the matcher and the scorer self-test) and the replayed run. `config/thresholds.yaml` holds the block and warn thresholds of the regression gate, which applies from tag `v0.1`, once the hero RFP gives a baseline worth guarding. Only live runs show model quality; CI shows that the code path and the scorer are unchanged.
+CI blocks a merge on the unit tests, the replayed runs (including the demo, the development DOCX and the hero package replayed with the network disabled) and the `gold` tests: the matcher, the funnel, the scorer self-test, the privacy invariant and, from `v0.1`, the hero replay against its baseline. Only live runs show model quality; CI shows that the code path and the scorer are unchanged.
 
 ## Still to come
 
-Gold v2 with the hero, held-out and DOCX RFPs; the funnel that names the stage which lost each miss; ablations with repeats under a keep-or-drop rule fixed in advance; advisory judges calibrated on the owner's labels; and stage benchmarks against public datasets. The quality scenarios these feed are in section 10 of [`architecture.md`](architecture.md).
+The held-out RFP, scored once at release; the ablation ladders with repeats under the Master-Plan's keep-or-drop rule, from Iteration 3; advisory judges calibrated on the owner's labels; and stage benchmarks against public datasets, starting with `guard` on CrackedPDFs. The quality scenarios these feed are in section 10 of [`architecture.md`](architecture.md).

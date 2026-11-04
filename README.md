@@ -22,27 +22,36 @@ A deterministic shell around a probabilistic core: code checks everything code c
 |---|---|
 | `uv run bidwright demo` | Replays a recorded run of the development RFP, with no keys and no network |
 | `uv run bidwright run inputs/dev/dev_rfp.pdf` | A live run on the `free` profile (Gemini), which needs `GEMINI_API_KEY` |
+| `uv run bidwright run inputs/hero` | A live run on a package folder: the hero RFP with its addendum and XLSX annex |
 | `uv run bidwright run inputs/dev/dev_rfp.pdf --profile local` | A live run on a local Ollama model, with `num_ctx` set |
-| `uv run bidwright run inputs/dev/dev_rfp.pdf --baseline ex0` | EX0, the one-call extraction baseline |
-| `uv run bidwright record inputs/dev/dev_rfp.pdf` | A live run that also writes replay cassettes to `tests/cassettes/demo/` |
+| `uv run bidwright run inputs/dev/dev_rfp.pdf --profile paid` | The same models on the paid tier, which needs `GEMINI_PAID_API_KEY` |
+| `uv run bidwright run inputs/hero --until consolidate` | Stops after a node: `verify`, `coverage`, `consolidate` or `render` |
+| `uv run bidwright run inputs/dev/dev_rfp.pdf --baseline ex0` | EX0, the one-call extraction baseline; `--baseline b0` is the rule-only floor, with no model call |
+| `uv run bidwright record inputs/dev/dev_rfp.pdf` | A live run that also writes LLM and Docling cassettes, to `tests/cassettes/demo/` by default |
+| `uv run bidwright purge <run>` | Deletes a run's folder and its cache entries; `--expired` deletes every client run past the retention period |
+| `uv run bidwright matrix run config/matrices/s03-batch.yaml` | Runs a matrix's rungs and repeats, for the spikes and later the ablations |
 | `uv run bidwright-eval score outputs/<run>` | Scores a finished run against its gold and writes `evals/results/runs/<run>/` |
+| `uv run bidwright-eval explain outputs/<run> GR-0007` | Shows what happened to one gold item: its records, or the stage that lost it |
 | `uv run pytest -m "not gold and not replay"` | The fast tests; `-m replay` and `-m gold` run the other two sets |
+
+Parsing a PDF, DOCX or XLSX live needs the Docling service: `docker compose up -d docling`. Replays and tests read recorded Docling responses instead, so they need neither Docker nor a network.
 
 `samples/dev-free/` holds one real run of the development RFP on the `free` profile, and `evals/results/runs/20261103T030541Z-dev-rfp-3c582e4c-free/scorecard.md` its score: no mandatory requirement or submission hazard missed, every quote verbatim, every binding requirement mapped to an approach item, and one of three planted risks found, in 11 requests. One extra item, the buyer's invitation to bid recorded as optional, matches no gold clause, so precision is 92-100% until it is adjudicated. The demo replays that same run. EX0, the one-call extraction baseline, scored the same on this four-page RFP (`evals/results/runs/20261103T030640Z-dev-rfp-3c582e4c-free-ex0/scorecard.md`, 11 requests), so the extraction comparison waits for the longer hero RFP in Iteration 1. On `--profile local`, `qwen3.5:4b` on this laptop's CPU completed the same run in 17 minutes (`evals/results/runs/20261103T030503Z-dev-rfp-3c582e4c-local/scorecard.md`): no mandatory requirement or hazard missed, but none of the three planted risks found.
 
-Each run writes `outputs/<run>/`: `solution_summary.md` and its JSON twin, `proposal.md`, the frozen text and passages, the verified requirements and rejected quotes, the approach, the risks, `ledger.jsonl` with one entry per LLM call, `run_manifest.json` with the status and totals, and `spans.jsonl` when no Phoenix collector takes the spans.
+Each run writes `outputs/<run>/`: `solution_summary.md` and its JSON twin, `proposal.md`, the compliance matrix as XLSX and CSV, `clarification_questions.md`, `submission_checklist.md` and `review/quarantine.md`; the control register, the frozen text and passages, the candidate ledger with a disposition for every passage, the verified requirements and rejected quotes, the requirement groups, the approach and the risks; a context manifest for every packed call; `ledger.jsonl` with one entry per LLM call, `run_manifest.json` with the status and totals, and `spans.jsonl` when no Phoenix collector takes the spans.
 
 To see a run's trace tree in Phoenix, start it with `docker compose up -d phoenix` (Compose needs `GEMINI_API_KEY` in `.env`, ADR-002), set `PHOENIX_ENDPOINT=http://127.0.0.1:6006` in `.env`, run `uv run bidwright demo`, and open http://127.0.0.1:6006. Phoenix listens on loopback only and starts with authentication off; `.env.example` shows how to turn it on.
 
 ## How a run works
 
-1. `ingest` freezes the PDF's text and registers sentences, list items and table rows as passages `SRC-0001` and on.
-2. `extract` reads batches of 20 passages in parallel and returns obligations with exact quotes.
-3. `verify` checks every quote against its cited passage in code. One targeted repair is allowed; whatever still fails is rejected and logged.
-4. `approach` maps approach items to the verified requirements.
-5. `risk` is a tool-using agent: it searches the RFP and does date arithmetic through a gateway that checks every call, for at most 4 turns and 6 tool calls, then returns a typed risk register. Generic or rated risks are rejected.
-6. `draft` writes three short sections that cite only the records they were given.
-7. `render` validates every record and writes the outputs; a schema failure blocks them all.
+1. `guard` checks every file before any parser sees it: size, pages and paths, scanned pages, and hidden content (invisible or tiny text, hidden runs, sheets and comments), which it removes from the parsed copy and lists for review.
+2. `ingest` parses each document with Docling, builds the control register of the package's documents and their precedence, freezes the text and registers sentences, list items and table rows as passages `SRC-0001` and on.
+3. `candidates` marks obligation cues on passages, and `triage` zones each section (instructions, evaluation, eligibility, obligations, contract, background) and lists the submission hazards.
+4. `extract` reads every passage in context packs, with their neighbors, lead-ins and defined terms, and gives each passage a disposition, returning obligations with exact quotes.
+5. `verify` checks every quote and every number or date against the cited passage in code. One targeted repair is allowed; whatever still fails is rejected and logged. `coverage` re-reads any passage left without a disposition, for at most two rounds.
+6. `lint` flags vague terms, escape clauses, missing units, broken references and contract terms for legal review, all in code. `consolidate` groups related requirements and drafts clarification questions and discrepancies, one model call per cluster.
+7. `approach` maps approach items to the verified requirements, and `risk`, a tool-using agent, searches the RFP and does date arithmetic through a gateway that checks every call, for at most 4 turns and 6 tool calls.
+8. `draft` writes three short sections that cite only the records they were given, and `render` validates every record and writes the outputs, including the compliance matrix, the clarification questions and the submission checklist; a schema failure blocks them all.
 
 ## Documents
 
