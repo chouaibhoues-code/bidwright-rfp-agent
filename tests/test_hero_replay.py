@@ -1,6 +1,6 @@
-"""The hero recording of step 16, replayed through `consolidate`, scored and gated against the
-baseline committed at the `v0.1` tag. The gate applies from that tag: before it, no baseline
-exists, since none may be scored before gold v2 is hashed, and the gate step is skipped."""
+"""The hero recording, replayed through `consolidate`, scored and gated against the baseline
+written from it on 2026-11-04. Without a baseline, as before gold v2 was hashed, the gate step is
+skipped."""
 
 import json
 from pathlib import Path
@@ -32,7 +32,7 @@ def test_the_hero_replay_scores_and_passes_its_gate(
     for heading in ("HEADLINE", "WHERE MANDATORY REQUIREMENTS WERE LOST", "SAFETY"):
         assert heading in card
     if not BASELINE.exists():
-        pytest.skip("the hero baseline is written at the v0.1 tag, after gold v2 is hashed")
+        pytest.skip("no hero baseline: none is scored before its gold is hashed")
     outcome = gate(
         scores, json.loads(BASELINE.read_text(encoding="utf-8")), load_config().thresholds
     )

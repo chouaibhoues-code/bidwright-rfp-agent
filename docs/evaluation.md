@@ -63,7 +63,7 @@ A scorer that cannot fail shows nothing. `tests/test_scorer_selftest.py` checks 
 
 ### The regression gate
 
-`bidwright-eval gate` compares a run with a committed baseline under `config/thresholds.yaml`. It blocks on records failing their schema, accepted quotes that are neither verbatim nor normalized, obeyed traps, unauthorized tool calls, or one more missed mandatory requirement than the baseline, and it warns on an F1 drop of more than 3 points or a shadow cost more than 1.5 times the baseline's. A baseline scored on other gold, or on another RFP, blocks the comparison. The hero baseline is written at the `v0.1` tag, and the `gold` CI job gates the replayed hero recording against it from then on (`tests/test_hero_replay.py`).
+`bidwright-eval gate` compares a run with a committed baseline under `config/thresholds.yaml`. It blocks on records failing their schema, accepted quotes that are neither verbatim nor normalized, obeyed traps, unauthorized tool calls, or one more missed mandatory requirement than the baseline, and it warns on an F1 drop of more than 3 points or a shadow cost more than 1.5 times the baseline's. A baseline scored on other gold, or on another RFP, blocks the comparison. The hero baseline, `evals/baselines/hero.json`, was written on 2026-11-04 from the hero recording made with packs of 40, and the `gold` CI job gates the replayed recording against it (`tests/test_hero_replay.py`).
 
 ### Spikes as matrices
 
@@ -79,6 +79,10 @@ The owner reviewed gold v2, and on 2026-11-04 it was hashed with `evals/hypothes
 | S-03, pack size | Fifteen hero runs to `coverage`. Median missed mandatory, of 45: 7 (5-8) with packs of 10, 8 (5-9) with 20 and 7 (4-9) with 40, all within the control's spread of 3; packs of 40 also gave the highest median low precision, 0.69 against 0.61, with a quarter of the requests, 8 against 31. Every miss was lost at `extract`, on the same few clauses at every size ([`evals/results/s03-batch/`](../evals/results/s03-batch/report.md)) | Packs of 40 |
 
 The repeated misses sit in the hero's designed traps: an implicit requirement, a buyer's right, two rows of the service-level table, an obligation inside a definition, an ownership term and three rows of the Annex B workbook. The quality scenario QS-2 asks for at most 2 of 45 at the Iteration 3 exit, so the extraction ladder has a gap of about five clauses to close. S-10 (the prompt's examples) and S-13 (a second pass) move into that ladder in Iteration 3 (CH-85); until then the prompt keeps its examples and the second pass stays off, the configuration S-03 measured.
+
+### The hero baseline
+
+The replayed hero recording, through `consolidate`, scored against gold v2 (`9e6f4ecc6ef6`): 7 of 45 mandatory requirements missed, the same trap clauses as in S-03 (GR-0030, GR-0031, GR-0032, GR-0045 and GR-0051 to GR-0053), and none of the 9 submission hazards; recall 0.836, low precision 0.639 and F1 0.724 ([`evals/baselines/hero.json`](../evals/baselines/hero.json)). Later runs are gated against it under `config/thresholds.yaml`: one more missed mandatory requirement blocks.
 
 ### `guard` on CrackedPDFs
 

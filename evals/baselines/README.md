@@ -7,6 +7,6 @@ run with it under `config/thresholds.yaml`, and blocks when the baseline was sco
 gold.
 
 A baseline is a score, so none exists before its gold is hashed in
-`evals/gold/MANIFEST.sha256`. The hero baseline is written at the `v0.1` tag from the replayed
-hero recording, after gold v2 is hashed, and the `gold` CI job gates the hero replay against
-it from then on (`tests/test_hero_replay.py`).
+`evals/gold/MANIFEST.sha256`. The hero baseline was written on 2026-11-04 from the replayed
+hero recording made with packs of 40, after gold v2 was hashed, and the `gold` CI job gates the
+hero replay against it (`tests/test_hero_replay.py`).
