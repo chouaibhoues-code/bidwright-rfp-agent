@@ -63,7 +63,9 @@ class OllamaBackend:
             )
         except ollama.ResponseError as exc:
             if exc.status_code >= 500:
-                raise TransientError(f"ollama {exc.status_code}: {exc.error}") from exc
+                raise TransientError(
+                    f"ollama {exc.status_code}: {exc.error}", "server_error"
+                ) from exc
             raise ProviderError(f"ollama {exc.status_code}: {exc.error}") from exc
         except _TRANSPORT_ERRORS as exc:
             reason = "timeout" if isinstance(exc, httpx.TimeoutException) else "transport"

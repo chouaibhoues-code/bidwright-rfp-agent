@@ -107,7 +107,7 @@ def _translate(exc: genai_errors.APIError) -> Exception:
             return QuotaExhausted(f"gemini daily quota spent: {', '.join(quota_ids)}")
         return RateLimited(f"gemini 429: {exc.message or exc}", retry_after_s=retry_after)
     if exc.code and exc.code >= 500:
-        return TransientError(f"gemini {exc.code}: {exc.message or exc}")
+        return TransientError(f"gemini {exc.code}: {exc.message or exc}", "server_error")
     return ProviderError(f"gemini {exc.code}: {exc.message or exc}")
 
 

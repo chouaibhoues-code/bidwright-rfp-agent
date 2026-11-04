@@ -13,7 +13,7 @@ import pytest
 import evals.report
 from bidwright import cli
 from bidwright.graph.build import RunResult
-from bidwright.matrix import MatrixRefused, load_matrix, run_matrix
+from bidwright.matrix import MatrixRefused, fell_back, load_matrix, run_matrix
 from bidwright.schemas import RunManifest, RunTotals
 from evals.report import decide, report
 
@@ -240,3 +240,22 @@ def test_a_run_a_fallback_model_answered_is_left_out_and_run_again(
     again = FakeEntry()
     _run(path, again, tmp_path, resume=True)
     assert [c["run_id"] for c in again.calls] == ["m-b10-r1"], "only that run starts again"
+
+
+def test_a_fallback_is_found_even_when_it_is_another_roles_primary() -> None:
+    """extract falls back to Flash, which is reason's primary: still a fallback for extract."""
+    manifest = RunManifest(
+        run_id="r",
+        commit="test",
+        profile="paid",
+        models={"extract": "flash-lite", "reason": "flash"},
+        models_used={"extract": ["flash"], "consolidate": ["flash"]},
+        started=datetime(2026, 11, 4, tzinfo=UTC),
+        status="COMPLETED",
+        totals=RunTotals(),
+    )
+    roles = {"extract": "extract", "consolidate": "reason"}
+    assert fell_back(manifest, roles)
+    manifest.models_used["extract"] = ["flash-lite"]
+    assert not fell_back(manifest, roles), "each node on its own role's primary"
+    assert fell_back(manifest.model_copy(update={"models_used": {"unknown": ["other"]}}), roles)

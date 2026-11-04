@@ -109,9 +109,9 @@ def main() -> int:
         r = results[parser]
         documents = ", ".join(f"{doc} {count}" for doc, count in r["by_document"].items())
         missing = " ".join(r["not_located"]) or "none"
+        share = "n/a" if r["share"] is None else f"{r['share']:.1%}"
         lines.append(
-            f"| {parser} | {r['located']} of {r['clauses']} | {r['share']:.1%} | {documents}"
-            f" | {missing} |"
+            f"| {parser} | {r['located']} of {r['clauses']} | {share} | {documents} | {missing} |"
         )
     lines += ["", f"Pass mark: {PASS_MARK:.0%} for Docling. Decision: {results['decision']}."]
     (RESULTS / "report.md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")

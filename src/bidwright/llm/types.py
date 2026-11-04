@@ -92,9 +92,10 @@ class LLMError(Exception):
 
 
 class TransientError(LLMError):
-    """A timeout, a connection failure or a 5xx: worth retrying. `reason` says which."""
+    """A timeout, a connection failure or a 5xx: worth retrying. `reason` says which, for
+    the ledger, and every raise site names it."""
 
-    def __init__(self, message: str, reason: TransientReason = "server_error") -> None:
+    def __init__(self, message: str, reason: TransientReason) -> None:
         super().__init__(message)
         self.reason: TransientReason = reason
 

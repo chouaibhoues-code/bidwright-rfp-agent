@@ -10,14 +10,16 @@ unreadable or over the page limit) reaches no parser either, so it counts as a p
 and the report counts it apart. `guard` detects hidden content, not intent: an instruction in
 visible text is outside its reach by design, and a benign file that hides text is flagged.
 
-The data never enters the repository. Prepare a folder outside it once:
-  1. download `data/metadata.jsonl`, `data/splits.json`, `pdfs/benign.tar.gz` and
-     `pdfs/injected.tar.gz` at the revision above;
-  2. check them against `evals/external/BENCHMARKS.sha256`;
-  3. extract both archives into the folder, so that `benign/` and `injected/` sit beside
-     `data/`.
-Then run `bidwright-eval external crackedpdfs --data <folder>`. Only the scores are written,
-to `evals/results/external/crackedpdfs.md`.
+The data never enters the repository. Prepare a folder outside it once: download
+`data/metadata.jsonl`, `data/splits.json`, `pdfs/benign.tar.gz` and `pdfs/injected.tar.gz`
+at the revision above, and extract both archives into the folder, so that `benign/` and
+`injected/` sit beside `data/`. Then run `bidwright-eval external crackedpdfs --data
+<folder>`. Before it scans, the adapter checks the two data files, the archives if they are
+still there, and one digest over the test split's PDFs against
+`evals/external/BENCHMARKS.sha256`, and refuses a folder that does not match. A file the
+scan fails on with an unexpected error is counted apart and left out of the scores, and the
+command then exits 1. Only the scores are written, to
+`evals/results/external/crackedpdfs.md`.
 """
 
 import hashlib
@@ -40,6 +42,9 @@ SOURCE = "https://huggingface.co/datasets/volkthienpreecha/crackedpdfs"
 BENCHMARKS = Path(__file__).with_name("BENCHMARKS.sha256")
 RESULTS = ROOT / "evals" / "results" / "external" / "crackedpdfs.md"
 DATA_FILES = ("data/metadata.jsonl", "data/splits.json")
+# The BENCHMARKS.sha256 entry for the digest over the test split's PDFs: the sha256 of the
+# lines "<file sha256>  <file_path>", one per test file, sorted by path.
+SPLIT_ENTRY = "test-split.pdfs"
 # F1 on the same test split, from the paper (a preprint), confirmed at source (Research-Register).
 PUBLISHED = (
     ("Hybrid structural detector", 0.960),
@@ -69,6 +74,7 @@ class Outcome:
     refused: bool
     seconds: float
     kinds: frozenset[str] = frozenset()
+    error: str | None = None  # the exception's type, when the scan failed unexpectedly
 
 
 def _inside(path: Path, root: Path) -> bool:
@@ -95,6 +101,8 @@ def check_files(folder: Path, checksums: Path = BENCHMARKS) -> None:
             continue
         digest, name = line.split(maxsplit=1)
         name = name.lstrip("*")
+        if name == SPLIT_ENTRY:
+            continue
         path = folder / name
         if not path.exists():
             if name in DATA_FILES:
@@ -102,6 +110,27 @@ def check_files(folder: Path, checksums: Path = BENCHMARKS) -> None:
             continue
         if _sha256(path) != digest:
             raise BenchmarkRefused(f"{name} does not match {checksums.name}")
+
+
+def split_digest(folder: Path, items: Iterable[Item]) -> str:
+    """One sha256 over the test split's PDFs, as `SPLIT_ENTRY` defines it."""
+    lines = []
+    for item in sorted(items, key=lambda item: item.path):
+        path = folder / item.path
+        if not path.is_file():
+            raise BenchmarkRefused(f"{path} is missing; extract both archives into {folder}")
+        lines.append(f"{_sha256(path)}  {item.path}\n")
+    return hashlib.sha256("".join(lines).encode("utf-8")).hexdigest()
+
+
+def check_split(folder: Path, items: Iterable[Item], checksums: Path = BENCHMARKS) -> None:
+    """The PDFs to be scanned must be the published ones, not only the archives."""
+    rows = [line.split(maxsplit=1) for line in checksums.read_text("utf-8").splitlines()]
+    listed = {name.lstrip("*"): digest for digest, name in (row for row in rows if row)}
+    if SPLIT_ENTRY not in listed:
+        raise BenchmarkRefused(f"{checksums.name} lists no {SPLIT_ENTRY} digest")
+    if split_digest(folder, items) != listed[SPLIT_ENTRY]:
+        raise BenchmarkRefused(f"the test split's PDFs do not match {checksums.name}")
 
 
 def load_test_split(folder: Path) -> list[Item]:
@@ -151,7 +180,13 @@ def run_items(
         if not path.is_file():
             raise BenchmarkRefused(f"{path} is missing; extract both archives into {folder}")
         start = time.perf_counter()
-        positive, refused, kinds = predict(path, ingest)
+        try:
+            positive, refused, kinds = predict(path, ingest)
+        except Exception as exc:  # one bad file must not lose the whole split
+            outcomes.append(
+                Outcome(item, False, False, time.perf_counter() - start, error=type(exc).__name__)
+            )
+            continue
         outcomes.append(Outcome(item, positive, refused, time.perf_counter() - start, kinds))
         if number % 250 == 0:
             say(f"{number} files scanned")
@@ -159,6 +194,9 @@ def run_items(
 
 
 def metrics(outcomes: list[Outcome]) -> dict[str, float]:
+    """Scores over the files the scan finished; `failed` counts the others."""
+    failed = sum(1 for o in outcomes if o.error is not None)
+    outcomes = [o for o in outcomes if o.error is None]
     tp = sum(1 for o in outcomes if o.positive and o.item.label == 1)
     fp = sum(1 for o in outcomes if o.positive and o.item.label == 0)
     fn = sum(1 for o in outcomes if not o.positive and o.item.label == 1)
@@ -179,6 +217,7 @@ def metrics(outcomes: list[Outcome]) -> dict[str, float]:
         "accuracy": (tp + tn) / len(outcomes) if outcomes else 0.0,
         "refused": sum(1 for o in outcomes if o.refused),
         "refused_benign": sum(1 for o in outcomes if o.refused and o.item.label == 0),
+        "failed": failed,
         "seconds_mean": statistics.fmean(seconds),
         "seconds_median": statistics.median(seconds),
     }
@@ -196,6 +235,11 @@ def _rates(outcomes: list[Outcome], label: int, key: Callable[[Item], str]) -> l
         f"| {group} | {flagged[group]} | {total[group]} | {flagged[group] / total[group]:.1%} |"
         for group in sorted(total)
     ]
+
+
+def _errors(outcomes: list[Outcome]) -> str:
+    counts = Counter(o.error for o in outcomes if o.error is not None)
+    return ", ".join(f"{count} {name}" for name, count in sorted(counts.items()))
 
 
 def _kinds(outcomes: list[Outcome]) -> list[str]:
@@ -233,6 +277,9 @@ def report(outcomes: list[Outcome]) -> str:
             f"| Accuracy | {m['accuracy']:.3f} |",
             f"| Files the scan refused, counted as flagged | {int(m['refused']):,}, of which"
             f" {int(m['refused_benign']):,} benign |",
+            f"| Files the scan failed on, left out of the scores | {int(m['failed']):,}"
+            + (f": {_errors(outcomes)}" if m["failed"] else "")
+            + " |",
             f"| Seconds per file, mean and median | {m['seconds_mean']:.3f} and"
             f" {m['seconds_median']:.3f} |",
             "",
@@ -293,19 +340,21 @@ def run(
     ingest: IngestConfig | None = None,
     repository: Path = ROOT,
     say: Callable[[str], None] = print,
-) -> Path:
-    """Check the folder, scan the test split and write the scores to `out`."""
+) -> tuple[Path, int]:
+    """Check the folder, scan the test split and write the scores to `out`; return the
+    report's path and the number of files the scan failed on."""
     if not folder.is_dir():
         raise BenchmarkRefused(f"{folder} is not a folder")
     if _inside(folder, repository):
         raise BenchmarkRefused(f"{folder} is inside the repository; keep benchmark data outside")
     check_files(folder, checksums)
     items = load_test_split(folder)
+    check_split(folder, items, checksums)
     say(f"{len(items)} test files; scanning")
     outcomes = run_items(folder, items, ingest or load_config().ingest, say)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(report(outcomes), encoding="utf-8", newline="\n")
-    return out
+    return out, sum(1 for o in outcomes if o.error is not None)
 
 
 __all__ = [
@@ -314,10 +363,12 @@ __all__ = [
     "Item",
     "Outcome",
     "check_files",
+    "check_split",
     "load_test_split",
     "metrics",
     "predict",
     "report",
     "run",
     "run_items",
+    "split_digest",
 ]

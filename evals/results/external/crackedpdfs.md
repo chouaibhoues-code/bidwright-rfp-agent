@@ -12,7 +12,8 @@ Revision `245bc98` of [CrackedPDFs](https://huggingface.co/datasets/volkthienpre
 | F1 | 0.667 |
 | Accuracy | 0.667 |
 | Files the scan refused, counted as flagged | 0, of which 0 benign |
-| Seconds per file, mean and median | 0.024 and 0.017 |
+| Files the scan failed on, left out of the scores | 0 |
+| Seconds per file, mean and median | 0.025 and 0.018 |
 
 Published F1 on the same split, from the CrackedPDFs paper (a preprint), beside this run:
 

@@ -5,11 +5,11 @@ block over the role's defaults, retries transient failures with full-jitter back
 provider's `Retry-After` wins), falls back once to the role's fallback model when one is
 configured (unless `fallback=False`, as in matrix runs, where a second model would change what
 is measured), records or replays cassettes, validates structured output against its Pydantic
-model, and reports one `LedgerEntry` per call. The entry's `retries` counts the provider
-attempts beyond the first, across the primary and the fallback model, and `retry_reasons`
-says why each failed attempt failed: `rate_limited`, `timeout`, `server_error`, `transport`,
-or `quota` for a spent daily quota. `before_attempt` runs before every attempt, which is where
-the run budget is checked (ADR-022).
+model, and reports one `LedgerEntry` per call. The entry's `retries` counts the failed
+provider attempts, across the primary and the fallback model, and `retry_reasons` says why
+each one failed: `rate_limited`, `timeout`, `server_error`, `transport`, or `quota` for a
+spent daily quota. `before_attempt` runs before every attempt, which is where the run budget
+is checked (ADR-022).
 
 Two optional parts sit in front of a provider (Iteration 1, step 9). The limiter
 (`llm/limits.py`) is called after `before_attempt` with the model and the request's estimated
@@ -188,7 +188,9 @@ class LLMClient:
                     attempts.reasons.append("quota")
                 last_error = exc
                 continue
-            retries = max(attempts.made - 1, 0)
+            # Every failed attempt left its reason, including the ones before an answer the
+            # cache gave, so the two ledger fields always agree.
+            retries = len(attempts.reasons)
             completion = _completion(
                 response,
                 schema,

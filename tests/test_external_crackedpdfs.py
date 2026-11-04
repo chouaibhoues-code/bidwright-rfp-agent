@@ -11,9 +11,11 @@ import pytest
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen.canvas import Canvas
 
+import evals.external.crackedpdfs
 from bidwright.config import load_config
 from evals.cli import main as eval_main
 from evals.external.crackedpdfs import (
+    SPLIT_ENTRY,
     BenchmarkRefused,
     load_test_split,
     metrics,
@@ -21,6 +23,7 @@ from evals.external.crackedpdfs import (
     report,
     run,
     run_items,
+    split_digest,
 )
 
 VISIBLE = "The supplier shall keep every signed record for seven years."
@@ -83,8 +86,10 @@ def folder(tmp_path: Path) -> Path:
     splits = {"test_ids": ["a", "b", "c"], "train_ids": ["d"]}
     (root / "data" / "splits.json").write_text(json.dumps(splits), encoding="utf-8")
     listed = _sums(root, ["data/metadata.jsonl", "data/splits.json"])
+    digest = split_digest(root, load_test_split(root))
     (tmp_path / "BENCHMARKS.sha256").write_text(
-        listed + "0" * 64 + "  pdfs/benign.tar.gz\n", encoding="utf-8"
+        listed + "0" * 64 + "  pdfs/benign.tar.gz\n" + f"{digest}  {SPLIT_ENTRY}\n",
+        encoding="utf-8",
     )
     return root
 
@@ -101,8 +106,11 @@ def test_hidden_text_is_flagged_and_clean_text_is_not(folder: Path) -> None:
 
 
 def test_the_report_holds_scores_and_no_document_text(folder: Path, tmp_path: Path) -> None:
-    out = run(folder, tmp_path / "out" / "crackedpdfs.md", checksums=tmp_path / "BENCHMARKS.sha256")
+    out, failed = run(
+        folder, tmp_path / "out" / "crackedpdfs.md", checksums=tmp_path / "BENCHMARKS.sha256"
+    )
     text = out.read_text(encoding="utf-8")
+    assert failed == 0 and "| Files the scan failed on, left out of the scores | 0 |" in text
     assert "| F1 | 1.000 |" in text and "| Files | 3: 2 injected, 1 benign |" in text
     assert "| invisible | 1 | 1 | 100.0% |" in text and "| white | 1 | 1 | 100.0% |" in text
     assert "| `pdf_invisible` | 1 | 0 |" in text
@@ -137,6 +145,31 @@ def test_a_missing_pdf_and_a_folder_inside_the_repository_are_refused(
     (folder / "injected" / "a.pdf").unlink()
     with pytest.raises(BenchmarkRefused, match="extract both archives"):
         run(folder, tmp_path / "out.md", checksums=checksums)
+
+
+def test_a_changed_test_pdf_is_refused_even_with_the_archives_gone(
+    folder: Path, tmp_path: Path
+) -> None:
+    (folder / "benign" / "c.pdf").write_bytes(_pdf("white"))
+    with pytest.raises(BenchmarkRefused, match="test split's PDFs do not match"):
+        run(folder, tmp_path / "out.md", checksums=tmp_path / "BENCHMARKS.sha256")
+
+
+def test_a_file_the_scan_fails_on_is_counted_apart_and_the_rest_is_scored(
+    folder: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real = evals.external.crackedpdfs.scan_pdf
+
+    def scan(path: Path, ingest: object, label: str) -> object:
+        if path.name == "b.pdf":
+            raise AssertionError("a parser bug on one file")
+        return real(path, ingest, label)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(evals.external.crackedpdfs, "scan_pdf", scan)
+    out, failed = run(folder, tmp_path / "out.md", checksums=tmp_path / "BENCHMARKS.sha256")
+    text = out.read_text(encoding="utf-8")
+    assert failed == 1 and "left out of the scores | 1: 1 AssertionError |" in text
+    assert "| Files | 2: 1 injected, 1 benign |" in text and "| F1 | 1.000 |" in text
 
 
 def test_the_command_refuses_a_missing_folder(

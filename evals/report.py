@@ -199,8 +199,8 @@ def report(
     gold = "not scored"
     for run in manifest["runs"]:
         row: dict[str, Any] = {k: run[k] for k in ("run_id", "rung", "repeat", "status")}
-        manifest_path = root / run["run_id"] / "run_manifest.json"
-        if run["status"] in FINISHED and manifest_path.exists():
+        if run["status"] in FINISHED:
+            manifest_path = root / run["run_id"] / "run_manifest.json"
             if fell_back(RunManifest.model_validate_json(manifest_path.read_text("utf-8"))):
                 left_out.append(run["run_id"])
                 rows.append(row | {"status": f"{run['status']}, fallback model"})

@@ -25,7 +25,6 @@ from pathlib import Path
 
 from bidwright.config import load_config
 from evals.explain import explain
-from evals.external import crackedpdfs
 from evals.gates import gate
 from evals.report import report
 from evals.score import GOLD_DIR, HYPOTHESES_ENTRY, ROOT, score_run, scorecard, write_results
@@ -90,13 +89,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {hash_gold()}")
         return 0
     if args.command == "external":
+        from evals.external import crackedpdfs  # the PDF stack, for this command only
+
         try:
-            out = crackedpdfs.run(args.data)
+            out, failed = crackedpdfs.run(args.data)
         except crackedpdfs.BenchmarkRefused as exc:
             print(exc, file=sys.stderr)
             return 1
         print(out.read_text(encoding="utf-8"), end="")
-        return 0
+        return 1 if failed else 0
     if args.command == "report":
         out = report(args.matrix)
         print((out / "report.md").read_text(encoding="utf-8"), end="")

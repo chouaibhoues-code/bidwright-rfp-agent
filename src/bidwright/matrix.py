@@ -28,7 +28,7 @@ This module never imports `evals`: scoring is `bidwright-eval report <matrix>`.
 
 import json
 import shutil
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -36,6 +36,7 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from bidwright.config import load_config
 from bidwright.preflight import HOME
 from bidwright.schemas import RunManifest
 
@@ -100,11 +101,19 @@ class MatrixOutcome:
     resume: str = ""
 
 
-def fell_back(manifest: RunManifest) -> bool:
-    """Whether any call of the run was answered by a model that is no role's primary model,
-    that is, by a fallback."""
-    primary = set(manifest.models.values())
-    return any(model not in primary for used in manifest.models_used.values() for model in used)
+def fell_back(manifest: RunManifest, roles: Mapping[str, str] | None = None) -> bool:
+    """Whether a fallback model answered any call: a node answered by a model other than its
+    role's primary. `roles` maps each node to its model role, from `config/agents.yaml` by
+    default; a node with no known role is checked against every role's primary."""
+    if roles is None:
+        roles = {name: agent.model_role for name, agent in load_config().agents.agents.items()}
+    every = set(manifest.models.values())
+    for node, used in manifest.models_used.items():
+        role = roles.get(node)
+        primary = {manifest.models[role]} if role in manifest.models else every
+        if any(model not in primary for model in used):
+            return True
+    return False
 
 
 def _manifest(run_dir: Path) -> RunManifest | None:
