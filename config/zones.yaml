@@ -1,9 +1,9 @@
 # The six zones `triage` assigns per section (ADR-018). Below the confidence threshold, or
 # after two schema failures, the zone comes from the heading keywords: matched case-insensitively
-# on the section's heading text, its section path from the top, in the order the zones are
-# listed, the first match wins, and a section with no match gets `default`. Adding a zone
-# changes this file, the `Zone` literal and the zone table of prompts/triage.md, and the tests
-# fail until all three agree.
+# at the start of a word, on the section's heading text, its section path from the top, in the
+# order the zones are listed; the first match wins, and a section with no match gets `default`.
+# Adding a zone changes this file, the `Zone` literal and the zone table of prompts/triage.md,
+# and the tests fail until all three agree.
 confidence_threshold: 0.7
 default: OBLIGATION
 zones:

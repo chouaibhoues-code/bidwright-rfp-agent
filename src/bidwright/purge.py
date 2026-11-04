@@ -5,7 +5,8 @@ response cache under `HOME / "outputs" / ".cache"` that the run wrote, read from
 in each entry's meta. `purge_expired` does the same for every client run under
 `HOME / "outputs"` and its `matrices/` folder, whatever `--outputs` said at the time, whose end
 time, from its manifest, is more than `retention.client_days` days ago. Synthetic runs and
-recent client runs stay. Each purge returns what it deleted, and the CLI prints it.
+recent client runs stay. Each purge returns what it deleted, and the CLI prints it. Only a
+folder that holds a run manifest is ever deleted.
 """
 
 import json
@@ -39,8 +40,15 @@ def _cache_entries(run_id: str, cache_dir: Path) -> list[Path]:
     return found
 
 
+class NotARun(ValueError):
+    """The folder holds no run manifest, so it is not a run folder and is never deleted."""
+
+
 def purge_run(run_dir: Path, cache_dir: Path | None = None) -> list[Path]:
-    """Delete one run's folder and its cache entries; return what was deleted."""
+    """Delete one run's folder and its cache entries; return what was deleted. A folder with
+    no `run_manifest.json` is refused, so a mistyped path never deletes anything else."""
+    if not (run_dir / MANIFEST).is_file():
+        raise NotARun(f"{run_dir} holds no {MANIFEST}, so it is not a run folder")
     cache_dir = cache_dir if cache_dir is not None else response_cache.CACHE_DIR
     deleted = []
     for entry in _cache_entries(run_dir.name, cache_dir):
@@ -90,4 +98,4 @@ def purge_expired(
     return deleted
 
 
-__all__ = ["expired_runs", "outputs_root", "purge_expired", "purge_run"]
+__all__ = ["NotARun", "expired_runs", "outputs_root", "purge_expired", "purge_run"]

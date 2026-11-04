@@ -248,3 +248,28 @@ def test_every_rule_finishes_on_long_random_text(text: str) -> None:
         for pattern in rule.patterns:
             re.compile(pattern, re.IGNORECASE).findall(text)
         assert time.perf_counter() - start < 0.05, rule.id
+
+
+def _broken(section: str) -> list[str]:
+    quote = "The Supplier shall comply with Section 4.2 at all times."
+    findings, _ = run_lint(
+        [_requirement(quote)], [_passage(1, quote, section)], [], REGISTER, CONFIG
+    )
+    return [f.match for f in findings if f.kind == "BROKEN_REFERENCE"]
+
+
+@pytest.mark.parametrize(
+    ("section", "broken"),
+    [
+        ("4. Scope > 4.2. Signing", []),
+        ("Section 4 Scope > Section 4.2 Signing", []),
+        ("4 Scope > 4.20 Records", ["Section 4.2"]),
+        ("Scope > Signing", []),
+    ],
+)
+def test_a_reference_reads_dotted_and_word_headings_and_waits_for_numbers(
+    section: str, broken: list[str]
+) -> None:
+    """A heading numbered "4.2." or "Section 4.2" resolves the reference, "4.20" does not, and
+    a package whose headings carry no numbers, as Word's numbering leaves them, is not checked."""
+    assert _broken(section) == broken

@@ -73,3 +73,18 @@ def test_the_cli_prints_what_it_deleted(
     assert f"deleted {folder}" in capsys.readouterr().out and not folder.exists()
     assert cli.main(["purge", "no-such-run"]) == 1
     assert cli.main(["purge"]) == 2
+
+
+def test_a_folder_without_a_run_manifest_is_never_deleted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A mistyped path, such as the repository or the outputs folder, is refused whole."""
+    monkeypatch.setattr(bidwright.purge, "outputs_root", lambda: tmp_path / "outputs")
+    precious = tmp_path / "src"
+    precious.mkdir()
+    (precious / "code.py").write_text("x = 1\n", encoding="utf-8")
+    with pytest.raises(bidwright.purge.NotARun):
+        purge_run(precious)
+    assert cli.main(["purge", str(precious)]) == 1
+    assert "not a run folder" in capsys.readouterr().err
+    assert (precious / "code.py").exists()

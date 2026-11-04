@@ -243,3 +243,14 @@ def test_a_failure_status_is_a_fault_and_replay_never_connects(tmp_path: Path) -
     )
     with pytest.raises(DoclingCassetteMissing):
         replay.convert(DEV_RFP)
+
+
+def test_file_hashes_stream_and_match_the_whole_file_hash(tmp_path: Path) -> None:
+    import hashlib
+
+    from bidwright.ingest import file_sha256
+
+    path = tmp_path / "large.bin"
+    path.write_bytes(b"x" * (3 * (1 << 20) + 7))
+    assert file_sha256(path) == hashlib.sha256(path.read_bytes()).hexdigest()
+    assert doc_id_for(path, "client", file_sha256(path)) == doc_id_for(path, "client")

@@ -16,6 +16,7 @@ guard's small-print boxes. Docling gives PDF boxes in a bottom-left origin, as p
 and they are turned to pdfplumber's top-left origin with the page height.
 """
 
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,18 @@ HEADING_LABELS = frozenset({"title", "section_header"})
 HIDDEN_SLACK = 2.0  # points around a hidden line that still count as inside it
 WHOLLY_INSIDE = 0.95
 SMALL_PRINT_SHARE = 0.5
+
+
+def _without(text: str, hidden: str) -> str:
+    """The text with the first whole-word occurrence of a hidden run removed, whatever the
+    spacing between its words."""
+    words = hidden.split()
+    if not words:
+        return text
+    found = re.search(r"(?<!\w)" + r"\s+".join(map(re.escape, words)) + r"(?!\w)", text)
+    if found is None:
+        return text
+    return " ".join(f"{text[: found.start()]} {text[found.end() :]}".split())
 
 
 class DoclingParser:
@@ -142,8 +155,8 @@ class _Walker:
             if grown and overlap_share(item_box, grown) >= WHOLLY_INSIDE:
                 return None
             for line, line_box in zip(lines, grown, strict=True):
-                if overlap_share(item_box, [line_box]) > 0 and line.text in text:
-                    text = " ".join(text.replace(line.text, " ", 1).split())
+                if overlap_share(item_box, [line_box]) > 0:
+                    text = _without(text, line.text)
         if not text.strip():
             return None
         small = (

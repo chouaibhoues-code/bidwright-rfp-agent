@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from bidwright.config import Config
-from bidwright.ingest import doc_id_for
+from bidwright.ingest import doc_id_for, file_sha256
 from bidwright.llm.types import Backend, LLMError
 from bidwright.schemas import DataClass
 
@@ -104,7 +104,7 @@ class Preflight:
 
 
 def digest_of(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return file_sha256(path)
 
 
 def corpus_entry(digest: str, manifest: Path = CORPUS_MANIFEST) -> str | None:
@@ -205,7 +205,7 @@ def check_preconditions(
         name = package_id
     else:
         digest = documents[0].sha256
-        package_id = doc_id_for(source, data_class)
+        package_id = doc_id_for(source, data_class, digest)
         name = source.name
     entry = documents[0].corpus if synthetic else None
     if mode == "record" and not synthetic:

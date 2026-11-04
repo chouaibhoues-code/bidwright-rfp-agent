@@ -497,7 +497,8 @@ Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-
 | Item | Effect | Paid down in |
 |---|---|---|
 | `guard` reads the PDF's drawing operations, not the rendered page, so a font that maps glyphs to other characters escapes it | A hidden instruction of that kind reaches the parsed text | S-06, render-and-compare, in Iteration 7 |
-| A scanned file is reported, not parsed | Its obligations are missing, and the run says so | OCR stays optional |
+| A scanned file is reported, not parsed, and so is an OCR'd scan, whose text layer is drawn invisible and so is never read as text | Its obligations are missing, and the run says so | OCR stays optional |
+| The Docling path removes hidden PDF text by finding each hidden run's words in the item's text, because Docling's items carry no character positions | A hidden word that repeats a visible word earlier in the same item removes the visible one instead | The pdfplumber path removes hidden characters by position; Iteration 7's render-and-compare |
 | Stored requirements keep the model's quote as the view showed it, which equals the frozen text under `IdentityView` | A masking view would store masked quotes | Iteration 5, with the masking view |
 | Every passage costs `extract` tokens, so a long package takes more calls than a cue filter would | Cost and quota per run | S-03 sets the batch size; the measured hero run gives the figures |
 | `risk` found 1 of 3 planted risks on `free` and 0 of 3 on `local` at `v0.0` | Risk recall is weak | Iteration 3, measured by the RK ablation |

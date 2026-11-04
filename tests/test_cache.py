@@ -108,3 +108,13 @@ def test_the_default_folder_is_under_home_outputs(monkeypatch: pytest.MonkeyPatc
     monkeypatch.undo()  # drop the test-wide isolation of conftest.py, to read the real default
     assert bidwright.llm.cache.CACHE_DIR == HOME / "outputs" / ".cache"
     assert response_cache().root == bidwright.llm.cache.CACHE_DIR
+
+
+def test_an_answer_that_does_not_parse_is_never_cached(tmp_path: Path) -> None:
+    """A malformed answer is a fault to retry, so a later identical call asks the model again."""
+    backend = FakeBackend(text="{not json")
+    client = _client(backend, response_cache(tmp_path))
+    first = client.complete("extract", MESSAGES, ExtractResult, **CALL)
+    second = client.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert first.parse_error and second.parse_error and not second.replayed
+    assert len(backend.requests) == 2 and not list(tmp_path.glob("*.json"))

@@ -79,3 +79,15 @@ def test_precedence_from_package_yaml(tmp_path: Path) -> None:
     assert [e.pages for e in register.documents] == [22, 1, None]
     written = (tmp_path / "control_register.json").read_text(encoding="utf-8")
     assert '"precedence_source": "package.yaml"' in written
+
+
+def test_addenda_rank_by_their_numbers_read_as_numbers(tmp_path: Path) -> None:
+    """The latest addendum prevails: `addendum_10` outranks `addendum_9` and `addendum_2`."""
+    folder = tmp_path / "tender"
+    folder.mkdir()
+    names = ["tender.pdf", "addendum_2.pdf", "addendum_9.pdf", "addendum_10.pdf"]
+    register = build_register(
+        folder, [_item(folder, name) for name in names], load_config().ingest.parsers
+    )
+    by_precedence = [e.file for e in sorted(register.documents, key=lambda e: e.precedence)]
+    assert by_precedence == ["addendum_10.pdf", "addendum_9.pdf", "addendum_2.pdf", "tender.pdf"]

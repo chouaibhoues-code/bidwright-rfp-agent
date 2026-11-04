@@ -61,15 +61,25 @@ class IngestResult:
     degraded: tuple[str, ...] = ()  # reasons the run continues DEGRADED, such as partial parses
 
 
-def doc_id_for(path: Path, data_class: str = "synthetic") -> str:
+def file_sha256(path: Path) -> str:
+    """The file's sha256, read in 1 MB chunks, so a large file never sits in memory whole."""
+    sha = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            sha.update(chunk)
+    return sha.hexdigest()
+
+
+def doc_id_for(path: Path, data_class: str = "synthetic", digest: str | None = None) -> str:
     """A corpus file's id is its stem, lowercased, non-alphanumerics as hyphens, plus 8 hex
     digits of its hash. A client document's id is `doc-` and those 8 digits, so its name never
-    reaches a run id, a span or a folder name (D-05)."""
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()[:8]
+    reaches a run id, a span or a folder name (D-05). A caller that hashed the file passes the
+    digest, so the file is read once."""
+    short = (digest or file_sha256(path))[:8]
     if data_class == "client":
-        return f"doc-{digest}"
+        return f"doc-{short}"
     stem = re.sub(r"[^a-z0-9]+", "-", path.stem.lower()).strip("-")
-    return f"{stem}-{digest}"
+    return f"{stem}-{short}"
 
 
 def display_text(text: str) -> str:

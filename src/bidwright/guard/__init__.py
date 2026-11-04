@@ -30,7 +30,7 @@ from bidwright.guard.limits import (
 from bidwright.guard.ooxml import Finding, check_archive
 from bidwright.guard.pdf import HiddenChar, HiddenLine, SmallPrintBox, scan_pdf
 from bidwright.guard.xlsx import scan_xlsx
-from bidwright.ingest import doc_id_for
+from bidwright.ingest import doc_id_for, file_sha256
 from bidwright.preflight import CORPUS_MANIFEST, HOME, corpus_entry
 from bidwright.schemas import GuardFile, GuardReport, QuarantineRecord
 
@@ -68,14 +68,6 @@ class GuardResult:
         return [f"guard: scanned file {f.file} not parsed" for f in self.report.files if f.scanned]
 
 
-def _digest(path: Path) -> str:
-    sha = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            sha.update(chunk)
-    return sha.hexdigest()
-
-
 def _record(number: int, doc_id: str, file: str, finding: Finding) -> QuarantineRecord:
     return QuarantineRecord.model_validate(
         {
@@ -100,8 +92,13 @@ def run_guard(
     client_root: Path | None = None,
     repo_root: Path = HOME,
     corpus_manifest: Path = CORPUS_MANIFEST,
+    data_class: str | None = None,
 ) -> GuardResult:
-    """Check and scan each file in order; raise `PolicyBlocked` on the first refusal."""
+    """Check and scan each file in order; raise `PolicyBlocked` on the first refusal.
+
+    `data_class` is the run's, from the run entry: in a client package every file is a client
+    file, for its root and its id, even one whose hash is in the corpus. With None, as in a
+    replay, each file is classed by its own hash."""
     ingest = config.ingest
     if not paths:
         raise PolicyBlocked("no input files")
@@ -118,9 +115,13 @@ def run_guard(
     guards: dict[str, FileGuard] = {}
     small_print_chars = 0
     for path in paths:
-        digest = _digest(path)
-        corpus = corpus_entry(digest, corpus_manifest) is not None
-        doc_id = doc_id_for(path, "synthetic" if corpus else "client")
+        digest = file_sha256(path)
+        corpus = (
+            data_class == "synthetic"
+            if data_class is not None
+            else corpus_entry(digest, corpus_manifest) is not None
+        )
+        doc_id = doc_id_for(path, "synthetic" if corpus else "client", digest)
         label = path.name if corpus else doc_id  # a client file's name stays out of messages
         check_root(path, corpus=corpus, roots=roots, label=label)
         size = path.stat().st_size

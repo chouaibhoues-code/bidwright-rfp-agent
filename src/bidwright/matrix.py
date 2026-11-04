@@ -13,9 +13,10 @@ from the cache. Runs go to `outputs/matrices/<matrix>/<matrix>-<rung>-r<repeat>/
   is cleared and the run starts again. Without it, a matrix whose folder already holds runs
   is refused, so two matrices never mix.
 - A run that ends `QUOTA_PAUSED` stops the matrix, and the command that resumes it is printed.
-- Before each run, the `cost_usd` of the finished runs is summed. The matrix stops when the
-  sum has reached `max_cost_usd`, or when the most a finished run has cost would take it past
-  the cap, so no run starts that is expected to pass it.
+- Before each run, the `cost_usd` of every run so far is summed, whatever its status, with the
+  cost of the runs cleared to start again, which `matrix_manifest.json` keeps as `cleared_usd`.
+  The matrix stops when the sum has reached `max_cost_usd`, or when the most a run has cost
+  would take it past the cap, so no run starts that is expected to pass it.
 - `matrix_manifest.json` lists every run, its status and the cost so far.
 
 This module never imports `evals`: scoring is `bidwright-eval report <matrix>`.
@@ -91,6 +92,7 @@ class MatrixOutcome:
     status: str  # COMPLETED, QUOTA_PAUSED or COST_CAP
     runs: list[MatrixRun] = field(default_factory=list)
     spent_usd: float = 0.0
+    cleared_usd: float = 0.0  # the spend of runs whose folders were cleared to start again
     resume: str = ""
 
 
@@ -104,14 +106,25 @@ def _manifest(run_dir: Path) -> RunManifest | None:
         return None
 
 
-def _spent(root: Path) -> tuple[float, float]:
-    """The summed and the largest `cost_usd` over the matrix's finished runs."""
+def _spent(root: Path, cleared: float) -> tuple[float, float]:
+    """The summed and the largest `cost_usd` over every run of the matrix, failed runs
+    included, with the spend of the runs already cleared."""
     costs = [
         m.totals.cost_usd
         for m in (_manifest(p) for p in sorted(root.iterdir()) if p.is_dir())
-        if m is not None and m.status in FINISHED
+        if m is not None
     ]
-    return round(sum(costs), 6), max(costs, default=0.0)
+    return round(sum(costs) + cleared, 6), max(costs, default=0.0)
+
+
+def _cleared(root: Path) -> float:
+    path = root / MANIFEST
+    if not path.exists():
+        return 0.0
+    try:
+        return float(json.loads(path.read_text(encoding="utf-8")).get("cleared_usd", 0.0))
+    except (ValueError, TypeError):
+        return 0.0
 
 
 def _write(root: Path, outcome: MatrixOutcome, matrix: MatrixFile, source: Path) -> None:
@@ -125,6 +138,7 @@ def _write(root: Path, outcome: MatrixOutcome, matrix: MatrixFile, source: Path)
         "max_cost_usd": matrix.max_cost_usd,
         "status": outcome.status,
         "spent_usd": outcome.spent_usd,
+        "cleared_usd": outcome.cleared_usd,
         "runs": [asdict(run) for run in outcome.runs],
     }
     (root / MANIFEST).write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8", newline="\n")
@@ -157,7 +171,9 @@ def run_matrix(
             f"{root} already holds runs of {matrix.name}; continue them with: {command}"
         )
     root.mkdir(parents=True, exist_ok=True)
-    outcome = MatrixOutcome(matrix.name, "COMPLETED", resume=command)
+    outcome = MatrixOutcome(
+        matrix.name, "COMPLETED", cleared_usd=_cleared(root) if resume else 0.0, resume=command
+    )
     for rung in matrix.rungs:
         for repeat in range(matrix.repeats):
             run_id = f"{matrix.name}-{rung.name}-r{repeat}"
@@ -168,7 +184,7 @@ def run_matrix(
                     MatrixRun(run_id, rung.name, repeat, done.status, done.totals.cost_usd, True)
                 )
                 continue
-            spent, largest = _spent(root)
+            spent, largest = _spent(root, outcome.cleared_usd)
             outcome.spent_usd = spent
             if spent >= matrix.max_cost_usd or spent + largest > matrix.max_cost_usd:
                 outcome.status = "COST_CAP"
@@ -179,7 +195,12 @@ def run_matrix(
                 _write(root, outcome, matrix, path)
                 return outcome
             if run_dir.exists():
-                shutil.rmtree(run_dir)  # an unfinished run starts again; the cache keeps its calls
+                # An unfinished run starts again; the cache keeps its calls, and its spend stays
+                # on the matrix's account.
+                if done is not None:
+                    outcome.cleared_usd = round(outcome.cleared_usd + done.totals.cost_usd, 6)
+                shutil.rmtree(run_dir)
+                _write(root, outcome, matrix, path)
             say(f"{run_id}: running")
             result = execute(
                 source=HOME / matrix.rfp,
@@ -195,7 +216,7 @@ def run_matrix(
             finished = _manifest(run_dir)
             cost = finished.totals.cost_usd if finished else 0.0
             outcome.runs.append(MatrixRun(run_id, rung.name, repeat, result.status, cost))
-            outcome.spent_usd = _spent(root)[0]
+            outcome.spent_usd = _spent(root, outcome.cleared_usd)[0]
             _write(root, outcome, matrix, path)
             say(f"{run_id}: {result.status}" + (f" ({result.reason})" if result.reason else ""))
             if result.status == "QUOTA_PAUSED":

@@ -158,6 +158,7 @@ class Runtime:
     index: PassageIndex | None = None
     guard: GuardResult | None = None
     paths: list[Path] | None = None  # the input documents, in name order
+    data_class: str | None = None  # the run entry's; None in replay, where each file is classed
 
 
 @dataclass(frozen=True)
@@ -260,14 +261,16 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         for path in paths:
             if not path.is_file():
                 raise PolicyBlocked(f"{path.name} is not a readable file")
-        rt.guard = run_guard(paths, rt.run_dir, config)
+        rt.guard = run_guard(paths, rt.run_dir, config, data_class=rt.data_class)
         rt.paths = paths
         return {"guard": rt.guard.report.model_dump(mode="json")}
 
     def ingest_node(state: RunState) -> dict[str, Any]:
         guard = rt.guard
         if guard is None:  # a resumed run: the guard's files are already in the run folder
-            rt.guard = guard = run_guard(rt.paths or [rt.source], rt.run_dir, config)
+            rt.guard = guard = run_guard(
+                rt.paths or [rt.source], rt.run_dir, config, data_class=rt.data_class
+            )
         paths = rt.paths or [rt.source]
         items = [
             RegisterInput(
@@ -827,7 +830,7 @@ def _package_id(source: Path, preflight_id: str | None) -> str:
 def _documents(preflight: Preflight, data_class: str) -> list[DocumentHash]:
     return [
         DocumentHash(
-            doc_id=doc_id_for(document.path, data_class),
+            doc_id=doc_id_for(document.path, data_class, document.sha256),
             file=document.path.name,
             sha256=document.sha256,
         )
@@ -942,6 +945,7 @@ def execute(
         baseline=baseline,
         docling_mode=docling_mode,
         docling_cassettes=docling_cassettes or DOCLING_CASSETTES,
+        data_class=preflight.data_class if mode != "replay" else None,
     )
     # Until the graph returns, the run has not finished: any exit this function does not name
     # below is recorded as a fault, never as COMPLETED.

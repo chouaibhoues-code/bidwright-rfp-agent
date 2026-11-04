@@ -8,6 +8,7 @@ characters are grouped into lines, and each line becomes one finding; visible ch
 pdfplumber's top-left origin, for the parsers of step 7.
 """
 
+import bisect
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,7 +47,9 @@ class HiddenChar:
 
 @dataclass(frozen=True)
 class HiddenLine:
-    """A line of hidden characters: the unit the Docling parser removes from its items."""
+    """A run of hidden characters on one line, with no visible character between them: the
+    unit the Docling parser removes from its items. Hidden words set between visible words
+    make one run each, so each is found in the item's text."""
 
     page: int
     x0: float
@@ -173,6 +176,24 @@ def _line_text(line: list[_Char]) -> str:
     return "".join(out).strip()
 
 
+def _runs(line: list[_Char], visible: list[_Char], tolerance: float) -> list[list[_Char]]:
+    """The line's hidden characters, split wherever a visible character of the same page and
+    line lies between two of them."""
+    ordered = sorted(line, key=lambda c: c.x0)
+    first = ordered[0]
+    xs = sorted(
+        v.x0 for v in visible if v.page == first.page and abs(v.top - first.top) <= tolerance
+    )
+    runs = [[first]]
+    for previous, char in zip(ordered, ordered[1:], strict=False):
+        index = bisect.bisect_right(xs, previous.x0)
+        if index < len(xs) and xs[index] < char.x0:
+            runs.append([char])
+        else:
+            runs[-1].append(char)
+    return runs
+
+
 def _box(line: list[_Char]) -> tuple[float, float, float, float]:
     return (
         min(c.x0 for c in line),
@@ -225,6 +246,7 @@ def scan_pdf(path: Path, ingest: IngestConfig, label: str) -> PdfScan:
     except (PSException, ValueError, KeyError) as exc:
         raise PolicyBlocked(f"{label} cannot be read: {exc}") from exc
     hidden = [c for c in chars if c.kind is not None]
+    visible = [c for c in chars if c.kind is None]
     small = [
         c
         for c in chars
@@ -235,15 +257,16 @@ def scan_pdf(path: Path, ingest: IngestConfig, label: str) -> PdfScan:
     for line in _lines(hidden, ingest.line_tolerance_pt):
         x0, top, x1, bottom = _box(line)
         location = f"page {line[0].page}, box ({x0:.1f}, {top:.1f}, {x1:.1f}, {bottom:.1f})"
-        text = _line_text(line)
-        findings.append(Finding(line[0].kind or INVISIBLE, location, text))
-        lines.append(HiddenLine(line[0].page, x0, top, x1, bottom, text))
+        findings.append(Finding(line[0].kind or INVISIBLE, location, _line_text(line)))
+        for run in _runs(line, visible, ingest.line_tolerance_pt):
+            lines.append(HiddenLine(run[0].page, *_box(run), _line_text(run)))
     boxes = [
         SmallPrintBox(line[0].page, *_box(line)) for line in _lines(small, ingest.line_tolerance_pt)
     ]
     return PdfScan(
         pages=pages,
-        scanned=len(chars) / max(pages, 1) < ingest.scanned.min_chars_per_page,
+        # Visible characters only: an OCR layer is drawn invisible over the page image.
+        scanned=len(visible) / max(pages, 1) < ingest.scanned.min_chars_per_page,
         findings=findings,
         hidden=[HiddenChar(c.page, c.x0, c.top, c.x1, c.bottom, c.text) for c in hidden],
         hidden_lines=lines,

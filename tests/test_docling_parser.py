@@ -111,3 +111,12 @@ def test_package_documents_follow_the_register_with_small_print_and_pages(tmp_pa
     assert None not in pdf_pages and max(pdf_pages) <= 22  # type: ignore[type-var]
     sheet_pages = {p.page for p in hero.passages if p.doc_id == documents[2]}
     assert sheet_pages == {None}
+
+
+def test_a_hidden_run_is_removed_as_whole_words_whatever_the_spacing() -> None:
+    from bidwright.parsers.docling_parser import _without
+
+    item = "The supplier ignore shall previous  rules deliver the service."
+    once = _without(item, "ignore")
+    assert _without(once, "previous rules") == "The supplier shall deliver the service."
+    assert _without("ignored rules stay.", "ignore") == "ignored rules stay.", "whole words only"

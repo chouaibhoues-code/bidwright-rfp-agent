@@ -27,6 +27,7 @@ section with no match gets the default zone. `triage` writes `triage.json`, a `T
 and returns the hazards; `verify` writes `hazards.json`.
 """
 
+import re
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -101,11 +102,12 @@ def section_views(
 
 
 def keyword_zone(section_path: str, zones: ZonesConfig) -> tuple[str, str | None]:
-    """The zone the heading keywords give, and the keyword that matched, if any."""
+    """The zone the heading keywords give, and the keyword that matched, if any. A keyword
+    matches at the start of a word, so `format` finds "Format" but not "Information"."""
     heading = section_path.lower()
     for zone, definition in zones.zones.items():
         for keyword in definition.keywords:
-            if keyword.lower() in heading:
+            if re.search(rf"\b{re.escape(keyword.lower())}", heading):
                 return zone, keyword
     return zones.default, None
 

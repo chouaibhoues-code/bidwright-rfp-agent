@@ -88,6 +88,8 @@ def test_the_keyword_rule_follows_zone_order_and_the_default() -> None:
     assert keyword_zone("2 Background > 2.1 Scope of the service", ZONES)[0] == "OBLIGATION"
     assert keyword_zone("Annex A Optional services", ZONES) == (ZONES.default, None)
     assert keyword_zone("", ZONES) == (ZONES.default, None)
+    information = keyword_zone("5 Information security > 5.3 Security requirements", ZONES)
+    assert information == ("OBLIGATION", "requirement"), "format inside information is no match"
 
 
 def test_the_zone_table_is_the_configured_one() -> None:

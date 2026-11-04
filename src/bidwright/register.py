@@ -20,6 +20,7 @@ from bidwright.config import ParserChoice
 from bidwright.schemas import ControlRegister, DocFormat, DocRole, DocumentEntry
 
 PACKAGE_FILE = "package.yaml"
+DIGITS = re.compile(r"(\d+)")
 ROLE_WORDS: tuple[tuple[DocRole, tuple[str, ...]], ...] = (
     ("addendum", ("addendum", "addenda", "amendment")),
     ("annex", ("annex", "appendix", "appendices", "schedule", "attachment")),
@@ -74,12 +75,18 @@ def _by_rules(items: Sequence[RegisterInput]) -> list[tuple[RegisterInput, DocRo
     return roles
 
 
+def _natural(name: str) -> list[tuple[int, int | str]]:
+    """A file name as text and numbers, so `addendum_10` sorts after `addendum_9`."""
+    return [(1, int(part)) if part.isdigit() else (0, part.lower()) for part in DIGITS.split(name)]
+
+
 def _precedence(roles: list[tuple[RegisterInput, DocRole]]) -> dict[str, int]:
-    """Addenda first, the latest name first; then the main document, annexes and forms."""
+    """Addenda first, the latest name first, read with its numbers as numbers; then the main
+    document, annexes and forms."""
     ordered: list[RegisterInput] = []
     for role in ("addendum", "main", "annex", "form"):
         group = [item for item, r in roles if r == role]
-        ordered += sorted(group, key=lambda i: i.path.name, reverse=role == "addendum")
+        ordered += sorted(group, key=lambda i: _natural(i.path.name), reverse=role == "addendum")
     return {item.doc_id: number for number, item in enumerate(ordered, start=1)}
 
 

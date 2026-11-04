@@ -27,6 +27,7 @@ def _matrix(
     max_cost_usd: float = 10,
 ) -> Path:
     path = tmp_path / "m.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         f"name: m\nrfp: inputs/hero\nprofile: free\nrepeats: {repeats}\nuntil: coverage\n"
         f"max_cost_usd: {max_cost_usd}\nrungs:\n{rungs}",
@@ -187,3 +188,20 @@ def test_the_report_scores_finished_runs_and_decides_each_rung(
     assert "| b20 | b10 | missed_mandatory_count | within_noise | pass |" in (
         out / "report.md"
     ).read_text(encoding="utf-8")
+
+
+def test_failed_and_cleared_runs_count_toward_the_cap(tmp_path: Path) -> None:
+    """A run that faults still spent its money, and clearing it on resume keeps that spend."""
+    script = [("UNRECOVERABLE_FAULT", 4.0), ("QUOTA_PAUSED", 4.0)]
+    tight = _matrix(tmp_path / "tight", max_cost_usd=10)
+    outcome, _ = _run(tight, FakeEntry(script), tmp_path / "tight")
+    assert outcome.status == "QUOTA_PAUSED" and outcome.spent_usd == 8.0
+    again = FakeEntry()
+    outcome, lines = _run(tight, again, tmp_path / "tight", resume=True)
+    assert outcome.status == "COST_CAP" and again.calls == [], "$8 spent; a $4 run would pass $10"
+    assert "Stopped before m-b10-r0" in lines[-1]
+    roomy = _matrix(tmp_path / "roomy", max_cost_usd=20)
+    _run(roomy, FakeEntry(script), tmp_path / "roomy")
+    outcome, _ = _run(roomy, FakeEntry(), tmp_path / "roomy", resume=True)
+    assert outcome.status == "COMPLETED" and outcome.cleared_usd == 8.0
+    assert outcome.spent_usd == 8.0, "the cleared runs' spend stays on the matrix's account"

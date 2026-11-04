@@ -1,9 +1,10 @@
 """The response cache (Iteration 1, step 9): a cassette store under `outputs/.cache/`.
 
-With caching on, `LLMClient._obtain` reads the cache before a live attempt and writes to it
-after one, under the cassette key, so an identical call on the same model, settings, input and
-repeat index is answered from disk. A hit is reported with `replayed: true` and costs nothing
-in the ledger, and it skips the limiter. Each entry's meta names the run that wrote it, so
+With caching on, `LLMClient` reads the cache before a live attempt and, once an answer has
+parsed, writes it under the cassette key, so an identical call on the same model, settings,
+input and repeat index is answered from disk. An answer that does not parse is never kept.
+A hit is reported with `replayed: true` and costs nothing in the ledger, and it skips the
+limiter. Each entry's meta names the run that wrote it, so
 `bidwright purge` can delete a run's entries with its folder. The cache lives under
 `HOME / "outputs"` whatever `--outputs` says, as the quota counts do. It applies to `live` runs;
 `record` and `replay` ignore it. `config/limits.yaml` turns it on for matrix runs and off for

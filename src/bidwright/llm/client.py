@@ -181,6 +181,16 @@ class LLMClient:
             completion = _completion(
                 response, schema, latency_ms, role_config.provider, model, replayed, retries
             )
+            if (
+                self.mode == "live"
+                and self.cache is not None
+                and not replayed
+                and completion.parse_error is None
+            ):
+                # Only an answer that parsed is kept: a malformed one is a fault to retry, not
+                # a result a later run should be handed again.
+                meta = {**_meta(role_config, request), "run_id": self.run_id}
+                self.cache.save(key, meta, response)
             self._report(role, node, agent, completion, backend, prompt_hash, input_hash, repeat)
             return completion
         if isinstance(last_error, CassetteMissing | QuotaExhausted):
@@ -233,19 +243,8 @@ class LLMClient:
                 continue
             latency_ms = int((self._clock() - started) * 1000)
             break
-        meta = {
-            "provider": role_config.provider,
-            "model": request.model,
-            "request": {
-                "schema_name": request.schema_name,
-                "tools": [t.name for t in request.tools],
-                "settings": request.settings,
-            },
-        }
         if self.mode == "record":
-            self._store().save(key, meta, response)
-        elif cache is not None:
-            cache.save(key, {**meta, "run_id": self.run_id}, response)
+            self._store().save(key, _meta(role_config, request), response)
         return response, latency_ms, False, backend
 
     def _report(
@@ -293,6 +292,19 @@ class LLMClient:
                 retries=completion.retries,
             )
         )
+
+
+def _meta(role_config: RoleConfig, request: Request) -> dict[str, object]:
+    """What a cassette or cache entry records about its request, beside the response."""
+    return {
+        "provider": role_config.provider,
+        "model": request.model,
+        "request": {
+            "schema_name": request.schema_name,
+            "tools": [t.name for t in request.tools],
+            "settings": request.settings,
+        },
+    }
 
 
 def _estimated_tokens(request: Request, chars_per_token: int) -> int:

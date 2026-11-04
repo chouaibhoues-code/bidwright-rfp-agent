@@ -62,7 +62,7 @@ def _report(result: "RunResult") -> int:
 
 def _purge(args: argparse.Namespace) -> int:
     from bidwright.config import load_config
-    from bidwright.purge import outputs_root, purge_expired, purge_run
+    from bidwright.purge import NotARun, outputs_root, purge_expired, purge_run
 
     if args.expired:
         deleted = purge_expired(load_config().limits.retention.client_days)
@@ -72,7 +72,11 @@ def _purge(args: argparse.Namespace) -> int:
         if not run_dir.is_dir():
             print(f"No run folder {run_dir}", file=sys.stderr)
             return 1
-        deleted = purge_run(run_dir)
+        try:
+            deleted = purge_run(run_dir)
+        except NotARun as exc:
+            print(f"Refused: {exc}", file=sys.stderr)
+            return 1
     else:
         print("Name a run, or pass --expired.", file=sys.stderr)
         return 2

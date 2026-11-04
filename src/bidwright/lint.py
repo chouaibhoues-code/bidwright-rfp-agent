@@ -146,10 +146,21 @@ def missing_unit(quote: str, context: LintContext) -> list[str]:
     return list(dict.fromkeys(found))
 
 
+NUMBERED = re.compile(r"(?:(?:section|clause)\s+)?\d", re.IGNORECASE)
+
+
+def _numbered(segment: str, label: str) -> bool:
+    """Whether a heading carries the number: "4.2 Signing", "4.2. Signing" or "Section 4.2"."""
+    pattern = rf"(?:(?:section|clause)\s+)?{re.escape(label)}\.?(?:\s|$)"
+    return re.match(pattern, segment, re.IGNORECASE) is not None
+
+
 def _resolves(reference: str, context: LintContext) -> bool:
     kind, _, label = reference.partition(" ")
     if kind.lower() in ("section", "clause"):
-        return any(segment.startswith(f"{label} ") for segment in context.section_paths)
+        if not any(NUMBERED.match(segment) for segment in context.section_paths):
+            return True  # no heading carries a number, as with Word's numbering: no check
+        return any(_numbered(segment, label) for segment in context.section_paths)
     phrase = reference.lower()
     if any(phrase in document for document in context.documents):
         return True
