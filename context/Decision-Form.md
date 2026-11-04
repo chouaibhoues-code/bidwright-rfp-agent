@@ -41,6 +41,8 @@ It also proposes two process changes for the change log: S-10 compares the promp
 
 **Recommendation.** Accept all, at the Stage 9 review of the design doc, which the owner starts with `/egm:egm-review docs/designs/iteration-1.md implementation`.
 
+**Status on 2026-11-03.** The Stage 9 review ran in two rounds, 130 and 72 findings, every one resolved; the reports are in `private/egm/iteration-1-stage9/`. The revised design doc proposes three process changes (S-10 with and without examples; `coverage` directly after `verify`; context manifests for the packed calls only in Iteration 1) and adds a `paid` profile with a $10 matrix cost cap, chosen by the owner at the review. The owner's decision on ADR-017 to ADR-021 and the three process changes is due before the build.
+
 ### D-03: When to create the Cerebras key, due at the Iteration 3 entry
 
 **Context.** The Cerebras trial's credits expire 30 days after they are granted, and the key needs a payment method.

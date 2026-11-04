@@ -12,7 +12,7 @@ tags: [bidwright, project-management, plan, roadmap]
 
 > [!summary] Status on 2026-11-03
 > - Released: `v0.0`, Iteration 0a, the walking skeleton, on commit `1c9acaf`; `v0.0.1`, Iteration 0b, documents and review, on 2026-11-03, with ADR-022 to ADR-025 from the first architecture review.
-> - Next: Iteration 1, once its design doc passes the Stage 9 review (D-02) and D-05 is decided.
+> - Next: Iteration 1, once the owner decides D-02 (its design doc passed the Stage 9 review on 2026-11-03) and D-05.
 > - At each tag the owner chooses to continue, release or stop (section 2.8).
 
 This file owns the scope, the work-package register, the assignment trace, the gates, the risks, the change log, the close-out notes and the full vision with its unbuilt scope. Other facts have one owner each: the current architecture is in `docs/architecture.md`, decisions in `DECISIONS.md`, assumptions in `ASSUMPTIONS.md`, hours in `TIMELOG.md`, research in [[Research-Register]], open decisions in [[Decision-Form]], and deferred work in [[Project-Backlog]].
@@ -261,7 +261,7 @@ The WBS is held as this register. Estimates are Claude's judgment (section 2.6).
 | WP-0b.3 | Architecture, decision matrix, threat model, evaluation stub | 1.0 | A5, A13; CH-23 | `docs/architecture.md` for `v0.0`, `docs/decision-matrix.md`, `docs/security.md`, `docs/evaluation.md` | Done `v0.0.1` |
 | WP-0b.4 | Documentation generators | 0.5 | A9 | `scripts/gen_docs.py`; `test_docs_generated.py` finds no difference | Done `v0.0.1` |
 | WP-0b.5 | Documentation checks in CI | 0.5 | A9 | `scripts/check_docs.py`; CI jobs `docs-generated` and `docs-links` green | Done `v0.0.1` |
-| WP-0b.6 | Iteration 1 design doc | 0.5 | A1, A7, A8; CH-44 | `docs/designs/iteration-1.md` with a Detailed Implementation Plan and its open decisions closed as ADRs | Done `v0.0.1`; Stage 9 review next |
+| WP-0b.6 | Iteration 1 design doc | 0.5 | A1, A7, A8; CH-44 | `docs/designs/iteration-1.md` with a Detailed Implementation Plan and its open decisions closed as ADRs | Done `v0.0.1`; Stage 9 passed on 2026-11-03 after two rounds, every finding resolved; D-02 pending |
 | WP-0b.7 | First Goldfish architecture review | 0.5 | A13; CH-28 | Findings triaged; accepted ones became ADR-022 to ADR-025 and CH-75 to CH-78 | Done `v0.0.1` |
 | WP-1.1 | `guard` and package input | 2.0 | A10, A11; CH-40 | Limits, scanned-PDF report, PDF and Office hidden-content quarantine; `guard` on CrackedPDFs | Planned |
 | WP-1.2 | Docling `ingest` and the control register | 1.5 | A10 | Package folder with an addendum runs end to end; Docling responses replay | Planned |
