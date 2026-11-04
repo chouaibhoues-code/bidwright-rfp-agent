@@ -49,9 +49,9 @@ class ProviderSimulator:
         if fault == "quota_exhausted":
             raise QuotaExhausted("simulated daily quota spent")
         if fault == "timeout":
-            raise TransientError("simulated timeout")
+            raise TransientError("simulated timeout", "timeout")
         if fault == "server_error":
-            raise TransientError("simulated 503")
+            raise TransientError("simulated 503", "server_error")
         if fault == "malformed_json":
             return Response(text='{"items": [', usage=self.inner.call(request).usage)
         response = self.inner.call(request)

@@ -288,6 +288,11 @@ class ToolResult(Record):
     reason: str | None = None
 
 
+# Why one provider attempt failed: a 429, a timeout, a 5xx, a connection failure, or a spent
+# daily quota that moved the call to its fallback model.
+RetryReason = Literal["rate_limited", "timeout", "server_error", "transport", "quota"]
+
+
 class LedgerEntry(Record):
     run_id: str
     node: str
@@ -311,6 +316,7 @@ class LedgerEntry(Record):
     shadow_cost_usd: float = Field(ge=0)
     replayed: bool
     retries: int = Field(default=0, ge=0)
+    retry_reasons: list[RetryReason] = Field(default_factory=list)  # one per retry, in order
 
 
 class RunTotals(Record):

@@ -11,7 +11,7 @@ from bidwright.harness.budget import BudgetExceeded, RunBudget
 from bidwright.llm.client import LLMClient
 from bidwright.llm.simulator import ProviderSimulator
 from bidwright.llm.types import Message, QuotaExhausted, UnrecoverableFault
-from bidwright.schemas import ExtractResult, RiskRegister
+from bidwright.schemas import ExtractResult, LedgerEntry, RiskRegister
 from tests.llm_fakes import CALL, FakeBackend
 
 MESSAGES = [Message("user", "passages")]
@@ -31,13 +31,14 @@ def test_fi01_backoff_honors_retry_after() -> None:
     client = _client([{"call": 1, "fault": "http_429", "retry_after_s": 1}], sleeps)
     completion = client.complete("extract", MESSAGES, ExtractResult, **CALL)
     assert completion.retries == 1 and sleeps == [1]
+    assert completion.retry_reasons == ("rate_limited",)
 
 
 def test_fi01_timeouts_back_off_with_full_jitter_under_the_cap() -> None:
     sleeps: list[float] = []
     script = [{"call": 1, "fault": "timeout"}, {"call": 2, "fault": "server_error"}]
     completion = _client(script, sleeps).complete("extract", MESSAGES, ExtractResult, **CALL)
-    assert completion.retries == 2
+    assert completion.retries == 2 and completion.retry_reasons == ("timeout", "server_error")
     assert sleeps == [0.5 * 2, 0.5 * 4]  # rng 0.5 times a 2 s base, doubled per retry
 
 
@@ -48,7 +49,7 @@ def test_fi01_exhausted_retries_switch_extract_to_its_fallback_model() -> None:
     assert completion.model == "gemini-3.1-flash-lite"
     assert inner.models == ["gemini-3.1-flash-lite"]
     # Four attempts on the primary and one on the fallback: the ledger sees all five.
-    assert completion.retries == 4
+    assert completion.retries == 4 and completion.retry_reasons == ("timeout",) * 4
 
 
 def test_fi01_reason_falls_back_to_its_own_flash_lite_model() -> None:
@@ -78,6 +79,7 @@ def test_a_spent_daily_quota_moves_to_the_fallback_without_retrying() -> None:
     assert completion.model == "gemini-3.1-flash-lite" and sleeps == []
     # No backoff, but the refused attempt on the primary still counts as one.
     assert completion.retries == 1 and inner.models == ["gemini-3.1-flash-lite"]
+    assert completion.retry_reasons == ("quota",)
 
 
 class Clock:
@@ -153,3 +155,20 @@ def test_fi02_missing_ids_drop_the_items_that_cite_them() -> None:
 def test_unknown_faults_are_rejected() -> None:
     with pytest.raises(ValueError, match="unknown faults"):
         ProviderSimulator(FakeBackend(), [{"call": 1, "fault": "gremlins"}])
+
+
+def test_the_ledger_says_why_each_attempt_was_retried() -> None:
+    entries: list[LedgerEntry] = []
+    script = [{"call": 1, "fault": "http_429"}, {"call": 2, "fault": "timeout"}]
+    client = LLMClient(
+        load_config(),
+        "free",
+        {"gemini": ProviderSimulator(FakeBackend(), script)},
+        on_ledger=entries.append,
+        sleep=lambda _: None,
+        rng=lambda: 0.5,
+    )
+    client.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert [(e.retries, e.retry_reasons) for e in entries] == [(2, ["rate_limited", "timeout"])]
+    earlier = entries[0].model_dump(exclude={"retry_reasons"})
+    assert LedgerEntry.model_validate(earlier).retry_reasons == [], "older ledgers still load"

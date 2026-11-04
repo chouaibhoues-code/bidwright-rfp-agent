@@ -155,6 +155,7 @@ The assignment's output. Lists hold record ids; the JSON twin adds full records.
 | `shadow_cost_usd` | float (ge 0) | yes |  |  |
 | `replayed` | bool | yes |  |  |
 | `retries` | int (ge 0) | no | 0 |  |
+| `retry_reasons` | list[one of 'rate_limited', 'timeout', 'server_error', 'transport', 'quota'] | no | [] |  |
 
 ## `RunTotals`
 

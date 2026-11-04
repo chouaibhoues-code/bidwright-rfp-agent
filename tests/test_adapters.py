@@ -4,6 +4,7 @@ import json
 from types import SimpleNamespace
 from typing import Any
 
+import httpx
 import ollama
 import pytest
 from google.genai import errors as genai_errors
@@ -11,7 +12,7 @@ from google.genai import types
 from openai.types import CompletionUsage
 from openai.types.completion_usage import CompletionTokensDetails, PromptTokensDetails
 
-from bidwright.llm.genai import _content, _response, _translate
+from bidwright.llm.genai import GenaiBackend, _content, _response, _translate
 from bidwright.llm.ollama import TRUNCATION_MARGIN, OllamaBackend
 from bidwright.llm.openai_compat import _usage
 from bidwright.llm.types import (
@@ -21,6 +22,7 @@ from bidwright.llm.types import (
     RateLimited,
     Request,
     ToolCall,
+    TransientError,
     Usage,
 )
 
@@ -103,6 +105,28 @@ def test_genai_a_spent_daily_quota_is_not_retried() -> None:
 def test_genai_a_per_minute_429_is_retried_after_its_delay() -> None:
     error = _translate(_quota_error("GenerateRequestsPerMinutePerProjectPerModel-FreeTier", "7s"))
     assert isinstance(error, RateLimited) and error.retry_after_s == 7.0
+    assert error.reason == "rate_limited"
+
+
+def test_genai_names_the_reason_a_retry_is_worth_making(monkeypatch: pytest.MonkeyPatch) -> None:
+    error = _translate(genai_errors.APIError(503, {"error": {"code": 503, "message": "busy"}}))
+    assert isinstance(error, TransientError) and error.reason == "server_error"
+    backend = GenaiBackend(api_key="unused")
+    request = Request(model="gemini-3.5-flash-lite", messages=(Message("user", "hello"),))
+    for raised, reason in (
+        (httpx.ReadTimeout("slow"), "timeout"),
+        (httpx.ConnectError("no"), "transport"),
+    ):
+
+        def generate(*_: Any, raised: Exception = raised, **__: Any) -> Any:
+            raise raised
+
+        monkeypatch.setattr(
+            backend, "_client", SimpleNamespace(models=SimpleNamespace(generate_content=generate))
+        )
+        with pytest.raises(TransientError) as caught:
+            backend.call(request)
+        assert caught.value.reason == reason
 
 
 def test_openai_usage_splits_reasoning_out_of_completion_tokens() -> None:

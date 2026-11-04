@@ -66,7 +66,8 @@ class OllamaBackend:
                 raise TransientError(f"ollama {exc.status_code}: {exc.error}") from exc
             raise ProviderError(f"ollama {exc.status_code}: {exc.error}") from exc
         except _TRANSPORT_ERRORS as exc:
-            raise TransientError(f"ollama transport error: {exc}") from exc
+            reason = "timeout" if isinstance(exc, httpx.TimeoutException) else "transport"
+            raise TransientError(f"ollama transport error: {exc}", reason) from exc
         evaluated = response.prompt_eval_count or 0
         if evaluated >= num_ctx - TRUNCATION_MARGIN:
             raise ProviderError(

@@ -63,12 +63,12 @@ class OpenAICompatBackend:
         except openai.RateLimitError as exc:
             retry_after = exc.response.headers.get("retry-after") if exc.response else None
             raise RateLimited(str(exc), float(retry_after) if retry_after else None) from exc
-        except (
-            openai.APITimeoutError,
-            openai.APIConnectionError,
-            openai.InternalServerError,
-        ) as exc:
-            raise TransientError(str(exc)) from exc
+        except openai.APITimeoutError as exc:  # a subclass of APIConnectionError, so first
+            raise TransientError(str(exc), "timeout") from exc
+        except openai.APIConnectionError as exc:
+            raise TransientError(str(exc), "transport") from exc
+        except openai.InternalServerError as exc:
+            raise TransientError(str(exc), "server_error") from exc
         except openai.APIStatusError as exc:
             raise ProviderError(str(exc)) from exc
         choice = completion.choices[0].message

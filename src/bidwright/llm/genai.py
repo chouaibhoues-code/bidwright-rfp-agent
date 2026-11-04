@@ -71,7 +71,8 @@ class GenaiBackend:
         except genai_errors.APIError as exc:
             raise _translate(exc) from exc
         except (httpx.TimeoutException, httpx.TransportError) as exc:
-            raise TransientError(f"gemini transport error: {exc}") from exc
+            reason = "timeout" if isinstance(exc, httpx.TimeoutException) else "transport"
+            raise TransientError(f"gemini transport error: {exc}", reason) from exc
         return _response(response)
 
 

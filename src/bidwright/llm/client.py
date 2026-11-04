@@ -5,8 +5,10 @@ block over the role's defaults, retries transient failures with full-jitter back
 provider's `Retry-After` wins), falls back once to the role's fallback model when one is
 configured, records or replays cassettes, validates structured output against its Pydantic
 model, and reports one `LedgerEntry` per call. The entry's `retries` counts the provider
-attempts beyond the first, across the primary and the fallback model, and `before_attempt`
-runs before every attempt, which is where the run budget is checked (ADR-022).
+attempts beyond the first, across the primary and the fallback model, and `retry_reasons`
+says why each failed attempt failed: `rate_limited`, `timeout`, `server_error`, `transport`,
+or `quota` for a spent daily quota. `before_attempt` runs before every attempt, which is where
+the run budget is checked (ADR-022).
 
 Two optional parts sit in front of a provider (Iteration 1, step 9). The limiter
 (`llm/limits.py`) is called after `before_attempt` with the model and the request's estimated
@@ -21,7 +23,7 @@ import os
 import random
 import time
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Literal
 
@@ -47,7 +49,7 @@ from bidwright.llm.types import (
     UnrecoverableFault,
     Usage,
 )
-from bidwright.schemas import LedgerEntry
+from bidwright.schemas import LedgerEntry, RetryReason
 
 Mode = Literal["live", "record", "replay"]
 Decoding = Mapping[str, Mapping[str, object]]
@@ -70,6 +72,7 @@ class Completion:
     replayed: bool
     retries: int
     native: object = None
+    retry_reasons: tuple[RetryReason, ...] = ()
 
     def as_message(self) -> Message:
         """The model's turn, ready to append to the conversation."""
@@ -80,9 +83,11 @@ class Completion:
 
 @dataclass
 class _Attempts:
-    """The provider attempts made for one logical call, across the primary and the fallback."""
+    """The provider attempts made for one logical call, across the primary and the fallback,
+    and why each one that failed did."""
 
     made: int = 0
+    reasons: list[RetryReason] = field(default_factory=list)
 
 
 class LLMClient:
@@ -175,11 +180,20 @@ class LLMClient:
                 # A replayed run that fell back has its cassette under the fallback model, and
                 # a spent daily quota moves straight to the fallback, with no backoff; its
                 # refused attempt still counts.
+                if isinstance(exc, QuotaExhausted):
+                    attempts.reasons.append("quota")
                 last_error = exc
                 continue
             retries = max(attempts.made - 1, 0)
             completion = _completion(
-                response, schema, latency_ms, role_config.provider, model, replayed, retries
+                response,
+                schema,
+                latency_ms,
+                role_config.provider,
+                model,
+                replayed,
+                retries,
+                tuple(attempts.reasons),
             )
             if (
                 self.mode == "live"
@@ -231,6 +245,7 @@ class LLMClient:
             try:
                 response = backend.call(request)
             except TransientError as exc:
+                attempts.reasons.append(exc.reason)
                 if retries >= call.retries:
                     raise UnrecoverableFault(f"{request.model}: {exc}") from exc
                 wait = (
@@ -290,6 +305,7 @@ class LLMClient:
                 shadow_cost_usd=_cost(usage, shadow_price),
                 replayed=completion.replayed,
                 retries=completion.retries,
+                retry_reasons=list(completion.retry_reasons),
             )
         )
 
@@ -341,6 +357,7 @@ def _completion(
     model: str,
     replayed: bool,
     retries: int,
+    retry_reasons: tuple[RetryReason, ...] = (),
 ) -> Completion:
     parsed: BaseModel | None = None
     parse_error: str | None = None
@@ -361,6 +378,7 @@ def _completion(
         replayed=replayed,
         retries=retries,
         native=response.native,
+        retry_reasons=retry_reasons,
     )
 
 

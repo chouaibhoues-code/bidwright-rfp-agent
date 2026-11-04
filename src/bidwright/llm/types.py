@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
 Role = Literal["system", "user", "assistant", "tool"]
+# Why a provider attempt failed in a way worth retrying; the ledger records one per retry.
+TransientReason = Literal["rate_limited", "timeout", "server_error", "transport"]
 
 
 @dataclass(frozen=True)
@@ -90,14 +92,18 @@ class LLMError(Exception):
 
 
 class TransientError(LLMError):
-    """A timeout, a connection failure or a 5xx: worth retrying."""
+    """A timeout, a connection failure or a 5xx: worth retrying. `reason` says which."""
+
+    def __init__(self, message: str, reason: TransientReason = "server_error") -> None:
+        super().__init__(message)
+        self.reason: TransientReason = reason
 
 
 class RateLimited(TransientError):
     """A 429. `retry_after_s` is the provider's own wait, when it gives one."""
 
     def __init__(self, message: str, retry_after_s: float | None = None) -> None:
-        super().__init__(message)
+        super().__init__(message, "rate_limited")
         self.retry_after_s = retry_after_s
 
 
