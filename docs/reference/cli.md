@@ -69,7 +69,7 @@ usage: bidwright-eval [-h] {score,hash-gold} ...
 
 `bidwright-eval`: score frozen runs against gold. It never changes a run. bidwright-eval score
 <run_dir> prints the 0a scorecard and writes evals/results/runs/<run>/ bidwright-eval hash-gold
-records the gold files' hashes in evals/gold/MANIFEST.sha256
+records the hashes of the gold files and of evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
 
 positional arguments:
   {score,hash-gold}
