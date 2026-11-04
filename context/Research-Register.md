@@ -56,7 +56,7 @@ Raw reports, notebook answers and research envelopes are kept privately, outside
 | DR-18 | Domain discovery for the hero RFP's domain: the patterns, standards and pitfalls a bid should cover | Becomes the first research pack. It feeds the pack only: research seeds come from an independent source, so the gain with research is not built in. | High | Launched 2026-11-03 (Iteration 1, step 1); read in Iteration 2 |
 | DR-05 | A judged rubric can validly score a generated approach, WBS and risks | The solution and proposal move to structural checks plus human rating | High | Launched 2026-11-03 (Iteration 1, step 1); read in Iteration 3 |
 | DR-02 | Batching many candidates in one request loses nothing | Smaller batches and more requests, with capacity and budget recomputed | High | Only if S-03 is inconclusive |
-| DR-04 | Docling keeps multi-column and nested-table text exact enough for quote checks | Swap the parser or add a fallback | High | Only if S-01 is inconclusive |
+| DR-04 | Docling keeps multi-column and nested-table text exact enough for quote checks | Swap the parser or add a fallback | High | Not launched: S-01 passed on 2026-11-04 |
 | DR-06 | "One obligation per record" has a defensible boundary and scoring rule | The gold format and the matcher | Medium | Only if matching disputes appear in Iteration 1 |
 | DR-07 | Agentic steps beat a fixed pipeline on document work | `decide` shrinks, and the defense gets stronger either way | Medium | Iteration 5, beside the ablation that measures it |
 | DR-09 | A few RFPs support inference, and few labels can correct judge error | Ablation statistics and calibration size | Medium | Iteration 5, before the full ablations |
@@ -114,8 +114,8 @@ About 90 one-sentence technical claims, each checked just before the module that
 | S-07 | Spike | Quote verification under PDF noise: ligatures, hyphenation, curly quotes, whitespace | 0a | Done |
 | S-09 | Spike | Relative deadlines and time zones in `date_calc` | 0a | Done |
 | S-14 | Spike | A long prompt on Ollama's default context and on an explicit `num_ctx`, on CPU | 0a | Done |
-| S-01 | Spike | Parse fidelity on a two-column PDF with nested tables | 1 | Planned |
-| S-02 | Spike | Docling output mapped to frozen-text offsets | 1 | Planned |
+| S-01 | Spike | Parse fidelity on a two-column PDF with nested tables | 1 | Done 2026-11-04 (section 6) |
+| S-02 | Spike | Docling output mapped to frozen-text offsets | 1 | Done in Iteration 1, step 7, where it became `test_docling_parser.py` (section 6) |
 | S-03 | Spike | Recall against batch size on the hero RFP | 1 | Planned |
 | S-10 | Spike | A plain prompt against a structured `extract` prompt | 1 | Planned |
 | S-13 | Spike | A second extraction pass on `OBLIGATION` zones: recall gain against false positives | 1 | Planned |
@@ -149,8 +149,8 @@ Each spike decides one design question, with its pass mark fixed before it runs.
 | S-07 | Seeded noise cases and quotes not in the source | Every real quote accepted as verbatim or normalized, and 0 false accepts | The `verify` rules | `verify` normalization | 9 of 9 real quotes accepted, 0 of 7 false accepts; the rules stand |
 | S-09 | Deadline cases with relative dates and time zones | 20 of 20 correct | `zoneinfo` arithmetic in code | `date_calc` design | 20 of 20 |
 | S-14 | Truncation of a long prompt at Ollama's default and at `num_ctx` 16384 | Truncation at the default and none at 16384 | `num_ctx: 16384` on every call | Ollama context settings | A 5,606-token prompt was cut to 2,050 tokens at the default and kept whole at 16384; `num_ctx` stays required |
-| S-01 | Share of gold clauses whose exact text is locatable in the parsed output | At least 98% | `docling-serve`, compared with pdfplumber | Parser choice | Planned |
-| S-02 | Docling passages mapped back to frozen-text offsets | 100% of passages | Exact search in the frozen text | Whether Docling output can feed `verify` directly | Planned |
+| S-01 | Share of gold clauses whose exact text is locatable in the parsed output | At least 98% | `docling-serve`, compared with pdfplumber | Parser choice | On the hero package, Docling located 66 of 66 visible gold clauses in their own documents (100%) and pdfplumber 55 (83.3%), missing GR-0012 to GR-0022 in the two-column section 6. Docling stays the PDF parser, and DR-04 is not launched (`evals/results/s01-parse-fidelity/`). |
+| S-02 | Docling passages mapped back to frozen-text offsets | 100% of passages | Exact search in the frozen text | Whether Docling output can feed `verify` directly | Every passage of the recorded Docling parses is a slice of `frozen.txt`, which `test_docling_parser.py` checks on every CI run; Docling output feeds `verify` |
 | S-03 | Missed mandatory on the hero at batch sizes 10, 20 and 40, 5 repeats each | The largest batch within noise of batch 10 | 20 | Batch size, and so capacity | Planned |
 | S-10 | Missed mandatory for a plain prompt against a CARE prompt, 5 repeats each | CARE stays only if its median beats the plain prompt's by more than noise | Plain prompt | The `extract` prompt | Planned |
 | S-13 | Missed mandatory and precision, with and without a second pass | Misses fall, and precision drops no more than 3 points | Off | Whether the second pass runs | Planned |

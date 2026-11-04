@@ -1,0 +1,38 @@
+{
+ "gold": "hero v2 9e6f4ecc6ef6",
+ "docling": {
+  "clauses": 66,
+  "located": 66,
+  "share": 1.0,
+  "by_document": {
+   "hero-addendum-1": "3/3",
+   "hero-annex-b": "5/5",
+   "hero-rfp": "58/58"
+  },
+  "not_located": []
+ },
+ "pdfplumber": {
+  "clauses": 66,
+  "located": 55,
+  "share": 0.8333,
+  "by_document": {
+   "hero-addendum-1": "3/3",
+   "hero-annex-b": "5/5",
+   "hero-rfp": "47/58"
+  },
+  "not_located": [
+   "GR-0012",
+   "GR-0013",
+   "GR-0014",
+   "GR-0015",
+   "GR-0016",
+   "GR-0017",
+   "GR-0018",
+   "GR-0019",
+   "GR-0020",
+   "GR-0021",
+   "GR-0022"
+  ]
+ },
+ "decision": "Docling stays the PDF parser"
+}

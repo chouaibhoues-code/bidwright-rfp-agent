@@ -71,7 +71,13 @@ A scorer that cannot fail shows nothing. `tests/test_scorer_selftest.py` checks 
 
 ## Results at `v0.1`
 
-The `v0.1` scores, the spike decisions and the hero baseline follow the owner's review of gold v2 and the hash that freezes it.
+The owner reviewed gold v2, and on 2026-11-04 it was hashed with `evals/hypotheses.yaml`, before the first matrix run.
+
+| Spike | Result | Decision |
+|---|---|---|
+| S-01, parse fidelity | On the hero package, Docling located 66 of 66 visible gold clauses in their own documents and pdfplumber 55, missing GR-0012 to GR-0022 in the two-column section 6 ([`evals/results/s01-parse-fidelity/`](../evals/results/s01-parse-fidelity/report.md)) | Docling stays the PDF parser |
+
+The S-03, S-10 and S-13 decisions, the `v0.1` scores and the hero baseline follow.
 
 ## Results at `v0.0`
 
