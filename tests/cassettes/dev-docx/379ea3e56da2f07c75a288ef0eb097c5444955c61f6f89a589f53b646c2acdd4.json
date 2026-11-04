@@ -1,0 +1,26 @@
+{
+ "key": "sha256:379ea3e56da2f07c75a288ef0eb097c5444955c61f6f89a589f53b646c2acdd4",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"topic\": \"Donor, volunteer, data, and system operational requirements\", \"duplicates\": [], \"discrepancies\": [], \"questions\": [], \"references\": []}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2457,
+   "tokens_out": 35,
+   "tokens_cached": 0,
+   "tokens_thinking": 1301,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T20:12:03Z"
+}

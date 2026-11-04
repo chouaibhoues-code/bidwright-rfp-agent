@@ -43,6 +43,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 024 | Acceptance checks: degrade after the requirements, fault on a cut prompt | accepted |
 | 025 | Agent configuration declares only what code enforces | accepted |
 | 026 | Client documents: the data class, retention, the privacy invariant, the text view and the egress register | accepted |
+| 027 | Iteration 1's spike decisions: Docling stays, and packs of 40 | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -664,6 +665,29 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 **Provenance.** D-05 in `context/Decision-Form.md`; DR-20, DR-21 and the source checks in section 17 of `context/Research-Register.md`; the first architecture review's item A-31; `docs/designs/iteration-1.md` section 4.4.
 
+### ADR-027: Iteration 1's spike decisions: Docling stays, and packs of 40
+
+**Status:** accepted, 2026-11-04, under the pass marks the plan fixed before each spike ran; S-03's rule was hashed with the gold in `evals/hypotheses.yaml` before the first matrix run.
+
+**Context.** Two starting values of the Iteration 1 design waited on spikes. S-01 keeps Docling as the PDF parser when its text locates at least 98% of the hero package's visible gold clauses. S-03 makes `batch_size` the largest pack size whose median missed mandatory stays within the spread of packs of 10. Larger packs mean fewer calls, which the free tier's daily quota rewards, but a notebook source reports recall falling with batch size on an adjacent task.
+
+**Decision.**
+- Docling stays the PDF parser: it located 66 of 66 visible hero gold clauses, and pdfplumber 55, losing the two-column section.
+- `batch_size` is 40. Over five repeats each, the median missed mandatory after `coverage` was 7 (5-8) of 45 with packs of 10, 8 (5-9) with 20 and 7 (4-9) with 40, all within the control's spread of 3.
+
+**Consequences.**
+- Extraction takes a quarter of the requests of packs of 10: a median of 8 instead of 31 for the hero package to `coverage`. The hero run to `consolidate` took 22 requests instead of 26, and the median low precision rose from 0.61 to 0.69.
+- The demo, development DOCX and hero recordings were made again with packs of 40, since replays use the configured size, and `test_coverage.py` pins its own two-pack scenario.
+- The misses do not depend on the pack size: the same clauses were lost at `extract` at every size, which S-10 and S-13 address.
+
+**Options.** Packs of 10 or 20, both within noise, at two to four times the requests; pdfplumber as the PDF parser, which lost a whole section.
+
+**Confirmation.** `evals/results/s01-parse-fidelity/` and `evals/results/s03-batch/`; `tests/test_config.py` reads the value; the replay tests run on the recordings made with it.
+
+**Reverse if.** A later matrix shows packs of 40 losing mandatory requirements beyond the noise of smaller packs, for example after S-10 or S-13 change the prompt, or a document Docling parses with fewer than 98% of its gold clauses located.
+
+**Provenance.** S-01 and S-03, 2026-11-04; the decision rules of `docs/designs/iteration-1.md`, step 20.
+
 ## Failure modes hit
 
 Only failures that actually happened, logged as they happen. Scripted test faults never count.
@@ -684,3 +708,4 @@ Only failures that actually happened, logged as they happen. Scripted test fault
 | 2026-11-04 | `extract` 0.3.0, the first live development run on `free` with zones and cues | `triage` zoned the "6 Timeline" section `BACKGROUND` at a confidence of 0.8, and `extract` then labeled "The service must be live for students by 2027-01-11, ..." `BACKGROUND`, a mandatory requirement of the development gold that every 0.2.0 run labeled `BINDING`. The section's zone outweighed the passage's own "must". | `outputs/20261104T073950Z-dev-rfp-db9eeb00-free/spans.jsonl` | Rule 9 of `extract.md` 0.3.0 now says a zone describes its section, not each passage, and that a passage requiring the supplier to do or deliver something is `BINDING` in any zone. The next live run labeled the clause `BINDING` (`outputs/20261104T074107Z-dev-rfp-db9eeb00-free`). Open: one run each, so the repeats of S-03 and S-13 will show whether the hint still costs misses. |
 | 2026-11-04 | Logging, during the step 16 privacy test | With every logger at DEBUG, a replayed development run put the planted personal data into the captured logs: pdfminer, under pdfplumber and `guard`'s PDF scan, logs every token of a PDF's content streams at that level. Spans, the ledger and the manifest held none. Nothing in Bidwright sets DEBUG, but an operator who turns it on to troubleshoot a client run would have copied the document into the logs. | None: the test's captured log, `tests/test_privacy_invariant.py` | `bidwright/__init__.py` holds the `pdfminer` logger, and the `openai` logger, which logs each request body at DEBUG, at WARNING whatever the root level is; the privacy test captures at DEBUG and now passes. |
 | 2026-11-04 | The matrix runner, during S-03 on `free` | One `extract` call in the repeat `s03-batch-b20-r2` failed four times on `gemini-3.5-flash-lite` and was answered by its fallback, `gemini-3.1-flash-lite`, so one repeat of a single-model comparison mixed two models. Once the primary's daily allowance ran out, every remaining run would have gone to the fallback; the matrix was stopped at 396 of 400 requests, before that happened. Retries took about one attempt in five, and the ledger recorded how many, not why. | The run's ledger and manifest, `outputs/matrices/s03-batch/s03-batch-b20-r2/` | Matrix runs now pass `fallback=False`: a spent quota pauses the matrix, and a call that exhausts its retries faults its run. `--resume` runs again a finished run that a fallback model answered, and `bidwright-eval report` leaves such runs out and names them. Each ledger entry now records why every retry happened. |
+| 2026-11-04 | `extract` on the development DOCX, recording with packs of 40 | For two title-page lines of two words each, "Reference FLT-2026-07." and "Issued 2026-12-01.", the model returned records instead of listing them as holding no obligation. A quote needs at least three words, so both records were rejected; the `coverage` round asked again and got the same answers, and the run ended `DEGRADED` with two passages unaccounted. A second recording completed. | `outputs/20261104T195922Z-dev-docx-rfp-1fc7453f-free/rejected.jsonl` | None yet. A passage too short to quote can hold no capturable requirement, so code could mark it as holding no obligation before `extract`; proposed for the Iteration 3 extraction ladder. |

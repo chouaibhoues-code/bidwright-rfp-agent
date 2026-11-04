@@ -1,0 +1,26 @@
+{
+ "key": "sha256:1b83ce5de3edb7e4f891a198587321d22cd0d0dab0b593f52a289b7c0d47cbd8",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"topic\":\"Implementation, go-live, and data migration requirements\",\"duplicates\":[],\"discrepancies\":[],\"questions\":[{\"text\":\"What specific scope or criteria constitute a trial migration for the required trial migrations?\",\"requirement_ids\":[\"REQ-0104\"],\"lint_finding_ids\":[\"LF-0018\"],\"reason\":\"The quantity lacks a defined scope or unit.\"}],\"references\":[]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2416,
+   "tokens_out": 83,
+   "tokens_cached": 0,
+   "tokens_thinking": 2043,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T20:03:59Z"
+}

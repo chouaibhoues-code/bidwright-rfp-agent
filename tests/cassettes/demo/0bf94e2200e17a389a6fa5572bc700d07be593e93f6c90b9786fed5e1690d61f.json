@@ -1,0 +1,26 @@
+{
+ "key": "sha256:0bf94e2200e17a389a6fa5572bc700d07be593e93f6c90b9786fed5e1690d61f",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Signing, records, integration, and deployment requirements\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [],\n  \"references\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2470,
+   "tokens_out": 46,
+   "tokens_cached": 0,
+   "tokens_thinking": 1612,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T19:57:34Z"
+}

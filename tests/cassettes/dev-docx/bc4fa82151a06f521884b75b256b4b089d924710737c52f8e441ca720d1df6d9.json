@@ -1,0 +1,37 @@
+{
+ "key": "sha256:bc4fa82151a06f521884b75b256b4b089d924710737c52f8e441ca720d1df6d9",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "date_calc",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_16380423277518977593",
+    "name": "search_rfp",
+    "arguments": {
+     "query": "REQ-0001"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 2614,
+   "tokens_out": 22,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T20:12:06Z"
+}

@@ -1,0 +1,26 @@
+{
+ "key": "sha256:b16185403783f59911ff3afa7fe48e1b126c0a951b877f9449da8ea3126b2ea8",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ApproachResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"items\": [{\"text\": \"Bid compliance: send the proposal by e-mail to the Trust's office by 17:00 GMT on 2027-02-12 as one document of no more than 15 pages, keep all personal data in the United Kingdom, and ensure the system is live by 2027-06-30.\", \"requirement_ids\": [\"REQ-0001\", \"REQ-0008\", \"REQ-0012\"], \"basis\": \"The instructions fix the submission format, page limit, deadline, data location requirement, and go-live date. Compliance with data residency is assumed to be met via UK-based hosting.\"}, {\"text\": \"Donor and gift management: hold a record for each donor containing their contact details and the history of their gifts, and record each donor's consent to be contacted by e-mail, by post, and by telephone along with the date consent was given.\", \"requirement_ids\": [\"REQ-0003\", \"REQ-0004\"], \"basis\": \"The required fields and contact channels are stated directly. The database structure is an assumption.\"}, {\"text\": \"Volunteer tracking and reminders: record the hours each volunteer gives to each club and send each volunteer a reminder two days before every session they are booked on.\", \"requirement_ids\": [\"REQ-0005\", \"REQ-0006\"], \"basis\": \"The tracking metrics and reminder schedule are stated. The reminder delivery channel is an assumption.\"}, {\"text\": \"System performance and training: provide 99% system availability in each calendar month and train the Trust's staff before the system goes live.\", \"requirement_ids\": [\"REQ-0010\", \"REQ-0011\"], \"basis\": \"The availability percentage and training timing are specified. The training duration and format are assumptions.\"}], \"unmapped_requirement_ids\": [\"REQ-0007\", \"REQ-0009\"], \"open_questions\": [{\"text\": \"What is the file format of the existing donor spreadsheet to be imported?\", \"requirement_ids\": [\"REQ-0007\"]}, {\"text\": \"What specific features should the optional mobile app for volunteers include, and what are the pricing details?\", \"requirement_ids\": [\"REQ-0009\"]}]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1494,
+   "tokens_out": 500,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T20:12:06Z"
+}

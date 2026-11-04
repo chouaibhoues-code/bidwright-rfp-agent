@@ -419,7 +419,7 @@ From `config/limits.yaml` and `config/agents.yaml`:
 - Per call: a 120-second timeout on `free` and `paid`, 300 seconds on `local`, with 3 retries.
 - Context packs hold at most `batch_size` passages within 12,000 tokens for `extract`, 8,000 for `triage` and `consolidate`. Clusters hold at most 12 members and 8 context requirements. `coverage` runs at most 2 rounds. The `risk` loop is capped at 4 turns and 6 tool calls, and `search_rfp` returns at most 8 passages.
 
-The batch size, the quote cap, the 3 cited ids, the cluster caps and the loop caps are defaults from the plan; S-03 measures the batch size on the hero package, and the others stay judgment until an ablation measures them. A measured full hero run on `free` took 33 requests and 210,745 tokens, thinking included, in about 3 active minutes.
+S-03 set the batch size to 40 on the hero package (ADR-027). The quote cap, the 3 cited ids, the cluster caps and the loop caps are defaults from the plan, and stay judgment until an ablation measures them. A measured full hero run on `free` with packs of 20 took 33 requests and 210,745 tokens, thinking included, in about 3 active minutes; with packs of 40 the hero run to `consolidate` takes 22 requests, 8 of them for `extract`.
 
 ### 8.4 Human control
 
@@ -500,7 +500,7 @@ Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-
 | A scanned file is reported, not parsed, and so is an OCR'd scan, whose text layer is drawn invisible and so is never read as text | Its obligations are missing, and the run says so | OCR stays optional |
 | The Docling path removes hidden PDF text by finding each hidden run's words in the item's text, because Docling's items carry no character positions | A hidden word that repeats a visible word earlier in the same item removes the visible one instead | The pdfplumber path removes hidden characters by position; Iteration 7's render-and-compare |
 | Stored requirements keep the model's quote as the view showed it, which equals the frozen text under `IdentityView` | A masking view would store masked quotes | Iteration 5, with the masking view |
-| Every passage costs `extract` tokens, so a long package takes more calls than a cue filter would | Cost and quota per run | S-03 sets the batch size; the measured hero run gives the figures |
+| Every passage costs `extract` tokens, so a long package takes more calls than a cue filter would | Cost and quota per run | S-03 set packs of 40, with a quarter of the requests of packs of 10 at the same misses (ADR-027) |
 | `risk` found 1 of 3 planted risks on `free` and 0 of 3 on `local` at `v0.0` | Risk recall is weak | Iteration 3, measured by the RK ablation |
 | On retry, the model may omit a rejected risk instead of rewording it | A real risk can be lost to a fixable rating phrase | Iteration 3 |
 | No resume command, although checkpoints are written | A stopped run starts again; the cache spares only the calls it holds | Iteration 2 |

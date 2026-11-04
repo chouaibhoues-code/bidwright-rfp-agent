@@ -1,0 +1,26 @@
+{
+ "key": "sha256:9afb7f5d162a2ffdc80a0ea63f1f15d30aa9a70100b85efd5bb02dbbc3d71d38",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Instructions and requirements for submitting tenders via the portal\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [\n    {\n      \"text\": \"What is the exact URL or system name for the Halverton e-Tendering Portal?\",\n      \"requirement_ids\": [\n        \"REQ-0002\",\n        \"REQ-0010\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0001\",\n        \"LF-0002\"\n      ],\n      \"reason\": \"The tendering portal term is undefined.\"\n    },\n    {\n      \"text\": \"Where can bidders access Annex C and Annex D?\",\n      \"requirement_ids\": [\n        \"REQ-0013\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0003\",\n        \"LF-0004\"\n      ],\n      \"reason\": \"Annexes C and D are undefined.\"\n    },\n    {\n      \"text\": \"What unit of measurement applies to the type size requirement of at least 11 points?\",\n      \"requirement_ids\": [\n        \"REQ-0016\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0005\"\n      ],\n      \"reason\": \"The font size unit is missing.\"\n    }\n  ],\n  \"references\": [\n    {\n      \"requirement_id\": \"REQ-0013\",\n      \"target\": \"Annex C\",\n      \"resolved_ids\": []\n    },\n    {\n      \"requirement_id\": \"REQ-0013\",\n      \"target\": \"Annex D\",\n      \"resolved_ids\": []\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3235,
+   "tokens_out": 414,
+   "tokens_cached": 0,
+   "tokens_thinking": 1773,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T20:03:30Z"
+}

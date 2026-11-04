@@ -1,0 +1,26 @@
+{
+ "key": "sha256:2c12fcdb5177451ff31ef3ceb2bb19a60fa1f065904d80f421ade8bfd2634f8c",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Integration, migration, and network connection requirements\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [\n    {\n      \"text\": \"What are the technical specifications and access requirements for the Halverton Public Services Network?\",\n      \"requirement_ids\": [\n        \"REQ-0076\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0014\"\n      ],\n      \"reason\": \"The Halverton Public Services Network is an undefined term.\"\n    }\n  ],\n  \"references\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2319,
+   "tokens_out": 139,
+   "tokens_cached": 0,
+   "tokens_thinking": 1063,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T20:03:45Z"
+}

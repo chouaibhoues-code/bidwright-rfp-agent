@@ -1,0 +1,26 @@
+{
+ "key": "sha256:04faf0f84e25fa7fb30e78bccc8bd7a5f48839dd57c33b133d1129e09784ec25",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"title\": \"Risks and assumptions\",\n  \"text\": \"The main risks include the proposal exceeding 20 pages or missing the 2026-12-01 12:00 UTC deadline, integration or testing delays pushing deployment past spring enrollment, and users needing historical signed records trapped in the legacy tool before migration completes [RSK-001, RSK-002, RSK-003]. To mitigate these, we would enforce an 18-page budget, perform a dry-run upload one week early, pre-build the REST API connector, establish a manual fallback, accelerate migration to finish before the 2027-01-11 go-live date, and provide read-only legacy access [RSK-001, RSK-002, RSK-003]. Open questions remain regarding the twelve most used forms, migration data structure and volume by 2027-02-28, optional on-premises pricing and infrastructure, severity-one incident ticketing channels, the REST API schema and rate limit, and contract award timing relative to the go-live date [Q-01, Q-02, Q-03, Q-04, Q-05, Q-06].\",\n  \"cited_ids\": [\n    \"RSK-001\",\n    \"RSK-002\",\n    \"RSK-003\",\n    \"Q-01\",\n    \"Q-02\",\n    \"Q-03\",\n    \"Q-04\",\n    \"Q-05\",\n    \"Q-06\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1591,
+   "tokens_out": 373,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T19:59:00Z"
+}

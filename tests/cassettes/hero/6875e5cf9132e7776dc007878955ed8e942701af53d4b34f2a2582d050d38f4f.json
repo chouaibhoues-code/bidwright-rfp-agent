@@ -1,0 +1,26 @@
+{
+ "key": "sha256:6875e5cf9132e7776dc007878955ed8e942701af53d4b34f2a2582d050d38f4f",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Case handling, resident portal, and document reporting requirements\",\n  \"duplicates\": [\n    {\n      \"requirement_id\": \"REQ-0040\",\n      \"duplicate_of\": \"REQ-0159\"\n    }\n  ],\n  \"discrepancies\": [\n    {\n      \"requirement_ids\": [\n        \"REQ-0046\",\n        \"REQ-0158\"\n      ],\n      \"kind\": \"INCONSISTENT_VALUE\",\n      \"state\": \"established\",\n      \"description\": \"Section 6.1 requires keeping audit records for seven years, while Annex B requires five years.\",\n      \"resolved_by\": null\n    }\n  ],\n  \"questions\": [\n    {\n      \"text\": \"What response times are considered appropriate for each case type?\",\n      \"requirement_ids\": [\n        \"REQ-0041\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0010\"\n      ],\n      \"reason\": \"The term appropriate is vague and lacks measurable criteria.\"\n    },\n    {\n      \"text\": \"What unit of measurement applies to the document storage requirement of at least 500?\",\n      \"requirement_ids\": [\n        \"REQ-0057\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0011\"\n      ],\n      \"reason\": \"The unit of storage is missing.\"\n    },\n    {\n      \"text\": \"What is the expected number of concurrent named users at peak times?\",\n      \"requirement_ids\": [\n        \"REQ-0058\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0012\"\n      ],\n      \"reason\": \"The value is marked as TBC.\"\n    },\n    {\n      \"text\": \"Where can Schedule 7 be located, as it is referenced but missing from the RFP?\",\n      \"requirement_ids\": [\n        \"REQ-0059\"\n      ],\n      \"lint_finding_ids\": [\n        \"LF-0013\"\n      ],\n      \"reason\": \"Schedule 7 is a broken reference.\"\n    },\n    {\n      \"text\": \"Should audit records be kept for seven years per Section 6.1 or five years per Annex B?\",\n      \"requirement_ids\": [\n        \"REQ-0046\",\n        \"REQ-0158\"\n      ],\n      \"lint_finding_ids\": [],\n      \"reason\": \"The retention periods disagree between the main document and Annex B.\"\n    }\n  ],\n  \"references\": [\n    {\n      \"requirement_id\": \"REQ-0059\",\n      \"target\": \"Schedule 7\",\n      \"resolved_ids\": []\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3797,
+   "tokens_out": 659,
+   "tokens_cached": 0,
+   "tokens_thinking": 1999,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T20:03:52Z"
+}

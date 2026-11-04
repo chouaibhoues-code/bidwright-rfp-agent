@@ -19,7 +19,9 @@ call:
 # Send workers at once, per profile. Ollama here serves one request at a time, so a second
 # worker only queues, and its wait counts against the call timeout.
 concurrency: {free: 2, local: 1, paid: 4}
-batch_size: 20
+# Passages per extract pack, at most; a pack also closes before it passes the extract budget.
+# S-03 set it on 2026-11-04 (ADR-027): packs of 40 stayed within the noise of packs of 10.
+batch_size: 40
 # The limiter (step 9), keyed by provider, tier and model. The tier is the profile's, `free` or
 # `paid`. A provider or model with no row here, such as Ollama, has no limiter.
 providers:

@@ -91,6 +91,7 @@ def _run(tmp_path: Path, model: RuleBackend, name: str) -> Path:
         cassettes=CassetteStore(tmp_path / f"cassettes-{name}"),
         backends={"gemini": model},
         run_id=name,
+        batch_size=20,  # the scenarios are written for two first-pass packs, B01 and B02
     )
     return result.run_dir
 

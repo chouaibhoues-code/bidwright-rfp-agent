@@ -1,0 +1,26 @@
+{
+ "key": "sha256:d1830be4f357ac85eb021b9d5d8892aa5174e942cd7b0b975a5152b1aa96c42f",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"title\": \"How we would deliver\",\n  \"text\": \"We assemble the proposal as a single PDF of at most 20 pages and submit it through the College's procurement portal by 2026-12-01 12:00 UTC, ensuring the service is live for students by 2027-01-11 [APP-001]. We support signing on current desktop and mobile browsers, and send a reminder to each signer who has not signed within 72 hours [APP-002]. We maintain an audit record of every signature event including signer identity, time, and document version, and store signed documents for ten years [APP-003]. We integrate the service with the College's student records system through its existing REST API [APP-004]. We ensure the service is available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance [APP-005].\",\n  \"cited_ids\": [\n    \"APP-001\",\n    \"APP-002\",\n    \"APP-003\",\n    \"APP-004\",\n    \"APP-005\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1453,
+   "tokens_out": 274,
+   "tokens_cached": 0,
+   "tokens_thinking": 1042,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T19:58:57Z"
+}

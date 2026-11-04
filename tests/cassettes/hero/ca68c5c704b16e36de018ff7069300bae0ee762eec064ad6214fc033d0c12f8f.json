@@ -1,0 +1,26 @@
+{
+ "key": "sha256:ca68c5c704b16e36de018ff7069300bae0ee762eec064ad6214fc033d0c12f8f",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"topic\":\"Priority 1 incident response time and addendum confirmation\",\"duplicates\":[],\"discrepancies\":[],\"questions\":[],\"references\":[{\"requirement_id\":\"REQ-0155\",\"target\":\"table in section 9\",\"resolved_ids\":[]}]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2071,
+   "tokens_out": 53,
+   "tokens_cached": 0,
+   "tokens_thinking": 1266,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-04T20:04:11Z"
+}
