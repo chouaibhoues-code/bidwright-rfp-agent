@@ -87,7 +87,7 @@ Optional stretch items, only if the core works: a critic or reviewer agent, RAG 
 
 - Synthetic data only: no real client data and no public tender, by the owner's choice. Licensed public research datasets are allowed for single-stage benchmarks only (ADR-010). [O]
 - Keys live only in `.env`. [O]
-- Free tiers and local models by default. Paid calls only within a budget the owner sets at the Iteration 1 exit, with $10 as the cap until then. [O]
+- Free tiers and local models by default. Paid calls only within the owner's budget (D-01, 2026-11-04): $40 for Iterations 2 and 3, with Iteration 5's amount set at the Iteration 3 exit (CH-84). [O]
 - Every output stays a draft until a person signs it off (ADR-008). [O]
 - Quality outranks the schedule. Scope changes only on merit (section 2.4), and the plan carries no calendar dates. [O]
 - The project method is deliberately fuller than a short build needs, because the project also demonstrates project management practice. [O]
@@ -134,7 +134,7 @@ A reason on merit is a gain on the rubric, a simpler design that meets the same 
 |---|---|---|
 | Scope | The full vision as a deliverable-oriented WBS: the work-package register and the assignment trace | The change log |
 | Schedule | Iteration order and effort estimates | A re-forecast at each tag from the earned-value snapshot |
-| Cost | Hours in `TIMELOG.md`. LLM spend is $0 on free tiers and local models, plus the paid budget the owner sets at the Iteration 1 exit from a measured partial hero run, with $10 as the cap until then. | The ledgers and the earned-value snapshot |
+| Cost | Hours in `TIMELOG.md`. LLM spend is $0 on free tiers and local models, plus the paid budget the owner set on 2026-11-04 from the measured hero run: $40 for Iterations 2 and 3, and Iteration 5's amount set at the Iteration 3 exit (D-01, CH-84). | The ledgers and the earned-value snapshot |
 | Quality | The evaluation harness, the CI gate and the Definition of Done | The scorecard at each tag |
 
 ### 2.6 Basis of estimate
@@ -498,6 +498,7 @@ Every accepted change since the first agreed design, one line each. The Kind col
 | CH-81 | Context manifests cover the packed calls (`triage`, `extract`, `consolidate`) in Iteration 1; `approach`, `risk` and `draft` get theirs with the full `ContextManager` in Iteration 2 | Those three nodes read records, not passages, and the node-scope table already schedules the full `ContextManager` for Iteration 2. D-02, 2026-11-03. | None: a scheduling line | Process |
 | CH-82 | A `paid` profile, the `free` models under the paid key with real cost in the ledger, carries the hero run and the spikes when the free quota is spent, under a $10 cost cap in each matrix file | The Stage 9 review found the paid-key clause had no mechanism; the owner chose the profile over dropping the clause. The cap is F19's $10 until D-01. | D-01 sets a budget, or the free quota suffices | ADR-011, unchanged |
 | CH-83 | Client documents: the data class, retention and purge, the privacy invariant, the text-view seam and the egress register are built in Iteration 1; the consent override stays (ADR-026) | D-05, decided on 2026-11-03 on the DR-20 and DR-21 evidence; the owner kept the override as a fourth mode beside `free`, `local` and `paid`. | ADR-026's reverse-if | ADR-026 |
+| CH-84 | The paid budget (D-01): $40 for Iterations 2 and 3, for the Flash comparison that tests ADR-003, quota relief for the spikes and the Iteration 3 exit measurements, and a paid non-Gemini fallback once the Cerebras trial ends; Iteration 5's amount is set at the Iteration 3 exit from a measured run of the full pipeline. Paid runs use the `paid` profile (CH-82), each matrix file keeps its own `max_cost_usd`, and the ledgers record every call's cost. | The owner chose option A, staged, on 2026-11-04, from the measured hero run: 33 requests, $0.26 at the Flash-Lite list price and about $0.43 at Flash's | The Iteration 3 exit's measured run puts the Iteration 2 and 3 work more than half above or below its estimate | Process |
 
 ## 9. Close-out notes
 
@@ -1263,7 +1264,7 @@ Python 3.12 inside the image. Versions are locked at implementation (V-08), and 
 |---|---|---|---|
 | `free` (default) | Everything above | Synthetic corpus only. Files not listed in `inputs/CORPUS.sha256` are refused unless the run passes `--allow-non-corpus=i-accept-free-tier-terms`. The README routes a user's own files to `--profile local`. | 0a |
 | `local` | The thin thread on the development RFP | Nothing leaves the laptop | 0a |
-| `paid` | The hero run and the spikes when the free quota is spent, under the $10 cap (CH-82) | The `free` models under the paid key, whose terms do not use prompts for training; a client document only under an engagement's terms (ADR-026, Iteration 5) | 1 |
+| `paid` | The hero run and the spikes when the free quota is spent, and the paid work of Iterations 2 and 3, within the paid budget and each matrix file's cap (CH-82, CH-84) | The `free` models under the paid key, whose terms do not use prompts for training; a client document only under an engagement's terms (ADR-026, Iteration 5) | 1 |
 | `hybrid` | Local extraction, Gemini reasoning | The sensitive-data deployment story | 7 |
 
 The assignment names Ollama and also allows any free tier, so `local` stays a literal Ollama path from Iteration 0a.
@@ -1722,8 +1723,8 @@ That is about 194 requests per full run, and up to about 1.6M input tokens if ev
 - Five hero repeats for QS-2, QS-3, QS-5 and QS-8, at about 194 requests each, need about 970 requests against 500 a day on Flash-Lite, so the Iteration 3 exit measurement runs over two days or on the paid key, within the budget set at the Iteration 1 exit.
 - With `reflect` enabled, each gated thought adds one request, at most 2 per agent invocation. It is off by default, so the counts above leave it out.
 - On paid Flash, a full hero run would cost about $1.0-1.1 at the list price read on 2026-11-02 (`config/pricing.yaml` holds the prices, which double on 2027-01-01).
-- The Iteration 5 ablations, with their fixed controls, would come to about $35-50 on paid Flash, against the $10 cap that holds until the Iteration 1 exit; on Flash-Lite they fit the free tier at the cost of the planned Flash comparison. PR rungs reuse a frozen manifest, and SO and RK rungs a frozen EX3 run.
-- The owner sets the paid budget at the Iteration 1 exit, from a measured partial hero run. Without a paid budget, the ablations run on the development RFP, with one hero run per rung.
+- The Iteration 5 ablations, with their fixed controls, would come to about $35-50 on paid Flash by a rough count; on Flash-Lite they fit the free tier at the cost of the planned Flash comparison. PR rungs reuse a frozen manifest, and SO and RK rungs a frozen EX3 run. Their budget is set at the Iteration 3 exit (CH-84).
+- **Measured on 2026-11-04** [M]. One full hero run on `free` (`20261104T093439Z-hero-free`, `COMPLETED`, every role on `gemini-3.5-flash-lite`) took 33 requests: 1 `triage`, 14 `extract`, 11 `consolidate`, 1 `approach`, 3 `risk` and 3 `draft`. It used 120,509 input tokens (4,049 cached), 30,305 output tokens and 59,931 thinking tokens, in 181 seconds of active time: $0.26 at the paid list price of 3.5 Flash-Lite, and about $0.43 at the 3.8 Flash price in force until 2026-12-31 if Flash used the same tokens. Output and thinking tokens make up 87% and 79% of the two figures, and `extract` and `consolidate` 25 of the 33 requests and $0.21 of the $0.26. On this measurement the owner set the paid budget (D-01): $40 for Iterations 2 and 3 (CH-84).
 - These figures assume the batch size holds, and S-03 measures that on the hero RFP, since a notebook source reports recall falling with batch size on an adjacent task [T].
 
 **What free-first adds:** batched extraction, a limiter covering RPM, TPM and RPD, a resumable matrix runner, and a response cache.

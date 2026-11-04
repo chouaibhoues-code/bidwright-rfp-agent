@@ -45,14 +45,14 @@ The request was not clarified with EY, by the owner's choice, so the open points
 
 ## Risks
 
-- **Model quality on free tiers.** Every role runs Gemini Flash-Lite on the free profile (ADR-003). A comparison with the larger Flash model waits for a paid budget.
+- **Model quality on free tiers.** Every role runs Gemini Flash-Lite on the free profile (ADR-003). A comparison with the larger Flash model runs in Iteration 3, within the paid budget the owner set (D-01).
 - **Synthetic documents are cleaner than real tenders.** A requirement list written independently by the owner, and public benchmarks for single stages, check the scores from outside.
-- **Confidential documents.** Client files run on the local profile. Two measures are proposed (D-05): masking personal data around hosted calls, and one egress rule for every outbound channel, MCP servers included. [`governance.md`](governance.md) records what protects a document now.
+- **Confidential documents.** Client files run on the local profile. Under D-05, Iteration 1 built one egress register for every outbound channel and the seam where masking of personal data around hosted calls will sit. [`governance.md`](governance.md) records what protects a document now.
 - **Over-trust.** Each requirement shows its quote, rejected quotes are counted, and every output is labeled a draft.
 
 ## Decisions open
 
 The owner decides, as the client would. Each decision is set out in [`context/Decision-Form.md`](../context/Decision-Form.md):
-- D-01: the paid budget.
-- D-02: the Iteration 1 design.
-- D-05: the measures for sensitive information.
+- D-03: when to create the Cerebras key, due at the Iteration 3 entry.
+
+Decided so far: D-01, the paid budget, $40 for Iterations 2 and 3; D-02, the Iteration 1 design; D-04, two delegated settings; D-05, the measures for confidential documents.

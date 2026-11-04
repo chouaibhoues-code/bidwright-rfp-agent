@@ -15,19 +15,6 @@ tags: [bidwright, decisions, governance]
 
 ## Open
 
-### D-01: The paid budget, due at the Iteration 1 exit
-
-**Context.** The free tiers carry development runs on Flash-Lite (ADR-003). Three things need paid calls: the planned comparison of Flash-Lite against Flash on solution work, which is ADR-003's reverse-if test; the Iteration 5 ablations on paid Flash, about $35-50 by a rough count; and the non-Gemini roles from Iteration 3, whose Cerebras trial gives $5 of credits for 30 days. Until this decision, paid spend is capped at $10.
-
-**Measured on 2026-11-04** [M]. One full hero run on `free` (`20261104T093439Z-hero-free`, `COMPLETED`, every role on `gemini-3.5-flash-lite`) took 33 requests: 1 `triage`, 14 `extract`, 11 `consolidate`, 1 `approach`, 3 `risk` and 3 `draft`. It used 120,509 input tokens (4,049 cached), 30,305 output tokens and 59,931 thinking tokens, in 181 seconds of active time. At the paid list price of 3.5 Flash-Lite that is $0.26 a run, and at the 3.8 Flash price in force until 2026-12-31 about $0.43, if Flash used the same tokens; output and thinking tokens make up 87% and 79% of the two figures. `extract` and `consolidate` account for 25 of the 33 requests and $0.21 of the $0.26.
-
-**Options.**
-- **A.** Set a budget from the measured partial hero run at the Iteration 1 exit, covering paid Flash for the comparisons and a paid non-Gemini fallback.
-- **B.** No paid budget: the ablations run on the development RFP with one hero run per rung, and the Flash comparison is dropped.
-- **C.** Flash-Lite everywhere, including the ablations, with no paid non-Gemini fallback once the trial ends.
-
-**Recommendation.** A, sized from the measured run, because the Flash comparison is the evidence that keeps or reverses ADR-003, and the family rule for assessment needs a provider after the trial.
-
 ### D-03: When to create the Cerebras key, due at the Iteration 3 entry
 
 **Context.** The Cerebras trial's credits expire 30 days after they are granted, and the key needs a payment method.
@@ -50,7 +37,7 @@ Not decisions, but work only the owner can do.
 | When | Input |
 |---|---|
 | Iteration 0b | The first Goldfish architecture review is triaged (2026-11-03, ADR-022 to ADR-025). Start the drift report at the tag, `/egm:egm-drift-report docs`, limited to `architecture.md`, `agents.md` and `security.md`, and triage it with Claude |
-| Iteration 1 | Review gold v2, about 1 hour; write the held-out list, about 1 hour; confirm the 555-01XX fiction block before step 4; read the paid-tier limits in AI Studio (V-03) before step 9; confirm CrackedPDFs access and license (V-02) before step 19; the NotebookLM login for the step-1 research launches; decide D-01 at the exit. The Stage 9 review was triaged on 2026-11-03. |
+| Iteration 1 | Review gold v2, about 1 hour; write the held-out list, about 1 hour; confirm the 555-01XX fiction block before step 4; read the paid-tier limits in AI Studio (V-03) before step 9; confirm CrackedPDFs access and license (V-02) before step 19; the NotebookLM login for the step-1 research launches; decide D-01 at the exit. The Stage 9 review was triaged on 2026-11-03; gold v2 was reviewed and hashed, V-02 confirmed and D-01 decided on 2026-11-04. The held-out list is still to come. |
 | Iteration 2 | The NotebookLM login for `live` research; triage Stage 9 |
 | Iteration 3 | The Cerebras key (D-03); approve one manifest at the gate; triage Stage 9 |
 | Iteration 4 | Review the two skills and one drafted section; triage Stage 9 |
@@ -71,3 +58,4 @@ Not decisions, but work only the owner can do.
 | D-02: the Iteration 1 design doc's decisions | Accepted: ADR-017 to ADR-021 and the three process changes, at the Stage 9 review; the `paid` profile with a $10 matrix cap chosen there | ADR-017 to ADR-021; CH-79 to CH-82 | 2026-11-03 |
 | D-04: two delegated decisions | Confirmed: `thinking: medium` for `extract` (CH-71) and the local Phoenix with authentication off (CH-72) | CH-71, CH-72 | 2026-11-03 |
 | D-05: how client documents are protected | Decided: C1, C4, C5, C8's seam and C9's first part in Iteration 1; C2 declined, the consent override stays as a fourth mode; C3, C6, C7 and the later parts scheduled | ADR-026; CH-83 | 2026-11-03 |
+| D-01: the paid budget | Option A, staged: $40 for Iterations 2 and 3, and Iteration 5's amount set at the Iteration 3 exit from a measured run of the full pipeline. Sized from the measured hero run of 2026-11-04: 33 requests, $0.26 at the Flash-Lite list price and about $0.43 at Flash's. | CH-84 | 2026-11-04 |

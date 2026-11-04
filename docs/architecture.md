@@ -504,7 +504,7 @@ Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-
 | `risk` found 1 of 3 planted risks on `free` and 0 of 3 on `local` at `v0.0` | Risk recall is weak | Iteration 3, measured by the RK ablation |
 | On retry, the model may omit a rejected risk instead of rewording it | A real risk can be lost to a fixable rating phrase | Iteration 3 |
 | No resume command, although checkpoints are written | A stopped run starts again; the cache spares only the calls it holds | Iteration 2 |
-| `reason` runs on Flash-Lite on `free` (ADR-003) | Approach, risk and draft quality against Flash is unmeasured | The SO comparison; the paid budget decision (D-01) |
+| `reason` runs on Flash-Lite on `free` (ADR-003) | Approach, risk and draft quality against Flash is unmeasured | The SO comparison in Iteration 3, within the paid budget set by D-01 (CH-84) |
 | A development run takes about 17 minutes on `local`, on CPU | The local path is a privacy path, not a fast one | Iteration 6 bake-off |
 | `free` depends on one provider | No free run can finish while Gemini is down | Iteration 3's second family; the paid key on the same model |
 | Compose needs a key even for the demo (ADR-002) | Reviewers who run Compose need a key | The condition that reverses ADR-002 |
