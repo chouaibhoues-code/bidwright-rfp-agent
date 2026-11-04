@@ -45,6 +45,24 @@ class Refused(Exception):
     """The run must not start. The message says why and what to do instead."""
 
 
+class DoclingHealth(Protocol):
+    """The Docling client's health check, as `DoclingClient.healthy` gives it."""
+
+    url: str
+
+    def healthy(self, timeout_s: float) -> bool: ...
+
+
+DOCLING_FORMATS = (".docx", ".xlsx")
+
+
+def needs_docling(documents: list["PreflightDocument"], config: Config) -> bool:
+    """Whether a document goes to Docling: a DOCX or XLSX, or a PDF while Docling parses PDFs."""
+    suffixes = {document.path.suffix.lower() for document in documents}
+    pdf = ".pdf" in suffixes and config.ingest.parsers.pdf == "docling"
+    return pdf or any(suffix in suffixes for suffix in DOCLING_FORMATS)
+
+
 @runtime_checkable
 class ModelLister(Protocol):
     """A backend that can say which models are present, as the Ollama adapter can."""
@@ -166,6 +184,7 @@ def check_preconditions(
     consent: str | None,
     backends: Mapping[str, Backend],
     config: Config,
+    docling: DoclingHealth | None = None,
 ) -> Preflight:
     """What the run may log and rely on. Raises `Refused` when the run must not start."""
     if mode == "replay":
@@ -221,6 +240,14 @@ def check_preconditions(
                     f" model: run ollama pull {model} (in Compose: docker compose exec ollama"
                     f" ollama pull {model})"
                 )
+    if docling is not None and needs_docling(documents, config):
+        timeout = config.ingest.docling.health_timeout_s
+        if not docling.healthy(timeout):
+            raise Refused(
+                f"the Docling service at {docling.url} did not answer within {timeout:g} s:"
+                " start the Compose service docling with docker compose up -d docling, or set"
+                " DOCLING_URL to a running one"
+            )
     return Preflight(overrides, documents[0].corpus, digest, documents, data_class, package_id)
 
 

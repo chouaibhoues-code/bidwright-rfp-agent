@@ -161,3 +161,30 @@ def test_an_empty_folder_is_refused(tmp_path: Path) -> None:
 def test_a_tier_with_no_run_limits_for_the_profile_is_refused() -> None:
     with pytest.raises(Refused, match="no run limits for hero on local"):
         _check(source=HERO, profile="local", backends=PULLED)
+
+
+class FakeDocling:
+    """Stands in for `DoclingClient`: answers the health check, or does not."""
+
+    def __init__(self, up: bool) -> None:
+        self.up = up
+        self.url = "http://127.0.0.1:9"
+        self.asked = 0
+
+    def healthy(self, timeout_s: float) -> bool:
+        self.asked += 1
+        return self.up
+
+
+def test_a_docling_run_is_refused_when_the_health_check_fails() -> None:
+    down = FakeDocling(up=False)
+    with pytest.raises(Refused, match="docling"):
+        _check(source=HERO, docling=down)
+    assert down.asked == 1
+    assert _check(source=HERO, docling=FakeDocling(up=True)).package_id == "hero"
+
+
+def test_a_replayed_run_asks_docling_nothing(tmp_path: Path) -> None:
+    down = FakeDocling(up=False)
+    _check(source=HERO, mode="replay", backends={}, docling=down)
+    assert down.asked == 0

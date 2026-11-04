@@ -1,34 +1,37 @@
-"""Ingest one PDF into frozen text and registered passages, by the Iteration 0a rules.
+"""Ingest: parsed documents become frozen text and registered passages.
 
-pdfplumber reads each word with its font, size and position. Then:
-- Lines that repeat in the same position on at least half the pages, within the top or
-  bottom margin, are page headers or footers. They are removed before splitting, and logged.
-- A heading starts a section: a numbered line such as "4.2 Records" set in bold or above the
-  body size, or any line set at least 1.2 times the body size. Requiring the larger or bold
-  font for numbered lines stops a wrapped body line such as "20 pages by ..." from becoming a
-  heading. `section_path` joins the numbered headings, as in "4 Requirements > 4.1 Signing".
-- Body lines group into paragraphs by line spacing. A paragraph splits into sentences on
-  ".", "?" or "!" followed by a space and a capital letter, except after an abbreviation.
-- After a passage that ends with ":", paragraphs that start with a list marker are list
-  items, and their `lead_in_id` is that passage.
-- Each table row is a `table_row` passage whose `header_id` is the table's first row.
+A parser (`bidwright.parsers`) turns each file into blocks: headings, paragraphs, list items
+and tables. `register_blocks` then applies the passage rules of Iteration 0a to one document:
+- A heading starts a section. A numbered heading, such as "4.2 Records", takes its depth from
+  its number; an unnumbered one takes the level its parser gives it. `section_path` joins the
+  open headings, as in "4 Requirements > 4.1 Signing".
+- A paragraph splits into sentences on ".", "?" or "!" followed by a space and a capital
+  letter, except after an abbreviation.
+- After a passage that ends with ":", the list items that follow, and paragraphs that start
+  with a list marker, are list items whose `lead_in_id` is that passage.
+- A table gives one `table_header` passage, its header rows stacked column by column with
+  " / " and the columns joined with " | ", then one `table_row` passage per body row whose
+  `header_id` is the header. A cell's text stays whole.
 
-The frozen text keeps the PDF's line breaks, and every passage is a half-open slice of it.
+`ingest_package` registers the documents of a package in the control register's order: each
+document's text follows the previous one after two line breaks, and passage ids run across
+the package. The frozen text keeps line breaks, and every passage is a half-open slice of it.
 `display_text` gives the form a model sees, with line breaks as spaces and the same offsets.
 """
 
 import hashlib
+import json
 import logging
-import math
 import re
-from collections import Counter
-from dataclasses import dataclass, field
+from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import pdfplumber
+from bidwright.schemas import ControlRegister, Passage, PassageKind
 
-from bidwright.schemas import Passage, PassageKind
+if TYPE_CHECKING:
+    from bidwright.parsers import ParsedBlock, ParsedDocument
 
 log = logging.getLogger(__name__)
 
@@ -45,33 +48,17 @@ ABBREVIATIONS = frozenset(
 )
 MARGIN_SHARE = 0.12  # headers and footers live in the top or bottom 12% of the page
 PARAGRAPH_PITCH = 1.55  # a line more than this many font sizes below the last starts a paragraph
-
-
-@dataclass
-class _Line:
-    page: int
-    top: float
-    bottom: float
-    x0: float
-    size: float
-    bold: bool
-    text: str
-
-
-@dataclass
-class _Block:
-    kind: str  # "heading", "paragraph" or "table"
-    lines: list[str]
-    size: float = 0.0
-    rows: list[list[str]] = field(default_factory=list)
+DOCUMENT_GAP = "\n\n"
 
 
 @dataclass(frozen=True)
 class IngestResult:
-    doc_id: str
+    doc_id: str  # the main document's id
     frozen_text: str
     passages: tuple[Passage, ...]
     removed_lines: tuple[str, ...]
+    register: ControlRegister | None = None
+    degraded: tuple[str, ...] = ()  # reasons the run continues DEGRADED, such as partial parses
 
 
 def doc_id_for(path: Path, data_class: str = "synthetic") -> str:
@@ -119,20 +106,83 @@ def is_heading(text: str, size: float, bold: bool, body_size: float) -> bool:
 
 
 def ingest_pdf(path: Path, run_dir: Path | None = None) -> IngestResult:
-    """Read `path`, and write `frozen.txt` and `passages.jsonl` to `run_dir` when given."""
+    """One PDF through the pdfplumber parser with no guard: the `v0.0` path. Writes
+    `frozen.txt` and `passages.jsonl` to `run_dir` when given."""
+    from bidwright.parsers.pdfplumber_parser import PdfplumberParser
+
     doc_id = doc_id_for(path)
-    with pdfplumber.open(path) as pdf:
-        pages = [_page_content(page) for page in pdf.pages]
-        heights = [float(page.height) for page in pdf.pages]
-    lines_by_page = [lines for lines, _ in pages]
-    removed = _remove_running_lines(lines_by_page, heights)
-    body_size = _body_size([line for lines in lines_by_page for line in lines])
-    blocks = _blocks(lines_by_page, [tables for _, tables in pages], body_size)
-    frozen, passages = _register(blocks, doc_id)
-    result = IngestResult(doc_id, frozen, tuple(passages), tuple(removed))
+    parsed = PdfplumberParser().parse(path, doc_id)
+    frozen, passages = register_blocks(parsed.blocks, doc_id, 0, 1)
+    result = IngestResult(doc_id, frozen, tuple(passages), tuple(parsed.removed_lines))
     if run_dir is not None:
         write_ingest(result, run_dir)
     return result
+
+
+def ingest_package(
+    register: ControlRegister,
+    documents: Sequence["ParsedDocument"],
+    run_dir: Path | None,
+    suspect: Sequence[re.Pattern[str]] = (),
+) -> IngestResult:
+    """Register every parsed document in register order, fill each entry's title and pages,
+    and write `frozen.txt`, `passages.jsonl`, `control_register.json` and `parse/`."""
+    parsed = {document.doc_id: document for document in documents}
+    parts: list[str] = []
+    passages: list[Passage] = []
+    entries = []
+    removed: list[str] = []
+    degraded: list[str] = []
+    offset = 0
+    for entry in register.documents:
+        document = parsed.get(entry.doc_id)
+        if document is None:
+            entries.append(entry)
+            continue
+        if parts:
+            parts.append(DOCUMENT_GAP)
+            offset += len(DOCUMENT_GAP)
+        text, registered = register_blocks(document.blocks, entry.doc_id, offset, len(passages) + 1)
+        parts.append(text)
+        offset += len(text)
+        passages += registered
+        removed += document.removed_lines
+        if document.status == "partial_success":
+            degraded.append(f"docling: partial_success on {entry.file}")
+        heading = next((b.text for b in document.blocks if b.kind == "heading" and b.text), None)
+        entries.append(
+            entry.model_copy(
+                update={"title": heading or Path(entry.file).stem, "pages": document.pages}
+            )
+        )
+    passages = [_flag_suspect(p, suspect) for p in passages]
+    main = next((e for e in register.documents if e.role == "main"), register.documents[0])
+    result = IngestResult(
+        doc_id=main.doc_id,
+        frozen_text="".join(parts),
+        passages=tuple(passages),
+        removed_lines=tuple(removed),
+        register=register.model_copy(update={"documents": entries}),
+        degraded=tuple(degraded),
+    )
+    if run_dir is not None:
+        write_ingest(result, run_dir)
+        for document in documents:
+            if document.raw is not None:
+                _write_raw(run_dir / "parse" / f"{document.doc_id}.json", document.raw)
+    return result
+
+
+def _flag_suspect(passage: Passage, patterns: Sequence[re.Pattern[str]]) -> Passage:
+    text = display_text(passage.text)
+    if any(pattern.search(text) for pattern in patterns):
+        return passage.model_copy(update={"suspect": True})
+    return passage
+
+
+def _write_raw(path: Path, raw: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(raw, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
 
 
 def write_ingest(result: IngestResult, run_dir: Path) -> None:
@@ -140,225 +190,118 @@ def write_ingest(result: IngestResult, run_dir: Path) -> None:
     (run_dir / "frozen.txt").write_text(result.frozen_text, encoding="utf-8", newline="\n")
     body = "".join(passage.model_dump_json() + "\n" for passage in result.passages)
     (run_dir / "passages.jsonl").write_text(body, encoding="utf-8", newline="\n")
-
-
-# --- Reading pages ---------------------------------------------------------------------
-
-
-def _page_content(page: Any) -> tuple[list[_Line], list[tuple[float, list[list[str]]]]]:
-    tables = page.find_tables()
-    boxes = [table.bbox for table in tables]
-    words = [
-        word
-        for word in page.extract_words(extra_attrs=["size", "fontname"])
-        if not any(_inside(word, box) for box in boxes)
-    ]
-    rows_by_table = [
-        (float(table.bbox[1]), [[_cell(cell) for cell in row] for row in table.extract()])
-        for table in tables
-    ]
-    return _lines(words, page.page_number), rows_by_table
-
-
-def _inside(word: dict[str, Any], box: tuple[float, float, float, float]) -> bool:
-    x = (word["x0"] + word["x1"]) / 2
-    y = (word["top"] + word["bottom"]) / 2
-    return box[0] <= x <= box[2] and box[1] <= y <= box[3]
-
-
-def _cell(value: str | None) -> str:
-    return " ".join((value or "").split())
-
-
-def _lines(words: list[dict[str, Any]], page: int) -> list[_Line]:
-    lines: list[list[dict[str, Any]]] = []
-    for word in sorted(words, key=lambda w: (round(w["top"], 1), w["x0"])):
-        if lines and abs(lines[-1][0]["top"] - word["top"]) <= 3:
-            lines[-1].append(word)
-        else:
-            lines.append([word])
-    out = []
-    for group in lines:
-        group.sort(key=lambda w: w["x0"])
-        sizes = Counter(round(w["size"], 1) for w in group)
-        out.append(
-            _Line(
-                page=page,
-                top=min(w["top"] for w in group),
-                bottom=max(w["bottom"] for w in group),
-                x0=group[0]["x0"],
-                size=sizes.most_common(1)[0][0],
-                bold=all("Bold" in w["fontname"] for w in group),
-                text=" ".join(w["text"] for w in group),
-            )
+    if result.register is not None:
+        (run_dir / "control_register.json").write_text(
+            result.register.model_dump_json(indent=1) + "\n", encoding="utf-8", newline="\n"
         )
-    return out
-
-
-def _running_key(line: _Line) -> tuple[int, str]:
-    return round(line.top), re.sub(r"\d+", "#", line.text)
-
-
-def _remove_running_lines(pages: list[list[_Line]], heights: list[float]) -> list[str]:
-    """Drop margin lines that repeat in the same position on at least half the pages."""
-    if len(pages) < 2:
-        return []
-    needed = max(2, math.ceil(len(pages) / 2))
-    counts: Counter[tuple[int, str]] = Counter()
-    for lines, height in zip(pages, heights, strict=True):
-        counts.update({_running_key(ln) for ln in lines if _in_margin(ln, height)})
-    running = {key for key, count in counts.items() if count >= needed}
-    removed = []
-    for index, (lines, height) in enumerate(zip(pages, heights, strict=True)):
-        keep = []
-        for line in lines:
-            if _in_margin(line, height) and _running_key(line) in running:
-                removed.append(f"page {index + 1}: {line.text}")
-            else:
-                keep.append(line)
-        lines[:] = keep
-    if removed:
-        log.info("removed %d running header and footer lines", len(removed))
-    return removed
-
-
-def _in_margin(line: _Line, height: float) -> bool:
-    return line.top < MARGIN_SHARE * height or line.bottom > (1 - MARGIN_SHARE) * height
-
-
-def _body_size(lines: list[_Line]) -> float:
-    weights: Counter[float] = Counter()
-    for line in lines:
-        weights[line.size] += len(line.text)
-    return weights.most_common(1)[0][0] if weights else 10.0
-
-
-# --- Blocks: headings, paragraphs and tables in reading order ---------------------------
-
-
-def _blocks(
-    pages: list[list[_Line]],
-    tables: list[list[tuple[float, list[list[str]]]]],
-    body_size: float,
-) -> list[_Block]:
-    blocks: list[_Block] = []
-    previous: _Line | None = None
-    for lines, page_tables in zip(pages, tables, strict=True):
-        pending = sorted(page_tables, key=lambda item: item[0])
-        for line in lines:
-            while pending and pending[0][0] < line.top:
-                blocks.append(_Block("table", [], rows=pending.pop(0)[1]))
-                previous = None
-            previous = _place(blocks, line, previous, body_size)
-        for _, rows in pending:
-            blocks.append(_Block("table", [], rows=rows))
-            previous = None
-    return blocks
-
-
-def _place(blocks: list[_Block], line: _Line, previous: _Line | None, body: float) -> _Line:
-    if is_heading(line.text, line.size, line.bold, body):
-        last = blocks[-1] if blocks else None
-        same_heading = (
-            last is not None
-            and last.kind == "heading"
-            and previous is not None
-            and last.size == line.size
-            and HEADING_NUMBER.match(line.text) is None
-        )
-        if same_heading and last is not None:
-            last.lines.append(line.text)
-        else:
-            blocks.append(_Block("heading", [line.text], size=line.size))
-        return line
-    if _continues(blocks, line, previous):
-        blocks[-1].lines.append(line.text)
-    else:
-        blocks.append(_Block("paragraph", [line.text], size=line.size))
-    return line
-
-
-def _continues(blocks: list[_Block], line: _Line, previous: _Line | None) -> bool:
-    if not blocks or blocks[-1].kind != "paragraph" or previous is None:
-        return False
-    if LIST_MARKER.match(line.text) and blocks[-1].lines[-1].rstrip().endswith((":", ";", ".")):
-        return False
-    if line.page != previous.page:
-        return not previous.text.rstrip().endswith((".", ":", ";", "?", "!"))
-    return line.top - previous.top <= PARAGRAPH_PITCH * line.size
 
 
 # --- Registering passages in the frozen text --------------------------------------------
 
 
-def _register(blocks: list[_Block], doc_id: str) -> tuple[str, list[Passage]]:
+def table_header(header_rows: Sequence[Sequence[str]], columns: int) -> str:
+    """Header rows stacked column by column, top to bottom with " / ", columns with " | "."""
+    stacked = []
+    for column in range(columns):
+        cells = [row[column] for row in header_rows if column < len(row) and row[column]]
+        unique = [cell for i, cell in enumerate(cells) if cell not in cells[:i]]
+        stacked.append(" / ".join(unique))
+    return " | ".join(stacked)
+
+
+def register_blocks(
+    blocks: Sequence["ParsedBlock"], doc_id: str, offset: int, start: int
+) -> tuple[str, list[Passage]]:
+    """One document's text and passages. `offset` is where the text starts in the package's
+    frozen text, and `start` is the number of the document's first passage."""
     parts: list[str] = []
     passages: list[Passage] = []
-    offset = 0
+    local = 0
     path: list[tuple[int, str]] = []
     lead_in_id: str | None = None
 
     def add(text: str) -> int:
-        nonlocal offset
+        nonlocal local
         if parts:
             parts.append("\n\n")
-            offset += 2
-        start = offset
+            local += 2
+        begin = local
         parts.append(text)
-        offset += len(text)
-        return start
+        local += len(text)
+        return offset + begin
 
-    def register(kind: PassageKind, start: int, end: int, text: str, **links: str | None) -> str:
-        passage_id = f"SRC-{len(passages) + 1:04d}"
-        section = " > ".join(title for _, title in path)
+    def register(
+        kind: PassageKind,
+        begin: int,
+        end: int,
+        text: str,
+        block: "ParsedBlock",
+        **links: str | None,
+    ) -> str:
+        passage_id = f"SRC-{start + len(passages):04d}"
         passages.append(
             Passage(
                 id=passage_id,
                 doc_id=doc_id,
-                section_path=section,
+                section_path=" > ".join(title for _, title in path),
                 kind=kind,
                 text=text,
-                start=start,
+                start=begin,
                 end=end,
                 lead_in_id=links.get("lead_in_id"),
                 header_id=links.get("header_id"),
+                page=block.page,
+                small_print=block.small_print,
             )
         )
         return passage_id
 
     for block in blocks:
         if block.kind == "heading":
-            title = " ".join(block.lines)
+            title = block.text
+            if not title:
+                continue
             add(title)
             number = HEADING_NUMBER.match(title)
-            depth = number.group(1).count(".") + 1 if number else 0
+            depth = number.group(1).count(".") + 1 if number else block.level
             path = [(d, t) for d, t in path if 0 < d < depth] if depth else []
             path.append((depth, title))
             lead_in_id = None
             continue
         if block.kind == "table":
-            rows = [" | ".join(cell for cell in row) for row in block.rows if any(row)]
-            if not rows:
+            columns = max((len(row) for row in [*block.header_rows, *block.rows]), default=0)
+            header = table_header(block.header_rows, columns) if block.header_rows else None
+            rows = [" | ".join(row) for row in block.rows if any(row)]
+            lines = ([header] if header else []) + rows
+            if not lines:
                 continue
-            start = add("\n".join(rows))
+            begin = add("\n".join(lines))
             header_id = None
+            if header:
+                header_id = register("table_header", begin, begin + len(header), header, block)
+                begin += len(header) + 1
             for row in rows:
                 if header_id is None:
-                    header_id = register("table_header", start, start + len(row), row)
+                    header_id = register("table_header", begin, begin + len(row), row, block)
                 else:
-                    register("table_row", start, start + len(row), row, header_id=header_id)
-                start += len(row) + 1
+                    register("table_row", begin, begin + len(row), row, block, header_id=header_id)
+                begin += len(row) + 1
             lead_in_id = None
             continue
-        text = "\n".join(block.lines)
-        start = add(text)
-        if lead_in_id is not None and LIST_MARKER.match(text):
-            register("list_item", start, start + len(text), text, lead_in_id=lead_in_id)
+        text = block.text
+        if not text.strip():
+            continue
+        begin = add(text)
+        if lead_in_id is not None and (block.kind == "list_item" or LIST_MARKER.match(text)):
+            register("list_item", begin, begin + len(text), text, block, lead_in_id=lead_in_id)
+            continue
+        if block.kind == "list_item":
+            register("list_item", begin, begin + len(text), text, block)
             continue
         lead_in_id = None
         last_id = None
-        for begin, end in split_sentences(text):
-            last_id = register("sentence", start + begin, start + end, text[begin:end])
+        for first, last in split_sentences(text):
+            last_id = register("sentence", begin + first, begin + last, text[first:last], block)
         if last_id is not None and text.rstrip().endswith(":"):
             lead_in_id = last_id
     return "".join(parts), passages

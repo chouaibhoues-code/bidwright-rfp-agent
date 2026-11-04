@@ -28,7 +28,7 @@ from bidwright.guard.limits import (
     sniff_format,
 )
 from bidwright.guard.ooxml import Finding, check_archive
-from bidwright.guard.pdf import HiddenChar, SmallPrintBox, scan_pdf
+from bidwright.guard.pdf import HiddenChar, HiddenLine, SmallPrintBox, scan_pdf
 from bidwright.guard.xlsx import scan_xlsx
 from bidwright.ingest import doc_id_for
 from bidwright.preflight import CORPUS_MANIFEST, HOME, corpus_entry
@@ -38,6 +38,7 @@ __all__ = [
     "FileGuard",
     "GuardResult",
     "HiddenChar",
+    "HiddenLine",
     "PolicyBlocked",
     "SmallPrintBox",
     "run_guard",
@@ -51,6 +52,7 @@ class FileGuard:
 
     hidden: list[HiddenChar] = field(default_factory=list)
     small_print: list[SmallPrintBox] = field(default_factory=list)
+    hidden_lines: list[HiddenLine] = field(default_factory=list)
 
 
 @dataclass
@@ -131,7 +133,7 @@ def run_guard(
         if fmt == "pdf":
             scan = scan_pdf(path, ingest, label)
             pages, scanned, findings = scan.pages, scan.scanned, scan.findings
-            guards[doc_id] = FileGuard(scan.hidden, scan.small_print)
+            guards[doc_id] = FileGuard(scan.hidden, scan.small_print, scan.hidden_lines)
             small_print_chars += scan.small_print_chars
         else:
             data = path.read_bytes()

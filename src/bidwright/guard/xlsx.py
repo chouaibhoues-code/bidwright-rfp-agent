@@ -10,6 +10,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from bidwright.guard.ooxml import (
     Finding,
+    fix_modified,
     read_parts,
     strip_external_relationships,
     write_parts,
@@ -88,4 +89,7 @@ def scan_xlsx(data: bytes, label: str) -> tuple[list[Finding], bytes]:
     workbook.active = 0
     out = io.BytesIO()
     workbook.save(out)
-    return findings, out.getvalue()
+    saved = read_parts(out.getvalue())
+    if "docProps/core.xml" in saved:
+        saved["docProps/core.xml"] = fix_modified(saved["docProps/core.xml"])
+    return findings, write_parts(saved)

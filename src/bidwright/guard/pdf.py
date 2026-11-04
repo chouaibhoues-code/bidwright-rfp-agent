@@ -45,6 +45,18 @@ class HiddenChar:
 
 
 @dataclass(frozen=True)
+class HiddenLine:
+    """A line of hidden characters: the unit the Docling parser removes from its items."""
+
+    page: int
+    x0: float
+    top: float
+    x1: float
+    bottom: float
+    text: str
+
+
+@dataclass(frozen=True)
 class SmallPrintBox:
     page: int
     x0: float
@@ -71,6 +83,7 @@ class PdfScan:
     scanned: bool
     findings: list[Finding]
     hidden: list[HiddenChar]
+    hidden_lines: list[HiddenLine]
     small_print: list[SmallPrintBox]
     small_print_chars: int
 
@@ -218,10 +231,13 @@ def scan_pdf(path: Path, ingest: IngestConfig, label: str) -> PdfScan:
         if c.kind is None and ingest.small_print.min_pt <= c.size < ingest.small_print.max_pt
     ]
     findings = []
+    lines = []
     for line in _lines(hidden, ingest.line_tolerance_pt):
         x0, top, x1, bottom = _box(line)
         location = f"page {line[0].page}, box ({x0:.1f}, {top:.1f}, {x1:.1f}, {bottom:.1f})"
-        findings.append(Finding(line[0].kind or INVISIBLE, location, _line_text(line)))
+        text = _line_text(line)
+        findings.append(Finding(line[0].kind or INVISIBLE, location, text))
+        lines.append(HiddenLine(line[0].page, x0, top, x1, bottom, text))
     boxes = [
         SmallPrintBox(line[0].page, *_box(line)) for line in _lines(small, ingest.line_tolerance_pt)
     ]
@@ -230,6 +246,7 @@ def scan_pdf(path: Path, ingest: IngestConfig, label: str) -> PdfScan:
         scanned=len(chars) / max(pages, 1) < ingest.scanned.min_chars_per_page,
         findings=findings,
         hidden=[HiddenChar(c.page, c.x0, c.top, c.x1, c.bottom, c.text) for c in hidden],
+        hidden_lines=lines,
         small_print=boxes,
         small_print_chars=len(small),
     )

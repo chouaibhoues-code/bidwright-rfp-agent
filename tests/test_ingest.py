@@ -136,3 +136,110 @@ def test_split_sentences(text: str, expected: list[str]) -> None:
 )
 def test_is_heading(text: str, size: float, bold: bool, expected: bool) -> None:
     assert is_heading(text, size, bold, body_size=10) is expected
+
+
+def test_a_client_document_id_holds_no_part_of_its_file_name(tmp_path: Path) -> None:
+    """D-05: a client document is named by its hash alone."""
+    path = tmp_path / "Northwind confidential tender.pdf"
+    path.write_bytes(DEV_RFP.read_bytes())
+    client = doc_id_for(path, "client")
+    assert client.startswith("doc-") and len(client) == len("doc-") + 8
+    assert "northwind" not in client and "tender" not in client
+    assert client.removeprefix("doc-") == doc_id_for(path).rsplit("-", 1)[1]
+
+
+def _converted(status: str) -> dict[str, object]:
+    body = {"texts": [], "tables": [], "groups": [], "pages": {}, "body": {"children": []}}
+    return {
+        "status": status,
+        "errors": [] if status == "success" else ["page 2 could not be read"],
+        "document": {"json_content": {**body, "schema_name": "DoclingDocument", "version": "1"}},
+    }
+
+
+def test_ingest_retry_retries_a_failing_docling_call_then_faults(tmp_path: Path) -> None:
+    import httpx
+
+    from bidwright.parsers.docling_client import DoclingClient, DoclingFailed
+
+    seen: list[str] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        if len(seen) == 1:
+            raise httpx.ConnectError("refused", request=request)
+        return httpx.Response(503, text="busy")
+
+    pauses: list[float] = []
+    client = DoclingClient(
+        "live",
+        "http://docling.test",
+        {"to_formats": ["json"], "do_ocr": False},
+        retries=3,
+        transport=httpx.MockTransport(answer),
+        sleep=pauses.append,
+    )
+    with pytest.raises(DoclingFailed, match="after 3 retries"):
+        client.convert(DEV_RFP)
+    assert seen == ["/v1/convert/file"] * 4 and len(pauses) == 3
+
+
+def test_ingest_unparseable_a_partial_conversion_continues_degraded(tmp_path: Path) -> None:
+    import httpx
+
+    from bidwright.ingest import ingest_package
+    from bidwright.parsers.docling_client import DoclingClient
+    from bidwright.parsers.docling_parser import DoclingParser
+    from bidwright.schemas import ControlRegister, DocumentEntry
+
+    client = DoclingClient(
+        "live",
+        "http://docling.test",
+        {"to_formats": ["json"]},
+        transport=httpx.MockTransport(
+            lambda r: httpx.Response(200, json=_converted("partial_success"))
+        ),
+    )
+    parsed = DoclingParser(client).parse(DEV_RFP, "dev-rfp-test")
+    assert parsed.status == "partial_success" and parsed.errors
+    entry = DocumentEntry(
+        doc_id="dev-rfp-test",
+        file="dev_rfp.pdf",
+        sha256="0" * 64,
+        format="pdf",
+        role="main",
+        title="dev_rfp",
+        precedence=1,
+        parser="docling",
+    )
+    register = ControlRegister(package="dev", documents=[entry], precedence_source="rules")
+    result = ingest_package(register, [parsed], tmp_path)
+    assert result.degraded == ("docling: partial_success on dev_rfp.pdf",)
+
+
+def test_a_failure_status_is_a_fault_and_replay_never_connects(tmp_path: Path) -> None:
+    import httpx
+
+    from bidwright.parsers.docling_client import (
+        DoclingCassetteMissing,
+        DoclingClient,
+        DoclingFailed,
+    )
+
+    failing = DoclingClient(
+        "live",
+        "http://docling.test",
+        {},
+        transport=httpx.MockTransport(lambda r: httpx.Response(200, json=_converted("failure"))),
+    )
+    with pytest.raises(DoclingFailed):
+        failing.convert(DEV_RFP)
+
+    def never(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("replay opened a connection")
+
+    replay = DoclingClient(
+        "replay", "http://docling.test", {}, store=tmp_path, transport=httpx.MockTransport(never)
+    )
+    with pytest.raises(DoclingCassetteMissing):
+        replay.convert(DEV_RFP)

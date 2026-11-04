@@ -17,6 +17,9 @@ CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
 MACRO_PART = "vbaproject.bin"
 LARGE_MEMBER = 1024 * 1024  # a member this large is also checked for its own ratio
 _DRIVE = re.compile(r"^[A-Za-z]:")
+_MODIFIED = re.compile(rb"(<dcterms:modified[^>]*>)[^<]*(</dcterms:modified>)")
+FIXED_MODIFIED = b"2000-01-01T00:00:00Z"
+ZIP_DATE = (1980, 1, 1, 0, 0, 0)
 
 
 @dataclass(frozen=True)
@@ -84,12 +87,20 @@ def read_parts(data: bytes) -> dict[str, bytes]:
 
 
 def write_parts(parts: dict[str, bytes]) -> bytes:
-    """The parts as a new archive, in their original order."""
+    """The parts as a new archive, in their original order, with every entry's date fixed, so
+    the same content always gives the same bytes and the same Docling cassette key."""
     out = io.BytesIO()
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for name, data in parts.items():
-            archive.writestr(name, data)
+            info = zipfile.ZipInfo(name, date_time=ZIP_DATE)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, data)
     return out.getvalue()
+
+
+def fix_modified(core: bytes) -> bytes:
+    """`dcterms:modified` set to a fixed time: openpyxl stamps the current time on save."""
+    return _MODIFIED.sub(rb"\g<1>" + FIXED_MODIFIED + rb"\g<2>", core)
 
 
 def strip_external_relationships(
