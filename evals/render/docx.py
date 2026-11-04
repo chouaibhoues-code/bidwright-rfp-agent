@@ -7,6 +7,7 @@ properties and every zip entry carry fixed dates, so two renders give identical 
 """
 
 from pathlib import Path
+from typing import Any, cast
 
 import docx
 from docx.document import Document as DocxDocument
@@ -62,17 +63,18 @@ class _Writer:
     def _deleted(self, paragraph: Paragraph, text: str) -> None:
         """A tracked deletion: `w:del` around a run whose text sits in `w:delText`."""
         self.revisions += 1
-        deleted = OxmlElement("w:del")
+        # python-docx types these as its own element classes; they are plain lxml elements here.
+        deleted: Any = OxmlElement("w:del")
         deleted.set(qn("w:id"), str(self.revisions))
         deleted.set(qn("w:author"), AUTHOR)
         deleted.set(qn("w:date"), REVISION_DATE)
-        run = OxmlElement("w:r")
-        del_text = OxmlElement("w:delText")
+        run: Any = OxmlElement("w:r")
+        del_text: Any = OxmlElement("w:delText")
         del_text.set(qn("xml:space"), "preserve")
         del_text.text = text
         run.append(del_text)
         deleted.append(run)
-        paragraph._p.append(deleted)
+        cast(Any, paragraph._p).append(deleted)
 
     def table(self, block: TableBlock) -> None:
         spec = block.table

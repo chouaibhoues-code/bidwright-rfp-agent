@@ -12,16 +12,25 @@ entry meets the same rules and a run that cannot start leaves nothing behind (AD
   never a 404 forty minutes into a run.
 The file is hashed once, and the digest serves the corpus lookup, the override line and the
 manifest. A replayed run sends nothing to a provider, so it needs none of this.
+
+D-05 (ADR-026): the source is a file or a package folder, whose documents are every file in
+it except `package.yaml`, in name order. A file is synthetic when its hash is listed in the
+corpus, and a package is a client package when any of its documents is not. The package id
+is the folder name for a synthetic package and `pkg-` with 8 hex digits of the package digest
+for a client package; a single file keeps its `v0.0` id when synthetic and gets `doc-` with 8
+hex digits of its hash when client, so a client document's name never reaches a run id. A
+profile with no run-limits row for the input's tier is refused here.
 """
 
 import hashlib
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from bidwright.config import Config
+from bidwright.ingest import doc_id_for
 from bidwright.llm.types import Backend, LLMError
 
 HOME = Path(os.environ.get("BIDWRIGHT_HOME", Path(__file__).resolve().parents[2]))
@@ -29,6 +38,7 @@ CORPUS_MANIFEST = HOME / "inputs" / "CORPUS.sha256"
 CONSENT = "i-accept-free-tier-terms"
 KEY_HINTS = {"gemini": "set GEMINI_API_KEY in .env"}
 LIMIT_TIERS = ("dev", "hero")
+PACKAGE_FILE = "package.yaml"
 
 
 class Refused(Exception):
@@ -43,12 +53,24 @@ class ModelLister(Protocol):
 
 
 @dataclass(frozen=True)
+class PreflightDocument:
+    """One input document: its path, its sha256 and its corpus entry, or None for a client file."""
+
+    path: Path
+    sha256: str
+    corpus: str | None
+
+
+@dataclass(frozen=True)
 class Preflight:
-    """What the preconditions established about the input file."""
+    """What the preconditions established about the input file or package."""
 
     overrides: list[str]  # the override lines the manifest logs
-    corpus: str | None  # the entry in `inputs/CORPUS.sha256`, such as "dev/dev_rfp.pdf"
-    digest: str | None  # the file's sha256, or None when nothing was checked (replay)
+    corpus: str | None  # the first document's entry in `inputs/CORPUS.sha256`
+    digest: str | None  # the file's sha256 or the package digest; None in replay
+    documents: list[PreflightDocument] = field(default_factory=list)
+    data_class: str = "synthetic"  # "synthetic" or "client" (D-05)
+    package_id: str | None = None  # None in replay, where the run entry derives it
 
     @property
     def tier(self) -> str:
@@ -101,6 +123,36 @@ def _corpus_rule(
     )
 
 
+def package_documents(folder: Path) -> list[Path]:
+    """A package's documents: every file in the folder but `package.yaml`, in name order."""
+    return sorted(
+        path
+        for path in folder.iterdir()
+        if path.is_file() and path.name != PACKAGE_FILE and not path.name.startswith(".")
+    )
+
+
+def package_digest(hashes: list[str]) -> str:
+    """The sha256 of the documents' hashes, sorted and joined with a newline."""
+    return hashlib.sha256("\n".join(sorted(hashes)).encode("ascii")).hexdigest()
+
+
+def _documents(source: Path) -> list[PreflightDocument]:
+    if source.is_dir():
+        paths = package_documents(source)
+        if not paths:
+            raise Refused(f"{source} holds no documents")
+    elif source.is_file():
+        paths = [source]
+    else:
+        raise Refused(f"{source} is not a file or a folder")
+    documents = []
+    for path in paths:
+        digest = digest_of(path)
+        documents.append(PreflightDocument(path, digest, corpus_entry(digest)))
+    return documents
+
+
 def _tagged(model: str) -> str:
     """Ollama lists an untagged pull as `name:latest`."""
     return model if ":" in model else f"{model}:latest"
@@ -118,21 +170,32 @@ def check_preconditions(
     """What the run may log and rely on. Raises `Refused` when the run must not start."""
     if mode == "replay":
         return Preflight([], None, None)
-    if not source.is_file():
-        raise Refused(f"{source} is not a file")
-    digest = digest_of(source)
-    entry = corpus_entry(digest)
-    if mode == "record" and entry is None:
+    documents = _documents(source)
+    synthetic = all(document.corpus is not None for document in documents)
+    data_class = "synthetic" if synthetic else "client"
+    if source.is_dir():
+        digest = package_digest([document.sha256 for document in documents])
+        package_id = source.name if synthetic else f"pkg-{digest[:8]}"
+        name = package_id
+    else:
+        digest = documents[0].sha256
+        package_id = doc_id_for(source, data_class)
+        name = source.name
+    entry = documents[0].corpus if synthetic else None
+    if mode == "record" and not synthetic:
         raise Refused(
-            f"{source.name} is not in the synthetic corpus. record writes into tests/cassettes,"
+            f"{name} is not in the synthetic corpus. record writes into tests/cassettes,"
             " which Git tracks, so it records corpus files only, on any profile. Use"
             " bidwright run instead."
         )
-    overrides = _corpus_rule(source.name, digest, entry, profile, consent)
+    overrides = _corpus_rule(name, digest, entry, profile, consent)
     try:
         roles = config.models.profiles[profile]
     except KeyError as exc:
         raise Refused(f"no models are configured for profile {profile!r}") from exc
+    tier = Preflight(overrides, documents[0].corpus, digest).tier
+    if profile not in config.limits.runs.get(tier, {}):
+        raise Refused(f"no run limits for {tier} on {profile}")
     for role_name, role in roles.items():
         if role.provider not in backends:
             hint = KEY_HINTS.get(role.provider, f"configure a backend for {role.provider!r}")
@@ -158,7 +221,7 @@ def check_preconditions(
                     f" model: run ollama pull {model} (in Compose: docker compose exec ollama"
                     f" ollama pull {model})"
                 )
-    return Preflight(overrides, entry, digest)
+    return Preflight(overrides, documents[0].corpus, digest, documents, data_class, package_id)
 
 
 __all__ = [
@@ -166,10 +229,13 @@ __all__ = [
     "CORPUS_MANIFEST",
     "HOME",
     "Preflight",
+    "PreflightDocument",
     "Refused",
     "check_corpus",
     "check_preconditions",
     "corpus_entry",
     "corpus_name",
     "digest_of",
+    "package_digest",
+    "package_documents",
 ]

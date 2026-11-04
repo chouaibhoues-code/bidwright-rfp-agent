@@ -11,7 +11,7 @@ comments through openpyxl.
 import re
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import docx
 import openpyxl
@@ -146,13 +146,17 @@ def docx_small_print_text(path: Path) -> str:
     return normalized(" ".join(run.text for run in runs if run.font.size == Pt(5)))
 
 
+def _body(path: Path) -> Any:
+    return cast(Any, docx.Document(str(path)).element).body
+
+
 def docx_hidden_run_text(path: Path) -> str:
-    body = docx.Document(str(path)).element.body
+    body = _body(path)
     return normalized(" ".join(t.text or "" for t in body.xpath(".//w:r[w:rPr/w:vanish]/w:t")))
 
 
 def docx_deleted_text(path: Path) -> str:
-    body = docx.Document(str(path)).element.body
+    body = _body(path)
     return normalized(" ".join(t.text or "" for t in body.xpath(".//w:del//w:delText")))
 
 

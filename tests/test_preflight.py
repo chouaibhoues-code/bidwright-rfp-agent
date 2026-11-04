@@ -8,8 +8,9 @@ import pytest
 
 from bidwright.config import Config, load_config
 from bidwright.graph.build import execute
+from bidwright.ingest import doc_id_for
 from bidwright.llm.types import ProviderError, Request, Response
-from bidwright.preflight import Preflight, Refused, check_preconditions
+from bidwright.preflight import Preflight, Refused, check_preconditions, package_digest
 from tests.node_fakes import DEV_RFP, RuleBackend
 
 
@@ -101,3 +102,62 @@ def test_an_unknown_profile_is_refused() -> None:
     config: Config = load_config()
     with pytest.raises(Refused, match="no models"):
         _check(profile="unknown", config=config)
+
+
+HERO = DEV_RFP.parents[1] / "hero"
+PULLED = {"ollama": FakeOllama(pulled={"qwen3.5:4b", "qwen3.5:2b"})}
+
+
+def test_a_synthetic_folder_is_a_package_named_after_its_folder() -> None:
+    """D-05: the folder name is the package id, and the first document sets the tier."""
+    found = _check(source=HERO)
+    assert found.package_id == "hero" and found.data_class == "synthetic"
+    assert found.tier == "hero" and found.corpus == "hero/hero_addendum_1.pdf"
+    assert [d.path.name for d in found.documents] == [
+        "hero_addendum_1.pdf",
+        "hero_annex_b_requirements.xlsx",
+        "hero_rfp.pdf",
+    ]
+    assert found.digest == package_digest([d.sha256 for d in found.documents])
+
+
+def _client_folder(tmp_path: Path) -> Path:
+    folder = tmp_path / "Northwind confidential tender"
+    folder.mkdir()
+    (folder / "Northwind main tender.pdf").write_bytes(b"%PDF-1.4 a client document")
+    (folder / "package.yaml").write_text("package: client\n", encoding="utf-8")
+    return folder
+
+
+def test_a_client_folder_is_refused_on_free(tmp_path: Path) -> None:
+    with pytest.raises(Refused, match="--profile local"):
+        _check(source=_client_folder(tmp_path))
+
+
+def test_a_client_folder_on_local_gets_an_id_without_a_file_name(tmp_path: Path) -> None:
+    found = _check(source=_client_folder(tmp_path), profile="local", backends=PULLED)
+    assert found.data_class == "client" and found.package_id is not None
+    assert found.package_id.startswith("pkg-") and len(found.package_id) == len("pkg-") + 8
+    assert "northwind" not in found.package_id.lower()
+    assert [d.path.name for d in found.documents] == ["Northwind main tender.pdf"]
+
+
+def test_a_single_client_file_gets_a_doc_id(tmp_path: Path) -> None:
+    path = tmp_path / "Northwind main tender.pdf"
+    path.write_bytes(b"%PDF-1.4 a client document")
+    found = _check(source=path, profile="local", backends=PULLED)
+    assert found.package_id is not None and found.package_id.startswith("doc-")
+    assert _check(source=DEV_RFP).package_id == doc_id_for(DEV_RFP)
+
+
+def test_an_empty_folder_is_refused(tmp_path: Path) -> None:
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    (empty / "package.yaml").write_text("package: empty\n", encoding="utf-8")
+    with pytest.raises(Refused, match="no documents"):
+        _check(source=empty)
+
+
+def test_a_tier_with_no_run_limits_for_the_profile_is_refused() -> None:
+    with pytest.raises(Refused, match="no run limits for hero on local"):
+        _check(source=HERO, profile="local", backends=PULLED)

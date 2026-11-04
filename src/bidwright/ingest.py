@@ -74,10 +74,15 @@ class IngestResult:
     removed_lines: tuple[str, ...]
 
 
-def doc_id_for(path: Path) -> str:
-    """The file stem, lowercased, non-alphanumerics as hyphens, plus 8 hex digits of its hash."""
+def doc_id_for(path: Path, data_class: str = "synthetic") -> str:
+    """A corpus file's id is its stem, lowercased, non-alphanumerics as hyphens, plus 8 hex
+    digits of its hash. A client document's id is `doc-` and those 8 digits, so its name never
+    reaches a run id, a span or a folder name (D-05)."""
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()[:8]
+    if data_class == "client":
+        return f"doc-{digest}"
     stem = re.sub(r"[^a-z0-9]+", "-", path.stem.lower()).strip("-")
-    return f"{stem}-{hashlib.sha256(path.read_bytes()).hexdigest()[:8]}"
+    return f"{stem}-{digest}"
 
 
 def display_text(text: str) -> str:
