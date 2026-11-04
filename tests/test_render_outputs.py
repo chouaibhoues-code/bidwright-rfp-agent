@@ -1,5 +1,6 @@
 """The summary's four parts and their order, and a schema failure that blocks all output."""
 
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -88,9 +89,13 @@ def test_the_summary_counts_the_review_items_and_never_repeats_hidden_text(
     summary = (tmp_path / "solution_summary.md").read_text(encoding="utf-8")
     assert MARKER not in summary
     assert (
-        "Hidden content quarantined: 2 items; small print: 1 passages; suspect passages: 1;"
+        "Hidden content quarantined: 2 items; small print: 1 passage; suspect passages: 1;"
         " see `review/quarantine.md`." in summary
     )
+    records = full_records()
+    render(tmp_path / "one", dataclasses.replace(records, quarantine=records.quarantine[:1]))
+    single = (tmp_path / "one" / "solution_summary.md").read_text(encoding="utf-8")
+    assert "Hidden content quarantined: 1 item; small print: 1 passage;" in single
     for line in (
         "Requirement groups: 2, in `requirement_groups.jsonl`.",
         "Discrepancies: 0, in `discrepancies.jsonl`.",

@@ -193,13 +193,17 @@ def summary_markdown(records: RunRecords, summary: SolutionSummary) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _count(number: int, noun: str) -> str:
+    return f"{number} {noun}" if number == 1 else f"{number} {noun}s"
+
+
 def review_lines(records: RunRecords) -> list[str]:
     """Counts that point to the review files, never their text."""
     small = sum(1 for p in records.passages.values() if p.small_print)
     suspect = sum(1 for p in records.passages.values() if p.suspect)
     return [
-        f"Hidden content quarantined: {len(records.quarantine)} items; small print: {small}"
-        f" passages; suspect passages: {suspect}; see `review/quarantine.md`.",
+        f"Hidden content quarantined: {_count(len(records.quarantine), 'item')}; small print:"
+        f" {_count(small, 'passage')}; suspect passages: {suspect}; see `review/quarantine.md`.",
         f"Requirement groups: {len(records.groups)}, in `requirement_groups.jsonl`.",
         f"Discrepancies: {len(records.discrepancies)}, in `discrepancies.jsonl`.",
         f"Clarification questions: {len(records.clarifications)}, in `clarification_questions.md`.",
