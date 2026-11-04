@@ -86,14 +86,18 @@ def read_parts(data: bytes) -> dict[str, bytes]:
         return {name: archive.read(name) for name in archive.namelist()}
 
 
-def write_parts(parts: dict[str, bytes]) -> bytes:
-    """The parts as a new archive, in their original order, with every entry's date fixed, so
-    the same content always gives the same bytes and the same Docling cassette key."""
+def write_parts(parts: dict[str, bytes], compress: bool = False) -> bytes:
+    """The parts as a new archive, in their original order. Entries are stored uncompressed,
+    with a fixed date, system and mode, so the same content gives the same bytes on every
+    platform, whatever zlib it links, and so the same Docling cassette key."""
+    method = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
     out = io.BytesIO()
-    with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+    with zipfile.ZipFile(out, "w", compression=method) as archive:
         for name, data in parts.items():
             info = zipfile.ZipInfo(name, date_time=ZIP_DATE)
-            info.compress_type = zipfile.ZIP_DEFLATED
+            info.compress_type = method
+            info.create_system = 3
+            info.external_attr = 0o644 << 16
             archive.writestr(info, data)
     return out.getvalue()
 

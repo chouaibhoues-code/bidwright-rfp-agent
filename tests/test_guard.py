@@ -326,7 +326,7 @@ def _zip_with(data: bytes, name: str, member: bytes) -> bytes:
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         parts = {n: archive.read(n) for n in archive.namelist()}
     parts[name] = member
-    return write_parts(parts)
+    return write_parts(parts, compress=True)
 
 
 def test_guard_limits(tmp_path: Path, corpus: Corpus, config: Config) -> None:
