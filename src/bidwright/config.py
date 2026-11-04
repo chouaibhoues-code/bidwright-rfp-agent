@@ -10,10 +10,12 @@ import os
 import re
 from datetime import date
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, get_args
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from bidwright.schemas import ContractCategory, CueKind, Severity, Zone
 
 CONFIG_DIR = Path(
     os.environ.get("BIDWRIGHT_CONFIG_DIR", Path(__file__).resolve().parents[2] / "config")
@@ -21,36 +23,12 @@ CONFIG_DIR = Path(
 
 Provider = Literal["gemini", "cerebras", "groq", "ollama"]
 Thinking = Literal["minimal", "low", "medium", "high"]
-Severity = Literal["question", "note"]
 
-# The zone names of config/zones.yaml, in the order the keyword rule tries them (ADR-018).
-# Step 2 adds the matching `Zone` literal to schemas.py, with a test that keeps the two equal.
-ZONE_NAMES = ("INSTRUCTION", "EVALUATION", "ELIGIBILITY", "OBLIGATION", "CONTRACT", "BACKGROUND")
+# The zone names of config/zones.yaml, in the order the keyword rule tries them (ADR-018),
+# from the `Zone` literal of schemas.py; a test keeps the file equal to it.
+ZONE_NAMES: tuple[str, ...] = get_args(Zone)
 # The cue kinds config/cues.yaml defines with patterns (ADR-017). TABLE_ROW is added by code.
-CUE_KINDS = (
-    "MODAL",
-    "PROHIBITION",
-    "CONDITION",
-    "RIGHT",
-    "DEADLINE",
-    "REJECTION",
-    "REFERENCE",
-    "AMOUNT",
-    "DATE",
-)
-LintKind = Literal[
-    "VAGUE",
-    "ESCAPE",
-    "OPEN_LIST",
-    "TBD",
-    "MISSING_UNIT",
-    "BROKEN_REFERENCE",
-    "NON_SINGULAR",
-    "UNDEFINED_TERM",
-]
-ContractCategory = Literal[
-    "LIABILITY", "INDEMNITY", "IP", "DATA", "SERVICE_CREDITS", "TERMINATION", "FLOW_DOWN"
-]
+CUE_KINDS: tuple[str, ...] = tuple(kind for kind in get_args(CueKind) if kind != "TABLE_ROW")
 _PLACEHOLDER = re.compile(r"\{(\w+)\}")
 _TEMPLATE_FIELDS = frozenset({"match", "requirement_id"})
 

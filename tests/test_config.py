@@ -2,6 +2,7 @@
 
 import re
 from datetime import date
+from typing import get_args
 
 import pytest
 from pydantic import ValidationError
@@ -34,7 +35,9 @@ def test_every_file_loads(config: Config) -> None:
     assert config.pricing.models
     assert config.ingest.parsers.pdf == "docling"
     assert set(config.cues.kinds) == set(CUE_KINDS)
-    assert tuple(config.zones.zones) == ZONE_NAMES and config.zones.default in config.zones.zones
+    assert set(CUE_KINDS) | {"TABLE_ROW"} == set(get_args(schemas.CueKind))
+    assert tuple(config.zones.zones) == ZONE_NAMES == get_args(schemas.Zone)
+    assert config.zones.default in config.zones.zones
     assert config.lint.rules and config.lint.contract and config.lint.checks and config.lint.units
     assert config.egress.destinations
 

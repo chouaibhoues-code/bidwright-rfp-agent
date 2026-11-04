@@ -10,6 +10,12 @@ Base for stored records: unknown fields are errors, so drift fails loudly.
 
 No fields.
 
+## `Facing`
+
+Base for what an LLM sees or returns. Extra keys from the model are ignored.
+
+No fields.
+
 ## `Passage`
 
 | Field | Type | Required | Default | Description |
@@ -23,6 +29,9 @@ No fields.
 | `end` | int | yes |  |  |
 | `lead_in_id` | str (pattern ^SRC-\d{4}$) \| None | no | None |  |
 | `header_id` | str (pattern ^SRC-\d{4}$) \| None | no | None |  |
+| `page` | int \| None (ge 1) | no | None |  |
+| `small_print` | bool | no | False |  |
+| `suspect` | bool | no | False |  |
 
 ## `Requirement`
 
@@ -39,6 +48,10 @@ No fields.
 | `quote` | str (max length 300) | yes |  |  |
 | `quote_status` | one of 'VERBATIM_VERIFIED', 'NORMALIZED_MATCH', 'REJECTED' | yes |  |  |
 | `quote_span` | tuple[int, int] \| None | no | None |  |
+| `zone` | one of 'INSTRUCTION', 'EVALUATION', 'ELIGIBILITY', 'OBLIGATION', 'CONTRACT', 'BACKGROUND' \| None | no | None |  |
+| `page` | int \| None (ge 1) | no | None |  |
+| `small_print` | bool | no | False |  |
+| `repaired` | bool | no | False |  |
 
 ## `OpenQuestion`
 
@@ -156,6 +169,14 @@ The assignment's output. Lists hold record ids; the JSON twin adds full records.
 | `shadow_cost_usd` | float | no | 0.0 |  |
 | `active_seconds` | float | no | 0.0 |  |
 
+## `DocumentHash`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `doc_id` | str | yes |  |  |
+| `file` | str | yes |  |  |
+| `sha256` | str | yes |  |  |
+
 ## `RunManifest`
 
 | Field | Type | Required | Default | Description |
@@ -173,12 +194,9 @@ The assignment's output. Lists hold record ids; the JSON twin adds full records.
 | `status_reason` | str \| None | no | None |  |
 | `overrides` | list[str] | no | [] |  |
 | `totals` | RunTotals | no | RunTotals(requests=0, tokens_in=0, tokens_out=0, tokens_cached=0, tokens_thinking=0, cost_usd=0.0, shadow_cost_usd=0.0, active_seconds=0.0) |  |
-
-## `Facing`
-
-Base for what an LLM sees or returns. Extra keys from the model are ignored.
-
-No fields.
+| `documents` | list[DocumentHash] | no | [] |  |
+| `data_class` | one of 'synthetic', 'client' | no | 'synthetic' |  |
+| `refused_destinations` | list[str] | no | [] |  |
 
 ## `PassageView`
 
@@ -188,6 +206,22 @@ No fields.
 | `section_path` | str | yes |  |  |
 | `text` | str | yes |  |  |
 | `lead_in` | str \| None | no | None |  |
+
+## `ContextPassageView`
+
+A neighbor the model may read but never cite.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `src_id` | str | yes |  |  |
+| `text` | str | yes |  |  |
+
+## `TermView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `term` | str | yes |  |  |
+| `definition` | str | yes |  |  |
 
 ## `ExtractBatch`
 
@@ -315,3 +349,377 @@ No fields.
 | `title` | str | yes |  |  |
 | `text` | str | yes |  |  |
 | `cited_ids` | list[str] | no | [] |  |
+
+## `SectionView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `section_path` | str | yes |  |  |
+| `doc_id` | str | yes |  |  |
+| `role` | one of 'main', 'annex', 'addendum', 'form' | yes |  |  |
+| `first_text` | str (max length 400) | yes |  |  |
+| `passages` | int (ge 0) | yes |  |  |
+| `cue_counts` | dict[one of 'MODAL', 'PROHIBITION', 'CONDITION', 'RIGHT', 'DEADLINE', 'REJECTION', 'REFERENCE', 'AMOUNT', 'DATE', 'TABLE_ROW', int] | no | {} |  |
+
+## `TriageInput`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `sections` | list[SectionView] | yes |  |  |
+
+## `ZoneAssignment`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `section_path` | str | yes |  |  |
+| `doc_id` | str | yes |  |  |
+| `zone` | one of 'INSTRUCTION', 'EVALUATION', 'ELIGIBILITY', 'OBLIGATION', 'CONTRACT', 'BACKGROUND' | yes |  |  |
+| `confidence` | float (ge 0, le 1) | yes |  |  |
+| `reason` | str | yes |  |  |
+
+## `RfpProfile`
+
+The RFP's own words for each field, at most 200 characters, or `not_stated`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `buyer` | str (max length 200) | no | 'not_stated' |  |
+| `procurement` | str (max length 200) | no | 'not_stated' |  |
+| `submission_deadline` | str (max length 200) | no | 'not_stated' |  |
+| `submission_format` | str (max length 200) | no | 'not_stated' |  |
+| `evaluation_method` | str (max length 200) | no | 'not_stated' |  |
+| `contract_length` | str (max length 200) | no | 'not_stated' |  |
+
+## `HazardProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `kind` | one of 'DEADLINE', 'FORMAT', 'FORM', 'ELIGIBILITY', 'ANONYMITY', 'KEY_PERSONNEL', 'OTHER' | yes |  |  |
+| `src_ids` | list[str] (min length 1, max length 3) | yes |  |  |
+| `summary` | str | yes |  |  |
+
+## `TriageResult`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `zones` | list[ZoneAssignment] | yes |  |  |
+| `profile` | RfpProfile | yes |  |  |
+| `hazards` | list[HazardProposal] | no | [] |  |
+
+## `ClusterMember`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str | yes |  |  |
+| `statement` | str | yes |  |  |
+| `modality` | one of 'shall', 'must', 'will', 'should', 'may', 'none' | yes |  |  |
+| `disposition` | one of 'BINDING', 'OPTIONAL', 'BACKGROUND', 'NOT_BINDING', 'OUT_OF_SCOPE' | yes |  |  |
+| `quote` | str | yes |  |  |
+| `doc_id` | str | yes |  |  |
+| `section_path` | str | yes |  |  |
+
+## `PrecedenceEntry`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `doc_id` | str | yes |  |  |
+| `role` | one of 'main', 'annex', 'addendum', 'form' | yes |  |  |
+| `precedence` | int (ge 1) | yes |  |  |
+
+## `ClusterLintView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str | yes |  |  |
+| `kind` | one of 'VAGUE', 'ESCAPE', 'OPEN_LIST', 'TBD', 'MISSING_UNIT', 'BROKEN_REFERENCE', 'NON_SINGULAR', 'UNDEFINED_TERM' | yes |  |  |
+| `requirement_id` | str | yes |  |  |
+| `match` | str | yes |  |  |
+
+## `ClusterTask`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `cluster_id` | str | yes |  |  |
+| `members` | list[ClusterMember] | yes |  |  |
+| `context` | list[ClusterMember] | no | [] |  |
+| `precedence` | list[PrecedenceEntry] | no | [] |  |
+| `precedence_clause` | list[ContextPassageView] | no | [] |  |
+| `lint` | list[ClusterLintView] | no | [] |  |
+
+## `DuplicatePair`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `requirement_id` | str | yes |  |  |
+| `duplicate_of` | str | yes |  |  |
+
+## `DiscrepancyProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `requirement_ids` | list[str] (min length 2) | yes |  |  |
+| `kind` | one of 'CONFLICT', 'INCONSISTENT_VALUE', 'SUPERSEDED' | yes |  |  |
+| `state` | one of 'conditional', 'established' | yes |  |  |
+| `description` | str | yes |  |  |
+| `resolved_by` | str \| None | no | None |  |
+
+## `QuestionProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `text` | str | yes |  |  |
+| `requirement_ids` | list[str] | no | [] |  |
+| `lint_finding_ids` | list[str] | no | [] |  |
+| `reason` | str | yes |  |  |
+
+## `ReferenceLink`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `requirement_id` | str | yes |  |  |
+| `target` | str | yes |  |  |
+| `resolved_ids` | list[str] | no | [] |  |
+
+## `ConsolidationResult`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `topic` | str | yes |  |  |
+| `duplicates` | list[DuplicatePair] | no | [] |  |
+| `discrepancies` | list[DiscrepancyProposal] | no | [] |  |
+| `questions` | list[QuestionProposal] | no | [] |  |
+| `references` | list[ReferenceLink] | no | [] |  |
+
+## `QuarantineRecord`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^QR-\d{4}$) | yes |  |  |
+| `doc_id` | str | yes |  |  |
+| `file` | str | yes |  |  |
+| `kind` | one of 'pdf_invisible', 'pdf_background_color', 'pdf_tiny_font', 'pdf_off_page', 'ooxml_external_relationship', 'docx_hidden_run', 'docx_deleted_revision', 'docx_comment', 'docx_alt_text', 'docx_custom_xml', 'docx_property', 'docx_field_instruction', 'xlsx_hidden_sheet', 'xlsx_very_hidden_sheet', 'xlsx_hidden_format', 'xlsx_comment', 'xlsx_validation_message', 'xlsx_defined_name' | yes |  |  |
+| `location` | str | yes |  |  |
+| `text` | str | yes |  |  |
+| `text_sha256` | str | yes |  |  |
+| `chars` | int (ge 0) | yes |  |  |
+
+## `GuardFile`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `file` | str | yes |  |  |
+| `doc_id` | str | yes |  |  |
+| `sha256` | str | yes |  |  |
+| `format` | one of 'pdf', 'docx', 'xlsx' \| None | no | None |  |
+| `bytes` | int (ge 0) | yes |  |  |
+| `pages` | int \| None | no | None |  |
+| `scanned` | bool | no | False |  |
+| `accepted` | bool | yes |  |  |
+| `reason` | str \| None | no | None |  |
+
+## `GuardReport`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `files` | list[GuardFile] | yes |  |  |
+| `quarantined` | int (ge 0) | yes |  |  |
+| `small_print_chars` | int (ge 0) | yes |  |  |
+| `limits` | dict[str, int] | yes |  |  |
+
+## `DocumentEntry`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `doc_id` | str | yes |  |  |
+| `file` | str | yes |  |  |
+| `sha256` | str | yes |  |  |
+| `format` | one of 'pdf', 'docx', 'xlsx' | yes |  |  |
+| `role` | one of 'main', 'annex', 'addendum', 'form' | yes |  |  |
+| `title` | str | yes |  |  |
+| `precedence` | int (ge 1) | yes |  |  |
+| `pages` | int \| None | no | None |  |
+| `sanitized` | bool | no | False |  |
+| `parser` | one of 'docling', 'pdfplumber' | yes |  |  |
+
+## `ControlRegister`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `package` | str | yes |  |  |
+| `documents` | list[DocumentEntry] | yes |  |  |
+| `precedence_source` | one of 'package.yaml', 'rules' | yes |  |  |
+
+## `CueHit`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `src_id` | str (pattern ^SRC-\d{4}$) | yes |  |  |
+| `kinds` | list[one of 'MODAL', 'PROHIBITION', 'CONDITION', 'RIGHT', 'DEADLINE', 'REJECTION', 'REFERENCE', 'AMOUNT', 'DATE', 'TABLE_ROW'] (min length 1) | yes |  |  |
+| `matches` | list[str] (max length 5) | yes |  |  |
+
+## `DefinedTerm`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `term` | str | yes |  |  |
+| `definition` | str (max length 300) | yes |  |  |
+| `src_id` | str (pattern ^SRC-\d{4}$) | yes |  |  |
+
+## `ZoneRecord`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `section_path` | str | yes |  |  |
+| `doc_id` | str | yes |  |  |
+| `zone` | one of 'INSTRUCTION', 'EVALUATION', 'ELIGIBILITY', 'OBLIGATION', 'CONTRACT', 'BACKGROUND' | yes |  |  |
+| `confidence` | float (ge 0, le 1) | yes |  |  |
+| `reason` | str | yes |  |  |
+| `source` | one of 'model', 'keywords' | yes |  |  |
+
+## `TriageRecord`
+
+The stored form of `triage.json`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `zones` | list[ZoneRecord] | yes |  |  |
+| `profile` | RfpProfile | yes |  |  |
+| `fallback_sections` | int (ge 0) | yes |  |  |
+
+## `SubmissionHazard`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^HZ-\d{3}$) | yes |  |  |
+| `kind` | one of 'DEADLINE', 'FORMAT', 'FORM', 'ELIGIBILITY', 'ANONYMITY', 'KEY_PERSONNEL', 'OTHER' | yes |  |  |
+| `src_ids` | list[str (pattern ^SRC-\d{4}$)] (min length 1, max length 3) | yes |  |  |
+| `summary` | str | yes |  |  |
+| `requirement_ids` | list[str (pattern ^REQ-\d{4}$)] | no | [] |  |
+
+## `CandidateRow`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `src_id` | str (pattern ^SRC-\d{4}$) | yes |  |  |
+| `doc_id` | str | yes |  |  |
+| `zone` | one of 'INSTRUCTION', 'EVALUATION', 'ELIGIBILITY', 'OBLIGATION', 'CONTRACT', 'BACKGROUND' \| None | no | None |  |
+| `cues` | list[one of 'MODAL', 'PROHIBITION', 'CONDITION', 'RIGHT', 'DEADLINE', 'REJECTION', 'REFERENCE', 'AMOUNT', 'DATE', 'TABLE_ROW'] | no | [] |  |
+| `dispositions` | list[one of 'BINDING', 'OPTIONAL', 'BACKGROUND', 'NOT_BINDING', 'OUT_OF_SCOPE', 'NO_OBLIGATION', 'REJECTED', 'UNACCOUNTED'] (min length 1) | yes |  |  |
+| `requirement_ids` | list[str (pattern ^REQ-\d{4}$)] | no | [] |  |
+| `reasons` | list[str] | yes |  |  |
+| `round` | int (ge 0) | yes |  |  |
+
+## `CoverageRound`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `round` | int (ge 1) | yes |  |  |
+| `gaps` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
+| `resolved` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
+
+## `CoverageReport`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `rounds` | list[CoverageRound] | no | [] |  |
+| `stop_reason` | one of 'closed', 'no_shrink', 'max_rounds' | yes |  |  |
+| `passages` | int (ge 0) | yes |  |  |
+| `with_disposition` | int (ge 0) | yes |  |  |
+| `unaccounted` | int (ge 0) | yes |  |  |
+| `rejected_only` | int (ge 0) | yes |  |  |
+
+## `LintFinding`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^LF-\d{4}$) | yes |  |  |
+| `rule` | str | yes |  |  |
+| `kind` | one of 'VAGUE', 'ESCAPE', 'OPEN_LIST', 'TBD', 'MISSING_UNIT', 'BROKEN_REFERENCE', 'NON_SINGULAR', 'UNDEFINED_TERM' | yes |  |  |
+| `requirement_id` | str (pattern ^REQ-\d{4}$) | yes |  |  |
+| `src_id` | str (pattern ^SRC-\d{4}$) | yes |  |  |
+| `match` | str | yes |  |  |
+| `severity` | one of 'question', 'note' | yes |  |  |
+
+## `ContractFlag`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^CF-\d{3}$) | yes |  |  |
+| `category` | one of 'LIABILITY', 'INDEMNITY', 'IP', 'DATA', 'SERVICE_CREDITS', 'TERMINATION', 'FLOW_DOWN' | yes |  |  |
+| `src_id` | str (pattern ^SRC-\d{4}$) | yes |  |  |
+| `quote` | str (max length 300) | yes |  |  |
+| `why` | str | yes |  |  |
+| `status` | one of 'NEEDS_LEGAL_REVIEW' | no | 'NEEDS_LEGAL_REVIEW' |  |
+
+## `RequirementGroup`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^RG-\d{3}$) | yes |  |  |
+| `member_ids` | list[str (pattern ^REQ-\d{4}$)] (min length 1) | yes |  |  |
+| `context_ids` | list[str (pattern ^REQ-\d{4}$)] | no | [] |  |
+| `topic` | str | yes |  |  |
+| `duplicates` | list[DuplicatePair] | no | [] |  |
+| `references` | list[ReferenceLink] | no | [] |  |
+| `discrepancy_ids` | list[str (pattern ^DS-\d{3}$)] | no | [] |  |
+| `question_ids` | list[str (pattern ^CQ-\d{3}$)] | no | [] |  |
+| `llm` | bool | yes |  |  |
+
+## `Discrepancy`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^DS-\d{3}$) | yes |  |  |
+| `group_id` | str (pattern ^RG-\d{3}$) | yes |  |  |
+| `requirement_ids` | list[str (pattern ^REQ-\d{4}$)] (min length 2) | yes |  |  |
+| `kind` | one of 'CONFLICT', 'INCONSISTENT_VALUE', 'SUPERSEDED' | yes |  |  |
+| `state` | one of 'conditional', 'established' | yes |  |  |
+| `description` | str | yes |  |  |
+| `resolved_by` | str \| None | no | None |  |
+
+## `ClarificationQuestion`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^CQ-\d{3}$) | yes |  |  |
+| `group_id` | str (pattern ^RG-\d{3}$) | yes |  |  |
+| `text` | str | yes |  |  |
+| `requirement_ids` | list[str (pattern ^REQ-\d{4}$)] | no | [] |  |
+| `src_ids` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
+| `lint_finding_ids` | list[str (pattern ^LF-\d{4}$)] | no | [] |  |
+| `origin` | one of 'consolidate', 'lint_template' | yes |  |  |
+
+## `LayerTokens`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `rules` | int (ge 0) | no | 0 |  |
+| `examples` | int (ge 0) | no | 0 |  |
+| `evidence` | int (ge 0) | no | 0 |  |
+| `task` | int (ge 0) | no | 0 |  |
+
+## `ContextManifest`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `node` | str | yes |  |  |
+| `call_id` | str | yes |  |  |
+| `included_src_ids` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
+| `context_src_ids` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
+| `terms` | list[str] | no | [] |  |
+| `dropped_src_ids` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
+| `tokens_by_layer` | LayerTokens | no | LayerTokens(rules=0, examples=0, evidence=0, task=0) |  |
+| `budget_tokens` | int (ge 1) | yes |  |  |
+| `utilization` | float (ge 0) | yes |  |  |
+
+## `ContextPack`
+
+What one LLM call sees. Built in code, never stored as a file.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `call_id` | str | yes |  |  |
+| `passages` | list[PassageView] | yes |  |  |
+| `context` | list[ContextPassageView] | no | [] |  |
+| `terms` | list[TermView] | no | [] |  |
+| `manifest` | ContextManifest | yes |  |  |
