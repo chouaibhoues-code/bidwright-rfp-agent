@@ -44,7 +44,7 @@ from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Backend, LLMError, QuotaExhausted
 from bidwright.obs.ledger import models_used, totals_of
 from bidwright.obs.tracing import Tracing, maybe_span, set_attribute
-from bidwright.preflight import check_preconditions
+from bidwright.preflight import Refused, check_preconditions
 from bidwright.prompts import Prompt, load_prompt, load_prompt_ref
 from bidwright.render import RenderBlocked, RunRecords, render, write_manifest
 from bidwright.retrieval import PassageIndex
@@ -361,6 +361,8 @@ def execute(
     The profile's preconditions are checked first (`preflight.py`): a run that is refused
     leaves no folder, and `Refused` carries what to do instead. `limits` names the tier in
     `config/limits.yaml`; by default a corpus file gets its own tier, and any other file `dev`."""
+    if baseline is not None and not BASELINES[baseline].llm:
+        raise Refused(f"the {baseline} baseline needs the Iteration 1 graph, which step 16 builds")
     config = load_config()
     preflight = check_preconditions(
         source=source,

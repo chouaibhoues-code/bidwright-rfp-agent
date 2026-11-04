@@ -22,8 +22,8 @@ options:
 ## `bidwright run`
 
 ```text
-usage: bidwright run [-h] [--profile {free,local}] [--baseline {ex0}] [--allow-non-corpus CONSENT]
-                     [--outputs OUTPUTS]
+usage: bidwright run [-h] [--profile {free,local}] [--baseline {b0,ex0}]
+                     [--allow-non-corpus CONSENT] [--outputs OUTPUTS]
                      file
 
 positional arguments:
@@ -32,7 +32,7 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --profile {free,local}
-  --baseline {ex0}
+  --baseline {b0,ex0}
   --allow-non-corpus CONSENT
   --outputs OUTPUTS
 ```

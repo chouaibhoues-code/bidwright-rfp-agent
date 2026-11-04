@@ -653,8 +653,8 @@ class ControlRegister(Record):
 
 class CueHit(Record):
     src_id: SrcId
-    kinds: list[CueKind] = Field(min_length=1)
-    matches: list[str] = Field(max_length=CUE_MATCHES_MAX)
+    kinds: list[CueKind] = Field(default_factory=list)  # empty for a passage with no cue
+    matches: list[str] = Field(default_factory=list, max_length=CUE_MATCHES_MAX)
 
 
 class DefinedTerm(Record):

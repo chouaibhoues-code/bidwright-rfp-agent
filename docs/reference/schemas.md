@@ -554,8 +554,8 @@ The RFP's own words for each field, at most 200 characters, or `not_stated`.
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `src_id` | str (pattern ^SRC-\d{4}$) | yes |  |  |
-| `kinds` | list[one of 'MODAL', 'PROHIBITION', 'CONDITION', 'RIGHT', 'DEADLINE', 'REJECTION', 'REFERENCE', 'AMOUNT', 'DATE', 'TABLE_ROW'] (min length 1) | yes |  |  |
-| `matches` | list[str] (max length 5) | yes |  |  |
+| `kinds` | list[one of 'MODAL', 'PROHIBITION', 'CONDITION', 'RIGHT', 'DEADLINE', 'REJECTION', 'REFERENCE', 'AMOUNT', 'DATE', 'TABLE_ROW'] | no | [] |  |
+| `matches` | list[str] (max length 5) | no | [] |  |
 
 ## `DefinedTerm`
 
