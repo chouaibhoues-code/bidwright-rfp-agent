@@ -64,6 +64,7 @@ graph TD;
 	pack(pack)
 	extract(extract)
 	verify(verify)
+	coverage(coverage)
 	approach(approach)
 	risk(risk)
 	draft(draft)
@@ -72,13 +73,15 @@ graph TD;
 	__start__ --> ingest;
 	approach --> risk;
 	candidates --> triage;
+	coverage -.-> approach;
+	coverage -.-> extract;
 	draft --> render;
 	extract --> verify;
 	ingest --> candidates;
 	pack -.-> extract;
 	risk --> draft;
 	triage --> pack;
-	verify --> approach;
+	verify --> coverage;
 	render --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0

@@ -505,8 +505,33 @@ def assign_requirements(
                 }
             )
         )
-    rejected = [entry for outcome in outcomes for entry in outcome.rejected]
+    latest = latest_rounds(outcomes)
+    rejected = [
+        entry
+        for outcome in outcomes
+        for entry in outcome.rejected
+        if not (
+            entry["reason"] == "unaccounted"
+            and any(latest.get(s, 0) > outcome.round for s in entry["src_ids"])
+        )
+    ]
     return requirements, rejected
+
+
+def _mentions(outcome: BatchOutcome) -> set[str]:
+    found = {s for item, _ in outcome.accepted for s in item.src_ids}
+    found |= set(outcome.no_obligation)
+    found |= {s for entry in outcome.rejected for s in entry["src_ids"]}
+    return found
+
+
+def latest_rounds(outcomes: Sequence[BatchOutcome]) -> dict[str, int]:
+    """For each passage, the latest coverage round whose outcome answered for it."""
+    latest: dict[str, int] = {}
+    for outcome in outcomes:
+        for src_id in _mentions(outcome):
+            latest[src_id] = max(latest.get(src_id, 0), outcome.round)
+    return latest
 
 
 def link_hazards(
@@ -538,33 +563,32 @@ def candidate_rows(
 
     First-pass entries come first: each item's disposition for every passage it cites, a
     no-obligation mark, or a rejection with its reason (`UNACCOUNTED` for a passage no answer
-    covered). The second pass's accepted items follow, with the reason "second pass"."""
+    covered). The second pass's accepted items follow, with the reason "second pass". A
+    passage takes its entries from the latest coverage round that answered for it (step 12)."""
     first: dict[str, list[tuple[str, str]]] = {p.id: [] for p in passages}
     later: dict[str, list[tuple[str, str]]] = {p.id: [] for p in passages}
-    rounds: dict[str, int] = {}
+    latest = latest_rounds(outcomes)
+
+    def current(src_id: str, outcome: BatchOutcome) -> bool:
+        return src_id in first and outcome.round == latest.get(src_id, 0)
+
     for outcome in outcomes:
-        touched: list[str] = []
         for item, check in outcome.accepted:
             target = later if check.second_pass else first
             reason = "second pass" if check.second_pass else ""
             for src_id in item.src_ids:
-                if src_id in target:
+                if current(src_id, outcome):
                     target[src_id].append((item.disposition, reason))
-                    touched.append(src_id)
         for src_id in outcome.no_obligation:
-            if src_id in first:
+            if current(src_id, outcome):
                 first[src_id].append(("NO_OBLIGATION", ""))
-                touched.append(src_id)
         for entry in outcome.rejected:
             if entry.get("second_pass"):
                 continue
             kind = "UNACCOUNTED" if entry["reason"] == "unaccounted" else "REJECTED"
             for src_id in entry["src_ids"]:
-                if src_id in first:
+                if current(src_id, outcome):
                     first[src_id].append((kind, entry["reason"]))
-                    touched.append(src_id)
-        for src_id in touched:
-            rounds[src_id] = max(rounds.get(src_id, 0), outcome.round)
     quoted: dict[str, list[str]] = {}
     for requirement in requirements:
         for src_id in requirement.src_ids:
@@ -583,7 +607,7 @@ def candidate_rows(
                     "dispositions": [d for d, _ in entries],
                     "requirement_ids": quoted.get(passage.id, []),
                     "reasons": [r for _, r in entries],
-                    "round": rounds.get(passage.id, 0),
+                    "round": latest.get(passage.id, 0),
                 }
             )
         )

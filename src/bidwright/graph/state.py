@@ -16,10 +16,15 @@ class RunState(TypedDict):
     profile: dict[str, Any]  # the `RfpProfile` from triage
     hazards: list[dict[str, Any]]  # `SubmissionHazard`s, their requirement ids filled by verify
     triage_fallback: str | None  # "triage: zone fallback" when a call failed twice
-    packs: list[dict[str, Any]]  # every extraction `ContextPack`, dumped
+    packs: list[dict[str, Any]]  # every extraction `ContextPack`, dumped, across rounds
+    round: int  # the coverage round being extracted, 0 for the first pass
     outcomes: Annotated[list[dict[str, Any]], operator.add]
     requirements: list[dict[str, Any]]
     rejected: list[dict[str, Any]]
+    candidates: list[dict[str, Any]]  # the candidate ledger, one `CandidateRow` per passage
+    # The `CoverageReport` once the loop stops; until then its rounds so far and the call ids
+    # of the packs the next round extracts, under "pending".
+    coverage: dict[str, Any]
     approach: dict[str, Any]
     risk: dict[str, Any]
     sections: list[dict[str, Any]]

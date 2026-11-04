@@ -1,14 +1,16 @@
 """Wire the nodes into a LangGraph graph, and run one RFP through it.
 
 ingest -> candidates -> triage -> pack -> extract (one `Send` per context pack, at most
-`concurrency` at once) -> verify -> approach -> risk -> draft -> render, with no branches
-(Iteration 1, step 11). `pack` builds the extraction packs through `ContextManager.pack`, with
-the cues, terms and zones of the nodes before it, and writes their manifests; `verify` settles
-the outcomes into `requirements.jsonl`, `rejected.jsonl`, `candidates.jsonl` and
-`hazards.json`. The SQLite checkpointer keeps each step's state
-in the run folder. The LLM client, budget, prompts and search index stay outside the state, in
-`Runtime`, so a checkpoint holds plain data only. Each node writes its own files; `render`
-writes the summary, the proposal, the manifest and the ledger.
+`concurrency` at once) -> verify -> coverage -> approach -> risk -> draft -> render
+(Iteration 1, steps 11 and 12). `pack` builds the extraction packs through
+`ContextManager.pack`, with the cues, terms and zones of the nodes before it, and writes their
+manifests; `verify` settles the outcomes into `requirements.jsonl`, `rejected.jsonl`,
+`candidates.jsonl` and `hazards.json`. `coverage` either stops, or sends the passages still
+without a disposition back to `extract` as gap packs, and `verify` runs again over every
+outcome. The SQLite checkpointer keeps each step's state in the run folder. The LLM client,
+budget, prompts and search index stay outside the state, in `Runtime`, so a checkpoint holds
+plain data only. Each node writes its own files; `render` writes the summary, the proposal, the
+manifest and the ledger.
 
 Before the run folder exists, `execute` checks the run's outbound channels against the egress
 register (D-05): the backends of the profile's providers, which are the only backends the client
@@ -34,6 +36,7 @@ from opentelemetry import trace as otel_trace
 from bidwright.baselines import BASELINES
 from bidwright.candidates import CompiledCues, cue_hits, defined_terms, write_candidates
 from bidwright.config import Config, load_config
+from bidwright.coverage import degraded_reason, next_step, write_report
 from bidwright.graph.nodes import (
     BatchOutcome,
     RunContext,
@@ -65,7 +68,10 @@ from bidwright.render import RenderBlocked, RunRecords, render, write_manifest
 from bidwright.retrieval import PassageIndex
 from bidwright.schemas import (
     ApproachItem,
+    CandidateRow,
     ContextPack,
+    CoverageReport,
+    CoverageRound,
     CueHit,
     DefinedTerm,
     ExtractItem,
@@ -199,25 +205,32 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             "triage_fallback": outcome.degraded,
         }
 
-    def pack_node(state: RunState) -> dict[str, Any]:
+    def packs_for(
+        state: RunState, members: list[Passage], size: int | None, first: int
+    ) -> list[dict[str, Any]]:
         found = passages(state)
         limits = rt.config.limits
         manager = ContextManager(rt.run_dir, limits.context, found)
         packs = manager.pack(
             "extract",
-            found,
+            members,
             view=ctx.view,
             fixed_tokens=prompt_tokens(
                 ctx.prompts[rt.extract_prompt], limits.context.chars_per_token
             ),
             budget_tokens=limits.context.budgets["extract"],
-            batch_size=None if rt.one_batch else limits.batch_size,
+            batch_size=size,
             neighbors=limits.context.neighbors,
             terms=[DefinedTerm.model_validate(t) for t in state.get("terms", [])],
             zones=[ZoneRecord.model_validate(z) for z in state.get("zones", [])],
             cues=_cues(state),
+            first=first,
         )
-        return {"packs": [p.model_dump(mode="json") for p in packs]}
+        return [p.model_dump(mode="json") for p in packs]
+
+    def pack_node(state: RunState) -> dict[str, Any]:
+        size = None if rt.one_batch else rt.config.limits.batch_size
+        return {"packs": packs_for(state, passages(state), size, 1), "round": 0}
 
     def fan_out(state: RunState) -> list[Send]:
         return [
@@ -242,17 +255,58 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         hazards = [SubmissionHazard.model_validate(h) for h in state.get("hazards", [])]
         requirements, hazards = link_hazards(requirements, hazards)
         ledger = candidate_rows(outcomes, found, requirements, zones, _cues(state))
+        rows_out = [c.model_dump(mode="json") for c in ledger]
         rows = [r.model_dump(mode="json") for r in requirements]
         _jsonl(rt.run_dir / "requirements.jsonl", rows)
         _jsonl(rt.run_dir / "rejected.jsonl", rejected)
-        _jsonl(rt.run_dir / "candidates.jsonl", [c.model_dump(mode="json") for c in ledger])
+        _jsonl(rt.run_dir / "candidates.jsonl", rows_out)
         linked = [h.model_dump(mode="json") for h in hazards]
         (rt.run_dir / "hazards.json").write_text(
             json.dumps(linked, indent=1, ensure_ascii=False) + "\n",
             encoding="utf-8",
             newline="\n",
         )
-        return {"requirements": rows, "rejected": rejected, "hazards": linked}
+        return {
+            "requirements": rows,
+            "rejected": rejected,
+            "hazards": linked,
+            "candidates": rows_out,
+        }
+
+    def coverage_node(state: RunState) -> dict[str, Any]:
+        """Stop, or pack the gaps for the next round. EX0 is one call, so it never loops."""
+        rows = [CandidateRow.model_validate(r) for r in state["candidates"]]
+        so_far = [
+            CoverageRound.model_validate(r) for r in state.get("coverage", {}).get("rounds", [])
+        ]
+        limits = rt.config.limits.coverage
+        current = state.get("round", 0)
+        step = next_step(rows, so_far, current, 0 if rt.one_batch else limits.max_rounds)
+        if step.report is not None:
+            write_report(rt.run_dir, step.report)
+            return {"coverage": step.report.model_dump(mode="json")}
+        gaps = [ctx.passages[s] for s in step.gaps]
+        packs = list(state["packs"])
+        new = packs_for(state, gaps, limits.gap_pack_size, len(packs) + 1)
+        return {
+            "round": current + 1,
+            "packs": packs + new,
+            "coverage": {
+                "rounds": [r.model_dump(mode="json") for r in step.rounds],
+                "pending": [p["call_id"] for p in new],
+            },
+        }
+
+    def after_coverage(state: RunState) -> list[Send] | str:
+        coverage = state["coverage"]
+        if "stop_reason" in coverage:
+            return "approach"
+        pending = set(coverage["pending"])
+        return [
+            Send("extract", {"call_id": p["call_id"], "round": state["round"], "pack": p})
+            for p in state["packs"]
+            if p["call_id"] in pending
+        ]
 
     def approach_node(state: RunState) -> dict[str, Any]:
         outcome = approach(ctx, [Requirement.model_validate(r) for r in state["requirements"]])
@@ -378,6 +432,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
     builder.add_node("pack", traced("pack", pack_node))
     builder.add_node("extract", traced("extract", extract_node), input_schema=BatchState)
     builder.add_node("verify", traced("verify", verify_node))
+    builder.add_node("coverage", traced("coverage", coverage_node))
     builder.add_node("approach", traced("approach", approach_node))
     builder.add_node("risk", traced("risk", risk_node))
     builder.add_node("draft", traced("draft", draft_node))
@@ -387,7 +442,9 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         builder.add_edge(first, second)
     builder.add_conditional_edges("pack", fan_out, ["extract"])
     builder.add_edge("extract", "verify")
-    for first, second in (("verify", "approach"), ("approach", "risk"), ("risk", "draft")):
+    builder.add_edge("verify", "coverage")
+    builder.add_conditional_edges("coverage", after_coverage, ["extract", "approach"])
+    for first, second in (("approach", "risk"), ("risk", "draft")):
         builder.add_edge(first, second)
     builder.add_edge("draft", "render")
     builder.add_edge("render", END)
@@ -426,6 +483,13 @@ def _degraded(state: dict[str, Any]) -> str | None:
     reasons = []
     if state.get("triage_fallback"):
         reasons.append(state["triage_fallback"])
+    coverage = state.get("coverage") or {}
+    if "stop_reason" in coverage:
+        # The coverage loop accounts for every passage, a failed batch's included.
+        failed = []
+        left = degraded_reason(CoverageReport.model_validate(coverage))
+        if left:
+            reasons.append(left)
     if failed:
         reasons.append(f"{len(failed)} extraction batch(es) failed")
     for node in ("approach", "risk"):
