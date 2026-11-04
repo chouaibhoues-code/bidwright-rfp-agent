@@ -30,7 +30,7 @@ tags: [bidwright, backlog]
 
 | Item | Runs when |
 |---|---|
-| DR-02, batching | Only if S-03 is inconclusive |
+| DR-02, batching | Not needed: S-03 was conclusive on 2026-11-04 |
 | DR-04, Docling fidelity | Not needed: S-01 passed on 2026-11-04 |
 | DR-06, the boundary of one obligation per record | Only if matching disputes appear |
 | DR-14, a curated capability library | Backlog |
