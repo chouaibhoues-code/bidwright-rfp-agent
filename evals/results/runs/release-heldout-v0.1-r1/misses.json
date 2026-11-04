@@ -1,0 +1,26 @@
+[
+ {
+  "gold_id": "GR-0015",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0025"
+  ]
+ },
+ {
+  "gold_id": "GR-0016",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0026"
+  ]
+ },
+ {
+  "gold_id": "GR-0017",
+  "stage": "extract",
+  "reason": "no item captured it",
+  "src_ids": [
+   "SRC-0027"
+  ]
+ }
+]

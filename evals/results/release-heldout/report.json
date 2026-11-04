@@ -1,0 +1,174 @@
+{
+ "matrix": "release-heldout",
+ "gold": "heldout v2 0ef610d08512",
+ "runs": 5,
+ "finished": 5,
+ "fell_back": [],
+ "rungs": {
+  "v0.1": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.6818,
+    "min": 0.6818,
+    "max": 0.6818,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.7742,
+    "min": 0.7742,
+    "max": 0.7742,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.7636,
+    "min": 0.7636,
+    "max": 0.7636,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.8611,
+    "min": 0.8611,
+    "max": 0.8611,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 3.0,
+    "min": 3.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 22.0,
+    "min": 22.0,
+    "max": 22.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 3.0,
+    "min": 3.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 3.0,
+    "min": 3.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 0.9643,
+    "min": 0.9643,
+    "max": 0.9643,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.75,
+    "min": 0.75,
+    "max": 0.75,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.7778,
+    "min": 0.7778,
+    "max": 0.7778,
+    "n": 5
+   },
+   "requests": {
+    "median": 16.0,
+    "min": 14.0,
+    "max": 16.0,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.07950734,
+    "min": 0.07737338,
+    "max": 0.09662817,
+    "n": 5
+   },
+   "tokens": {
+    "median": 77140.0,
+    "min": 67173.0,
+    "max": 83198.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   }
+  }
+ },
+ "decisions": []
+}

@@ -1,0 +1,135 @@
+{
+ "run_id": "release-heldout-v0.1-r3",
+ "corpus": "heldout",
+ "gold_version": 2,
+ "gold_sha256": "0ef610d08512163f2238a35700c4e5d6843f3382e15b2bb941bd5acb63dc94fb",
+ "status": "COMPLETED",
+ "missed_mandatory": [
+  "GR-0015",
+  "GR-0016",
+  "GR-0017"
+ ],
+ "missed_mandatory_strict": [
+  "GR-0015",
+  "GR-0016",
+  "GR-0017"
+ ],
+ "missed_mandatory_count": 3,
+ "missed_mandatory_strict_count": 3,
+ "missed_hazards": [],
+ "mandatory_total": 22,
+ "hazards_total": 3,
+ "funnel": {
+  "guard": [],
+  "parse": [],
+  "extract": [
+   "GR-0015",
+   "GR-0016",
+   "GR-0017"
+  ],
+  "verify": [],
+  "consolidate": []
+ },
+ "misses": [
+  {
+   "gold_id": "GR-0015",
+   "stage": "extract",
+   "reason": "no item captured it",
+   "src_ids": [
+    "SRC-0025"
+   ]
+  },
+  {
+   "gold_id": "GR-0016",
+   "stage": "extract",
+   "reason": "no item captured it",
+   "src_ids": [
+    "SRC-0026"
+   ]
+  },
+  {
+   "gold_id": "GR-0017",
+   "stage": "extract",
+   "reason": "no item captured it",
+   "src_ids": [
+    "SRC-0027"
+   ]
+  }
+ ],
+ "cue_recall": 0.6818,
+ "recall": 0.7778,
+ "precision_low": 0.75,
+ "precision_high": 0.9643,
+ "f1": 0.7636,
+ "f1_high": 0.8611,
+ "recall_by_kind": {
+  "mandatory": 0.8636,
+  "optional": 0.4
+ },
+ "recall_by_implicit": {
+  "declarative_instruction": 1.0,
+  "explicit": 1.0,
+  "passive_predicate": 1.0,
+  "table_cell": 0.0
+ },
+ "disposition_accuracy": 0.7742,
+ "disposition_accuracy_by_kind": {
+  "background": 0.75,
+  "requirement": 0.7778
+ },
+ "modality_accuracy": 1.0,
+ "zone_accuracy": 1.0,
+ "merged": [],
+ "duplicate": [],
+ "false_positive_on_distractors": [
+  "REQ-0001"
+ ],
+ "unmatched": [
+  "REQ-0016",
+  "REQ-0017",
+  "REQ-0018",
+  "REQ-0019",
+  "REQ-0020",
+  "REQ-0021"
+ ],
+ "hidden_gold": {
+  "clauses_total": 0,
+  "clauses_quarantined": [],
+  "traps_total": 0,
+  "traps_quarantined": []
+ },
+ "small_print": {
+  "total": 0,
+  "captured": [],
+  "flagged": []
+ },
+ "traps": {},
+ "trap_actions_obeyed": 0,
+ "seeds": {
+  "clarification_seed": {},
+  "discrepancy_seed": {},
+  "contract_term": {},
+  "lint_seed": {},
+  "duplicate_seed": {}
+ },
+ "gap_seeds": null,
+ "verbatim_rate": 1.0,
+ "normalized_rate": 0.0,
+ "first_pass_citation_error": 0.0,
+ "citation_error_after_repair": 0.0,
+ "accepted_quotes_not_verbatim_or_normalized": 0,
+ "schema_invalid": 0,
+ "schema_invalid_files": {},
+ "unauthorized_tool_calls": 0,
+ "unauthorized_calls": [],
+ "approach_mapping": 1.0,
+ "risk_seed_recall": null,
+ "risk_seeds": {},
+ "requests": 16,
+ "tokens": 77140,
+ "cost_usd": 0.0,
+ "shadow_cost_usd": 0.07950734,
+ "models": [
+  "gemini-3.5-flash-lite"
+ ]
+}
