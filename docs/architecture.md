@@ -496,6 +496,7 @@ Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-
 
 | Item | Effect | Paid down in |
 |---|---|---|
+| The egress register trusts host names, and `ollama`, `phoenix`, `docling` and `host.docker.internal` mean this machine only inside a container | On the host, a Compose address copied into `.env` and resolved by an office network's DNS could take a client run's documents to another computer while the register calls it local | D-06, deferred by the owner on 2026-11-04 until before the first run on client documents |
 | `guard` reads the PDF's drawing operations, not the rendered page, so a font that maps glyphs to other characters escapes it | A hidden instruction of that kind reaches the parsed text | S-06, render-and-compare, in Iteration 7 |
 | A scanned file is reported, not parsed, and so is an OCR'd scan, whose text layer is drawn invisible and so is never read as text | Its obligations are missing, and the run says so | OCR stays optional |
 | The Docling path removes hidden PDF text by finding each hidden run's words in the item's text, because Docling's items carry no character positions | A hidden word that repeats a visible word earlier in the same item removes the visible one instead | The pdfplumber path removes hidden characters by position; Iteration 7's render-and-compare |
