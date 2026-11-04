@@ -1,12 +1,15 @@
 # S-13: a second extraction pass over OBLIGATION zones (Iteration 1, step 18). It is turned on
 # only if `on` lowers the median misses while precision falls by at most 3 points (step 20).
 # The rung names are quoted, because YAML reads a bare on and off as booleans.
+# Run on 2026-11-04 after S-10, on the prompt S-10 chose: its rule dropped the examples, so both
+# rungs use `extract_noexamples` until `extract.md` takes that text. The free quota was spent,
+# so the matrix runs on `paid` (CH-82), with the same models and settings.
 name: s13-second-pass
 rfp: inputs/hero
-profile: free
+profile: paid
 repeats: 5
 until: coverage
 max_cost_usd: 10
 rungs:
-  - {name: "off", flags: {second_pass: false}}
-  - {name: "on", flags: {second_pass: true}}
+  - {name: "off", flags: {second_pass: false, extract_prompt: extract_noexamples}}
+  - {name: "on", flags: {second_pass: true, extract_prompt: extract_noexamples}}
