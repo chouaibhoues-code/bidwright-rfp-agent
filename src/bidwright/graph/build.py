@@ -699,7 +699,11 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         )
 
         def run(state: Any) -> dict[str, Any]:
-            with maybe_span(ctx.tracing, f"node.{name}", kind, **{"bidwright.node": name}):
+            # A fan-out worker's span names its call, as its context manifest
+            # `context/<node>-<call id>.json` does, so a passage leads to its span.
+            call_id = state.get("call_id") or (state.get("task") or {}).get("cluster_id")
+            attributes = {"bidwright.node": name, "bidwright.call_id": call_id}
+            with maybe_span(ctx.tracing, f"node.{name}", kind, **attributes):
                 return node(state)
 
         return run

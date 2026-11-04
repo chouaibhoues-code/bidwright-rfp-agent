@@ -180,7 +180,11 @@ def cli_md() -> str:
 
     sections = [
         ("bidwright", bidwright_main, [[], ["run"], ["demo"], ["record"], ["purge"]]),
-        ("bidwright-eval", eval_main, [[], ["score"], ["hash-gold"]]),
+        (
+            "bidwright-eval",
+            eval_main,
+            [[], ["score"], ["gate"], ["baseline"], ["explain"], ["hash-gold"]],
+        ),
     ]
     lines = ["# Command-line reference", "", GENERATED.strip(), ""]
     for program, main, commands in sections:

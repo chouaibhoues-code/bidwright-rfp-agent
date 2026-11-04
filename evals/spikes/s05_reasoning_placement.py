@@ -169,7 +169,7 @@ def main() -> int:
         json.loads(line)
         for line in (GOLD_DIR / "dev" / "gold.jsonl").read_text(encoding="utf-8").splitlines()
     ]
-    clauses = gold_clauses(gold, ingest.frozen_text)
+    clauses = gold_clauses(gold, ingest.frozen_text, ingest.passages)
     mandatory = {c.gold_id for c in clauses if c.kind == "requirement" and c.mandatory}
     rows: list[dict[str, Any]] = []
     for variant in VARIANTS:

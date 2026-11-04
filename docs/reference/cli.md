@@ -88,19 +88,30 @@ options:
 ## `bidwright-eval`
 
 ```text
-usage: bidwright-eval [-h] {score,hash-gold} ...
+usage: bidwright-eval [-h] {score,gate,baseline,explain,hash-gold} ...
 
-`bidwright-eval`: score frozen runs against gold. It never changes a run. bidwright-eval score
-<run_dir> prints the 0a scorecard and writes evals/results/runs/<run>/ bidwright-eval hash-gold
-records the hashes of the gold files and of evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
+`bidwright-eval`: score frozen runs against gold. It never changes a run.
+
+bidwright-eval score <run_dir>       prints the scorecard and writes evals/results/runs/<run>/
+bidwright-eval gate <run_dir> --baseline evals/baselines/<rfp>.json
+                                     applies config/thresholds.yaml; exits 1 on a block
+bidwright-eval baseline <run_dir>    writes the run's scores, with the gold hash they were
+                                     scored against, to evals/baselines/<rfp>.json
+bidwright-eval explain <run_dir> <gold_id>
+                                     shows what happened to one gold item in the run
+bidwright-eval hash-gold             records the hashes of the gold files and of
+                                     evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
 
 positional arguments:
-  {score,hash-gold}
-    score            score one run folder
-    hash-gold        freeze the current gold files' hashes
+  {score,gate,baseline,explain,hash-gold}
+    score               score one run folder
+    gate                gate one run folder against a committed baseline
+    baseline            write a run's scores as the baseline
+    explain             what happened to one gold item in a run
+    hash-gold           freeze the current gold files' hashes
 
 options:
-  -h, --help         show this help message and exit
+  -h, --help            show this help message and exit
 ```
 
 ## `bidwright-eval score`
@@ -110,6 +121,45 @@ usage: bidwright-eval score [-h] run_dir
 
 positional arguments:
   run_dir
+
+options:
+  -h, --help  show this help message and exit
+```
+
+## `bidwright-eval gate`
+
+```text
+usage: bidwright-eval gate [-h] --baseline BASELINE run_dir
+
+positional arguments:
+  run_dir
+
+options:
+  -h, --help           show this help message and exit
+  --baseline BASELINE  a baseline file
+```
+
+## `bidwright-eval baseline`
+
+```text
+usage: bidwright-eval baseline [-h] [--out OUT] run_dir
+
+positional arguments:
+  run_dir
+
+options:
+  -h, --help  show this help message and exit
+  --out OUT   default: evals/baselines/<rfp>.json
+```
+
+## `bidwright-eval explain`
+
+```text
+usage: bidwright-eval explain [-h] run_dir gold_id
+
+positional arguments:
+  run_dir
+  gold_id
 
 options:
   -h, --help  show this help message and exit

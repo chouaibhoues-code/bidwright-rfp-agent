@@ -10,16 +10,15 @@ from typing import Any
 
 import pytest
 
-from bidwright.graph.build import RunResult, execute
+from bidwright.graph.build import execute
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Request, Response
-from bidwright.preflight import HOME
 from bidwright.schemas import ControlRegister, LedgerEntry, Requirement, RunManifest
 from tests.node_fakes import DEV_RFP, USAGE, RuleBackend
+from tests.recordings import replay
 
 pytestmark = pytest.mark.replay
 
-CASSETTES = HOME / "tests" / "cassettes"
 
 OUTPUTS = (
     "frozen.txt",
@@ -278,23 +277,6 @@ def no_network(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("PHOENIX_ENDPOINT", raising=False)
 
 
-def _replay(name: str, tmp_path: Path) -> tuple[RunResult, dict[str, Any]]:
-    """Replay `tests/cassettes/<name>/` as `bidwright demo` does, on its own recording."""
-    store = CASSETTES / name
-    recording = json.loads((store / "recording.json").read_text(encoding="utf-8"))
-    result = execute(
-        docling_mode="replay",
-        source=HOME / recording["source"],
-        profile=recording["profile"],
-        outputs=tmp_path,
-        mode="replay",
-        cassettes=CassetteStore(store),
-        until=recording.get("until", "render"),
-        run_id=f"replay-{name}",
-    )
-    return result, recording
-
-
 def _records(run_dir: Path, name: str) -> list[dict[str, Any]]:
     lines = (run_dir / name).read_text(encoding="utf-8").splitlines()
     return [json.loads(line) for line in lines if line]
@@ -315,7 +297,7 @@ def _verified(run_dir: Path) -> list[Requirement]:
 def test_the_development_pdf_with_its_traps_replays_from_the_demo_cassettes(
     tmp_path: Path, no_network: None
 ) -> None:
-    result, recording = _replay("demo", tmp_path)
+    result, recording = replay("demo", tmp_path)
     assert recording["source"] == "inputs/dev/dev_rfp.pdf"
     assert result.status == "COMPLETED", result.reason
     for name in OUTPUTS:
@@ -331,7 +313,7 @@ def test_the_development_pdf_with_its_traps_replays_from_the_demo_cassettes(
 
 
 def test_the_development_docx_replays_from_its_cassettes(tmp_path: Path, no_network: None) -> None:
-    result, recording = _replay("dev-docx", tmp_path)
+    result, recording = replay("dev-docx", tmp_path)
     assert recording["source"] == "inputs/dev-docx/dev_docx_rfp.docx"
     assert result.status == "COMPLETED", result.reason
     for name in OUTPUTS:
@@ -342,7 +324,7 @@ def test_the_development_docx_replays_from_its_cassettes(tmp_path: Path, no_netw
 
 
 def test_the_hero_package_replays_through_consolidate(tmp_path: Path, no_network: None) -> None:
-    result, recording = _replay("hero", tmp_path)
+    result, recording = replay("hero", tmp_path)
     assert (recording["source"], recording["until"]) == ("inputs/hero", "consolidate")
     assert result.status in ("COMPLETED", "DEGRADED")
     assert (result.reason or "").endswith("stopped after consolidate by request")
