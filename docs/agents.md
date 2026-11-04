@@ -15,18 +15,18 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | None |
 | `consolidate` | function | `ClusterTask` | `ConsolidationResult` | `consolidate@0.1.0` | reason | None | None |
 
-A function declares no limits: it makes one call and one repair, fixed in the node code. An agent's limits bound its tool loop.
+A function declares no limits: it makes one call and one repair, fixed in the node code, and with the second pass on, `extract` makes one more call per pack, with one format repair. An agent's limits bound its tool loop.
 
 ## Prompts
 
 | Prompt | Version | Role | Pattern | Schema | Decoding | Last tested |
 |---|---|---|---|---|---|---|
-| `approach` | 0.2.0 | reason | Skeleton-of-Thought | `ApproachResult` | gemini: thinking medium; ollama: think False | 2026-11-02 |
-| `consolidate` | 0.1.0 | reason | ordered steps in the task, positive directives | `ConsolidationResult` | gemini: thinking medium; ollama: think False | never |
-| `draft` | 0.2.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-02 |
+| `approach` | 0.2.0 | reason | Skeleton-of-Thought | `ApproachResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
+| `consolidate` | 0.1.0 | reason | ordered steps in the task, positive directives | `ConsolidationResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
+| `draft` | 0.2.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract` | 0.4.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract_oneshot` | 0.4.0 | extract | plain instruction | `ExtractResult` | gemini: thinking medium; ollama: think False | never |
-| `risk` | 0.2.0 | reason | Multi-Perspective pre-mortem in one call | `RiskRegister` | gemini: thinking low; ollama: think False | 2026-11-02 |
+| `risk` | 0.2.0 | reason | Multi-Perspective pre-mortem in one call | `RiskRegister` | gemini: thinking low; ollama: think False | 2026-11-04 |
 | `triage` | 0.1.0 | extract | plain rules and a zone table, positive directives | `TriageResult` | gemini: thinking low; ollama: think False | 2026-11-04 |
 
 ## Models by profile and role

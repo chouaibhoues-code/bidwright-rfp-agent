@@ -7,7 +7,7 @@ schema: DraftResult
 examples: draft
 decoding: {gemini: {thinking: medium}, ollama: {think: false}}
 rubric: null
-last_tested: 2026-11-02
+last_tested: 2026-11-04
 ---
 <context>
 A supplier is answering a buyer's request for proposal (RFP). The records you receive are the bid team's working material: verified requirements, approach items, risks or open questions. People on the bid team check every draft before anything reaches the buyer.

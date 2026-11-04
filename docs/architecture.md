@@ -137,7 +137,7 @@ The design rests on one principle: a deterministic shell around a probabilistic 
 | People decide | `DRAFT_ONLY`: nothing is submitted, every output is `UNREVIEWED_DRAFT`, and compliance starts `UNVERIFIED` | A fully automatic pipeline | ADR-008, ADR-021 |
 | Runs without keys | Recorded LLM and Docling cassettes replay a whole run; the host path needs no Docker | Live calls in every test | ADR-016 |
 | Measured, not asserted | A separate evaluation package with a funnel and a regression gate; a ledger entry per call and spans per step | A judged-metric framework | ADR-014, ADR-015 |
-| Fits the free tier | Flash-Lite for both roles on `free`, a limiter on the daily quota, a response cache for repeats; no thinking on `local` | Flash for `reason`; thinking on for `local` | ADR-003, ADR-004 |
+| Fits the free tier | Flash-Lite for both roles on `free`; a limiter on each model's per-minute limits and, on `paid`, its daily limit, while Google's own daily 429 decides on `free`; a response cache for repeats; no thinking on `local` | Flash for `reason`; thinking on for `local`; a local daily cap on `free` | ADR-003, ADR-004, ADR-029 |
 
 The workflow follows three phases: requirements and reality (`guard` to `consolidate`), engineering and evidence (`approach`, `risk`), and proposal (`draft`, `render`). Of the planned control plane, `v0.1` has the tool gateway, the run budget, the limiter and the checkpointer, which writes each step's state to `checkpoints.sqlite`; nothing reads it until `resume` arrives in Iteration 2. The supervisor, policy and recovery components arrive in Iteration 2.
 
@@ -227,7 +227,7 @@ flowchart TB
 | `obs/ledger.py`, `obs/tracing.py` | Ledger totals and the models that answered; spans with a file fallback | `test_ledger.py`, `test_tracing.py` |
 | `scripts/gen_docs.py`, `scripts/check_docs.py` | Generate `agents.md`, `ai-bom.md` and the CLI and schema references; check links, wikilinks, dates, front matter, voice and test names | `test_docs_generated.py`, `test_check_docs.py`, and the `docs-links` job |
 | Repository rules | The import rule, repository hygiene, the Compose lockdown, the privacy invariant | `test_isolation.py`, `test_repo_hygiene.py`, `test_compose_lockdown.py`, `test_privacy_invariant.py` |
-| `evals/` | The separate `bidwright-eval` package: corpus rendering, gold, matcher, funnel, seeds, scorer, gate, explain, report | `test_render.py`, `test_matcher.py`, `test_funnel.py`, `test_scorer_selftest.py`, `test_gates.py`, `test_hero_replay.py` |
+| `evals/` | The separate `bidwright-eval` package: corpus rendering, gold, matcher, funnel, seeds, scorer, gate, explain, report, and the external stage benchmarks in `evals/external/` | `test_render.py`, `test_matcher.py`, `test_funnel.py`, `test_scorer_selftest.py`, `test_gates.py`, `test_hero_replay.py`, `test_external_crackedpdfs.py` |
 
 ### 5.3 Agent view
 
@@ -236,7 +236,7 @@ flowchart TB
 | Role | Kind | Input to output | Model role | Tools | Limits |
 |---|---|---|---|---|---|
 | `triage` | Function, one per pack of sections | `TriageInput` to `TriageResult` | extract | None | 1 call, 1 repair |
-| `extract` | Function, one per context pack | `ExtractBatch` to `ExtractResult` | extract | None | 1 call, 1 targeted repair, fixed in code |
+| `extract` | Function, one per context pack | `ExtractBatch` to `ExtractResult` | extract | None | 1 call, 1 targeted repair, then, with the second pass on, 1 call and 1 format repair, fixed in code |
 | `consolidate` | Function, one per cluster the model step takes | `ClusterTask` to `ConsolidationResult` | reason | None | 1 call, 1 repair |
 | `approach` | Function | `ApproachInput` to `ApproachResult` | reason | None | 1 call, 1 repair |
 | `risk` | Agent | `RiskInput` to `RiskRegister` | reason | `search_rfp`, `date_calc` | 4 turns, 6 tool calls, stop on no progress |
@@ -267,7 +267,7 @@ Each LLM call has a schema, except the `risk` agent's tool turns, which return t
 
 `guard` → `ingest` → `candidates` → `triage` → `pack` → `extract`, one `Send` per context pack → `verify` → `coverage`, which either ends the extraction or sends the packs holding its gaps back to `extract`, for at most 2 rounds → `lint` → `consolidate`, one `Send` per cluster the model step takes, with code groups for the rest → `approach` → `risk` → `draft` → `render`. `--until verify`, `coverage` or `consolidate` ends the run after that node, `COMPLETED` with the reason "stopped after <node> by request", and `--baseline b0` routes `candidates` to the rule-only B0 step and stops after `verify`. The diagram in [`agents.md`](agents.md) is drawn from the compiled graph.
 
-Every passage reaches `extract`, in packs of at most `batch_size` passages within the call's token budget, so the hero package's several hundred passages take about 14 calls. At most 2 workers run at once on `free`, 4 on `paid` and 1 on `local`, because Ollama on the build laptop serves one request at a time (`config/limits.yaml`).
+Every passage reaches `extract`, in packs of at most `batch_size` passages within the call's token budget, so the hero package's 278 passages take 7 packs, and about 12 calls with their repairs and the second pass. At most 2 workers run at once on `free`, 4 on `paid` and 1 on `local`, because Ollama on the build laptop serves one request at a time (`config/limits.yaml`).
 
 Before the run folder is created, `execute` checks the run entry's preconditions, in `preflight.py`: the corpus rule per file on `free`, the data class, a backend for every provider the profile's roles use, the local models on `local`, Docling's health when it parses live, and the egress register for every destination. A refused run leaves nothing behind, and the message says what to do instead.
 
@@ -292,6 +292,7 @@ sequenceDiagram
         C->>P: request, after the limiter, with retries and fallback
         P-->>C: ExtractResult
         G->>G: check quotes, numbers and ids, one repair
+        G->>C: second pass over the OBLIGATION passages with nothing binding
     end
     G->>G: verify: candidate ledger, requirements, rejected quotes, hazards
     G->>G: coverage: stop, or send the gap packs back to extract
@@ -324,11 +325,11 @@ Every LLM call goes through the client, which checks the limiter and the run bud
 | The run entry | A destination the egress register refuses for the run's data class | Refused, or for a trace endpoint, spans go to `spans.jsonl` and the manifest lists the refused destination | None | `test_egress.py` |
 | `guard` | A file over a limit, a path outside the input root, an archive bomb, an encrypted or corrupt file, or a missing input | The run ends `POLICY_BLOCKED`, with its manifest | 0 | `test_guard_limits`, `test_a_corrupt_input_is_blocked_by_guard_with_a_manifest`, `test_a_missing_input_is_blocked_with_a_manifest` |
 | `guard` | Hidden content | Removed from the copy that is parsed, kept in `quarantine.jsonl` with its location, and shown in `review/quarantine.md` | 0 | `test_guard_quarantine_finds_each_hidden_kind_and_sanitizes` |
-| `guard` | A scanned file, with no text layer | Reported and not parsed; the run ends `DEGRADED` | 0 | `test_guard_scanned` |
+| `guard` | A scanned file, with no text layer | Reported and not parsed; the run ends `DEGRADED`, or `POLICY_BLOCKED` with "no text layer" when every file is scanned | 0 | `test_guard_scanned` |
 | `ingest` | Docling down or timing out | Retried, then `UNRECOVERABLE_FAULT` | 3 retries | `test_ingest_retry_retries_a_failing_docling_call_then_faults` |
 | `ingest` | A partial conversion | The run continues and ends `DEGRADED` | 0 | `test_ingest_unparseable_a_partial_conversion_continues_degraded` |
 | Any LLM call | 429, 5xx or timeout | Full-jitter backoff with a 2-second base and a 30-second cap, where a `Retry-After` header sets the wait; then the role's fallback model, once, except in a matrix run, which stays on its primary model and faults the run instead | 3 retries | `test_fi01_*` in `test_simulator.py` |
-| Any LLM call | The limiter's daily count reaches the quota less its reserve, or a 429 names a daily limit | No retry: the fallback model at once; with none left, the run ends `QUOTA_PAUSED` | 0 | `test_a_spent_primary_moves_to_the_fallback_and_a_spent_fallback_raises`, `test_a_spent_daily_quota_moves_to_the_fallback_without_retrying` |
+| Any LLM call | On `paid`, the limiter's daily count reaches the published limit; on either tier, a 429 names a daily limit (ADR-029) | No retry: the fallback model at once; with none left, the run ends `QUOTA_PAUSED` | 0 | `test_a_spent_primary_moves_to_the_fallback_and_a_spent_fallback_raises`, `test_a_spent_daily_quota_moves_to_the_fallback_without_retrying` |
 | Any LLM call | A 4xx other than 429 | `UNRECOVERABLE_FAULT` at once, because a retry fixes neither a bug nor a configuration error | 0 | `test_preflight.py` |
 | Any LLM call | Request, token or active-time limit reached | Checked before each provider attempt; the run ends `BUDGET_EXCEEDED` | 0 | `test_budget.py`, `test_the_budget_stops_a_call_between_its_attempts` |
 | Any LLM call, `local` | The evaluated prompt reaches `num_ctx` | `UNRECOVERABLE_FAULT` rather than continuing on a cut prompt | 0 | `test_ollama_fails_a_call_whose_prompt_reached_num_ctx` |
@@ -401,7 +402,7 @@ Two ways to run, from one codebase.
 
 `harness/context.py` builds what each packed call sees, from whole passages, never partial ones, within the call's token budget: `triage` sees section views (path, role, the first two passages and cue counts); `extract` sees a pack of passages with their section paths, lead-ins, zone and cue hints, the neighboring passages marked as context, and the definitions of the terms the pack uses; `consolidate` sees one cluster's members and context requirements, the package's order of precedence, its lint findings and, for addendum clusters, the precedence clause. Each packed call writes a manifest of the passages it included and the tokens by layer. `approach` sees the verified `BINDING` and `OPTIONAL` requirements, `risk` those, the approach items and the hazard ids plus what its tools return, and `draft` only its own section's records. Nothing carries over between runs except the response cache, keyed by the whole request.
 
-Every prompt follows one layout: the system instruction first, with role, rules, output format and examples; then the data inside delimiter tags seeded from the run id; and the task last. Every document text a model reads comes through the text view (section 3.2).
+Every prompt follows one layout: the system instruction first, with role, rules, output format and, except in the two extraction prompts (ADR-028), examples; then the data inside delimiter tags seeded from the run id; and the task last. Every document text a model reads comes through the text view (section 3.2).
 
 ### 8.2 Provenance
 
@@ -414,12 +415,12 @@ Every prompt follows one layout: the system instruction first, with role, rules,
 ### 8.3 Limits
 
 From `config/limits.yaml` and `config/agents.yaml`:
-- Per run, by corpus tier and profile: 60 requests and 300,000 tokens for the development RFPs, with 20 active minutes on `free` and 60 on `local`; 250 requests, 2,000,000 tokens and 90 minutes for the hero package on `free` and `paid`. The clock counts the run's active time.
-- The request limit counts provider attempts, retries and fallback attempts included, because that is what the quota counts (ADR-022). The limiter keeps each model's daily count under `outputs/.quota/`, by the provider's quota day. On `paid` it stops at the published daily limit; on `free` it only observes the count, and Google's own daily 429 stops the calls, after which runs move to `paid` (ADR-029). The per-minute limits apply on both tiers: 15 requests a minute on `free`, and the paid project's 4,000 (V-03).
+- Per run, by corpus tier and profile: 60 requests and 300,000 tokens for the development RFPs, the held-out RFP and any file outside the corpus, with 20 active minutes on `free` and `paid` and 60 on `local`; 250 requests, 2,000,000 tokens and 90 minutes for the hero package on `free` and `paid`. The clock counts the run's active time.
+- The request limit counts provider attempts, retries and fallback attempts included, because that is what the quota counts (ADR-022). The limiter keeps each model's daily count under `outputs/.quota/`, by the provider's quota day. On `paid` it stops at the published daily limit; on `free` it only observes the count, and Google's own daily 429 stops the calls, after which the operator moves runs to `paid`, with `--profile paid` or a matrix file's `profile` (ADR-029). The per-minute limits apply on both tiers: 15 requests a minute on `free`, and the paid project's 4,000 (V-03).
 - Per call: a 120-second timeout on `free` and `paid`, 300 seconds on `local`, with 3 retries.
 - Context packs hold at most `batch_size` passages within 12,000 tokens for `extract`, 8,000 for `triage` and `consolidate`. Clusters hold at most 12 members and 8 context requirements. `coverage` runs at most 2 rounds. The `risk` loop is capped at 4 turns and 6 tool calls, and `search_rfp` returns at most 8 passages.
 
-S-03 set the batch size to 40 on the hero package (ADR-027). The quote cap, the 3 cited ids, the cluster caps and the loop caps are defaults from the plan, and stay judgment until an ablation measures them. A measured full hero run on `free` with packs of 20 took 33 requests and 210,745 tokens, thinking included, in about 3 active minutes; with packs of 40 the hero run to `consolidate` takes 22 requests, 8 of them for `extract`.
+S-03 set the batch size to 40 on the hero package (ADR-027). The quote cap, the 3 cited ids, the cluster caps and the loop caps are defaults from the plan, and stay judgment until an ablation measures them. A measured full hero run on `free` with packs of 20 took 33 requests and 210,745 tokens, thinking included, in about 3 active minutes; with packs of 40 and the second pass on, the recorded hero run to `consolidate` took 25 requests, 12 of them for `extract`, and 167,802 tokens, thinking included, in about 2 active minutes, for $0.23 on `paid`.
 
 ### 8.4 Human control
 
@@ -435,7 +436,7 @@ Bidwright drafts and never submits. Every summary, proposal and review file open
 
 ### 8.6 Replay
 
-The client runs in `live`, `record` or `replay` mode, and Docling in its own mode, which defaults to the client's. An LLM cassette's key is a sha256 over the prompt hash, the schema hash, the tool definitions' hash, the model, the decoding settings, the input hash taken before delimiters are inserted, and the repeat index; a Docling cassette's key is the file's hash with the conversion options. A change to any of them has no cassette, so replayed tests fail until the cassettes are recorded again. `bidwright record <file or folder> [--name] [--until]` writes both kinds and `recording.json`; `bidwright demo` replays `tests/cassettes/demo/`, and the replay tests also replay `tests/cassettes/dev-docx/` and `tests/cassettes/hero/` with the network disabled.
+The client runs in `live`, `record` or `replay` mode, and Docling in its own mode, which defaults to the client's. An LLM cassette's key is a sha256 over the prompt hash, the schema hash, the tool definitions' hash, the model, the decoding settings, the input hash taken before delimiters are inserted, and the repeat index; a Docling cassette's key is the file's hash with the conversion options. A change to any of them has no cassette, so replayed tests fail until the cassettes are recorded again. `bidwright record <file or folder> [--name] [--profile] [--until]` writes both kinds and `recording.json`; `bidwright demo` replays `tests/cassettes/demo/`, and the replay tests also replay `tests/cassettes/dev-docx/` and `tests/cassettes/hero/` with the network disabled.
 
 ### 8.7 Conformance in CI
 
@@ -459,7 +460,7 @@ Structural rules are fitness functions that run on every push to `main` and ever
 
 ## 9. Architecture decisions
 
-[`DECISIONS.md`](../DECISIONS.md) holds the ADRs, with their index, and the failure modes found while building. ADR-001 to ADR-004 were taken in Iteration 0a; ADR-005 to ADR-016 record the plan's product and architecture decisions; ADR-017 to ADR-021 were proposed by the Iteration 1 design doc and accepted at its Stage 9 review; ADR-022 to ADR-025 record what the first architecture review changed; ADR-026 records the owner's decision on client documents (D-05). [`decision-matrix.md`](decision-matrix.md) maps the choices to the architecture-options taxonomy for foundation-model agents, with the quality trade-offs each implies.
+[`DECISIONS.md`](../DECISIONS.md) holds the ADRs, with their index, and the failure modes found while building. ADR-001 to ADR-004 were taken in Iteration 0a; ADR-005 to ADR-016 record the plan's product and architecture decisions; ADR-017 to ADR-021 were proposed by the Iteration 1 design doc and accepted at its Stage 9 review; ADR-022 to ADR-025 record what the first architecture review changed; ADR-026 records the owner's decision on client documents (D-05); ADR-027 and ADR-028 record Iteration 1's spike decisions, and ADR-029 the owner's rule for the free tier's daily quota. [`decision-matrix.md`](decision-matrix.md) maps the choices to the architecture-options taxonomy for foundation-model agents, with the quality trade-offs each implies.
 
 ## 10. Quality requirements
 
@@ -470,7 +471,7 @@ Each scenario is tagged with its ISO/IEC 25059 characteristic. An **invariant** 
 | ID | Kind | Characteristic | Stimulus | Required response | Measure | Runs at | Status at `v0.1` |
 |---|---|---|---|---|---|---|---|
 | QS-1 | Invariant | Functional correctness | A model emits a quote that is not in the source | Repaired once or rejected, never accepted | Accepted quotes that are neither verbatim nor normalized: 0, block | Every run; CI on replay and in the gate | **Holds.** `test_verify.py` and `test_nodes.py`; the regression gate blocks on any such quote. |
-| QS-2 | Statistical | Functional correctness | A mandatory clause anywhere in the RFP | Captured, with exact provenance | On the hero package: at most 2 of 45 missed in the median of 5 repeats, and no rise against EX0; block | Iteration 3 exit and release, on 5 live hero repeats | **Measurable:** the hero package, gold v2, the funnel and the gate exist; the repeats run at the Iteration 3 exit. |
+| QS-2 | Statistical | Functional correctness | A mandatory clause anywhere in the RFP | Captured, with exact provenance | On the hero package: at most 2 of 45 missed in the median of 5 repeats, and no rise against the committed hero baseline; block | Iteration 3 exit and release, on 5 live hero repeats | **Measurable:** the hero package, gold v2, the funnel and the gate exist; the repeats run at the Iteration 3 exit. |
 | QS-3 | Statistical | Robustness | An injected instruction with a unique marker and a detectable requested action, in a document or a research result; at least 6 per RFP | Flagged or quarantined, never obeyed | The requested action in an LLM-written field or a tool-call argument: 0, block | Iteration 3 exit and release, on 5 live hero repeats; CI on replay | **Built:** `guard` removes hidden content before parsing, the corpus holds 14 traps, and the scorer and the gate count obeyed traps; the repeats run at the Iteration 3 exit. |
 | QS-4 | Invariant | Security | A tool request outside an allowlist or a rule | Stopped outside the model | Unauthorized calls allowed: 0, block | Every run; CI on replay and in the gate | **Holds** for the `risk` agent's two tools: `test_gateway.py`, and the scorer counts executed calls outside each agent's allowlist from `tool_calls.jsonl`. |
 | QS-5 | Statistical | Transparency | A capability the knowledge base cannot support; at least 4 seeded gaps per RFP | Marked `UNVERIFIED`, never asserted | Seeded gaps claimed: 0, block | Iteration 3 exit and release, on 5 live hero repeats | **Not built:** the knowledge base and the hero's gap seeds exist; `assess` arrives in Iteration 3. Every approach item carries the evidence class `ASSUMPTION`. |
@@ -492,7 +493,7 @@ A change to a model, a prompt, a schema or a tool description changes the casset
 
 ## 11. Risks and technical debt
 
-Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-Plan.md). The design's residual risks are listed in [`security.md`](security.md#residual-risks-at-v00) and under "Not covered yet" in [`governance.md`](governance.md#not-covered-yet). Technical debt and known limits at `v0.1`:
+Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-Plan.md). The design's residual risks are listed in [`security.md`](security.md#residual-risks-at-v01) and under "Not covered yet" in [`governance.md`](governance.md#not-covered-yet). Technical debt and known limits at `v0.1`:
 
 | Item | Effect | Paid down in |
 |---|---|---|

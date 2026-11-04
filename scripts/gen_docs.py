@@ -80,7 +80,8 @@ def agents_md() -> str:
     lines += [
         "",
         "A function declares no limits: it makes one call and one repair, fixed in the node"
-        " code. An agent's limits bound its tool loop.",
+        " code, and with the second pass on, `extract` makes one more call per pack, with one"
+        " format repair. An agent's limits bound its tool loop.",
     ]
 
     lines += [

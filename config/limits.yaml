@@ -1,6 +1,6 @@
 # Per-run limits by RFP and profile. The clock counts only time spent RUNNING. The `paid`
-# profile runs the free models under the paid key (CH-82) with the free limits and a higher
-# concurrency; its rate limits below carry the free values until V-03 reads the paid tier's.
+# profile runs the free models under the paid key (CH-82) with the free run limits and a
+# higher concurrency; its rate limits below are the paid project's, read in AI Studio (V-03).
 runs:
   dev:
     free:  {requests: 60, tokens: 300000, active_minutes: 20}

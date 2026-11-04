@@ -252,7 +252,7 @@ The WBS is held as this register. Estimates are Claude's judgment (section 2.6).
 | WP-0a.5 | Development RFP, renderer and gold v1 | 0.5 | A3, A11 | `inputs/dev/dev_rfp.pdf`, `inputs/CORPUS.sha256`, gold v1 hashed (`test_render.py`) | Done `v0.0` |
 | WP-0a.6 | Ingest, retrieval, tools, gateway and budget | 1.0 | A1, A7, A10, A15 | `test_ingest.py`, `test_tools.py` with the 20 S-09 cases, `test_gateway.py`, `test_budget.py` | Done `v0.0` |
 | WP-0a.7 | Nodes, graph and CLI, with `risk` as a tool loop | 1.0 | A1, A7, A10 | `test_verify.py`, `test_risk_loop.py`, `test_nodes.py`, `test_cli.py`, `test_corpus_rule.py`, `test_e2e_replay.py` | Done `v0.0` |
-| WP-0a.8 | Observability and render | 0.5 | A4, A10 | `test_ledger.py`, `test_tracing.py`, `test_render_outputs.py`; a live run's sample in `samples/dev-free/` | Done `v0.0` |
+| WP-0a.8 | Observability and render | 0.5 | A4, A10 | `test_ledger.py`, `test_tracing.py`, `test_render_outputs.py`; a live run's sample in `samples/dev-free/` at tag `v0.0`, since replaced by `samples/dev/` | Done `v0.0` |
 | WP-0a.9 | Evaluation harness and the EX0 baseline | 0.5 | A3, A8 | `bidwright-eval score`; `test_matcher.py`, `test_scorer_selftest.py`, `test_isolation.py`; EX0 scored beside the thread | Done `v0.0` |
 | WP-0a.10 | Containers | 0.5 | A1, A9 | Image and Compose stack; `test_compose_lockdown.py`; CI `docker` job | Done `v0.0` |
 | WP-0a.11 | Spikes, checks and research launches | 0.5 | A8, A9; CH-02 | S-04, S-05, S-07, S-09, S-14 and V-03, V-06, V-08 recorded in `docs/verification_log.md`; DR-01, DR-03, DR-16, DR-17 launched | Done `v0.0` |

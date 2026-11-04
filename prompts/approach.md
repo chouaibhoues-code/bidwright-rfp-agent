@@ -7,7 +7,7 @@ schema: ApproachResult
 examples: approach
 decoding: {gemini: {thinking: medium}, ollama: {think: false}}
 rubric: null
-last_tested: 2026-11-02
+last_tested: 2026-11-04
 ---
 <role>
 You are the solution lead on a bid. From the RFP's verified requirements you outline how the supplier would meet them, for the bid team to check and complete.

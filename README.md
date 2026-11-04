@@ -2,7 +2,7 @@
 
 Bidwright reads an RFP and drafts what a bid team needs first: a solution summary of requirements, approach and risks, with every requirement traced to a verified quote from the RFP. A short proposal draft follows from the same records. Later iterations add a proposal pack, generated from one solution manifest, that a bid team can edit.
 
-> **Status:** `v0.0.1`, Iteration 0b. The walking skeleton of Iteration 0a runs the thread from RFP to solution summary and proposal draft end to end, with a scored evaluation, a replayable demo and traces; Iteration 0b documented it (`docs/architecture.md`, `DECISIONS.md`, `docs/governance.md`, `docs/evaluation.md`) and had the architecture reviewed, with the fixes recorded in ADR-022 to ADR-025. Every output is labeled `UNREVIEWED_DRAFT` until a person signs it off.
+> **Status:** `v0.1`, Iteration 1. Bidwright reads one RFP file or a package of PDF, DOCX and XLSX documents, screens each file before parsing and keeps hidden content out of what a model reads, sends every passage to extraction so that each gets a disposition, and checks every quote, number and date in code. Each run writes the solution summary, a short proposal, a compliance matrix, clarification questions and a submission checklist. A separate harness scores runs against known answers and names the stage that lost each miss, and CI holds the replayed hero package to its recorded baseline. Every output is labeled `UNREVIEWED_DRAFT` until a person signs it off.
 
 ## The design in one line
 
@@ -55,7 +55,7 @@ To see a run's trace tree in Phoenix, start it with `docker compose up -d phoeni
 
 ## Documents
 
-A suggested reading order: this README, then [`docs/brief.md`](docs/brief.md), the one-page brief for business readers, then the sample summary in `samples/dev-free/solution_summary.md`, [`DECISIONS.md`](DECISIONS.md), [`docs/architecture.md`](docs/architecture.md), and [`context/Master-Plan.md`](context/Master-Plan.md) for the full vision and the plan.
+A suggested reading order: this README, then [`docs/brief.md`](docs/brief.md), the one-page brief for business readers, then the sample summary in `samples/dev/solution_summary.md`, [`DECISIONS.md`](DECISIONS.md), [`docs/architecture.md`](docs/architecture.md), and [`context/Master-Plan.md`](context/Master-Plan.md) for the full vision and the plan.
 
 | File | Holds |
 |---|---|
