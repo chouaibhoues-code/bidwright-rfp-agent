@@ -3,7 +3,7 @@ title: Decision Form
 type: decision-form
 applies-to: bidwright
 related: ["[[Master-Plan]]", "[[Project-Backlog]]", "[[Research-Register]]"]
-date: 2026-11-03
+date: 2026-11-05
 status: current
 tags: [bidwright, decisions, governance]
 ---
@@ -32,6 +32,28 @@ tags: [bidwright, decisions, governance]
 
 **Recommendation.** A. It only tightens a privacy control; no current setup breaks, since outside Docker the defaults are `localhost` and inside the container the image sets the flag; a misconfiguration becomes a clear refusal instead of a silent leak; and it costs about an hour, with an ADR beside ADR-026. Reasoned step by step with the sequential-thinking tool on 2026-11-04. The owner deferred it the same day to after the delivery, since every run so far is synthetic; until it is built, `docs/architecture.md` lists the gap as technical debt.
 
+### D-08: Published tenders in live research, due before Iteration 3's design
+
+**Context.** On 2026-11-05 the first live research job on the development PDF returned a university's published request for proposal among its 26 sources; its excerpts reached the extraction call, and the data rule keeps real tenders out of prompts and out of the repository. The pack builder now leaves out a source the operator names (`--leave-out`) and lists any source whose title or URL reads like a solicitation for review, so committed packs are protected. In research mode `live`, nothing stops such a source before the extraction model sees it (`DECISIONS.md`, failure modes, 2026-11-05).
+
+**Options.**
+- **A.** The research provider drops a source whose title or URL reads like a solicitation, by the builder's pattern, before any excerpt is made, with a note in `research.json`. A false match loses one source; a missed one still reaches the prompt.
+- **B.** As A, and the run also ends `DEGRADED` when a source was dropped, so a person looks.
+- **C.** Keep live mode as it is, and state in `ASSUMPTIONS.md` that public web research may return public tenders, which are not the RFP being bid on.
+
+**Recommendation.** A. It applies the builder's existing check one step earlier, costs about an hour with a test on the fake server, and keeps the data rule in prompts as well as in the repository; B adds a status for a case a note already records.
+
+### D-09: Authority tiers for audit and parliamentary hosts, due before the hero pack is rebuilt
+
+**Context.** `config/research.yaml` puts government, standards and regulator hosts in tier 1 by suffix (`.gov`, `.gov.uk`, `.europa.eu` and four named hosts). The UK National Audit Office (`nao.org.uk`), Parliament (`parliament.uk`), Audit Scotland (`audit.scot`) and Audit Wales (`audit.wales`) match none of them and fall to tier 4. On the hero pack's first build, five items rested on such sources only and were dropped by the tier rule.
+
+**Options.**
+- **A.** Add the four hosts to tier 1, then rebuild the hero pack from DR-18's job (about 4 questions and 3 model calls).
+- **B.** Add them to tier 2, as public bodies that are not regulators of the domain.
+- **C.** Leave the tiers as the design set them.
+
+**Recommendation.** A. The design defines tier 1 as government, standards and regulator hosts, and these are government audit and parliamentary bodies; the change is one configuration line and a rebuilt pack, recorded with an ADR beside ADR-033.
+
 ### Decisions closed in later design docs
 
 | Iteration | Decisions its design doc closes |
@@ -49,7 +71,7 @@ Not decisions, but work only the owner can do.
 |---|---|
 | Iteration 0b | The first Goldfish architecture review is triaged (2026-11-03, ADR-022 to ADR-025). Start the drift report at the tag, `/egm:egm-drift-report docs`, limited to `architecture.md`, `agents.md` and `security.md`, and triage it with Claude |
 | Iteration 1 | Review gold v2, about 1 hour; write the held-out list, about 1 hour; confirm the 555-01XX fiction block before step 4; read the paid-tier limits in AI Studio (V-03) before step 9; confirm CrackedPDFs access and license (V-02) before step 19; the NotebookLM login for the step-1 research launches; decide D-01 at the exit. The Stage 9 review was triaged on 2026-11-03; gold v2 was reviewed and hashed, V-02 confirmed, D-01 decided, the held-out list written and its gold hashed, and the paid limits read (V-03) on 2026-11-04. |
-| Iteration 2 | The NotebookLM login for `live` research; triage Stage 9 |
+| Iteration 2 | The NotebookLM login for `live` research (done 2026-11-05); triage Stage 9 (done); decide D-08 and D-09; run the drift report at the tag; enter the iteration's hours in `TIMELOG.md` or record an exception; approve the tag `v0.2` |
 | Iteration 3 | The Cerebras key (D-03); approve one manifest at the gate; triage Stage 9 |
 | Iteration 4 | Review the two skills and one drafted section; triage Stage 9 |
 | Iteration 5 | 40 judge-calibration labels and 10 accept or reject decisions, about 45 minutes |

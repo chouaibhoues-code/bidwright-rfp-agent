@@ -3,16 +3,16 @@ title: Master Plan
 type: plan
 applies-to: bidwright
 related: ["[[Decision-Form]]", "[[Project-Backlog]]", "[[Research-Register]]"]
-date: 2026-11-03
+date: 2026-11-05
 status: current
 tags: [bidwright, project-management, plan, roadmap]
 ---
 
 # Master Plan
 
-> [!summary] Status on 2026-11-03
-> - Released: `v0.0`, Iteration 0a, the walking skeleton, on commit `1c9acaf`; `v0.0.1`, Iteration 0b, documents and review, on 2026-11-03, with ADR-022 to ADR-025 from the first architecture review.
-> - Next: Iteration 1, from step 1 of its design doc; D-02, D-04 and D-05 were decided on 2026-11-03.
+> [!summary] Status on 2026-11-05
+> - Released: `v0.0`, Iteration 0a, the walking skeleton; `v0.0.1`, Iteration 0b, documents and review; `v0.1`, Iteration 1, on 2026-11-04, with the matcher's correction after the tag (ADR-030).
+> - Iteration 2 is built: its fifteen steps are committed with CI green, and its close-out notes are in section 9.4. The tag `v0.2` waits for the owner: the drift report, the iteration's hours or an exception, D-08 and D-09, and the approval.
 > - At each tag the owner chooses to continue, release or stop (section 2.8).
 
 This file owns the scope, the work-package register, the assignment trace, the gates, the risks, the change log, the close-out notes and the full vision with its unbuilt scope. Other facts have one owner each: the current architecture is in `docs/architecture.md`, decisions in `DECISIONS.md`, assumptions in `ASSUMPTIONS.md`, hours in `TIMELOG.md`, research in [[Research-Register]], open decisions in [[Decision-Form]], and deferred work in [[Project-Backlog]].
@@ -270,10 +270,10 @@ The WBS is held as this register. Estimates are Claude's judgment (section 2.6).
 | WP-1.5 | Corpus v2: hero, held-out and development DOCX RFPs, supplier knowledge base, gold v2 | 1.5 | A3, A8, A11; CH-49, CH-65 | Gold v2 hashed before its first score; the owner's held-out list frozen | Done `v0.1` |
 | WP-1.6 | Evaluation v1: funnel, regression gate, B0, matrix runner, hypotheses | 1.5 | A3, A8 | Full scorecard with funnel; the regression gate blocks a deliberate rise in misses | Done `v0.1` |
 | WP-1.7 | Compliance outputs; limiter, cache, `ContextManager`; partial hero run | 1.0 | A4, A10; CH-59 | Compliance matrix, questions and checklist; measured cost for the budget decision | Done `v0.1` |
-| WP-2.1 | Control-plane core: supervisor, policy, gateway rules, budget, recovery, stop control | 3.0 | A7, A9; CH-26, CH-58 | Stop and resume without re-spend; FI-01, FI-02, FI-09, FI-10, FI-11 pass | Planned |
-| WP-2.2 | `brief` | 1.0 | A7 | Factors and weights copied exactly; price factor `OUT_OF_SCOPE` | Planned |
-| WP-2.3 | MCP client, `discover`, research packs and modes | 2.5 | A7, A15; CH-02 | `pack` mode needs no login; outbound overlap rule tested | Planned |
-| WP-2.4 | Fault-injection tests | 0.5 | A9 | Each with a clean control | Planned |
+| WP-2.1 | Control-plane core: supervisor, policy, gateway rules, budget, recovery, stop control | 3.0 | A7, A9; CH-26, CH-58 | Stop and resume without re-spend; FI-01, FI-02, FI-09, FI-10, FI-11 pass | Done `v0.2`; no `ExecutionPolicy` class (ADR-037) |
+| WP-2.2 | `brief` | 1.0 | A7 | Factors and weights copied exactly; price factor `OUT_OF_SCOPE` | Done `v0.2` |
+| WP-2.3 | MCP client, `discover`, research packs and modes | 2.5 | A7, A15; CH-02 | `pack` mode needs no login; outbound overlap rule tested | Done `v0.2` |
+| WP-2.4 | Fault-injection tests | 0.5 | A9 | Each with a clean control | Done `v0.2` |
 | WP-3.1 | `decide`, `assess`, capability map | 3.0 | A7, A15 | Different decisions for different groups in one run; `UNVERIFIED` without a prompt instruction | Planned |
 | WP-3.2 | `options`, `blueprint`, `SolutionManifest` | 3.0 | A7, A10; CH-03 | Every manifest fact sourced; 100% rule holds | Planned |
 | WP-3.3 | Full `risk` and `techcheck` | 2.0 | A7, A10 | No invented ratings; a false technology claim blocks the gate | Planned |
@@ -310,7 +310,7 @@ Each assignment item, the packages that deliver it, how it is verified (inspecti
 | A4 | Observability: token, latency and cost tracing for the run | WP-0a.8, WP-1.7 | Demonstration | `ledger.jsonl`, run totals, spans in Phoenix or `spans.jsonl` | Met |
 | A5 | `DECISIONS.md`: trade-offs, failure modes hit, and fixes | WP-0a.1, WP-0b.2 | Inspection | `DECISIONS.md` | Met |
 | A6 | A 3 to 5 minute demo of the app and its evaluation and observability output | WP-R.1 | Demonstration | `docs/demo_script.md` | Script only |
-| A7 | A genuine agentic workflow with thoughtful prompt engineering | WP-0a.7, WP-2.3, WP-3.1, WP-4.3, WP-5.1 | Demonstration and analysis | The `risk` agent's trace; the ablations from Iteration 3 | Partly met: one agent |
+| A7 | A genuine agentic workflow with thoughtful prompt engineering | WP-0a.7, WP-2.3, WP-3.1, WP-4.3, WP-5.1 | Demonstration and analysis | The `risk` agent's trace, and `discover`'s on the live research runs of 2026-11-05; the ablations from Iteration 3 | Partly met: two agents, `risk` and `discover` |
 | A8 | A real evaluation approach, not "it looked right" | WP-0a.9, WP-1.6, WP-5.1 to 5.3 | Test and analysis | Gold from specs, coverage matcher, scorer self-test | Partly met |
 | A9 | Basic MLOps and LLMOps hygiene | WP-0a.1, 0a.3, 0a.10, 0b.4, 0b.5 | Inspection and test | CI with 9 jobs, locked dependencies, pinned images, replay cassettes | Met |
 | A10 | Ingest the RFP brief and produce a structured solution summary of requirements, approach and risks | WP-0a.6 to 0a.8, then Iterations 1 to 4 | Demonstration and test | `solution_summary.md` and `.json`; `test_render_outputs.py` | Met |
@@ -347,6 +347,7 @@ Each iteration's gate. Entry must hold before work starts; Items are its package
 - Entry: `v0.1`; Stage 9 passed on its design doc (2026-11-04, a first round and its re-audit, D-07); the NotebookLM login for `live`.
 - Items: WP-2.1 to 2.4.
 - Exit and Verify: `bidwright stop` halts a run between nodes, and `bidwright resume` completes it without re-spending cached calls, including after a killed run; FI-01, FI-02, FI-09, FI-10 and FI-11 pass offline with clean controls; a call that breaks a gateway rule gets that rule's outcome; `pack` mode runs with no login, and `ask_research` returns `NOT_IN_PACK` for an unanswerable question; `live` completes one real job; no logged query contains RFP text, every copied passage in the test set is denied, and the paraphrase pass rate is reported; notebook ids come from code, and a crash in `discover` resumes without a second job; the brief copies factors and weights exactly and marks the price factor `OUT_OF_SCOPE`.
+- Result: every check passed, with no exception; section 9.4 gives the evidence. The tag waits for the owner's inputs listed there.
 
 **Iteration 3, `v0.3`.**
 - Entry: `v0.2`; Stage 9 passed; a Cerebras key, created at the start of this iteration so its 30-day trial covers it.
@@ -645,6 +646,49 @@ Closed on 2026-11-04, with CI green on all 11 jobs; the tag `v0.1` marks the com
 Three tags give the schedule index only, since a package earns nothing until it closes; the cost index, which the owner's hours give, is where a trend would show.
 
 **After the tag, on 2026-11-04.** The release step scored the held-out RFP once, on five repeats of the `v0.1` configuration: 3 of 22 mandatory requirements missed in every repeat, no submission hazard missed. All three were table rows that `extract` had captured, with quotes of the whole row, which the matcher credited only inside the requirement's cell. The owner chose to correct the matcher and score every run of the `v0.1` era again (ADR-030, CH-87), keeping the shipped configuration. Corrected, the held-out RFP misses none of its 22, the hero baseline 3 of 45 instead of 8, and B0 10 instead of 13; S-03 and S-13 stand, and S-10 reverses, so the examples return after the delivery. The figures above keep the values the tag recorded.
+
+### 9.4 Iteration 2, `v0.2`
+
+Built on 2026-11-04 and 2026-11-05, with CI green on all 11 jobs at each of its commits. The tag `v0.2` marks the commit the owner approves, after the inputs listed under the Definition of Done below.
+
+**Planned against delivered.**
+
+| Planned | Delivered | Note |
+|---|---|---|
+| WP-2.1, the control-plane core | `RunSupervisor` with the run lock, the status history, stop through LangGraph's drain and resume from the last checkpoint; the run's journal of answered calls; the ledger and the budget's counts written as they change; the gateway's rules G1 to G5; the circuit breaker and the dead-letter file; the events log with attribution classes | No `ExecutionPolicy` class and no versioned artifacts yet: they wait for their consumers (ADR-037) |
+| WP-2.2, `brief` | The opportunity brief from the evaluation and instruction sections, each factor checked against its passage, the price factor `OUT_OF_SCOPE` in code, topics checked for copied text | Every factor seed matched on live runs of the development PDF (4 of 4) and the hero package (6 of 6) |
+| WP-2.3, research | The MCP client over streamable HTTP and stdio; six NotebookLM tools, each pinned; `ResearchProvider`; `discover`'s five nodes; research packs with hashes and `ask_research` over them; the three research modes; `bidwright research pin` and `research pack`; the packs `higher-education-procurement` and `local-government-case-management` | One real job completed in research mode `live`, waited for 273 seconds; the longest run of words any sent text shared with the RFP was 3, against the 8 that G3 denies |
+| WP-2.4, fault injection | FI-01 (the breaker), FI-02 (dead letters), FI-09 (each rule's outcome), FI-10 (poisoned research), FI-11 (a changed tool description), each with a clean control; stop, kill and resume tests, including a real process killed mid-run | — |
+| Context manifests for every call (CH-81) | `approach`, `risk`, `draft` and `discover` write theirs, counting every turn after the rendered prompt | — |
+| Research and checks | C7-06 again and C7-16 at design; the NotebookLM server's result shapes and S-11 checked (`docs/verification_log.md`); gold v3, reviewed and hashed by the owner before DR-18 was read; DR-18 read and built into the hero's pack; Q-04 asked | Q-04's support was weak, so the Assumptions table's fallback for `assess` goes to Iteration 3's design |
+
+**Exit checks with accepted exceptions.** None. The evidence for each check is listed in section 7 of `docs/designs/iteration-2.md`; the measured figures are in `docs/evaluation.md`, results at `v0.2`.
+
+**Definition of Done, items waiting for the owner.** `TIMELOG.md` holds the iteration's rows without hours, for the owner to enter or record an exception. The drift report (`/egm:egm-drift-report docs`) runs once these notes are committed, and its triage, with any fix, comes before the tag. The security review found no vulnerability at high confidence; the code review at medium effort raised ten findings, of which eight were fixed and two kept as designed, for reasons recorded in their commit. The sample in `samples/dev/` is a live run of the development PDF at the last code commit, with research mode `pack`.
+
+**Decisions taken during the iteration.** ADR-031 to ADR-037 and CH-88 to CH-90, accepted with the design doc (D-07). Two decisions were opened for the owner: D-08, whether the research provider drops solicitation-like sources in research mode `live`, and D-09, the authority tier of audit and parliamentary hosts.
+
+**Lessons learned.**
+- A new prompt meets the corpus's traps again: `brief` 0.1.0 copied the development PDF's visible trap into an `always` item at its first live call, though `extract` had handled the same passage for two iterations. `brief.md` 0.2.0 took `extract.md`'s rule for such passages, and `discover.md` took it before its first live run.
+- An id that exists is not evidence: `discover` 0.3.0 attached existing excerpt ids to entries on another subject, and a pack built from it named a tier-1 page as the source of a claim it never made. Code now requires a shared content word; entailment waits for Iteration 3's `assess`.
+- The data rule needs a check at each boundary: a live research job returned a university's published request for proposal among its sources, which only the pack builder stopped (D-08).
+- A model asked to research may decline: `discover` 0.2.0 asked no question because "the report covered everything", so the prompt now asks at least one question per topic.
+- Recovery earned its place the day it shipped: the primary free model returned server errors for most of 2026-11-05, the breaker opened, and the fallback carried every live run.
+- Kill-safety covers every append-only file or none: the code review found that only the ledger was repaired after a kill, so all four line files now are.
+- A budget shared by evidence and context needs an order: `discover_extract` spent its budget on excerpts first, and on the development PDF's live run none of the report fit (`DECISIONS.md`, failure modes).
+
+**Earned-value snapshot at `v0.2`.**
+
+| Measure | Value | Basis |
+|---|---|---|
+| Budget at completion | 68 hours to the release target (84 with Iterations 6 and 7) | Section 3 |
+| Planned value | 32.0 hours: 8.0 for Iteration 0a, 5.0 for 0b, 12.0 for Iteration 1 and 7.0 for Iteration 2 | The packages due by `v0.2` |
+| Earned value | 32.0 hours | Every package due by `v0.2` passed its Exit and Verify |
+| Actual cost | Pending the owner's hours in `TIMELOG.md` | — |
+| Schedule performance index | 1.0 | Earned value over planned value at the tag |
+| Cost performance index, estimate at completion | Pending the owner's hours | Actual cost needed |
+
+Four tags still give the schedule index only; the cost index, which the owner's hours give, is where a trend would show.
 
 ## 10. Full vision
 

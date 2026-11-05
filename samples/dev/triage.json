@@ -4,96 +4,96 @@
    "section_path": "Request for Proposal: Electronic Signature Service",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "BACKGROUND",
-   "confidence": 0.85,
-   "reason": "Provides basic identification and reference details for the RFP.",
+   "confidence": 0.9,
+   "reason": "Provides identification and context for the RFP document.",
    "source": "model"
   },
   {
    "section_path": "1 Introduction",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "BACKGROUND",
-   "confidence": 0.9,
-   "reason": "Describes the College and the purpose of the proposal without imposing bidding rules.",
+   "confidence": 0.95,
+   "reason": "Describes the purpose of the procurement and the entity issuing it.",
    "source": "model"
   },
   {
    "section_path": "2 Background",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "BACKGROUND",
-   "confidence": 0.95,
-   "reason": "Provides historical context about the current tool and records.",
+   "confidence": 1.0,
+   "reason": "Provides historical context about the buyer's current system and data.",
    "source": "model"
   },
   {
    "section_path": "3 Instructions to bidders",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "INSTRUCTION",
-   "confidence": 0.98,
-   "reason": "Explains submission format, portal, deadline and how to respond.",
+   "confidence": 1.0,
+   "reason": "Specifies submission requirements, format, and deadlines.",
    "source": "model"
   },
   {
    "section_path": "4 Requirements",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 0.9,
-   "reason": "Introduces requirements that apply for the contract term.",
+   "confidence": 0.8,
+   "reason": "Outlines the scope and requirements for the contract term.",
    "source": "model"
   },
   {
    "section_path": "4 Requirements > 4.1 Signing",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 0.95,
-   "reason": "Details supplier obligations regarding signature audit records.",
+   "confidence": 1.0,
+   "reason": "Details specific technical requirements for signature logging.",
    "source": "model"
   },
   {
    "section_path": "4 Requirements > 4.2 Records",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 0.95,
-   "reason": "Specifies document storage and migration obligations.",
+   "confidence": 1.0,
+   "reason": "Sets mandatory requirements for data retention and migration.",
    "source": "model"
   },
   {
    "section_path": "4 Requirements > 4.3 Integration",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 0.95,
-   "reason": "Outlines system integration requirements.",
+   "confidence": 1.0,
+   "reason": "Defines integration requirements for the provided service.",
    "source": "model"
   },
   {
    "section_path": "5 Service levels",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 0.95,
-   "reason": "Defines required service availability and incident response levels.",
+   "confidence": 1.0,
+   "reason": "Establishes performance and service level requirements for the provider.",
    "source": "model"
   },
   {
    "section_path": "6 Timeline",
    "doc_id": "dev-rfp-db9eeb00",
-   "zone": "BACKGROUND",
+   "zone": "OBLIGATION",
    "confidence": 0.8,
-   "reason": "Outlines estimated procurement timeline and live dates.",
+   "reason": "Defines key delivery dates and milestones for the service.",
    "source": "model"
   },
   {
    "section_path": "7 Evaluation",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "EVALUATION",
-   "confidence": 0.98,
-   "reason": "Describes how proposals are scored against criteria.",
+   "confidence": 1.0,
+   "reason": "Explains how proposals are scored.",
    "source": "model"
   },
   {
    "section_path": "8 Contract",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "CONTRACT",
-   "confidence": 0.95,
-   "reason": "Defines contract term and extension options.",
+   "confidence": 1.0,
+   "reason": "Specifies the duration and renewal options of the contract.",
    "source": "model"
   }
  ],

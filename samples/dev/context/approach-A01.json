@@ -1,0 +1,1 @@
+{"node":"approach","call_id":"A01","included_src_ids":[],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["REQ-0001","REQ-0002","REQ-0003","REQ-0004","REQ-0005","REQ-0006","REQ-0007","REQ-0008","REQ-0009","REQ-0010","REQ-0011","REQ-0012"],"tokens_by_layer":{"rules":404,"examples":462,"evidence":544,"task":43},"budget_tokens":16000,"utilization":0.0908}

@@ -1,0 +1,93 @@
+{
+ "factors": [
+  {
+   "id": "EF-01",
+   "name": "Technical approach",
+   "weight": "40%",
+   "scoring": "not_stated",
+   "src_ids": [
+    "SRC-0035"
+   ],
+   "status": "IN_SCOPE"
+  },
+  {
+   "id": "EF-02",
+   "name": "Service levels and support",
+   "weight": "20%",
+   "scoring": "not_stated",
+   "src_ids": [
+    "SRC-0036"
+   ],
+   "status": "IN_SCOPE"
+  },
+  {
+   "id": "EF-03",
+   "name": "Integration and migration",
+   "weight": "20%",
+   "scoring": "not_stated",
+   "src_ids": [
+    "SRC-0037"
+   ],
+   "status": "IN_SCOPE"
+  },
+  {
+   "id": "EF-04",
+   "name": "Price",
+   "weight": "20%",
+   "scoring": "not_stated",
+   "src_ids": [
+    "SRC-0038"
+   ],
+   "status": "OUT_OF_SCOPE"
+  }
+ ],
+ "scoring_method": {
+  "id": "BI-004",
+  "text": "Proposals are scored on the criteria below.",
+  "src_ids": [
+   "SRC-0033"
+  ]
+ },
+ "needs": [],
+ "scope_in": [],
+ "scope_out": [],
+ "constraints": [
+  {
+   "id": "BI-001",
+   "text": "Must submit through the procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC.",
+   "src_ids": [
+    "SRC-0015"
+   ]
+  }
+ ],
+ "never": [],
+ "ask": [
+  {
+   "id": "BI-002",
+   "text": "Direct enquiries to Ottoline Vexmoor.",
+   "src_ids": [
+    "SRC-0017"
+   ]
+  }
+ ],
+ "always": [
+  {
+   "id": "BI-003",
+   "text": "The proposal must be submitted via the College's procurement portal.",
+   "src_ids": [
+    "SRC-0015"
+   ]
+  }
+ ],
+ "topics": [
+  "electronic signature services for education",
+  "cloud service integration for colleges",
+  "secure document signing workflow"
+ ],
+ "discrepancies": [],
+ "questions": [],
+ "notes": [
+  "F01: a constraints item cited ids outside its sections: REQ-0001",
+  "F01: a always item cited ids outside its sections: REQ-0001"
+ ]
+}

@@ -1,0 +1,26 @@
+[
+ {
+  "gold_id": "GR-0030",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0168"
+  ]
+ },
+ {
+  "gold_id": "GR-0042",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0225"
+  ]
+ },
+ {
+  "gold_id": "GR-0045",
+  "stage": "extract",
+  "reason": "NO_OBLIGATION",
+  "src_ids": [
+   "SRC-0231"
+  ]
+ }
+]

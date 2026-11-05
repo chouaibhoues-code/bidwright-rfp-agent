@@ -3,7 +3,7 @@ title: Research Register
 type: register
 applies-to: bidwright
 related: ["[[Master-Plan]]", "[[Decision-Form]]", "[[Project-Backlog]]"]
-date: 2026-11-02
+date: 2026-11-05
 status: current
 tags: [bidwright, research, validation, register]
 ---
@@ -40,7 +40,7 @@ Raw reports, notebook answers and research envelopes are kept privately, outside
 | 2026-11-03 | DR-20 | RFP SOTA, DR-20 Personal data detection and pseudonymization | Detection and pseudonymization of personal data before LLM calls, and leak paths in agentic pipelines | D-05 | Complete, 49 sources, 30 cited imported; section 17 |
 | 2026-11-03 | DR-21 | RFP SOTA, DR-21 Tender confidentiality and LLM providers | Data protection, tender confidentiality and provider terms for sending tender documents to LLM services | D-05 | Complete, 33 sources, 27 cited imported; section 17 |
 | 2026-11-03 | DR-05 | RFP SOTA, DR-05 Judged Rubrics for Plans, WBS and Risks | Whether an LLM-judged rubric validly scores a generated approach, work breakdown structure and risk register | Whether the solution and proposal quality layers rest on judged rubrics or on structural checks plus human rating | Launched 2026-11-03 in deep mode, adversarial envelope; complete, report extracted and 27 cited sources imported on 2026-11-04; read in Iteration 3 |
-| 2026-11-03 | DR-18 | RFP SOTA, DR-18 Local Government Case Management Domain | The patterns, standards and pitfalls of local-government digital case-management services and their procurement | The first research pack, which `discover` loads in `pack` mode | Launched 2026-11-03 in deep mode, balanced envelope; complete, report extracted and 19 cited sources imported on 2026-11-04; read in Iteration 2 |
+| 2026-11-03 | DR-18 | RFP SOTA, DR-18 Local Government Case Management Domain | The patterns, standards and pitfalls of local-government digital case-management services and their procurement | The first research pack, which `discover` loads in `pack` mode | Launched 2026-11-03 in deep mode, balanced envelope; complete, report extracted and 19 cited sources imported on 2026-11-04; read on 2026-11-05 (Iteration 2, step 13), after gold v3 was hashed: the hero package's research pack `local-government-case-management` was built from its job, and built again as version 2, 3 items and 3 needs, after the shared-word rule |
 
 ## 3. Deep research jobs
 
@@ -53,7 +53,7 @@ Raw reports, notebook answers and research envelopes are kept privately, outside
 | DR-21 | A bidder may send confidential tender documents with personal data to a third-party LLM API under a processor agreement, with no training, regional processing and short retention; pseudonymizing first lightens the bidder's duties | Which providers and tiers may receive a client document; whether pseudonymization has legal value | High | Done 2026-11-03: partly refuted; section 17 |
 | DR-16 | Prompt patterns, context-order rules and constraint-style rules hold on 2026 reasoning models and outside coding tasks | Prompts get simpler, patterns are dropped, and the "why it works" notes cite current evidence | High | Read 2026-11-02: positive directives, correct-output examples and zero-shot baselines; `extract@0.3.0` and the S-10 change in the Iteration 1 design |
 | DR-17 | Section-by-section drafting from a structured manifest stays grounded and specific, and LLM evaluator simulation tracks how people score proposals | Drafting granularity, and whether Red Team ratings are shown or only its findings | High | Launched 2026-11-02; read in Iteration 4 |
-| DR-18 | Domain discovery for the hero RFP's domain: the patterns, standards and pitfalls a bid should cover | Becomes the first research pack. It feeds the pack only: research seeds come from an independent source, so the gain with research is not built in. | High | Launched 2026-11-03 (Iteration 1, step 1); read in Iteration 2 |
+| DR-18 | Domain discovery for the hero RFP's domain: the patterns, standards and pitfalls a bid should cover | Becomes the first research pack. It feeds the pack only: research seeds come from an independent source, so the gain with research is not built in. | High | Launched 2026-11-03 (Iteration 1, step 1); read on 2026-11-05, and built into the hero package's research pack |
 | DR-05 | A judged rubric can validly score a generated approach, WBS and risks | The solution and proposal move to structural checks plus human rating | High | Launched 2026-11-03 (Iteration 1, step 1); read in Iteration 3 |
 | DR-02 | Batching many candidates in one request loses nothing | Smaller batches and more requests, with capacity and budget recomputed | High | Not launched: S-03 was conclusive on 2026-11-04 |
 | DR-04 | Docling keeps multi-column and nested-table text exact enough for quote checks | Swap the parser or add a fallback | High | Not launched: S-01 passed on 2026-11-04 |
@@ -104,7 +104,8 @@ About 90 one-sentence technical claims, each checked just before the module that
 
 | ID | Route | Area | When | Status |
 |---|---|---|---|---|
-| Q-01 to Q-06 | Notebook query, when the design needs it | Topics 4, 14, 16, 17, 18 and 19 of the coverage check | Q-04 in 2, Q-01 in 3, the others on demand | Planned |
+| Q-01 to Q-06 | Notebook query, when the design needs it | Topics 4, 14, 16, 17, 18 and 19 of the coverage check | Q-01 in 3, the others on demand | Planned, except Q-04 |
+| Q-04 | Notebook query | Whether a judge from another model family decorrelates errors (L1, L4, L5) | 2 | Done 2026-11-05 [T], figures unchecked at source. The support is weak: no notebook compares a same-family with a cross-family judge directly, the one test of same-lab inflation found none, a judge's serving route moved scores more than its family did, and errors persisted across families; structure helped, not family. The Assumptions table's fallback for `assess` goes to Iteration 3's design. Raw answers in `private/research/` |
 | Q-07 | Notebook query | How much delimiters and other prompt-layer defenses stop (L1, L2, HNS) | 0b, for the threat model; reused in 5 | Done 2026-11-02 (section 7) |
 | Q-08 | Notebook query | Metamorphic relations for document pipelines (L4) | 7 | Planned |
 | Q-09 | Notebook query | Evidence on LLM effort estimation and estimate maturity (PMI, ART, REP) | 3 | Planned |
