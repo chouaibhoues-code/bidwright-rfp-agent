@@ -22,6 +22,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `approach` | 0.2.0 | reason | `sha256:d95f06596240` |
 | `brief` | 0.1.0 | extract | `sha256:89ab16a08371` |
 | `consolidate` | 0.1.0 | reason | `sha256:0e4706513b48` |
+| `discover` | 0.1.0 | reason | `sha256:e4c9efb4282f` |
 | `draft` | 0.2.0 | reason | `sha256:e565f6bb6f35` |
 | `extract` | 0.4.0 | extract | `sha256:11cde3336a38` |
 | `extract_oneshot` | 0.4.0 | extract | `sha256:cda10111ce58` |
@@ -34,6 +35,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 |---|---|---|---|
 | `triage` | function | None | 1 call and 1 repair, fixed in code |
 | `brief` | function | None | 1 call and 1 repair, fixed in code |
+| `discover` | agent | `ask_research`, `start_research` | max_turns 4, max_tool_calls 8, stop_on_no_progress True |
 | `extract` | function | None | 1 call and 1 repair, fixed in code |
 | `approach` | function | None | 1 call and 1 repair, fixed in code |
 | `risk` | agent | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
@@ -54,6 +56,8 @@ Controls on every run, in code:
 |---|---|---|
 | `search_rfp` | Reads the run's own search index of the RFP; writes nothing | `risk` |
 | `date_calc` | Computes dates; reads and writes nothing | `risk` |
+| `ask_research` | Reads the selected research pack, or sends one question to the NotebookLM notebook code bound; `discover` records each answer in `research.json` | `discover` |
+| `start_research` | Sends one query, built from the research envelope, to NotebookLM as a deep research job on a notebook code created; `discover` writes the job to `research.json` | `discover` |
 
 ## Services
 

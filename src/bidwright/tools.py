@@ -12,16 +12,15 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Protocol
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from bidwright.llm.schema import clean_schema
 from bidwright.llm.types import ToolSpec
-from bidwright.research.provider import ResearchProvider
 from bidwright.retrieval import MAX_K, PassageIndex
-from bidwright.schemas import ToolResult
+from bidwright.schemas import AskResult, ToolResult
 
 NO_HOLIDAYS = "Business days skip Saturdays and Sundays only; public holidays are not considered."
 
@@ -247,9 +246,13 @@ NOT_IN_PACK = "NOT_IN_PACK"  # a research pack holds nothing on the question
 NO_SOURCED_ANSWER = "no answer with a source"  # a live question no source supports
 
 
-def ask_tool(
-    provider: ResearchProvider, *, max_excerpts: int, empty_reason: str = NOT_IN_PACK
-) -> Tool:
+class Asks(Protocol):
+    """What `ask_research` needs of a research provider."""
+
+    def ask(self, question: str) -> AskResult: ...
+
+
+def ask_tool(provider: Asks, *, max_excerpts: int, empty_reason: str = NOT_IN_PACK) -> Tool:
     """`ask_research` over a research provider: a research pack answers by ADR-034's rule, and
     NotebookLM from its bound notebook (step 11). The result holds the answer, `None` when only
     excerpts matched, and at most `max_excerpts` excerpts, each with its source's title and
@@ -284,5 +287,25 @@ def ask_tool(
             " its text. EMPTY means the research holds nothing on the question."
         ),
         args_model=AskResearchArgs,
+        run=run,
+    )
+
+
+# --- start_research (Iteration 2, step 11) ---------------------------------------------------
+
+
+def start_tool(run: Callable[[StartResearchArgs], ToolResult]) -> Tool:
+    """`start_research`: the model plans one research question; `run`, which `discover`
+    supplies, builds the query from the research envelope, starts the job on the notebook code
+    bound, and returns the job's label and state, never an id. A call whose query a recorded
+    job already holds starts nothing and returns that job's label."""
+    return Tool(
+        name="start_research",
+        description=(
+            "Start one deep research job on the RFP's domain: one question in general domain"
+            " words, and the brief's topics it covers. Returns the job's label, J1 or J2, and its"
+            " state. Code waits for the job and brings its report, so never ask about progress."
+        ),
+        args_model=StartResearchArgs,
         run=run,
     )

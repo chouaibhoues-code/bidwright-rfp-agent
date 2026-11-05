@@ -260,7 +260,9 @@ class PackProvider:
     def sources(self, notebook_id: str) -> list[NotebookSource]:
         self._refuse("list a notebook's sources")
 
-    def bind(self, notebook_id: str) -> None:
+    def bind(
+        self, notebook_id: str, *, known: Sequence[PackSource] = (), excerpts: int = 0
+    ) -> None:
         self._refuse("bind a notebook")
 
     def ask(self, question: str) -> AskResult:

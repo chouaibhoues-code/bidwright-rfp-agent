@@ -4,7 +4,8 @@
 gives a notebook id; `start(notebook_id, query)` a task id; `status(notebook_id, task_id,
 wait_s)` a `JobStatus`; `import_sources(notebook_id, task_id)` the number imported;
 `sources(notebook_id)` each source's id and title; `bind(notebook_id)` sets the notebook `ask`
-uses; and `ask(question)` gives an `AskResult`, an answer with its excerpts and sources.
+uses, with the sources and the excerpt count a run already holds, so a resumed run numbers
+on from them; and `ask(question)` gives an `AskResult`, an answer with its excerpts and sources.
 `NotebookLMProvider` (`nlm.py`) implements all of it over the MCP client; the research pack
 provider (step 10) implements `ask` and refuses the rest with `ResearchRefused`. A licensed
 source can replace NotebookLM behind the same interface.
@@ -15,11 +16,12 @@ with it, and another entry matches that host and its subdomains; a host with no 
 the default tier, 4.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
 from bidwright.config import TiersConfig
-from bidwright.schemas import AskResult, JobStatus
+from bidwright.schemas import AskResult, JobStatus, PackSource
 
 
 @dataclass(frozen=True)
@@ -45,7 +47,9 @@ class ResearchProvider(Protocol):
 
     def sources(self, notebook_id: str) -> list[NotebookSource]: ...
 
-    def bind(self, notebook_id: str) -> None: ...
+    def bind(
+        self, notebook_id: str, *, known: Sequence[PackSource] = (), excerpts: int = 0
+    ) -> None: ...
 
     def ask(self, question: str) -> AskResult: ...
 

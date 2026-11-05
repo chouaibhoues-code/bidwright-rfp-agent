@@ -15,8 +15,14 @@ classes. The research rules read a `RuleContext`: the run's passages as the text
 them, the research record's counts read live at each check, whether the research server's pins
 matched when the run first connected, the events log for security events, and `query_for`,
 the text a research tool would send.
+
+A replay consumes nothing (Iteration 2, step 11): a resumed node's model asks again what it asked
+before the stop, so G1 lets through a `start_research` whose query is a recorded job's, which
+returns that job's label and starts nothing, and G5 an `ask_research` whose question is
+recorded, which is answered from `research.json`. Every other rule still applies to them.
 """
 
+import hashlib
 import json
 import re
 from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -28,7 +34,7 @@ from pydantic import BaseModel, ValidationError
 
 from bidwright.obs.events import EventRecorder
 from bidwright.schemas import Attribution, Passage, ResearchRecord, ToolRequest
-from bidwright.text import normalized_words
+from bidwright.text import normalized_words, shared_run
 from bidwright.verify import shown_text
 
 if TYPE_CHECKING:
@@ -120,22 +126,9 @@ class RuleContext:
         }
         if not found:
             return None
-        shared = {src_id: _longest_shared(words, self.words[src_id]) for src_id in sorted(found)}
+        shared = {src_id: shared_run(words, self.words[src_id]) for src_id in sorted(found)}
         src_id = max(shared, key=lambda s: shared[s])
         return shared[src_id], src_id
-
-
-def _longest_shared(left: Sequence[str], right: Sequence[str]) -> int:
-    """The length of the longest run of words the two sequences share."""
-    best, previous = 0, [0] * (len(right) + 1)
-    for word in left:
-        current = [0] * (len(right) + 1)
-        for j, other in enumerate(right, start=1):
-            if word == other:
-                current[j] = previous[j - 1] + 1
-                best = max(best, current[j])
-        previous = current
-    return best
 
 
 class Rule:
@@ -280,18 +273,28 @@ class PinnedServer(Rule):
         return None
 
 
+def query_sha256(text: str) -> str:
+    """The hash `research.json` records for a research job's query."""
+    return f"sha256:{hashlib.sha256(text.encode('utf-8')).hexdigest()}"
+
+
 class JobLimit(Rule):
     name = "G1 job limit"
     trigger = "`start_research`"
-    description = "Fewer than 2 jobs this run, and no other `start_research` in the same turn"
+    description = (
+        "Fewer than 2 jobs this run, or the query of a recorded job, which starts nothing; and"
+        " no other `start_research` in the same turn"
+    )
     note = """: "the run's research jobs are spent", or "one job a turn\""""
     tools = frozenset({"start_research"})
 
     def check(self, call: Call, gateway: "ToolGateway") -> Finding | None:
         context = gateway.context
         record = context.record() if context is not None else None
-        limit = context.max_jobs if context is not None else 0
-        if record is None or len(record.jobs) >= limit:
+        if context is None or record is None:
+            return Finding("the run's research jobs are spent")
+        replay = query_sha256(context.sent(call.request)) in {j.query_sha256 for j in record.jobs}
+        if not replay and len(record.jobs) >= context.max_jobs:
             return Finding("the run's research jobs are spent")
         if any(
             ran.tool == "start_research" and ran.turn == call.request.turn for ran in gateway.ran
@@ -303,7 +306,10 @@ class JobLimit(Rule):
 class QuestionCap(Rule):
     name = "G5 question cap"
     trigger = "`ask_research`"
-    description = "Fewer than 6 questions this run"
+    description = (
+        "Fewer than 6 questions this run, or a recorded question, which is answered from"
+        " `research.json`"
+    )
     outcome = "return"
     note = ': "no questions left; finish"'
     tools = frozenset({"ask_research"})
@@ -311,8 +317,11 @@ class QuestionCap(Rule):
     def check(self, call: Call, gateway: "ToolGateway") -> Finding | None:
         context = gateway.context
         record = context.record() if context is not None else None
-        limit = context.max_questions if context is not None else 0
-        if record is None or len(record.answers) >= limit:
+        if context is None or record is None:
+            return Finding("no questions left; finish")
+        question = str(call.request.args.get("question", ""))
+        replay = question in {answer.question for answer in record.answers}
+        if not replay and len(record.answers) >= context.max_questions:
             return Finding("no questions left; finish")
         return None
 
@@ -373,4 +382,5 @@ __all__ = [
     "Finding",
     "Rule",
     "RuleContext",
+    "query_sha256",
 ]

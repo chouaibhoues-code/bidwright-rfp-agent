@@ -18,6 +18,9 @@ Three paths pack the model calls of Iteration 1, and each writes one manifest pe
   each whole and in document order, with the verified requirements their passages hold and the
   RFP profile, into `brief` calls, `F01` onward, by the same budget rule; a section larger than
   the budget goes alone. A manifest's `included_record_ids` names the requirements it holds.
+- `record_manifest` (Iteration 2) writes the manifest of a call whose evidence is records or
+  excerpts rather than packed passages, `discover`'s calls `D01` onward, naming them in
+  `included_record_ids`.
 
 Tokens are estimated as characters divided by `chars_per_token`, rounded up. A manifest's
 `tokens_by_layer` takes `rules` (the system text less its examples), `examples` and `task` from
@@ -58,7 +61,7 @@ from bidwright.schemas import (
     ZoneRecord,
 )
 
-CALL_PREFIX = {"extract": "B", "triage": "T", "brief": "F"}
+CALL_PREFIX = {"extract": "B", "triage": "T", "brief": "F", "discover": "D"}
 BRIEF_ZONES = ("EVALUATION", "INSTRUCTION")  # packed in this order
 CONTEXT_DIR = "context"
 _PACK_KEYS = len(json.dumps({"passages": [], "context": [], "terms": []}, separators=(",", ":")))
@@ -471,6 +474,34 @@ class ContextManager:
             BriefSection(doc_id=doc_id, section_path=path, passages=views)
             for (doc_id, path), views in found.items()
         ]
+
+    # --- calls over records ----------------------------------------------------------------------
+
+    def record_manifest(
+        self,
+        node: str,
+        call_id: str,
+        record_ids: Sequence[str],
+        src_ids: Sequence[str],
+        fixed_tokens: LayerTokens,
+        evidence_tokens: int,
+        budget_tokens: int,
+    ) -> ContextManifest:
+        """The manifest of one call whose evidence is records or excerpts: `discover`'s, whose
+        `record_ids` are the excerpt ids the call was given."""
+        _prefix(node)
+        _check_budget(budget_tokens)
+        return self._manifest(
+            node,
+            call_id,
+            list(src_ids),
+            [],
+            [],
+            fixed_tokens,
+            evidence_tokens,
+            budget_tokens,
+            records=record_ids,
+        )
 
     # --- consolidate -----------------------------------------------------------------------------
 

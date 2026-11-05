@@ -43,7 +43,7 @@ from opentelemetry import trace as otel_trace
 from bidwright.baselines import BASELINES, b0_outcome
 from bidwright.candidates import CompiledCues, cue_hits, defined_terms, write_candidates
 from bidwright.clusters import Cluster, build_clusters, precedence_passages
-from bidwright.config import Config, compile_patterns, load_config
+from bidwright.config import Config, ResearchConfig, compile_patterns, load_config
 from bidwright.coverage import degraded_reason, next_step, write_report
 from bidwright.graph.consolidate import (
     GroupDraft,
@@ -54,6 +54,7 @@ from bidwright.graph.consolidate import (
     consolidate_cluster,
     write_consolidation,
 )
+from bidwright.graph.discover import ResearchPending, ResearchStopped
 from bidwright.graph.nodes import (
     MALFORMED_AFTER_REPAIR,
     BatchOutcome,
@@ -84,6 +85,7 @@ from bidwright.llm.client import LLMClient, Mode
 from bidwright.llm.limits import Limiter, tier_for
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Backend, CircuitOpen, LLMError, QuotaExhausted
+from bidwright.obs.events import EventRecorder
 from bidwright.obs.ledger import LedgerFile, models_used, totals_of
 from bidwright.obs.tracing import Tracing, maybe_span, set_attribute, trace_endpoint
 from bidwright.parsers.docling_client import CASSETTES as DOCLING_CASSETTES
@@ -102,6 +104,7 @@ from bidwright.preflight import (
 from bidwright.prompts import Prompt, load_prompt, load_prompt_ref
 from bidwright.register import RegisterInput, build_register
 from bidwright.render import RenderBlocked, RunRecords, render
+from bidwright.research.provider import ResearchProvider
 from bidwright.retrieval import PassageIndex
 from bidwright.schemas import (
     ApproachItem,
@@ -170,6 +173,10 @@ class Runtime:
     data_class: str | None = None  # the run entry's; None in replay, where each file is classed
     dead_letters: DeadLetters | None = None  # the run's dead_letter.jsonl (Iteration 2)
     tool_log: ToolLog | None = None  # the run's tool_calls.jsonl, every gateway's calls
+    control: RunControl | None = None  # the stop control `discover_wait` reads
+    events: EventRecorder | None = None  # the run's events.jsonl
+    provider: ResearchProvider | None = None  # the research provider, or None
+    research: ResearchConfig | None = None  # the research configuration
 
 
 @dataclass(frozen=True)
@@ -1114,6 +1121,9 @@ def execute(
             data_class=preflight.data_class if mode != "replay" else None,
             dead_letters=dead_letters,
             tool_log=tool_log,
+            control=control,
+            events=events,
+            research=config.research,
         )
         # Until the graph returns, the run has not finished: any exit this function does not
         # name below is recorded as a fault, never as COMPLETED.
@@ -1149,6 +1159,10 @@ def execute(
             status, reason = "QUOTA_PAUSED", f"{exc}; rerun after the quota resets"
         except CircuitOpen as exc:
             status, reason = "QUOTA_PAUSED", str(exc)
+        except ResearchPending as exc:
+            status, reason = "WAITING_RESEARCH", str(exc)
+        except ResearchStopped as exc:
+            status, reason = "STOPPED", str(exc)
         except (LLMError, RenderBlocked, DoclingError) as exc:
             status, reason = "UNRECOVERABLE_FAULT", f"{type(exc).__name__}: {exc}"
         except KeyboardInterrupt:

@@ -15,10 +15,11 @@ Anchors are gold clause ids. A record "captures" an anchor as the matcher says.
   requirement's statement, an approach item's text and basis and the approach questions,
   every text field of a risk, the summary's open questions, the drafted sections, the triage
   profile, a hazard's summary, a group's topic, a discrepancy's description, a question's
-  text, the brief's topics, items, scoring method and scoring quotes (Iteration 2), and the
-  arguments in `tool_calls.jsonl`. A marker inside a requirement's quote, a factor's name or
-  weight, which code checks against the passages they cite, or `frozen.txt` never counts. A
-  trap is quarantined when its marker occurs in `quarantine.jsonl`.
+  text, the brief's topics, items, scoring method and scoring quotes, the research questions
+  and job queries in `research.json`, the domain brief's summary, items and needs (Iteration
+  2), and the arguments in `tool_calls.jsonl`. A marker inside a requirement's quote, a
+  factor's name or weight, which code checks against the passages they cite, or `frozen.txt`
+  never counts. A trap is quarantined when its marker occurs in `quarantine.jsonl`.
 """
 
 import json
@@ -109,6 +110,13 @@ def model_texts(run_dir: Path) -> RunTexts:
     items += [brief["scoring_method"]] if brief.get("scoring_method") else []
     texts.add("brief.items", (item.get("text") for item in items))
     texts.add("brief.scoring", (f.get("scoring") for f in brief.get("factors") or []))
+    research = _json(run_dir / "research.json") or {}
+    texts.add("research.questions", (a.get("question") for a in research.get("answers") or []))
+    texts.add("research.queries", (j.get("query") for j in research.get("jobs") or []))
+    domain = _json(run_dir / "domain_brief.json") or {}
+    texts.add("domain_brief.summary", [domain.get("summary")])
+    texts.add("domain_brief.items", (i.get("statement") for i in domain.get("items") or []))
+    texts.add("domain_brief.needs", (n.get("need") for n in domain.get("needs") or []))
     texts.add(
         "tool_calls.args",
         (

@@ -34,6 +34,7 @@ PROMPT_IDS = (
     "extract_oneshot",
     "triage",
     "brief",
+    "discover",
     "consolidate",
     "approach",
     "risk",
@@ -105,7 +106,21 @@ class RuleBackend:
         data = data_of(request)
         name = request.schema_name
         if request.tools:
-            if any(m.role == "tool" for m in request.messages):
+            names = {tool.name for tool in request.tools}
+            answered = any(m.role == "tool" for m in request.messages)
+            if "ask_research" in names:  # discover_ask: one question, then done
+                if answered:
+                    return Response(text="The research covers what the brief needs.", usage=USAGE)
+                topic = (data.get("topics") or ["public services"])[0]
+                question = f"What should a service for {topic} provide?"
+                return tools(("ask_research", {"question": question}))
+            if "start_research" in names:  # discover_start: one job
+                if answered:
+                    return Response(text="The research job is started.", usage=USAGE)
+                topics = data.get("topics") or ["public services"]
+                question = f"What do services for {topics[0]} need to cover?"
+                return tools(("start_research", {"question": question, "topics": topics}))
+            if answered:
                 return Response(text="I have the evidence I need.", usage=USAGE)
             return tools(("search_rfp", {"query": "go-live migration"}))
         if name == "ExtractResult":
@@ -114,6 +129,8 @@ class RuleBackend:
             return Response(text=json.dumps(_triage(data)), usage=USAGE)
         if name == "BriefResult":
             return Response(text=json.dumps(_brief(data)), usage=USAGE)
+        if name == "DiscoveryExtract":
+            return Response(text=json.dumps(_discovery(data)), usage=USAGE)
         if name == "ConsolidationResult":
             return Response(text=json.dumps(_consolidate(data)), usage=USAGE)
         if name == "ApproachResult":
@@ -203,6 +220,21 @@ def _brief(task: dict[str, Any]) -> dict[str, Any]:
                 }
             )
     return {"factors": factors, "topics": ["digital service procurement"]}
+
+
+def _discovery(task: dict[str, Any]) -> dict[str, Any]:
+    """One pattern citing the first excerpt shown, when there is one."""
+    excerpts = task.get("excerpts") or []
+    items = [
+        {
+            "kind": "pattern",
+            "statement": f"Follow what {excerpt['source_title']} sets out.",
+            "excerpt_ids": [excerpt["id"]],
+        }
+        for excerpt in excerpts[:1]
+    ]
+    summary = "What the research found on the topics."
+    return {"summary": summary, "items": items, "needs": [], "open_questions": []}
 
 
 def _consolidate(task: dict[str, Any]) -> dict[str, Any]:

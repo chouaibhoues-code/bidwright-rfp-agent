@@ -63,6 +63,9 @@ def test_every_prompt_loads_and_renders(prompt_id: str) -> None:
     assert system.role == "system" and "$" not in system.content.replace("$$", "")
     assert user.content.startswith(f"<{rendered.tag}>") and "Why it works" not in system.content
     assert prompt.notes, f"{prompt_id} has no notes"
+    if "envelope" in prompt.tasks:
+        query = prompt.task_text("envelope", question="Which standards apply?", topics="a, b")
+        assert "Which standards apply?" in query and "a, b" in query
 
 
 def test_agents_name_prompts_that_exist_with_matching_versions_and_schemas() -> None:
@@ -194,6 +197,27 @@ def test_the_brief_prompt_renders_its_example_without_statuses() -> None:
     assert brief.decoding == {"gemini": {"thinking": "low"}, "ollama": {"think": False}}
     assert "F01" in brief.task_text(data_tag="data-x", call_id="F01")
     assert "Your answer did not match" in brief.task_text("repair_format", error="x")
+
+
+def test_the_discover_prompt_keeps_its_envelope_out_of_what_the_model_sees() -> None:
+    discover = load_prompt("discover")
+    assert discover.meta.output_schema == "DiscoveryExtract" and discover.meta.role == "reason"
+    assert set(discover.tasks) == {
+        "task",
+        "ask",
+        "extract",
+        "reminder",
+        "envelope",
+        "repair_format",
+    }
+    assert "Research objective" not in discover.system, "the envelope is never sent to the model"
+    query = discover.task_text("envelope", question="How do councils plan casework?", topics="x")
+    assert query.startswith("Research objective: How do councils plan casework?")
+    assert "disconfirms" in query, "disconfirming evidence is sought by default (M18)"
+    assert "A discovery task, at the extraction:" in discover.examples
+    assert "start_research" in discover.task_text(data_tag="data-x")
+    assert "ask_research" in discover.task_text("ask", data_tag="data-x")
+    assert discover.decoding == {"gemini": {"thinking": "low"}, "ollama": {"think": False}}
 
 
 def test_the_extract_prompts_are_at_0_4_0_without_examples_and_share_their_tasks() -> None:

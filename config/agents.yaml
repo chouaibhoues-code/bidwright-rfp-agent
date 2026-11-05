@@ -19,6 +19,17 @@ brief:
   model_role: extract
   tools: []
 
+# The turn limit bounds each pass of discover_ask; the call cap counts discover_start's and
+# discover_ask's calls together, from research.json, across nodes and resumes.
+discover:
+  kind: agent
+  input: DiscoveryTask
+  output: DiscoveryExtract
+  prompt: discover@0.1.0
+  model_role: reason
+  tools: [ask_research, start_research]
+  limits: {max_turns: 4, max_tool_calls: 8, stop_on_no_progress: true}
+
 extract:
   kind: function
   input: ExtractBatch

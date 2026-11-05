@@ -1031,6 +1031,7 @@ class PackAnswer(Record):
     answer: str = Field(max_length=ANSWER_MAX_CHARS)
     excerpt_ids: list[ExcerptId] = Field(default_factory=list)
     quarantined: bool = False
+    job: JobLabel | None = None  # the job whose notebook answered it; None in a research pack
 
 
 class AskResult(Record):
@@ -1129,6 +1130,7 @@ class ResearchRecord(Record):
     excerpts: list[PackExcerpt] = Field(default_factory=list)
     sources: list[PackSource] = Field(default_factory=list)
     tool_calls: int = Field(default=0, ge=0)  # the run's `discover` tool calls so far
+    calls: int = Field(default=0, ge=0)  # the run's `discover` model calls so far (D ids)
     notes: list[str] = Field(default_factory=list)
 
 

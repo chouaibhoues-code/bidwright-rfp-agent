@@ -5,10 +5,13 @@ the `risk` loop's generic-risk check and the cluster rule use them. `normalized_
 gateway's normalization (ADR-032): the text as `verify.normalize` gives it, so ligatures, quote
 styles, whitespace and line-end hyphens do not matter, then casefolded with `str.casefold` and
 split on every character that is not a letter or a digit. The outbound rule G3, the brief's
-topic rule, the overlap check on queries and ADR-034's matching all use it.
+topic rule, the overlap check on queries and ADR-034's matching all use it. `shared_run` is
+the length of the longest run of words two such word lists share, which G3 and the query
+audit report.
 """
 
 import re
+from collections.abc import Sequence
 
 from bidwright.verify import normalize
 
@@ -32,4 +35,17 @@ def normalized_words(text: str) -> list[str]:
     return _WORD.findall(normalize(text)[0].casefold())
 
 
-__all__ = ["STOPWORDS", "content_stems", "normalized_words"]
+def shared_run(left: Sequence[str], right: Sequence[str]) -> int:
+    """The length of the longest run of words the two sequences share."""
+    best, previous = 0, [0] * (len(right) + 1)
+    for word in left:
+        current = [0] * (len(right) + 1)
+        for j, other in enumerate(right, start=1):
+            if word == other:
+                current[j] = previous[j - 1] + 1
+                best = max(best, current[j])
+        previous = current
+    return best
+
+
+__all__ = ["STOPWORDS", "content_stems", "normalized_words", "shared_run"]

@@ -922,6 +922,7 @@ One source a research job found, as its `research_status` listing gives it.
 | `answer` | str (max length 2000) | yes |  |  |
 | `excerpt_ids` | list[str (pattern ^PX-\d{4}$)] | no | [] |  |
 | `quarantined` | bool | no | False |  |
+| `job` | str (pattern ^J\d+$) \| None | no | None |  |
 
 ## `AskResult`
 
@@ -1044,6 +1045,7 @@ The stored form of `research.json`.
 | `excerpts` | list[PackExcerpt] | no | [] |  |
 | `sources` | list[PackSource] | no | [] |  |
 | `tool_calls` | int (ge 0) | no | 0 |  |
+| `calls` | int (ge 0) | no | 0 |  |
 | `notes` | list[str] | no | [] |  |
 
 ## `PackManifest`

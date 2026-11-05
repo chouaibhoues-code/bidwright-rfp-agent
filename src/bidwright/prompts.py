@@ -34,7 +34,9 @@ PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
 EXAMPLES_FILE = Path("examples") / "mini_rfp.yaml"
 NOTES_HEADING = "## Why it works"
 _TASK_ELEMENT = re.compile(
-    r"\s*<(task|final_task|second_pass|repair_[a-z_]+)>\s*(.*?)\s*</\1>", re.DOTALL
+    r"\s*<(task|final_task|second_pass|ask|extract|reminder|envelope|repair_[a-z_]+)>\s*(.*?)"
+    r"\s*</\1>",
+    re.DOTALL,
 )
 _FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n(.*)\Z", re.DOTALL)
 
@@ -208,6 +210,7 @@ def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
         "triage": _triage_examples,
         "consolidate": _consolidate_examples,
         "brief": _brief_examples,
+        "discover": _discover_examples,
     }
     if name not in renderers or name not in sets:
         raise ValueError(f"no example set {name!r} in {EXAMPLES_FILE}")
@@ -375,6 +378,26 @@ def _brief_examples(example: dict[str, Any]) -> str:
             _dump(example["input"]),
             "Its brief:",
             _dump(example["output"]),
+        ]
+    )
+
+
+def _discover_examples(example: dict[str, Any]) -> str:
+    """One extraction, its task and its result: every excerpt id the result cites is one the
+    task shows."""
+    task = schemas.DiscoveryTask.model_validate(example["task"])
+    result = schemas.DiscoveryExtract.model_validate(example["extraction"])
+    shown = {excerpt.id for excerpt in task.excerpts}
+    cited = [i for entry in [*result.items, *result.needs] for i in entry.excerpt_ids]
+    unknown = sorted(set(cited) - shown)
+    if unknown:
+        raise ValueError(f"the discover example cites excerpts its task does not show: {unknown}")
+    return "\n".join(
+        [
+            "A discovery task, at the extraction:",
+            _dump(example["task"]),
+            "Its extraction:",
+            _dump(example["extraction"]),
         ]
     )
 

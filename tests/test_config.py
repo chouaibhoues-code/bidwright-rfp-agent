@@ -23,7 +23,7 @@ from bidwright.config import (
     load_config,
 )
 
-TOOLS_IN_0A = {"search_rfp", "date_calc"}
+KNOWN_TOOLS = {"search_rfp", "date_calc", "ask_research", "start_research"}
 
 
 @pytest.fixture(scope="module")
@@ -63,7 +63,7 @@ def test_agent_io_names_are_real_schemas(config: Config) -> None:
 
 def test_agent_tools_exist(config: Config) -> None:
     for agent in config.agents.agents.values():
-        assert set(agent.tools) <= TOOLS_IN_0A
+        assert set(agent.tools) <= KNOWN_TOOLS
 
 
 def test_only_the_agent_declares_limits(config: Config) -> None:

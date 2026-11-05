@@ -10,6 +10,7 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 |---|---|---|---|---|---|---|---|
 | `triage` | function | `TriageInput` | `TriageResult` | `triage@0.1.0` | extract | None | None |
 | `brief` | function | `BriefInput` | `BriefResult` | `brief@0.1.0` | extract | None | None |
+| `discover` | agent | `DiscoveryTask` | `DiscoveryExtract` | `discover@0.1.0` | reason | `ask_research`, `start_research` | max_turns 4, max_tool_calls 8, stop_on_no_progress True |
 | `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.4.0` | extract | None | None |
 | `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
 | `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
@@ -25,6 +26,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | `approach` | 0.2.0 | reason | Skeleton-of-Thought | `ApproachResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `brief` | 0.1.0 | extract | plain rules and a factor table, positive directives | `BriefResult` | gemini: thinking low; ollama: think False | never |
 | `consolidate` | 0.1.0 | reason | ordered steps in the task, positive directives | `ConsolidationResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
+| `discover` | 0.1.0 | reason | plain rules with positive directives; the research envelope of M18 for the query | `DiscoveryExtract` | gemini: thinking low; ollama: think False | never |
 | `draft` | 0.2.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract` | 0.4.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract_oneshot` | 0.4.0 | extract | plain instruction | `ExtractResult` | gemini: thinking medium; ollama: think False | never |
@@ -48,6 +50,8 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 |---|---|---|
 | `search_rfp` | Search the RFP's passages by words, such as 'go-live migration deadline'. A requirement id such as REQ-0003 returns the passages that requirement quotes. Returns up to k passages, best first, each with its SRC id, section path and text. | `query`; `k` (optional) |
 | `date_calc` | Date arithmetic. add or subtract an amount of days, business_days, weeks or months; diff counts days or business days from date to other_date; weekday names the day. With tz, times are read and returned in that IANA time zone. | `date`; `op`; `amount` (optional); `unit` (optional); `tz` (optional); `other_date` (optional) |
+| `ask_research` | Ask one stand-alone question about the RFP's domain, in general words. Returns the research's answer when one matches, and up to 8 excerpts, each with its id, its source's title, the source's authority tier (1 highest, 4 lowest) and its text. EMPTY means the research holds nothing on the question. | `question` |
+| `start_research` | Start one deep research job on the RFP's domain: one question in general domain words, and the brief's topics it covers. Returns the job's label, J1 or J2, and its state. Code waits for the job and brings its report, so never ask about progress. | `question`; `topics` |
 
 ## Gateway rules
 
@@ -61,8 +65,8 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | repeats | Every call | No third identical call: the same tool with the same arguments | Deny |
 | call cap | Every call | The agent's tool-call cap is not yet spent, counting from the run's start | Deny |
 | G4 pinned server | `start_research`, `ask_research`, when the research provider is NotebookLM | The server's reported name and version, and its tools, matched their pins when the run first connected | Deny: "server refused: its tools do not match their pins" |
-| G1 job limit | `start_research` | Fewer than 2 jobs this run, and no other `start_research` in the same turn | Deny: "the run's research jobs are spent", or "one job a turn" |
-| G5 question cap | `ask_research` | Fewer than 6 questions this run | Return to the model: "no questions left; finish" |
+| G1 job limit | `start_research` | Fewer than 2 jobs this run, or the query of a recorded job, which starts nothing; and no other `start_research` in the same turn | Deny: "the run's research jobs are spent", or "one job a turn" |
+| G5 question cap | `ask_research` | Fewer than 6 questions this run, or a recorded question, which is answered from `research.json` | Return to the model: "no questions left; finish" |
 | G3 outbound overlap | `start_research`, `ask_research` | The text the tool would send shares fewer than 8 consecutive normalized words with every passage of the run | Deny, with a security event attributed `injection-dominant` when the passage is marked `suspect` and `indeterminate` otherwise |
 
 ## Runtime graph

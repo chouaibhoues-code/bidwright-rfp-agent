@@ -42,7 +42,8 @@ def agents_md() -> str:
     from bidwright.llm.client import LLMClient
     from bidwright.llm.replay import CassetteStore
     from bidwright.retrieval import PassageIndex
-    from bidwright.tools import date_tool, search_tool
+    from bidwright.schemas import AskResult, ToolResult
+    from bidwright.tools import ask_tool, date_tool, search_tool, start_tool
 
     config = load_config()
     # The typed configuration the code runs with, not the raw YAML; only the fields the files
@@ -120,9 +121,20 @@ def agents_md() -> str:
                 f" | {_cell(settings)} |"
             )
 
+    class Unasked:
+        """A research provider for the tool table, which never asks anything."""
+
+        def ask(self, question: str) -> AskResult:
+            return AskResult()
+
     with tempfile.TemporaryDirectory() as tmp:
         index = PassageIndex.build([], Path(tmp) / "search.sqlite")
-        tools = [search_tool(index), date_tool()]
+        tools = [
+            search_tool(index),
+            date_tool(),
+            ask_tool(Unasked(), max_excerpts=config.research.questions.max_matches),
+            start_tool(lambda args: ToolResult(status="EMPTY")),
+        ]
         lines += [
             "",
             "## Tools",
@@ -318,6 +330,11 @@ def hosting_note(profile: str, provider: str) -> str:
 TOOL_ACCESS = {
     "search_rfp": "Reads the run's own search index of the RFP; writes nothing",
     "date_calc": "Computes dates; reads and writes nothing",
+    "ask_research": "Reads the selected research pack, or sends one question to the"
+    " NotebookLM notebook code bound; `discover` records each answer in `research.json`",
+    "start_research": "Sends one query, built from the research envelope, to NotebookLM"
+    " as a deep research job on a notebook code created; `discover` writes the job to"
+    " `research.json`",
 }
 
 

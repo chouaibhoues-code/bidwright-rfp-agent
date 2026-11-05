@@ -12,7 +12,7 @@ import pytest
 import yaml
 
 from bidwright.harness.gateway import ToolGateway, ToolLog
-from bidwright.harness.rules import Call, OutboundOverlap, RuleContext
+from bidwright.harness.rules import Call, OutboundOverlap, RuleContext, query_sha256
 from bidwright.obs.events import EventRecorder, read_events
 from bidwright.schemas import (
     PackAnswer,
@@ -301,6 +301,25 @@ def test_a_gateway_that_starts_at_seven_allows_one_call(tmp_path: Path) -> None:
     assert gateway.call(_ask()).status == "OK"
     second = gateway.call(_ask("A second question about signing?"))
     assert (second.status, second.reason) == ("DENIED", "the tool-call budget of 8 is spent")
+
+
+def test_a_replayed_job_or_question_passes_the_spent_caps(tmp_path: Path) -> None:
+    """A resumed node's model asks again what it asked before the stop: a start whose query is
+    a recorded job's, or a recorded question, consumes nothing, so G1 and G5 let it through."""
+    record = _record(jobs=2, answers=6)
+    record.jobs[1] = record.jobs[1].model_copy(
+        update={"query": QUESTION, "query_sha256": query_sha256(QUESTION)}
+    )
+    record.answers[5] = PackAnswer(question=QUESTION, answer="a")
+    gateway = _discover(tmp_path, record=record)
+    assert gateway.call(_start()).status == "OK", "the second job's own query starts nothing"
+    assert gateway.call(_ask()).status == "OK", "a recorded question is answered from the file"
+    fresh = gateway.call(_start("A new question about signing services?", turn=2))
+    assert (fresh.status, fresh.reason) == ("DENIED", "the run's research jobs are spent")
+    capped = gateway.call(_ask("A new question about signing services?"))
+    assert (capped.status, capped.reason) == ("EMPTY", "no questions left; finish")
+    again = gateway.call(_start())
+    assert (again.status, again.reason) == ("DENIED", "one job a turn")
 
 
 def test_g2_records_an_authorization_event(tmp_path: Path) -> None:

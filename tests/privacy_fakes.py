@@ -70,6 +70,8 @@ class ScriptedModel:
             return {"zones": [], "profile": {}, "hazards": []}
         if name == "BriefResult":
             return {"factors": [], "topics": ["digital service procurement"]}
+        if name == "DiscoveryExtract":
+            return {"summary": "", "items": [], "needs": [], "open_questions": []}
         if name == "ConsolidationResult":
             return {"topic": "Requirements of one section", "duplicates": [], "references": []}
         if name == "ApproachResult":
