@@ -288,3 +288,40 @@ def test_a_raise_must_be_a_positive_percentage() -> None:
         cli.main(["resume", "run", "--raise-budget", "0"])
     with pytest.raises(SystemExit):
         cli.main(["resume", "run", "--profile", "local"])
+
+
+def test_ui_starts_streamlit_with_loopback_and_headless_flags(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: list[str] = []
+
+    class DummyCompleted:
+        returncode = 0
+
+    def fake_run(cmd: list[str], **kwargs: object) -> DummyCompleted:
+        seen.extend(cmd)
+        return DummyCompleted()
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    assert cli.main(["ui"]) == 0
+    assert "streamlit" in seen
+    assert "--server.address" in seen and "127.0.0.1" in seen
+    assert "--server.port" in seen and "8501" in seen
+    assert "--server.headless" in seen and "true" in seen
+    assert "--browser.gatherUsageStats" in seen and "false" in seen
+
+
+def test_spans_replay_calls_replay_spans_and_refuses_bad_endpoint(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    code = cli.main(
+        [
+            "spans",
+            "replay",
+            str(cli.HOME / "samples" / "dev"),
+            "--endpoint",
+            "https://collector.example.com:6006",
+        ]
+    )
+    assert code == 2
+    assert "Refused:" in capsys.readouterr().err

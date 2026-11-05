@@ -24,6 +24,7 @@ dependencies = [
     "pydantic>=2.10,<3",
     "python-docx>=1.2,<2",
     "pyyaml>=6,<7",
+    "streamlit>=1.40,<2",
     "tzdata>=2025.1",
 ]
 
@@ -74,4 +75,4 @@ select = ["E", "F", "I", "B", "UP", "S"]
 [tool.pyright]
 typeCheckingMode = "standard"
 pythonVersion = "3.12"
-include = ["src", "evals", "tests", "scripts"]
+include = ["src", "evals", "app", "tests", "scripts"]

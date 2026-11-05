@@ -209,6 +209,8 @@ def cli_md() -> str:
                 ["matrix", "run"],
                 ["research", "pin"],
                 ["research", "pack"],
+                ["ui"],
+                ["spans", "replay"],
             ],
         ),
         (

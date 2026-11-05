@@ -70,3 +70,20 @@ def test_only_the_app_service_names_the_host_machine() -> None:
             assert mapped == ["host.docker.internal:host-gateway"]
         else:
             assert not mapped, name
+
+
+def test_ui_publishes_8501_on_loopback_only_and_mounts_results_read_only() -> None:
+    """ADR-050: only `ui` publishes 8501 (on loopback), and only `ui` and `eval` mount
+    `evals/results/`."""
+    ui = COMPOSE["services"]["ui"]
+    assert ui["ports"] == ["127.0.0.1:8501:8501"]
+    assert ui["profiles"] == ["ui"]
+    for name, service in COMPOSE["services"].items():
+        ports = [str(p) for p in service.get("ports", [])]
+        if any("8501" in p for p in ports):
+            assert name == "ui", (name, ports)
+        mounts = [str(v) for v in service.get("volumes", [])]
+        if any("evals/results" in m for m in mounts):
+            assert name in ("ui", "eval"), (name, mounts)
+            if name == "ui":
+                assert all(m.endswith(":ro") for m in mounts if "evals/results" in m), mounts

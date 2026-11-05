@@ -64,6 +64,7 @@ Controls on every run, in code:
 | Service | Image | Published ports | Profiles |
 |---|---|---|---|
 | `app` | Built from this repository | None | default |
+| `ui` | Built from this repository | `127.0.0.1:8501:8501` | ui |
 | `docling` | `ghcr.io/docling-project/docling-serve-cpu:v1.38.2@sha256:7a480a1604fa3b42efeddc7db9527690d9f9bc903226136013e2bfe6b1a4dfb0` | `127.0.0.1:5001:5001` | default |
 | `phoenix` | `arizephoenix/phoenix:version-21.0.0@sha256:1f9a144a5357b4973e93a15718f050247cb7a4ee7b7c6c06ecb91b5eed3fbaad` | `127.0.0.1:6006:6006` | default |
 | `eval` | Built from this repository | None | eval |
@@ -96,4 +97,5 @@ Direct runtime dependencies, at the versions `uv.lock` pins; CI audits them with
 | `pydantic` | 2.14.2 |
 | `python-docx` | 1.2.0 |
 | `pyyaml` | 6.0.3 |
+| `streamlit` | 1.66.1 |
 | `tzdata` | 2026.6 |
