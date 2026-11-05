@@ -35,6 +35,8 @@ from openinference.semconv.trace import OpenInferenceSpanKindValues, SpanAttribu
 from bidwright.config import AgentLimits, QuestionsConfig
 from bidwright.graph.nodes import MALFORMED_TWICE, CallManifests, RunContext
 from bidwright.harness.gateway import ToolGateway
+from bidwright.harness.reflect import thought_attributes
+from bidwright.harness.rules import MAX_THOUGHTS, REFLECT
 from bidwright.kb import KnowledgeIndex
 from bidwright.llm.schema import sha256_of
 from bidwright.llm.types import Message
@@ -287,7 +289,8 @@ def decide_need(
     data = DecideTask(need=need).model_dump_json()
     rendered = prompt.render(data, run_id=ctx.run_id)
     messages = list(rendered.messages)
-    specs = [tool.spec for tool in gateway.specs()]
+    reflecting = bool(limits.reflect)
+    specs = [tool.spec for tool in gateway.specs() if reflecting or tool.name != REFLECT]
     seen: set[str] = set()
     evidence: list[str] = []
     found: list[str] = list(passages)
@@ -298,9 +301,9 @@ def decide_need(
             manifests.record(prompt, NODE, call_id, records, data, turns, found)
 
     transcript: list[Any] = []
-    stop_reason, turns = "turn_cap", 0
-    for turn in range(1, (limits.max_turns or 4) + 1):
-        turns = turn
+    stop_reason, turns, turn = "turn_cap", 0, 0
+    while turns < (limits.max_turns or 4):
+        turn += 1
         record(f"{need.need_id}-{turn}", messages)
         completion = ctx.call(
             prompt,
@@ -312,33 +315,45 @@ def decide_need(
         )
         messages.append(completion.as_message())
         if not completion.tool_calls:
+            turns += 1
             stop_reason = "answered"
             break
-        progress = False
+        progress = others = thought = False
         for call in completion.tool_calls:
             request = ToolRequest(tool=call.name, args=call.arguments, agent=NODE, turn=turn)
             attributes = {SpanAttributes.TOOL_NAME: call.name, "bidwright.turn": turn}
+            if call.name == REFLECT:
+                attributes |= thought_attributes(str(call.arguments.get("thought", "")))
             with ctx.span(
                 f"tool.{call.name}", OpenInferenceSpanKindValues.TOOL, **attributes
             ) as span:
                 result = gateway.call(request)
                 set_attribute(span, "bidwright.tool_status", result.status)
             transcript.append([call.name, call.arguments, result.model_dump()])
-            for key in progress_keys(call.name, result):
-                kind, _, value = key.partition(":")
-                if kind == "kb" and value not in evidence:
-                    evidence.append(value)
-                if kind == "src" and value not in found:
-                    found.append(value)
-                if key not in seen:
-                    seen.add(key)
-                    progress = True
+            if call.name == REFLECT:  # a thought is neither progress nor failure (ADR-047)
+                thought = thought or result.status == "OK"
+            else:
+                others = True
+                for key in progress_keys(call.name, result):
+                    kind, _, value = key.partition(":")
+                    if kind == "kb" and value not in evidence:
+                        evidence.append(value)
+                    if kind == "src" and value not in found:
+                        found.append(value)
+                    if key not in seen:
+                        seen.add(key)
+                        progress = True
             messages.append(
                 Message("tool", result.model_dump_json(), tool_call_id=call.id, name=call.name)
             )
+        if thought and not others:
+            continue  # a turn holding only reflect calls is outside the turn cap
+        turns += 1
+        gateway.turn_done(progress)
         if limits.stop_on_no_progress and not progress:
-            stop_reason = "no_progress"
-            break
+            if not (reflecting and gateway.thoughts < MAX_THOUGHTS):
+                stop_reason = "no_progress"
+                break
         if limits.max_tool_calls is not None and gateway.executed >= limits.max_tool_calls:
             stop_reason = "tool_cap"
             break

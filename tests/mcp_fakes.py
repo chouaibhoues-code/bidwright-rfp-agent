@@ -35,6 +35,11 @@ line, or "No libraries found", and `query-docs` answers with documentation in te
 description; `--injected` adds a documentation paragraph that addresses a model.
 `fake_counts` tells how often each tool ran and `fake_auth` the `Authorization` header the
 last call carried; research never calls either.
+
+With `--reflect` (Iteration 3, step 11) it is a fake sequential-thinking server, named as the
+pinned one, `sequential-thinking-server` 1.0.0, with its one tool `sequentialthinking` under
+the real parameter names, answering with the counters it was sent, so the gating tests run
+with no Node. `python -m tests.mcp_fakes stdio --reflect` serves it over stdio.
 """
 
 import socket
@@ -362,6 +367,28 @@ def build_context7(*, changed: bool = False, injected: bool = False) -> FastMCP:
     return server
 
 
+def build_reflect() -> FastMCP:
+    server = FastMCP("sequential-thinking-server", json_response=True)
+    server._mcp_server.version = "1.0.0"
+
+    @server.tool(description="A detailed tool for dynamic and reflective problem-solving.")
+    def sequentialthinking(
+        thought: str,
+        nextThoughtNeeded: bool,  # noqa: N803 (the real server's names)
+        thoughtNumber: int,  # noqa: N803
+        totalThoughts: int,  # noqa: N803
+    ) -> dict[str, Any]:
+        return {
+            "thoughtNumber": thoughtNumber,
+            "totalThoughts": totalThoughts,
+            "nextThoughtNeeded": nextThoughtNeeded,
+            "branches": [],
+            "thoughtHistoryLength": 1,
+        }
+
+    return server
+
+
 def free_port() -> int:
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
@@ -406,7 +433,9 @@ def http_server(url: str, bearer_env: str | None = None) -> Any:
 def main(argv: list[str]) -> int:
     transport = argv[0]
     version = argv[argv.index("--version") + 1] if "--version" in argv else None
-    if "--context7" in argv:
+    if "--reflect" in argv:
+        server = build_reflect()
+    elif "--context7" in argv:
         server = build_context7(
             changed="--changed-description" in argv, injected="--injected" in argv
         )

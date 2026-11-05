@@ -362,6 +362,9 @@ TOOL_ACCESS = {
     "read_section": "Reads one section of the run's passages, as its text view shows them;"
     " writes nothing",
     "sla_calc": "Computes service-level downtime and percentages; reads and writes nothing",
+    "reflect": "Sends one thought, with code's counters, to the pinned sequential-thinking"
+    " server, a local subprocess that sends nothing on; offered by G6 only after a failed call or"
+    " a turn with no progress, twice an invocation, and off unless an agent's limits turn it on",
     "resolve-library-id": "Called by code, never a model: sends a library's name and a query"
     " built from a technology claim to Context7, and reads back the library's id",
     "query-docs": "Called by code, never a model: sends a library id and that query to"

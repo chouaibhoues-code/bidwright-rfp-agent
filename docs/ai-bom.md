@@ -48,8 +48,8 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `discover` | agent | `ask_research`, `start_research` | max_turns 4, max_tool_calls 8, stop_on_no_progress True |
 | `extract` | function | None | 1 call and 1 repair, fixed in code |
 | `approach` | function | None | 1 call and 1 repair, fixed in code |
-| `risk` | agent | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
-| `decide` | agent | `search_capabilities`, `search_rfp`, `read_section`, `ask_research` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
+| `risk` | agent | `search_rfp`, `date_calc`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
+| `decide` | agent | `search_capabilities`, `search_rfp`, `read_section`, `ask_research`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
 | `assess` | function | None | 1 call and 1 repair, fixed in code |
 | `options` | function | None | 1 call and 1 repair, fixed in code |
 | `blueprint` | function | None | 1 call and 1 repair, fixed in code |
@@ -61,7 +61,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 
 Controls on every run, in code:
 
-- Every tool call passes `ToolGateway`'s rules, in this order: allowlist, G2 bound ids, argument schema, repeats, call cap, G4 pinned server, G1 job limit, G5 question cap, G3 outbound overlap (`docs/agents.md`).
+- Every tool call passes `ToolGateway`'s rules, in this order: allowlist, G2 bound ids, argument schema, repeats, G6 reflection gate, call cap, G4 pinned server, G1 job limit, G5 question cap, G3 outbound overlap (`docs/agents.md`).
 - Every model response must parse into its Pydantic schema, and code checks every quote against the RFP before a requirement is accepted.
 - Per-run limits on requests, tokens and active time, checked before every provider attempt (`config/limits.yaml`).
 - Mode `DRAFT_ONLY`: nothing is submitted, and every output is `UNREVIEWED_DRAFT` until a person signs it off.
@@ -78,6 +78,7 @@ Controls on every run, in code:
 | `search_capabilities` | Reads the run's own index of the supplier's knowledge base; writes nothing | `decide` |
 | `read_section` | Reads one section of the run's passages, as its text view shows them; writes nothing | `decide` |
 | `sla_calc` | Computes service-level downtime and percentages; reads and writes nothing | No agent |
+| `reflect` | Sends one thought, with code's counters, to the pinned sequential-thinking server, a local subprocess that sends nothing on; offered by G6 only after a failed call or a turn with no progress, twice an invocation, and off unless an agent's limits turn it on | `risk`, `decide` |
 | `resolve-library-id` | Called by code, never a model: sends a library's name and a query built from a technology claim to Context7, and reads back the library's id | `techcheck` |
 | `query-docs` | Called by code, never a model: sends a library id and that query to Context7, and reads back its documentation, which `techcheck` writes to `tech_docs.jsonl` | `techcheck` |
 

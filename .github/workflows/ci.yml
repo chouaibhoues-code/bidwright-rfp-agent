@@ -110,3 +110,8 @@ jobs:
       # The research server's pinned package, with the dependencies it resolves to today
       # (Iteration 2, step 13); --strict fails the job if they cannot be collected.
       - run: uv run pip-audit -r config/mcp_servers.txt --strict --progress-spinner off
+      # The sequential-thinking server's pinned npm packages (Iteration 3, step 11).
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "22"
+      - run: npm audit --audit-level=moderate

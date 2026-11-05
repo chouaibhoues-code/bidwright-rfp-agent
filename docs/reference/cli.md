@@ -161,11 +161,11 @@ options:
 ## `bidwright research pin`
 
 ```text
-usage: bidwright research pin [-h] [--server {notebooklm,context7}]
+usage: bidwright research pin [-h] [--server {notebooklm,context7,reflect}]
 
 options:
   -h, --help            show this help message and exit
-  --server {notebooklm,context7}
+  --server {notebooklm,context7,reflect}
                         the server
 ```
 

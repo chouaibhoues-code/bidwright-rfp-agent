@@ -13,8 +13,8 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | `discover` | agent | `DiscoveryTask` | `DiscoveryExtract` | `discover@0.4.0` | reason | `ask_research`, `start_research` | max_turns 4, max_tool_calls 8, stop_on_no_progress True |
 | `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.4.0` | extract | None | None |
 | `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
-| `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
-| `decide` | agent | `DecideTask` | `DecideResult` | `decide@0.1.0` | reason | `search_capabilities`, `search_rfp`, `read_section`, `ask_research` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
+| `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
+| `decide` | agent | `DecideTask` | `DecideResult` | `decide@0.1.0` | reason | `search_capabilities`, `search_rfp`, `read_section`, `ask_research`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
 | `assess` | function | `AssessmentTask` | `AssessmentResult` | `assess@0.1.0` | assess | None | None |
 | `options` | function | `OptionsTask` | `OptionsResult` | `options@0.1.0` | reason | None | None |
 | `blueprint` | function | `BlueprintPlanTask` | `BlueprintPlan` | `blueprint@0.1.0` | reason | None | None |
@@ -80,7 +80,8 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | G2 bound ids | `start_research`, `ask_research` | No argument key outside the tool's schema has a name containing notebook, task or source, in any letter case, and no string value, at any depth, contains a UUID or a run of 30 or more letters, digits, hyphens and underscores | Deny, with a security event attributed `authorization-dominant` |
 | argument schema | Every call | The arguments validate against the tool's Pydantic model | Deny |
 | repeats | Every call | No third identical call: the same tool with the same arguments | Deny |
-| call cap | Every call | The agent's tool-call cap is not yet spent, counting from the run's start | Deny |
+| G6 reflection gate | `reflect` | The agent's limits have `reflect: true`; the most recent result in this invocation of a tool other than `reflect` was `DENIED`, `EMPTY` or `FAILED`, or the most recent turn of other tools made no progress; and fewer than 2 thoughts this invocation | Deny: "reflect is offered only after a failed tool call or a turn with no progress, twice an invocation" |
+| call cap | Every call but `reflect` | The agent's tool-call cap is not yet spent, counting from the run's start | Deny |
 | G4 pinned server | `start_research`, `ask_research`, when the research provider is NotebookLM; `resolve-library-id`, `query-docs` | The server's reported name and version, and its tools, matched their pins when the run first connected | Deny: "server refused: its tools do not match their pins" |
 | G1 job limit | `start_research` | Fewer than 2 jobs this run, or the query of a recorded job, which starts nothing; and no other `start_research` in the same turn | Deny: "the run's research jobs are spent", or "one job a turn" |
 | G5 question cap | `ask_research` from `discover` | Fewer than 6 questions this run, or a recorded question, which is answered from `research.json` | Return to the model: "no questions left; finish" |

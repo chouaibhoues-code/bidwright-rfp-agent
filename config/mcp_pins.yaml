@@ -21,3 +21,10 @@ notebooklm:
     research_import: sha256:7f724f09364a5f754f70441810f643d2cdf510243d88144c43acc27051160d14
     research_start: sha256:0310d79766667e3e50c660accb8fb434a39911865c644e64d55362eb649454ae
     research_status: sha256:74ee6955808cc32bf9dcd17f501d1e93ebd4606893b701c3d6dac034ad6b3df2
+reflect:
+  package: null
+  server:
+    name: sequential-thinking-server
+    version: 1.0.0
+  tools:
+    sequentialthinking: sha256:b7f7be9d73b8a83f003dc5b1d8494a0939cb3c539f1ad968e23942503ebb3427

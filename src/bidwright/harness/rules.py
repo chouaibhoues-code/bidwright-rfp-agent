@@ -1,13 +1,13 @@
 """The gateway's rules (Iteration 2, ADR-032): the four checks of `v0.0` and G1 to G5.
 
 `ToolGateway` evaluates every rule a call triggers, in `RULES` order: the allowlist, G2, the
-argument schema, repeats, the call cap, G4, G1, G5 and G3. G2 runs before the schema check so
-that an attempt to name a notebook leaves a security event; G3 runs last because it needs the
-text code would send. The first rule a call breaks decides its outcome: `deny` returns
-`DENIED` with the rule's reason, `return` returns `EMPTY` with it, so the model can finish, and
-`pause`, for Iteration 3's gate, is defined but unused. A call counts against the call cap only
-when it passes every rule. The four checks of `v0.0` keep their reason strings byte for byte,
-since recorded transcripts hold them and later cassette keys depend on them.
+argument schema, repeats, G6 (from Iteration 3), the call cap, G4, G1, G5 and G3. G2 runs before
+the schema check so that an attempt to name a notebook leaves a security event; G3 runs last
+because it needs the text code would send. The first rule a call breaks decides its outcome:
+`deny` returns `DENIED` with the rule's reason, `return` returns `EMPTY` with it, so the model
+can finish, and `pause`, for Iteration 3's gate, is defined but unused. A call counts against
+the call cap only when it passes every rule. The four checks of `v0.0` keep their reason strings
+byte for byte, since recorded transcripts hold them and later cassette keys depend on them.
 
 A rule is a small class with `name`, `trigger`, `description` (its check, in words), `outcome`
 and `check`; `scripts/gen_docs.py` writes the rules table in `docs/agents.md` from these
@@ -51,6 +51,15 @@ RESEARCH_TOOLS = frozenset({"start_research", "ask_research"})
 # Context7's tools, which code calls for `techcheck` (Iteration 3, ADR-044).
 CONTEXT7_TOOLS = frozenset({"resolve-library-id", "query-docs"})
 OUTBOUND_TOOLS = RESEARCH_TOOLS | CONTEXT7_TOOLS  # the tools whose text leaves the run
+# The gated reflect tool (Iteration 3, ADR-047): G6 allows it after a failure signal, twice an
+# invocation, and a thought that passes counts against no cap.
+REFLECT = "reflect"
+MAX_THOUGHTS = 2
+FAILURE_STATUSES = frozenset({"DENIED", "EMPTY", "FAILED"})
+REFLECT_DENIED = (
+    "reflect is offered only after a failed tool call or a turn with no progress, twice an"
+    " invocation"
+)
 _CONTEXT7_TEXTS = ("query", "libraryName")  # what G3 reads of a Context7 call
 MAX_IDENTICAL_CALLS = 2
 _UUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
@@ -263,10 +272,33 @@ class Repeats(Rule):
         return None
 
 
+class ReflectionGate(Rule):
+    name = "G6 reflection gate"
+    trigger = "`reflect`"
+    description = (
+        "The agent's limits have `reflect: true`; the most recent result in this invocation of a"
+        " tool other than `reflect` was `DENIED`, `EMPTY` or `FAILED`, or the most recent turn of"
+        " other tools made no progress; and fewer than 2 thoughts this invocation"
+    )
+    note = f': "{REFLECT_DENIED}"'
+    tools = frozenset({REFLECT})
+
+    def check(self, call: Call, gateway: "ToolGateway") -> Finding | None:
+        others = [result for request, result in gateway.calls if request.tool != REFLECT]
+        failed = bool(others) and others[-1].status in FAILURE_STATUSES
+        stalled = gateway.last_progress is False
+        if not gateway.reflect or gateway.thoughts >= MAX_THOUGHTS or not (failed or stalled):
+            return Finding(REFLECT_DENIED)
+        return None
+
+
 class CallCap(Rule):
     name = "call cap"
-    trigger = "Every call"
+    trigger = "Every call but `reflect`"
     description = "The agent's tool-call cap is not yet spent, counting from the run's start"
+
+    def triggered(self, call: Call, gateway: "ToolGateway") -> bool:
+        return call.request.tool != REFLECT  # a thought counts against no cap (ADR-047)
 
     def check(self, call: Call, gateway: "ToolGateway") -> Finding | None:
         if gateway.executed >= gateway.max_tool_calls:
@@ -391,6 +423,7 @@ RULES: tuple[Rule, ...] = (
     BoundIds(),
     Schema(),
     Repeats(),
+    ReflectionGate(),
     CallCap(),
     PinnedServer(),
     JobLimit(),
@@ -405,7 +438,11 @@ OUTCOMES: Mapping[Outcome, str] = {
 
 __all__ = [
     "CONTEXT7_TOOLS",
+    "FAILURE_STATUSES",
     "MAX_IDENTICAL_CALLS",
+    "MAX_THOUGHTS",
+    "REFLECT",
+    "REFLECT_DENIED",
     "OUTBOUND_TOOLS",
     "OUTCOMES",
     "RESEARCH_TOOLS",

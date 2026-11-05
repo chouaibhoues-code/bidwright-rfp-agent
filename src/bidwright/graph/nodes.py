@@ -27,6 +27,8 @@ from bidwright.config import AgentLimits
 from bidwright.harness.budget import RunBudget
 from bidwright.harness.context import ContextManager, estimate_tokens, prompt_tokens
 from bidwright.harness.gateway import ToolGateway
+from bidwright.harness.reflect import thought_attributes
+from bidwright.harness.rules import MAX_THOUGHTS, REFLECT
 from bidwright.harness.view import TextView
 from bidwright.ingest import display_text
 from bidwright.llm.client import Completion, LLMClient
@@ -804,7 +806,10 @@ def risk(
 ) -> RiskOutcome:
     """A tool loop of at most `max_turns` turns, then a final structured call with no tools.
     Its calls are `R01` onward, one per turn, then `R-final`, a format repair `R-final-repair`
-    and the retry after generic risks `R-final-generic`."""
+    and the retry after generic risks `R-final-generic`. With `reflect` in its limits (Iteration
+    3, ADR-047) the definition goes with every turn; a thought counts as neither progress nor
+    failure, a turn holding only thoughts is outside the turn cap, and a turn with no progress
+    ends the loop only once both thoughts are spent. Without it the loop is `v0.2`'s."""
     prompt = ctx.prompts["risk"]
     chosen = predictions(requirements)
     view = RiskInput(
@@ -818,7 +823,8 @@ def risk(
     data = view.model_dump_json()
     rendered = prompt.render(data, run_id=ctx.run_id)
     messages = list(rendered.messages)
-    specs = [tool.spec for tool in gateway.specs()]
+    reflecting = bool(limits.reflect)
+    specs = [tool.spec for tool in gateway.specs() if reflecting or tool.name != REFLECT]
     seen: set[str] = set()
     records = [r.id for r in chosen] + [a.id for a in approach_items]
     found: list[str] = []  # the passages search results returned, in order
@@ -829,10 +835,10 @@ def risk(
             manifests.record(prompt, "risk", call_id, records, data, turns, found)
 
     transcript: list[Any] = []
-    stop_reason, turns = "turn_cap", 0
+    stop_reason, turns, turn = "turn_cap", 0, 0
     max_turns = limits.max_turns or 4
-    for turn in range(1, max_turns + 1):
-        turns = turn
+    while turns < max_turns:
+        turn += 1
         record(f"R{turn:02d}", messages)
         completion = ctx.call(
             prompt,
@@ -844,30 +850,42 @@ def risk(
         )
         messages.append(completion.as_message())
         if not completion.tool_calls:
+            turns += 1
             stop_reason = "answered"
             break
-        progress = False
+        progress = others = thought = False
         for call in completion.tool_calls:
             request = ToolRequest(tool=call.name, args=call.arguments, agent="risk", turn=turn)
             tool_attributes = {SpanAttributes.TOOL_NAME: call.name, "bidwright.turn": turn}
+            if call.name == REFLECT:
+                tool_attributes |= thought_attributes(str(call.arguments.get("thought", "")))
             with ctx.span(
                 f"tool.{call.name}", OpenInferenceSpanKindValues.TOOL, **tool_attributes
             ) as span:
                 result = gateway.call(request)
                 set_attribute(span, "bidwright.tool_status", result.status)
             transcript.append([call.name, call.arguments, result.model_dump()])
-            if call.name == "search_rfp":
-                found += [k for k in _progress_keys(call.name, result) if k not in found]
-            for key in _progress_keys(call.name, result):
-                if key not in seen:
-                    seen.add(key)
-                    progress = True
+            if call.name == REFLECT:  # a thought is neither progress nor failure (ADR-047)
+                thought = thought or result.status == "OK"
+            else:
+                others = True
+                if call.name == "search_rfp":
+                    found += [k for k in _progress_keys(call.name, result) if k not in found]
+                for key in _progress_keys(call.name, result):
+                    if key not in seen:
+                        seen.add(key)
+                        progress = True
             messages.append(
                 Message("tool", result.model_dump_json(), tool_call_id=call.id, name=call.name)
             )
+        if thought and not others:
+            continue  # a turn holding only reflect calls is outside the turn cap
+        turns += 1
+        gateway.turn_done(progress)
         if limits.stop_on_no_progress and not progress:
-            stop_reason = "no_progress"
-            break
+            if not (reflecting and gateway.thoughts < MAX_THOUGHTS):
+                stop_reason = "no_progress"
+                break
         if limits.max_tool_calls is not None and gateway.executed >= limits.max_tool_calls:
             stop_reason = "tool_cap"
             break

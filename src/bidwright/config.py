@@ -255,6 +255,8 @@ class AgentLimits(Strict):
     max_turns: int | None = None
     max_tool_calls: int | None = None
     stop_on_no_progress: bool = False
+    # Iteration 3 (ADR-047): the gated reflect tool, off unless a ladder rung turns it on.
+    reflect: bool = False
 
 
 class AgentConfig(Strict):
@@ -508,9 +510,21 @@ class LintConfig(Strict):
 
 
 class Destination(Strict):
-    hosts: list[str] = Field(min_length=1)
+    """An egress destination. An `http` one lists its hosts; a `stdio` one (Iteration 3: the
+    sequential-thinking server behind `reflect`) is a local subprocess and lists none."""
+
+    transport: Literal["http", "stdio"] = "http"
+    hosts: list[str] = Field(default_factory=list)
     local: bool
-    receives: Literal["prompts", "spans", "documents", "queries"]
+    receives: Literal["prompts", "spans", "documents", "queries", "thoughts"]
+
+    @model_validator(mode="after")
+    def _hosts_follow_the_transport(self) -> "Destination":
+        if self.transport == "http" and not self.hosts:
+            raise ValueError("an http destination lists its hosts")
+        if self.transport == "stdio" and (self.hosts or not self.local):
+            raise ValueError("a stdio destination is a local subprocess and lists no hosts")
+        return self
 
 
 class EgressConfig(Strict):
@@ -560,8 +574,9 @@ class HttpServer(Strict):
 
 
 class StdioServer(Strict):
-    """A server Bidwright starts as a subprocess. Only tests use one: it has no host, so the
-    egress check refuses it on any run."""
+    """A server Bidwright starts as a subprocess: the sequential-thinking server behind
+    `reflect` (Iteration 3), and test servers. It has no host, so the egress check refuses one
+    unless `config/egress.yaml` lists it as a local `stdio` destination."""
 
     transport: Literal["stdio"]
     command: str = Field(min_length=1)

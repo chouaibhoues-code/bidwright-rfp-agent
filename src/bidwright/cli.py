@@ -22,7 +22,7 @@
     bidwright matrix run <file> [--resume]
                          runs a matrix file's rungs and repeats in order, under
                          outputs/matrices/<name>/
-    bidwright research pin [--server notebooklm|context7]
+    bidwright research pin [--server notebooklm|context7|reflect]
                          pins a server's tools in config/mcp_pins.yaml, on the host
     bidwright research libraries --library NAME --topic WORDS ... [--run RUN]
                          builds or extends research_packs/libraries/ from Context7, on the host
@@ -316,14 +316,21 @@ def _percent(value: str) -> int:
 def _pin(args: argparse.Namespace) -> int:
     """List the research server's tools and pin the ones research uses. Run on the host,
     with the server started, after its version changes."""
-    from bidwright.config import load_config
+    from bidwright.config import StdioServer, load_config
+    from bidwright.harness import reflect
     from bidwright.research import context7, nlm
     from bidwright.research.mcp_client import McpClient, McpError
     from bidwright.research.pins import ServerRefused, pinned, write_pins
 
     servers = load_config().research.servers
     server = servers.get(args.server)
-    sent = {nlm.SERVER: nlm.SENT, context7.SERVER: context7.SENT}.get(args.server)
+    sent = {
+        nlm.SERVER: nlm.SENT,
+        context7.SERVER: context7.SENT,
+        reflect.SERVER: reflect.SENT,
+    }.get(args.server)
+    if isinstance(server, StdioServer):
+        server = reflect.reflect_server(server)
     if server is None or sent is None:
         print(f"Refused: no server {args.server!r} research can pin", file=sys.stderr)
         return 2
@@ -485,7 +492,10 @@ def main(argv: list[str] | None = None) -> int:
     research_sub = research.add_subparsers(dest="research_command", required=True)
     pin = research_sub.add_parser("pin", help="pin the research server's tools, on the host")
     pin.add_argument(
-        "--server", default="notebooklm", choices=["notebooklm", "context7"], help="the server"
+        "--server",
+        default="notebooklm",
+        choices=["notebooklm", "context7", "reflect"],
+        help="the server",
     )
     libraries = research_sub.add_parser(
         "libraries", help="build or extend the library pack from Context7, on the host"

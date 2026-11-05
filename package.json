@@ -1,0 +1,8 @@
+{
+  "name": "bidwright-mcp-servers",
+  "private": true,
+  "description": "The MCP servers Bidwright runs over stdio: the pinned sequential-thinking server behind the gated reflect tool (Iteration 3, ADR-047).",
+  "dependencies": {
+    "@modelcontextprotocol/server-sequential-thinking": "1.0.0"
+  }
+}

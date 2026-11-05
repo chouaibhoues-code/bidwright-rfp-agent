@@ -34,6 +34,7 @@ KNOWN_TOOLS = {
     "sla_calc",
     "resolve-library-id",  # Context7, called by code for techcheck
     "query-docs",
+    "reflect",  # the gated sequential-thinking tool, off by default
 }
 
 
@@ -201,9 +202,9 @@ def test_a_pattern_that_does_not_compile_names_its_file_and_rule() -> None:
 
 
 def test_every_destination_names_its_hosts_and_whether_it_is_local(config: Config) -> None:
-    """ADR-026: the egress register."""
+    """ADR-026: the egress register. A stdio destination, reflect's server, lists none."""
     for name, destination in config.egress.destinations.items():
-        assert destination.hosts, name
+        assert bool(destination.hosts) == (destination.transport == "http"), name
         assert isinstance(destination.local, bool), name
     assert config.egress.destinations["gemini"].local is False
     for local in ("ollama", "phoenix", "docling"):
@@ -307,3 +308,21 @@ def test_the_cerebras_trial_row_applies_on_every_profile(config: Config) -> None
     assert (free.rpm, free.tpm, free.tpd) == (5, 30_000, 1_000_000)
     assert limits.quota_tier("cerebras", "paid") == "trial"
     assert limits.quota_tier("gemini", "paid") == "paid", "a provider with two tiers keeps both"
+
+
+def test_a_stdio_destination_lists_no_hosts_and_an_http_one_needs_them() -> None:
+    """Iteration 3, step 11: reflect's server is a local stdio destination."""
+    from bidwright.config import Destination
+
+    reflect = Destination.model_validate(
+        {"transport": "stdio", "local": True, "receives": "thoughts"}
+    )
+    assert reflect.hosts == []
+    with pytest.raises(ValidationError, match="lists no hosts"):
+        Destination.model_validate(
+            {"transport": "stdio", "hosts": ["localhost"], "local": True, "receives": "thoughts"}
+        )
+    with pytest.raises(ValidationError, match="lists no hosts"):
+        Destination.model_validate({"transport": "stdio", "local": False, "receives": "thoughts"})
+    with pytest.raises(ValidationError, match="lists its hosts"):
+        Destination.model_validate({"local": False, "receives": "queries"})

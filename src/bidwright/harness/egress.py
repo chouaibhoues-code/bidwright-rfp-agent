@@ -16,7 +16,9 @@ From Iteration 2, `execute` also passes the research servers when the research m
 NotebookLM's, and from Iteration 3 Context7's (ADR-044). A server's URL is `server_url`'s: the
 server entry's, unless `<NAME>_MCP_URL` names another, as `NOTEBOOKLM_MCP_URL` does on the
 host. A refused research server names `--research pack`, which
-needs no server; a stdio entry has no host to check, so it is refused on any run.
+needs no server; a stdio entry has no host to check, so it is refused on any run, unless the
+register lists it as a local `stdio` destination, as it does `reflect`'s server (Iteration 3,
+ADR-047), which `check_run` receives when an agent's limits have `reflect: true`.
 """
 
 import os
@@ -114,6 +116,9 @@ def check_run(
 def _check_research(
     name: str, server: HttpServer | StdioServer, data_class: str, register: EgressConfig
 ) -> None:
+    entry = register.destinations.get(name)
+    if isinstance(server, StdioServer) and entry is not None and entry.transport == "stdio":
+        return  # a local subprocess the register lists, such as reflect's server (Iteration 3)
     if isinstance(server, StdioServer):
         raise EgressRefused(
             f"the research server {name} runs over stdio, so it has no host the register can"

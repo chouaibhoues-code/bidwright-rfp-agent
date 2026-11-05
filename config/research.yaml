@@ -16,6 +16,11 @@ servers:
   # every argument; the key goes in the Authorization header when CONTEXT7_API_KEY is set.
   context7: {transport: http, url: "https://mcp.context7.com/mcp", timeout_s: 60, tool_timeout_s: 60,
              bearer_env: CONTEXT7_API_KEY}
+  # The pinned sequential-thinking server behind the gated reflect tool (Iteration 3, ADR-047):
+  # package.json pins it, `npm ci` installs it, and each thought starts one process.
+  reflect: {transport: stdio, command: node,
+            args: [node_modules/@modelcontextprotocol/server-sequential-thinking/dist/index.js],
+            env: {DISABLE_THOUGHT_LOGGING: "true"}, timeout_s: 30, tool_timeout_s: 30}
 # Authority tiers by host: the lowest tier with a matching entry. An entry that starts with a dot
 # matches any host ending with it; another entry matches that host and its subdomains.
 tiers:
