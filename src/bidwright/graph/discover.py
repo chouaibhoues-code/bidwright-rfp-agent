@@ -25,6 +25,9 @@ Five nodes, which step 12 wires as section 4.1 of the design draws them, each a 
 - `extract`, `discover_extract`, one call over every finished job's report, newest first, with
   the answers and their excerpts, which becomes `domain_brief.json`.
 
+The research pack builder (`research/builder.py`) runs `read_report`, `ask` and `extract` on a
+job it did not start, recorded as finished, with no second job to spend.
+
 `start_research` builds the query from the prompt's `envelope` element with the model's question
 and topics, and is idempotent on the query's hash: a call whose query a recorded job holds
 returns that job's label and starts nothing. A second job gets a fresh notebook. Every notebook
@@ -38,9 +41,10 @@ requests although the crashed run had recorded answers or started a job.
 
 A research failure inside a live node is written to `research.json`'s notes and returned as the
 node's `failed`, so the edge goes to `discover_load`: a tool error, a refused server, an open
-breaker on the server, a failed job, or code's own query refused by the gateway. A failure of
-the model's own call is not one: a denial goes back to the model, and an open breaker on the
-model propagates as it does in every node. `ResearchPending` and `ResearchStopped` propagate.
+breaker on the server, a failed job, code's own query refused by the gateway, or an extraction
+that keeps no item or need, which writes no `domain_brief.json`. A failure of the model's own
+call is not one: a denial goes back to the model, and an open breaker on the model propagates
+as it does in every node. `ResearchPending` and `ResearchStopped` propagate.
 
 Inbound trust (`research/trust.py`): every excerpt and answer is screened as it arrives, and
 every report paragraph before a model sees it; a suspect report paragraph is removed, with a
@@ -116,6 +120,7 @@ BRIEF_FILE = "domain_brief.json"
 POLL_WAIT_S = 30.0  # each poll's wait at the server
 QUESTION_MAX_CHARS = 300  # StartResearchArgs.question
 NO_TOPICS = "research: the brief gave no topics"
+EMPTY_EXTRACTION = "research: the extraction kept no item or need resting on an excerpt"
 FAILURES = (McpError, ServerRefused, ResearchRefused, CircuitOpen)  # inside a provider call
 
 
@@ -325,6 +330,7 @@ class Discovery:
     tool_log: ToolLog | None = None
     control: Drain | None = None
     budget_tokens: int = 16000
+    rfp: bool = True  # False for a research pack build, which holds no RFP passages
     clock: Callable[[], float] = time.monotonic
     sleep: Callable[[float], None] = time.sleep
     now: Callable[[], datetime] = utc_now
@@ -505,6 +511,21 @@ class Discovery:
                     job.model_copy(update={"waited_seconds": job.waited_seconds + rest})
                 )
 
+    # --- the research pack builder --------------------------------------------------------------
+
+    def read_report(self, label: str) -> NodeOutcome:
+        """The research pack builder's first call on a job it did not start: one poll for the
+        job's report and its listing, taking any new task id, as a resumed `discover_ask`
+        makes it; `ask` and `extract` then reuse the report."""
+        job = next((j for j in self.store.load().jobs if j.label == label), None)
+        try:
+            if job is None:
+                raise _Failed(f"research: no job {label} is recorded")
+            self._report(job)
+        except _Failed as exc:
+            return self._failed(str(exc))
+        return NodeOutcome()
+
     # --- discover_ask ---------------------------------------------------------------------------
 
     def ask(self, topics: Sequence[str]) -> NodeOutcome:
@@ -598,6 +619,9 @@ class Discovery:
             brief, notes = settle_brief(parsed, record.excerpts, record.sources, mode="live")
             if notes:
                 self.store.note(*notes)
+            if not brief.items and not brief.needs:
+                self._finish(None)
+                raise _Failed(EMPTY_EXTRACTION)
             write_atomic(self.run_dir / BRIEF_FILE, brief.model_dump_json(indent=1) + "\n")
             self._finish(None)
             done = sorted(job.label for job in finished)
@@ -947,6 +971,7 @@ class Discovery:
             max_shared_words=self.config.outbound.max_shared_words,
             max_jobs=self.config.jobs.max_per_run,
             max_questions=self.config.questions.max_per_run,
+            rfp=self.rfp,
         )
         return ToolGateway.for_agent(
             NODE,
@@ -970,6 +995,9 @@ class Discovery:
 
 __all__ = [
     "BRIEF_FILE",
+    "EMPTY_EXTRACTION",
+    "FAILURES",
+    "NODE",
     "domain_view",
     "NO_TOPICS",
     "RESEARCH_FILE",

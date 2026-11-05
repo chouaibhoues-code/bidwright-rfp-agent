@@ -903,7 +903,9 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
     return builder.compile(checkpointer=checkpointer)
 
 
-def _commit() -> str:
+def current_commit() -> str:
+    """The commit a run records: `BIDWRIGHT_COMMIT` when set, as the image sets it, or Git's
+    short HEAD; the research pack builder's runs record it too."""
     if os.environ.get("BIDWRIGHT_COMMIT"):
         return os.environ["BIDWRIGHT_COMMIT"]
     try:
@@ -1157,7 +1159,7 @@ def execute(
     } or {source.name: _file_hash(source)}
     manifest = RunManifest(
         run_id=run_id,
-        commit=_commit(),
+        commit=current_commit(),
         profile=profile,
         models={role: rc.model for role, rc in config.models.profiles[profile].items()},
         prompt_hashes={name: prompt.hash for name, prompt in prompts.items()},

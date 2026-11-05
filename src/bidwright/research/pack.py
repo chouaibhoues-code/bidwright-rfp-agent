@@ -10,11 +10,12 @@ A pack is one folder of six files, which `research_packs/README.md` lists: `pack
   when an excerpt, an answer or an item of the domain brief names a source or an excerpt the
   pack lacks. It screens every excerpt and answer each time (`trust.screen`), quarantining a
   suspect one in memory, with a security event.
-- `select_pack` reads each pack's keywords. A keyword matches when one of its content stems
-  (`text.content_stems`) is among the stems of the brief's topics, and the pack with the most
-  matching keywords is selected when it has at least `min_matches` and no other pack has as
-  many. A tie selects none, and so do no topics; the selection's note says why, for the
-  research record. `packs_dir` resolves against `preflight.HOME`.
+- `select_pack` reads each pack's keywords (`pack_keywords`). A keyword matches when one of
+  its content stems (`text.content_stems`) is among the stems of the brief's topics, and
+  the pack with the most matching keywords is selected when it has at least `min_matches`
+  and no other pack has as many (`choose`). A tie selects none, and so do no topics; the
+  selection's note says why, for the research record. The research pack builder applies
+  the same rule to a pack before writing it. `packs_dir` resolves against `preflight.HOME`.
 - `PackProvider` is research mode `pack`'s research provider: `ask` answers from its pack by
   ADR-034's rule, and every other method refuses, since a pack starts no job.
 """
@@ -22,7 +23,7 @@ A pack is one folder of six files, which `research_packs/README.md` lists: `pack
 import hashlib
 import math
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import NoReturn
@@ -197,29 +198,42 @@ def keyword_matches(keywords: Sequence[str], topics: Sequence[str]) -> int:
     return sum(1 for keyword in keywords if content_stems(keyword) & wanted)
 
 
+def pack_keywords(packs_dir: str | Path) -> dict[str, tuple[Path, list[str]]]:
+    """Each pack's folder and keywords, by domain id; two folders holding one domain refuse."""
+    found: dict[str, tuple[Path, list[str]]] = {}
+    for manifest_path in sorted(packs_root(packs_dir).glob(f"*/{PACK_FILE}")):
+        manifest = _manifest(manifest_path)
+        domain = manifest.domain_id
+        if domain in found:
+            raise PackRefused(
+                f"{found[domain][0].name} and {manifest_path.parent.name} both hold {domain}"
+            )
+        found[domain] = (manifest_path.parent, list(manifest.keywords))
+    return found
+
+
+def choose(matches: Mapping[str, int], min_matches: int) -> tuple[str | None, str | None]:
+    """The domain with the most matching keywords, at least `min_matches` and no tie; or None,
+    with the note that says why."""
+    best = max(matches.values(), default=0)
+    if best < min_matches:
+        return None, NO_PACK
+    top = sorted(domain for domain, count in matches.items() if count == best)
+    if len(top) > 1:
+        return None, f"{NO_PACK}: {', '.join(top)} tie with {best} keywords each"
+    return top[0], None
+
+
 def select_pack(topics: Sequence[str], packs_dir: str | Path, *, min_matches: int) -> Selection:
     """The pack with the most matching keywords, at least `min_matches` and no tie."""
     if not topics:
         return Selection(None, None, note=f"{NO_PACK}: the brief gave no topics")
-    folders: dict[str, Path] = {}
-    matches: dict[str, int] = {}
-    for manifest_path in sorted(packs_root(packs_dir).glob(f"*/{PACK_FILE}")):
-        manifest = _manifest(manifest_path)
-        domain = manifest.domain_id
-        if domain in folders:
-            raise PackRefused(
-                f"{folders[domain].name} and {manifest_path.parent.name} both hold {domain}"
-            )
-        folders[domain] = manifest_path.parent
-        matches[domain] = keyword_matches(manifest.keywords, topics)
-    best = max(matches.values(), default=0)
-    if best < min_matches:
-        return Selection(None, None, matches, NO_PACK)
-    top = sorted(domain for domain, count in matches.items() if count == best)
-    if len(top) > 1:
-        tied = ", ".join(top)
-        return Selection(None, None, matches, f"{NO_PACK}: {tied} tie with {best} keywords each")
-    return Selection(folders[top[0]], top[0], matches)
+    packs = pack_keywords(packs_dir)
+    matches = {domain: keyword_matches(keywords, topics) for domain, (_, keywords) in packs.items()}
+    domain, note = choose(matches, min_matches)
+    if domain is None:
+        return Selection(None, None, matches, note)
+    return Selection(packs[domain][0], domain, matches)
 
 
 class PackProvider:
@@ -308,9 +322,11 @@ __all__ = [
     "PackProvider",
     "PackRefused",
     "Selection",
+    "choose",
     "digest",
     "keyword_matches",
     "load_pack",
+    "pack_keywords",
     "packs_root",
     "select_pack",
 ]

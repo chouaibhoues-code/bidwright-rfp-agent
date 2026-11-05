@@ -15,6 +15,7 @@ from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Request, Response
 from bidwright.schemas import (
     ControlRegister,
+    DomainBrief,
     LedgerEntry,
     OpportunityBrief,
     Requirement,
@@ -345,7 +346,17 @@ def test_the_development_pdf_with_its_traps_replays_from_the_demo_cassettes(
     research = ResearchRecord.model_validate_json(
         (result.run_dir / "research.json").read_text(encoding="utf-8")
     )
-    assert research.notes == ["no pack for this domain"]
+    # The recorded brief's topic selects the development PDF's research pack (step 13),
+    # which loads with no model call, so the recording needs no new cassette.
+    assert (research.pack_id, research.notes) == ("higher-education-procurement", [])
+    brief = DomainBrief.model_validate_json(
+        (result.run_dir / "domain_brief.json").read_text(encoding="utf-8")
+    )
+    assert brief.mode == "pack" and brief.items, "the pack's domain brief"
+    summary = (result.run_dir / "solution_summary.md").read_text(encoding="utf-8")
+    appendix = summary.index("## Appendix: domain research (external, unverified)")
+    assert appendix > summary.index("## 4. Open questions")
+    assert "From the research pack `higher-education-procurement`, version 1." in summary
 
 
 def test_the_demo_replays_in_research_mode_off(tmp_path: Path, no_network: None) -> None:
@@ -370,6 +381,10 @@ def test_the_development_docx_replays_from_its_cassettes(tmp_path: Path, no_netw
     _all_replayed(result.run_dir)
     _verified(result.run_dir)
     assert (result.run_dir / "compliance_matrix.xlsx").exists()
+    research = ResearchRecord.model_validate_json(
+        (result.run_dir / "research.json").read_text(encoding="utf-8")
+    )
+    assert research.notes == ["no pack for this domain"], "no pack matches its topics"
 
 
 def test_the_hero_package_replays_through_consolidate(tmp_path: Path, no_network: None) -> None:

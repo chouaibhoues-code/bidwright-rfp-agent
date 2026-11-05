@@ -107,3 +107,6 @@ jobs:
       - uses: astral-sh/setup-uv@v10.3.3
       - run: uv sync --locked
       - run: uv run pip-audit
+      # The research server's pinned package, with the dependencies it resolves to today
+      # (Iteration 2, step 13); --strict fails the job if they cannot be collected.
+      - run: uv run pip-audit -r config/mcp_servers.txt --strict --progress-spinner off

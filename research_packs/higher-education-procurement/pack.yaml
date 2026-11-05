@@ -1,0 +1,13 @@
+domain_id: higher-education-procurement
+title: "Electronic signature services in higher education"
+version: 1
+created: 2026-11-05
+keywords: ["higher education", "procurement", "electronic signature", "e-signature", "university"]
+topics: ["cloud electronic signature services", "higher education IT procurement", "document workflow automation"]
+files:
+  summary.md: "sha256:aec067c490d2b5b747288858b89131104dc6ab137fe6f91585bf6e033b8c9c77"
+  sources.jsonl: "sha256:5f161fbd33759205b34c3ec518445be1573231e582931d14e09e1cb367fd428f"
+  excerpts.jsonl: "sha256:073bd694c7f0d2dc0ea9290723af956c736c4ec3bec4dbe3a6a8a28891c50096"
+  domain_brief.json: "sha256:01bfcbc706eeb5ff836f39cabefb3429e8c8ef7d0337947dc3f35a346e913d79"
+  answers.jsonl: "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+counts: {sources: 25, excerpts: 111, items: 1, needs: 1, answers: 0}

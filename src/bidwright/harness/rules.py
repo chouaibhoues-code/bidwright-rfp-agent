@@ -69,7 +69,9 @@ class Finding:
 @dataclass
 class RuleContext:
     """What the research rules read, for one agent invocation. Built from the run's passages,
-    and refused with none, since G3 would then let every query through."""
+    and refused with none, since G3 would then let every query through; only a run that holds
+    no RFP, as a research pack build's, says so with `rfp=False` and has no passages, so G3
+    has nothing a query could copy."""
 
     passages: Sequence[Passage]
     view: "TextView | None" = None
@@ -82,11 +84,14 @@ class RuleContext:
     max_shared_words: int = 7
     max_jobs: int = 2
     max_questions: int = 6
+    rfp: bool = True  # False only for a run that holds no RFP
     suspect: frozenset[str] = field(init=False, default=frozenset())
 
     def __post_init__(self) -> None:
-        if not self.passages:
+        if self.rfp and not self.passages:
             raise ValueError("a rule context needs the run's passages")
+        if not self.rfp and self.passages:
+            raise ValueError("a run that holds no RFP has no passages")
         self.suspect = frozenset(p.id for p in self.passages if p.suspect)
 
     @cached_property

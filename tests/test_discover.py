@@ -18,6 +18,7 @@ from bidwright.config import Config, ResearchConfig, ServerPins, compile_pattern
 from bidwright.graph.build import RunResult, execute
 from bidwright.graph.discover import (
     BRIEF_FILE,
+    EMPTY_EXTRACTION,
     RESEARCH_FILE,
     Discovery,
     ResearchPending,
@@ -515,6 +516,44 @@ def test_an_item_on_tier_4_excerpts_only_is_dropped(tmp_path: Path) -> None:
     assert (
         "need 'Forms that work on old phones' dropped: its excerpts all come from tier-4 sources"
         in notes
+    )
+
+
+def test_an_extraction_that_keeps_nothing_is_a_research_failure(tmp_path: Path) -> None:
+    """The live defect of 2026-11-05: a pass that asked nothing left no excerpt, and the
+    extraction cited the report's reference numbers, so code kept nothing. That is a research
+    failure, which sends the run to `discover_load`, and no empty domain brief is written."""
+    query = "Research objective: forms"
+    job = ResearchJob(
+        label="J1",
+        notebook_id="nb",
+        task_id="t",
+        query=query,
+        query_sha256=query_sha256(query),
+        state="completed",
+        started=datetime(2026, 11, 5, tzinfo=UTC),
+    )
+    record = ResearchRecord(mode="live", jobs=[job])
+    (tmp_path / RESEARCH_FILE).write_text(record.model_dump_json(), encoding="utf-8")
+    reply = text(
+        {
+            "summary": "Forms meet WCAG 2.2 [4].",
+            "items": [
+                {"kind": "standard", "statement": "Forms meet WCAG 2.2.", "excerpt_ids": ["4", "5"]}
+            ],
+            "needs": [],
+            "open_questions": [],
+        }
+    )
+    report = "# Forms\n\nForms meet WCAG 2.2 [4]."
+    discovery, _ = _discovery(tmp_path, [reply], None, reports={"J1": report})
+    outcome = discovery.extract(TOPICS)
+    assert (outcome.failed, outcome.view) == (EMPTY_EXTRACTION, None)
+    assert not (tmp_path / BRIEF_FILE).exists()
+    stored = _record(tmp_path)
+    assert EMPTY_EXTRACTION in stored.notes and stored.calls == 1
+    assert "standard 'Forms meet WCAG 2.2.' cited unknown or quarantined excerpts: 4, 5" in (
+        stored.notes
     )
 
 

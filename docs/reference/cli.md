@@ -148,6 +148,30 @@ options:
   --server SERVER  a server in config/research.yaml
 ```
 
+## `bidwright research pack`
+
+```text
+usage: bidwright research pack [-h] --domain DOMAIN --title TITLE --keyword KEYWORDS --select-for
+                               SELECT_FOR (--run RUN | --notebook NOTEBOOK) [--job JOB]
+                               [--topic TOPICS] [--leave-out LEAVE_OUT] [--profile {free,paid}]
+
+options:
+  -h, --help            show this help message and exit
+  --domain DOMAIN       the pack's id, such as local-government
+  --title TITLE         the pack's title, for people
+  --keyword KEYWORDS    words a brief's topics must hold for the pack to be selected; at least 2
+  --select-for SELECT_FOR
+                        a run, id or folder, whose brief topics must select the pack
+  --run RUN             a finished run in research mode live, id or folder
+  --notebook NOTEBOOK   the NotebookLM notebook that holds the job
+  --job JOB             with --notebook: the research job's task id
+  --topic TOPICS        with --notebook: a subject the job researched; at most 5
+  --leave-out LEAVE_OUT
+                        a source id, such as PS-005, to leave out with its excerpts, such as a
+                        tender
+  --profile {free,paid}
+```
+
 ## `bidwright-eval`
 
 ```text

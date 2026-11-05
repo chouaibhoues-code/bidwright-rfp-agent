@@ -1,0 +1,4 @@
+# The MCP servers' packages, written by `bidwright research pin` from
+# config/research.yaml, for the dependency audit:
+# uv run pip-audit -r config/mcp_servers.txt
+notebooklm-mcp-cli==0.15.8

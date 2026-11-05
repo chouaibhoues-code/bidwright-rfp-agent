@@ -1,0 +1,33 @@
+{
+ "domain_id": "higher-education-procurement",
+ "mode": "pack",
+ "summary": "Higher education e-signature procurement requires technical integration with academic identity federations (InCommon, Shibboleth, SAML 2.0) and rigorous adherence to FERPA regulations for data governance. Bidders must navigate the consolidated HECVAT 4 assessment framework, replacing older standalone questionnaires and the retired Community Broker Index. Architecturally, institutions require webhook-driven event processing for real-time synchronization with SIS/ERP systems, prioritizing idempotent middleware to handle events asynchronously without violating API rate limits or creating data duplicates.",
+ "items": [
+  {
+   "id": "DI-001",
+   "kind": "standard",
+   "statement": "Systems must uphold 34 CFR § 99.30 (FERPA) by enforcing the 'school official exception,' ensuring data is used exclusively for contract fulfillment and prohibiting secondary data mining or model training.",
+   "excerpt_ids": [
+    "PX-0012",
+    "PX-0017"
+   ]
+  }
+ ],
+ "needs": [
+  {
+   "id": "DN-001",
+   "need": "FERPA-aware attribute release controls that filter PII for students with active disclosure blocks.",
+   "excerpt_ids": [
+    "PX-0009"
+   ]
+  }
+ ],
+ "open_questions": [
+  "What specific strategies do vendors use to verify 'school official' compliance within automated AI contract processing tools?",
+  "How are audit trails preserved for long-term student record retention periods after the initial signing expires?",
+  "What are the recommended performance SLAs for webhook receiver endpoints in high-volume registrar operations?",
+  "How does the industry handle the verification of signer identity for 'loose' institutional affiliates?",
+  "What alternative compliance documentation is acceptable if a vendor cannot provide a full HECVAT 4 assessment?"
+ ],
+ "evidence_class": "EXTERNAL_RESEARCH"
+}

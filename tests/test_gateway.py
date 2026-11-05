@@ -358,8 +358,12 @@ def test_g3_attribution_follows_the_passage_suspect_flag(
 
 
 def test_a_rule_context_needs_passages() -> None:
+    """Only a run that holds no RFP, a research pack build's, says so and has none."""
     with pytest.raises(ValueError, match="passages"):
         RuleContext([])
+    assert RuleContext([], rfp=False).overlap(COPIED) is None, "nothing a query could copy"
+    with pytest.raises(ValueError, match="holds no RFP has no passages"):
+        RuleContext(_passages(), rfp=False)
 
 
 def test_research_tools_need_a_rule_context() -> None:

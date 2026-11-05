@@ -1,13 +1,12 @@
 """Repository hygiene checks: secrets and private material stay out of git."""
 
 import hashlib
-import json
-import os
-import re
 import subprocess
 from pathlib import Path
 
 import pytest
+
+from bidwright.restricted import RestrictedNames, tokens
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = pytest.mark.skipif(
@@ -62,41 +61,30 @@ def test_no_pdf_committable_outside_inputs() -> None:
     assert offenders == []
 
 
-def _tokens(text: str) -> set[str]:
-    """Words, their path parts, adjacent path-part pairs, and their -_. fragments, lowercased."""
-    cleaned = text.replace("\\", "/")
-    for char in "`'\"()[]{}<>,;|":
-        cleaned = cleaned.replace(char, " ")
-    tokens: set[str] = set()
-    for raw in cleaned.split():
-        word = raw.strip(".:").lower()
-        if not word:
-            continue
-        stems = [part.removesuffix(".git") for part in word.split("/") if part]
-        tokens.add(word)
-        tokens.update(stems)
-        tokens.update(f"{left}/{right}" for left, right in zip(stems, stems[1:], strict=False))
-        for stem in stems:
-            tokens.update(fragment for fragment in re.split(r"[-_.]", stem) if fragment)
-    return tokens
-
-
 def test_no_committable_file_names_restricted_sources() -> None:
-    """Compares salted token hashes, so the test never contains the names it forbids."""
-    raw = os.environ.get("HYGIENE_HASHES")
-    if not raw:
+    """Compares salted token hashes, so the test never contains the names it forbids. The
+    research pack builder leaves out what the same check flags (`bidwright.restricted`)."""
+    restricted = RestrictedNames.from_environment()
+    if restricted is None:
         pytest.skip("HYGIENE_HASHES is not set, so the restricted-name check cannot run")
-    spec = json.loads(raw)
-    salt, forbidden = spec["salt"], set(spec["sha256"])
     hits = []
     for path in _committable_files():
         try:
             text = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-        if any(
-            hashlib.sha256((salt + token).encode()).hexdigest() in forbidden
-            for token in _tokens(text)
-        ):
+        if restricted.flags(text):
             hits.append(path.relative_to(ROOT).as_posix())
     assert hits == []
+
+
+def test_the_check_flags_a_salted_token_and_its_fragments() -> None:
+    """With a made-up list: a name is flagged alone, in a path and in a hyphenated word, and
+    text without it is not."""
+    salt = "test-salt"
+    forbidden = frozenset({hashlib.sha256((salt + "zebrafish").encode()).hexdigest()})
+    restricted = RestrictedNames(salt, forbidden)
+    assert restricted.flags("Notes on ZebraFish, 2026.")
+    assert restricted.flags(r"see C:\work\zebrafish-tools\readme.md")
+    assert not restricted.flags("Notes on zebras and fish")
+    assert "zebrafish" in tokens("[zebrafish_v2](https://example.com/zebrafish.git)")

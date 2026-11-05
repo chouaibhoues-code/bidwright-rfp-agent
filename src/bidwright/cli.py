@@ -21,6 +21,11 @@
                          outputs/matrices/<name>/
     bidwright research pin [--server notebooklm]
                          pins the research server's tools in config/mcp_pins.yaml, on the host
+    bidwright research pack --domain ID --title TEXT --keyword WORDS ... --select-for RUN
+                            (--run RUN | --notebook ID --job TASK --topic WORDS ...)
+                            [--leave-out SOURCE ...] [--profile free|paid]
+                         builds research_packs/<domain>/ from a finished live run, or
+                         from an existing NotebookLM job in a run of its own, on the host
 
 The command line parses arguments and prints what the run entry refuses. The rules themselves
 sit at the run entry, in `preflight.py`: on `free`, a file is refused unless its hash is
@@ -184,6 +189,8 @@ def _resume(args: argparse.Namespace) -> int:
         manifest = read_manifest(run_dir)
         if not manifest.run_args:
             raise Refused("this run predates v0.2; start it again")
+        if manifest.run_args.get("command") == "research pack":
+            raise Refused("a research pack build is not resumed; run bidwright research pack again")
         profile = args.profile or str(manifest.run_args["profile"])
         result = execute(
             **resume_arguments(manifest.run_args, run_dir),
@@ -227,6 +234,45 @@ def _pin(args: argparse.Namespace) -> int:
     write_pins(CONFIG_DIR, args.server, pins)
     print(f"Pinned {len(pins.tools)} tools of {reported.name} {reported.version}")
     print(f"  wrote {CONFIG_DIR / 'mcp_pins.yaml'} and {CONFIG_DIR / 'mcp_servers.txt'}")
+    return 0
+
+
+def _pack(args: argparse.Namespace) -> int:
+    """Build a research pack from a finished live run, or from an existing NotebookLM job."""
+    from bidwright.llm.client import default_backends
+    from bidwright.research.builder import BuildRefused, PackRequest, build_pack
+    from bidwright.restricted import VARIABLE, RestrictedNames
+
+    restricted = RestrictedNames.from_environment()
+    if restricted is None:
+        print(f"Note: {VARIABLE} is not set, so the restricted-name check did not run here;")
+        print("  CI runs it on the committed pack")
+    request = PackRequest(
+        domain_id=args.domain,
+        title=args.title,
+        keywords=args.keywords,
+        select_for=_run_folder(args.select_for),
+        run=_run_folder(args.run) if args.run else None,
+        notebook_id=args.notebook,
+        job=args.job,
+        topics=args.topics,
+        leave_out=args.leave_out,
+        profile=args.profile,
+    )
+    backends = default_backends(paid=args.profile == "paid") if args.notebook else None
+    try:
+        built = build_pack(request, backends=backends, restricted=restricted)
+    except (BuildRefused, Refused) as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    counts = ", ".join(f"{count} {name}" for name, count in built.manifest.counts.items())
+    print(f"Wrote {built.path} version {built.manifest.version}: {counts}")
+    print(f"  from the run {built.run_dir.name}")
+    for note in built.left_out:
+        print(f"  left out: {note}")
+    for source in built.review:
+        print(f"  review: {source} reads like a published tender; if it is one, build")
+        print("    again with --leave-out, since the data rule keeps tenders out")
     return 0
 
 
@@ -309,6 +355,42 @@ def main(argv: list[str] | None = None) -> int:
     research_sub = research.add_subparsers(dest="research_command", required=True)
     pin = research_sub.add_parser("pin", help="pin the research server's tools, on the host")
     pin.add_argument("--server", default="notebooklm", help="a server in config/research.yaml")
+    pack = research_sub.add_parser(
+        "pack", help="build a research pack from a finished live run or a NotebookLM job"
+    )
+    pack.add_argument("--domain", required=True, help="the pack's id, such as local-government")
+    pack.add_argument("--title", required=True, help="the pack's title, for people")
+    pack.add_argument(
+        "--keyword",
+        dest="keywords",
+        action="append",
+        required=True,
+        help="words a brief's topics must hold for the pack to be selected; at least 2",
+    )
+    pack.add_argument(
+        "--select-for",
+        required=True,
+        help="a run, id or folder, whose brief topics must select the pack",
+    )
+    source = pack.add_mutually_exclusive_group(required=True)
+    source.add_argument("--run", help="a finished run in research mode live, id or folder")
+    source.add_argument("--notebook", help="the NotebookLM notebook that holds the job")
+    pack.add_argument("--job", help="with --notebook: the research job's task id")
+    pack.add_argument(
+        "--topic",
+        dest="topics",
+        action="append",
+        default=[],
+        help="with --notebook: a subject the job researched; at most 5",
+    )
+    pack.add_argument(
+        "--leave-out",
+        dest="leave_out",
+        action="append",
+        default=[],
+        help="a source id, such as PS-005, to leave out with its excerpts, such as a tender",
+    )
+    pack.add_argument("--profile", choices=["free", "paid"], default="free")
     args = parser.parse_args(argv)
 
     os.environ.setdefault("LANGGRAPH_STRICT_MSGPACK", "true")
@@ -320,7 +402,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "resume":
         return _resume(args)
     if args.command == "research":
-        return _pin(args)
+        return _pin(args) if args.research_command == "pin" else _pack(args)
     if args.command == "matrix":
         return _matrix(args)
     from bidwright.graph.build import execute

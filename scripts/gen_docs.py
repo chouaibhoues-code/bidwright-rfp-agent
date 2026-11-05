@@ -207,6 +207,7 @@ def cli_md() -> str:
                 ["purge"],
                 ["matrix", "run"],
                 ["research", "pin"],
+                ["research", "pack"],
             ],
         ),
         (

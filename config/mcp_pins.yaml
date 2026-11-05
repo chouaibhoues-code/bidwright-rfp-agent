@@ -1,5 +1,15 @@
-# Tool pins for MCP servers (ADR-032), written by `bidwright research pin` on the host. A server
-# with no pinned tools is refused, so every NotebookLM call is refused until the server is
-# pinned (Iteration 2, step 13). The server's name and version are what `initialize` reports;
-# the package is the one config/research.yaml declares.
-notebooklm: {server: null, package: null, tools: {}}
+# Tool pins for MCP servers (ADR-032), written by `bidwright research pin` on the host.
+# A server with no pinned tools is refused. The server's name and version are what
+# `initialize` reports; the package is the one config/research.yaml declares.
+notebooklm:
+  package: notebooklm-mcp-cli==0.15.8
+  server:
+    name: gemini-notebook-mcp
+    version: 4.1.4
+  tools:
+    notebook_create: sha256:e35e5730bc497e88489141f8b3ee72afe0ade7303507925ec1add23515991909
+    notebook_get: sha256:d55697ea1b542d7cd38512c3c7641f6ecd6a8966a75640c6c7e5b8c98bde95e3
+    notebook_query: sha256:e4aa75fc5ccdf27e416235b6b46f98ec0275b06dab1bf5fca64f1e6a53bf3be5
+    research_import: sha256:7f724f09364a5f754f70441810f643d2cdf510243d88144c43acc27051160d14
+    research_start: sha256:0310d79766667e3e50c660accb8fb434a39911865c644e64d55362eb649454ae
+    research_status: sha256:74ee6955808cc32bf9dcd17f501d1e93ebd4606893b701c3d6dac034ad6b3df2
