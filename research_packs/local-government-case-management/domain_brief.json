@@ -1,0 +1,77 @@
+{
+ "domain_id": "local-government-case-management",
+ "mode": "pack",
+ "summary": "Public-sector case management procurement is governed by the Procurement Act 2023, shifting from MEAT to a Most Advantageous Tender (MAT) approach that emphasizes whole-life value, risk mitigation, and demonstrable social benefit. Successful delivery requires aligning software workflows with statutory requirements using no-code, API-first architectures rather than legacy-heavy customization. Projects frequently fail due to flawed data migration, poor governance, and the adaptation trap, where custom code bloat prevents upgrades and inflates costs. Bidders must provide transparent TCO, measurable social value, and robust, compliant integration plans.",
+ "items": [
+  {
+   "id": "DI-001",
+   "kind": "pattern",
+   "statement": "Embed immutable, automated audit logging for all user access and field-level edits to ensure forensic traceability.",
+   "excerpt_ids": [
+    "PX-0007",
+    "PX-0009"
+   ]
+  },
+  {
+   "id": "DI-002",
+   "kind": "standard",
+   "statement": "Adhere to the Procurement Act 2023 and PPN 026 guidelines for evaluating Most Advantageous Tender (MAT) and delivering measurable social value.",
+   "excerpt_ids": [
+    "PX-0001",
+    "PX-0006"
+   ]
+  },
+  {
+   "id": "DI-003",
+   "kind": "standard",
+   "statement": "Comply with WCAG 2.2 AA standards for all caseworker and resident interfaces to ensure digital accessibility and meet equality duties.",
+   "excerpt_ids": [
+    "PX-0006",
+    "PX-0013"
+   ]
+  },
+  {
+   "id": "DI-004",
+   "kind": "pitfall",
+   "statement": "Aggressive, unverified data migration that leads to corrupted records, transaction errors, and the need for massive manual remediation.",
+   "excerpt_ids": [
+    "PX-0007",
+    "PX-0008"
+   ]
+  }
+ ],
+ "needs": [
+  {
+   "id": "DN-001",
+   "need": "Transparent Total Cost of Ownership (TCO) models covering licensing, integration, training, and upgrades over 5–10 years.",
+   "excerpt_ids": [
+    "PX-0006",
+    "PX-0012"
+   ]
+  },
+  {
+   "id": "DN-002",
+   "need": "Concrete, time-bound social value commitments that are demonstrably additional to the core service contract.",
+   "excerpt_ids": [
+    "PX-0014",
+    "PX-0016"
+   ]
+  },
+  {
+   "id": "DN-003",
+   "need": "Comprehensive business change and governance strategy to accompany technical implementation and prevent project management failure.",
+   "excerpt_ids": [
+    "PX-0008",
+    "PX-0014"
+   ]
+  }
+ ],
+ "open_questions": [
+  "What are the specific NCSC security or Crown Commercial Service data residency requirements for local authority cloud case management?",
+  "How do authorities balance the rigidity of vanilla software with unique, statutory local government case handling requirements?",
+  "What are the most effective ways to validate additionality in social value proposals during the bid evaluation phase?",
+  "How can authorities better manage legacy browser or infrastructure dependencies when rolling out modern, web-native case management systems?",
+  "What metrics best define system resilience in public procurement to prevent the failures seen in recent ERP implementations?"
+ ],
+ "evidence_class": "EXTERNAL_RESEARCH"
+}

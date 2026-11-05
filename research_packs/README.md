@@ -1,6 +1,6 @@
 # Research packs
 
-Recorded domain research for research mode `pack` (ADR-033), one folder per domain, so a run reproduces research with no login. In that mode `discover` selects the pack whose keywords match the brief's topics; `load_pack` refuses a pack whose files changed or went missing, then screens every excerpt and answer before `ask_research` reads them. The hero's pack arrives at Iteration 2, step 13; until a pack matches, a run records "no pack for this domain".
+Recorded domain research for research mode `pack` (ADR-033), one folder per domain, so a run reproduces research with no login. In that mode `discover` selects the pack whose keywords match the brief's topics; `load_pack` refuses a pack whose files changed or went missing, then screens every excerpt and answer before `ask_research` reads them. `bidwright research pack` builds a pack from a finished live run or an existing NotebookLM job, and refuses one that the brief topics of a named run would not select. Two packs are here: `local-government-case-management`, the hero package's domain, built from the DR-18 research job, and `higher-education-procurement`, the development PDF's, built from a live run with a published tender among its sources left out. A run whose topics select neither records "no pack for this domain".
 
 | File | Holds |
 |---|---|
