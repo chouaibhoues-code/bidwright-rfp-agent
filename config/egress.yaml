@@ -3,8 +3,11 @@
 # the parser service are checked against it and the run's data class (Iteration 1, step 9).
 # A host is local when it is a loopback address, `localhost`, a Compose service named here, or
 # `host.docker.internal`, which a container uses to reach the machine running it (its Ollama).
+# A destination marked `local: false` is remote whatever its host: the NotebookLM server runs on
+# this machine but forwards every query it receives to Google (ADR-036).
 destinations:
   gemini:  {hosts: [generativelanguage.googleapis.com], local: false, receives: prompts}
   ollama:  {hosts: [localhost, "127.0.0.1", ollama, host.docker.internal], local: true, receives: prompts}
   phoenix: {hosts: [localhost, "127.0.0.1", phoenix], local: true, receives: spans}
   docling: {hosts: [localhost, "127.0.0.1", docling], local: true, receives: documents}
+  notebooklm: {hosts: [localhost, "127.0.0.1", host.docker.internal], local: false, receives: queries}

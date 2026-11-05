@@ -1,0 +1,5 @@
+# Tool pins for MCP servers (ADR-032), written by `bidwright research pin` on the host. A server
+# with no pinned tools is refused, so every NotebookLM call is refused until the server is
+# pinned (Iteration 2, step 13). The server's name and version are what `initialize` reports;
+# the package is the one config/research.yaml declares.
+notebooklm: {server: null, package: null, tools: {}}

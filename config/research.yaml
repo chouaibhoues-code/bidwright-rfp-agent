@@ -1,0 +1,21 @@
+# Research (Iteration 2, ADR-033 to ADR-036). `brief` gives the topics; `discover` researches
+# them in one of three modes. `--research` overrides the mode for one run.
+mode: pack                      # off | pack | live
+packs_dir: research_packs       # resolved against HOME by research/pack.py
+selection: {min_keyword_matches: 2}
+jobs: {max_per_run: 2, mode: deep, wait_minutes: 20, poll_seconds: 30, import: cited}
+questions: {max_per_run: 6, max_matches: 8, match_share: 0.5, min_terms: 2}
+outbound: {max_shared_words: 7}  # a query sharing 8 or more consecutive words with a passage is denied
+servers:
+  # The NotebookLM server runs on the host, bound to loopback. NOTEBOOKLM_MCP_URL overrides the
+  # URL on the host; Compose sets the container's address. 127.0.0.1, not localhost: on Windows
+  # localhost may resolve to ::1 first, where the server does not listen.
+  notebooklm: {transport: http, url: "http://127.0.0.1:8000/mcp", timeout_s: 360, tool_timeout_s: 300,
+               package: notebooklm-mcp-cli, version: 0.15.8}
+# Authority tiers by host: the lowest tier with a matching entry. An entry that starts with a dot
+# matches any host ending with it; another entry matches that host and its subdomains.
+tiers:
+  1: [".gov", ".gov.uk", ".europa.eu", "iso.org", "w3.org", "ico.org.uk"]
+  2: [".ac.uk", ".edu", "doi.org", "arxiv.org"]
+  3: ["socitm.net", "bcs.org"]
+  default: 4

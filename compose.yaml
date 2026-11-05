@@ -22,6 +22,9 @@ services:
       PHOENIX_API_KEY: ${PHOENIX_API_KEY:-}
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
       DOCLING_URL: http://docling:5001
+      # The host's NotebookLM server, for research mode live (S-11). A fixed value, so a host
+      # .env address, which names 127.0.0.1, never reaches the container.
+      NOTEBOOKLM_MCP_URL: http://host.docker.internal:8000/mcp
     # host.docker.internal is the host machine, so OLLAMA_HOST=http://host.docker.internal:11434
     # reaches the host's own Ollama. Docker Desktop resolves the name already; this line adds it
     # on Linux, where that Ollama must also listen beyond loopback.

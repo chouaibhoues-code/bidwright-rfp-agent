@@ -76,6 +76,7 @@ Direct runtime dependencies, at the versions `uv.lock` pins; CI audits them with
 | `langgraph-checkpoint-sqlite` | 3.1.3 |
 | `langgraph` | 1.2.19 |
 | `lxml` | 6.1.3 |
+| `mcp` | 1.30.0 |
 | `ollama` | 0.6.3 |
 | `openai` | 3.42.1 |
 | `openinference-semantic-conventions` | 0.1.43 |

@@ -142,6 +142,14 @@ class RetentionConfig(Strict):
     client_days: int = Field(ge=0)
 
 
+class BreakerConfig(Strict):
+    """The circuit breaker (Iteration 2): consecutive failed attempts that open it, and for how
+    long it stays open."""
+
+    failures: int = Field(ge=1)
+    cooldown_minutes: float = Field(gt=0)
+
+
 class LimitsConfig(Strict):
     runs: dict[str, dict[str, RunLimits]]
     call: CallLimits
@@ -154,6 +162,7 @@ class LimitsConfig(Strict):
     cache: CacheConfig
     second_pass: bool
     retention: RetentionConfig
+    breaker: BreakerConfig
 
     def run(self, corpus: str, profile: str) -> RunLimits:
         try:
@@ -400,6 +409,117 @@ class EgressConfig(Strict):
     destinations: dict[str, Destination]
 
 
+# --- research.yaml and mcp_pins.yaml (Iteration 2, ADR-032 to ADR-036) -------------------------
+
+ResearchMode = Literal["off", "pack", "live"]
+RESEARCH_MODES: tuple[str, ...] = get_args(ResearchMode)
+_TOOL_HASH = r"^sha256:[0-9a-f]{64}$"
+
+
+class SelectionConfig(Strict):
+    min_keyword_matches: int = Field(ge=1)
+
+
+class JobsConfig(Strict):
+    max_per_run: int = Field(ge=1)
+    mode: Literal["deep", "fast"]
+    wait_minutes: float = Field(gt=0)
+    poll_seconds: float = Field(gt=0)
+    import_sources: Literal["cited", "all"] = Field(alias="import")
+
+
+class QuestionsConfig(Strict):
+    max_per_run: int = Field(ge=0)
+    max_matches: int = Field(ge=1)
+    match_share: float = Field(gt=0, le=1)
+    min_terms: int = Field(ge=1)
+
+
+class OutboundConfig(Strict):
+    max_shared_words: int = Field(ge=1)  # a query sharing one more consecutive word is denied
+
+
+class HttpServer(Strict):
+    transport: Literal["http"]
+    url: str = Field(min_length=1)
+    timeout_s: float = Field(gt=0)
+    tool_timeout_s: float = Field(gt=0)
+    package: str | None = None
+    version: str | None = None
+
+
+class StdioServer(Strict):
+    """A server Bidwright starts as a subprocess. Only tests use one: it has no host, so the
+    egress check refuses it on any run."""
+
+    transport: Literal["stdio"]
+    command: str = Field(min_length=1)
+    args: list[str] = Field(default_factory=list)
+    env: dict[str, str] = Field(default_factory=dict)
+    timeout_s: float = Field(gt=0)
+    tool_timeout_s: float = Field(gt=0)
+    package: str | None = None
+    version: str | None = None
+
+
+ServerConfig = Annotated[HttpServer | StdioServer, Field(discriminator="transport")]
+
+
+class TiersConfig(Strict):
+    """Authority tiers by host. The file writes tiers 1 to 3 as keys, each a list of host
+    entries, and `default` for a host no entry matches."""
+
+    hosts: dict[int, list[str]]
+    default: int = Field(ge=1, le=4)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_file(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "hosts" not in data:
+            entries = dict(data)
+            default = entries.pop("default", 4)
+            return {"hosts": entries, "default": default}
+        return data
+
+    @model_validator(mode="after")
+    def _keys_are_tiers(self) -> "TiersConfig":
+        bad = sorted(key for key in self.hosts if not 1 <= key <= 3)
+        if bad:
+            raise ValueError(f"config/research.yaml: tiers keys must be 1 to 3, not {bad}")
+        return self
+
+
+class ResearchConfig(Strict):
+    mode: ResearchMode
+    packs_dir: str = Field(min_length=1)  # resolved against HOME where it is used
+    selection: SelectionConfig
+    jobs: JobsConfig
+    questions: QuestionsConfig
+    outbound: OutboundConfig
+    servers: dict[str, ServerConfig]
+    tiers: TiersConfig
+
+
+class ServerIdentity(Strict):
+    """What a server's `initialize` reports. NotebookLM's reports the MCP SDK's version."""
+
+    name: str
+    version: str
+
+
+class ServerPins(Strict):
+    server: ServerIdentity | None = None
+    package: str | None = None  # the package as research.yaml declares it, "name==version"
+    tools: dict[str, Annotated[str, Field(pattern=_TOOL_HASH)]] = Field(default_factory=dict)
+
+
+class PinsConfig(Strict):
+    """`config/mcp_pins.yaml`, written by `bidwright research pin`. A server with no pinned
+    tools is refused."""
+
+    servers: dict[str, ServerPins]
+
+
 # --- all of it ------------------------------------------------------------------------------
 
 
@@ -414,6 +534,8 @@ class Config(Strict):
     zones: ZonesConfig
     lint: LintConfig
     egress: EgressConfig
+    research: ResearchConfig
+    pins: PinsConfig
 
 
 def _load[ModelT: BaseModel](path: Path, model: type[ModelT]) -> ModelT:
@@ -424,6 +546,8 @@ def _load[ModelT: BaseModel](path: Path, model: type[ModelT]) -> ModelT:
 def load_config(root: Path = CONFIG_DIR) -> Config:
     with (root / "agents.yaml").open(encoding="utf-8") as handle:
         agents = AgentsConfig.model_validate({"agents": yaml.safe_load(handle)})
+    with (root / "mcp_pins.yaml").open(encoding="utf-8") as handle:
+        pins = PinsConfig.model_validate({"servers": yaml.safe_load(handle) or {}})
     return Config(
         models=_load(root / "models.yaml", ModelsConfig),
         limits=_load(root / "limits.yaml", LimitsConfig),
@@ -435,4 +559,6 @@ def load_config(root: Path = CONFIG_DIR) -> Config:
         zones=_load(root / "zones.yaml", ZonesConfig),
         lint=_load(root / "lint.yaml", LintConfig),
         egress=_load(root / "egress.yaml", EgressConfig),
+        research=_load(root / "research.yaml", ResearchConfig),
+        pins=pins,
     )

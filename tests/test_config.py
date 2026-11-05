@@ -10,12 +10,16 @@ from pydantic import ValidationError
 from bidwright import schemas
 from bidwright.config import (
     CUE_KINDS,
+    RESEARCH_MODES,
     ZONE_NAMES,
     AgentConfig,
     AgentLimits,
     Config,
     CuesConfig,
+    HttpServer,
     LintConfig,
+    ResearchConfig,
+    TiersConfig,
     load_config,
 )
 
@@ -40,6 +44,9 @@ def test_every_file_loads(config: Config) -> None:
     assert config.zones.default in config.zones.zones
     assert config.lint.rules and config.lint.contract and config.lint.checks and config.lint.units
     assert config.egress.destinations
+    assert config.research.mode in RESEARCH_MODES
+    assert "notebooklm" in config.research.servers and "notebooklm" in config.pins.servers
+    assert config.limits.breaker.failures >= 1
 
 
 def test_every_agent_role_has_a_model_in_every_profile(config: Config) -> None:
@@ -191,3 +198,66 @@ def test_every_destination_names_its_hosts_and_whether_it_is_local(config: Confi
     for local in ("ollama", "phoenix", "docling"):
         assert config.egress.destinations[local].local is True
         assert "localhost" in config.egress.destinations[local].hosts
+
+
+def test_the_notebooklm_destination_is_remote_whatever_its_host(config: Config) -> None:
+    """ADR-036: the server runs on this machine but forwards every query to Google."""
+    notebooklm = config.egress.destinations["notebooklm"]
+    assert notebooklm.local is False and notebooklm.receives == "queries"
+    assert "127.0.0.1" in notebooklm.hosts and "host.docker.internal" in notebooklm.hosts
+
+
+def test_the_research_server_names_its_package_and_binds_loopback(config: Config) -> None:
+    server = config.research.servers["notebooklm"]
+    assert isinstance(server, HttpServer)
+    assert server.url.startswith("http://127.0.0.1:") and server.package and server.version
+
+
+def test_no_server_is_pinned_before_its_pins_are_written(config: Config) -> None:
+    """Until `bidwright research pin` runs, the pins name no tool, so every call is refused."""
+    pins = config.pins.servers["notebooklm"]
+    if not pins.tools:
+        assert pins.server is None and pins.package is None
+
+
+def _research(**changes: object) -> dict[str, object]:
+    base: dict[str, object] = {
+        "mode": "pack",
+        "packs_dir": "research_packs",
+        "selection": {"min_keyword_matches": 2},
+        "jobs": {
+            "max_per_run": 2,
+            "mode": "deep",
+            "wait_minutes": 20,
+            "poll_seconds": 30,
+            "import": "cited",
+        },
+        "questions": {"max_per_run": 6, "max_matches": 8, "match_share": 0.5, "min_terms": 2},
+        "outbound": {"max_shared_words": 7},
+        "servers": {},
+        "tiers": {1: [".gov"], "default": 4},
+    }
+    return base | changes
+
+
+def test_an_unknown_research_mode_fails_startup() -> None:
+    assert ResearchConfig.model_validate(_research()).mode == "pack"
+    with pytest.raises(ValidationError):
+        ResearchConfig.model_validate(_research(mode="web"))
+
+
+def test_tiers_take_keys_one_to_three_and_a_default_from_one_to_four() -> None:
+    tiers = TiersConfig.model_validate({1: [".gov"], 3: ["bcs.org"], "default": 4})
+    assert tiers.hosts == {1: [".gov"], 3: ["bcs.org"]} and tiers.default == 4
+    with pytest.raises(ValidationError, match="tiers keys must be 1 to 3"):
+        TiersConfig.model_validate({4: ["example.org"], "default": 4})
+    with pytest.raises(ValidationError):
+        TiersConfig.model_validate({1: [".gov"], "default": 5})
+
+
+def test_a_server_entry_is_http_or_stdio() -> None:
+    stdio = {"transport": "stdio", "command": "python", "timeout_s": 5, "tool_timeout_s": 5}
+    parsed = ResearchConfig.model_validate(_research(servers={"fake": stdio}))
+    assert parsed.servers["fake"].transport == "stdio"
+    with pytest.raises(ValidationError):
+        ResearchConfig.model_validate(_research(servers={"fake": {"transport": "sse"}}))

@@ -1,6 +1,8 @@
-# What each LLM call may do. ExecutionPolicy and ToolGateway enforce this file,
-# and docs/agents.md is generated from it (from Iteration 0b). A function makes one call and
-# one repair, fixed in the node code, so only the agent's loop declares limits (ADR-025).
+# What each LLM call may do. config.py validates this file at startup, the nodes read their
+# tools and limits from it, and ToolGateway enforces the allowlists and caps (ADR-037);
+# docs/agents.md is generated from it. A function makes one call and one repair, fixed in the
+# node code, so only the agent's loop declares limits (ADR-025). An entry arrives with its
+# prompt, since every run loads the prompt of every agent listed here.
 triage:
   kind: function
   input: TriageInput
