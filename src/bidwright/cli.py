@@ -15,6 +15,8 @@
     bidwright matrix run <file> [--resume]
                          runs a matrix file's rungs and repeats in order, under
                          outputs/matrices/<name>/
+    bidwright research pin [--server notebooklm]
+                         pins the research server's tools in config/mcp_pins.yaml, on the host
 
 The command line parses arguments and prints what the run entry refuses. The rules themselves
 sit at the run entry, in `preflight.py`: on `free`, a file is refused unless its hash is
@@ -39,6 +41,7 @@ if TYPE_CHECKING:
     from bidwright.graph.build import RunResult
 
 DEMO_SOURCE = HOME / "inputs" / "dev" / "dev_rfp.pdf"
+CONFIG_DIR = HOME / "config"  # where `research pin` writes the pins
 CASSETTES = HOME / "tests" / "cassettes"
 # Which profile, input, stop and run settings a cassette folder was recorded with.
 RECORDING = "recording.json"
@@ -197,6 +200,31 @@ def _percent(value: str) -> int:
     return percent
 
 
+def _pin(args: argparse.Namespace) -> int:
+    """List the research server's tools and pin the ones research uses. Run on the host,
+    with the server started, after its version changes."""
+    from bidwright.config import load_config
+    from bidwright.research.mcp_client import McpClient, McpError
+    from bidwright.research.nlm import SENT
+    from bidwright.research.pins import ServerRefused, pinned, write_pins
+
+    server = load_config().research.servers.get(args.server)
+    if server is None:
+        print(f"Refused: config/research.yaml lists no server {args.server!r}", file=sys.stderr)
+        return 2
+    package = f"{server.package}=={server.version}" if server.package and server.version else None
+    try:
+        reported, tools = McpClient(args.server, server).list_tools()
+        pins = pinned(args.server, reported, tools, SENT, package)
+    except (McpError, ServerRefused) as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    write_pins(CONFIG_DIR, args.server, pins)
+    print(f"Pinned {len(pins.tools)} tools of {reported.name} {reported.version}")
+    print(f"  wrote {CONFIG_DIR / 'mcp_pins.yaml'} and {CONFIG_DIR / 'mcp_servers.txt'}")
+    return 0
+
+
 def _matrix(args: argparse.Namespace) -> int:
     from bidwright.llm.client import default_backends
     from bidwright.matrix import MatrixRefused, load_matrix, run_matrix
@@ -263,6 +291,10 @@ def main(argv: list[str] | None = None) -> int:
     matrix_run.add_argument(
         "--resume", action="store_true", help="skip the runs that finished and go on"
     )
+    research = sub.add_parser("research", help="manage the research server")
+    research_sub = research.add_subparsers(dest="research_command", required=True)
+    pin = research_sub.add_parser("pin", help="pin the research server's tools, on the host")
+    pin.add_argument("--server", default="notebooklm", help="a server in config/research.yaml")
     args = parser.parse_args(argv)
 
     os.environ.setdefault("LANGGRAPH_STRICT_MSGPACK", "true")
@@ -273,6 +305,8 @@ def main(argv: list[str] | None = None) -> int:
         return _stop(args)
     if args.command == "resume":
         return _resume(args)
+    if args.command == "research":
+        return _pin(args)
     if args.command == "matrix":
         return _matrix(args)
     from bidwright.graph.build import execute

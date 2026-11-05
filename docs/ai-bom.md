@@ -64,6 +64,7 @@ Controls on every run, in code:
 | `test` | Built from this repository | None | test |
 | `demo` | Built from this repository | None | demo |
 | `ollama` | `ollama/ollama:0.40.13@sha256:b2f0122c476bc9fe7ce679d8bb4bd555351e25e2554eefb156f61cb0a89cf429` | `127.0.0.1:11434:11434` | local |
+| `notebooklm` | `notebooklm-mcp-cli==0.15.8`, started on the host for `live` research | `127.0.0.1:8000` | Host only |
 
 ## Runtime dependencies
 

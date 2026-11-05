@@ -185,7 +185,17 @@ def cli_md() -> str:
         (
             "bidwright",
             bidwright_main,
-            [[], ["run"], ["demo"], ["record"], ["stop"], ["resume"], ["purge"], ["matrix", "run"]],
+            [
+                [],
+                ["run"],
+                ["demo"],
+                ["record"],
+                ["stop"],
+                ["resume"],
+                ["purge"],
+                ["matrix", "run"],
+                ["research", "pin"],
+            ],
         ),
         (
             "bidwright-eval",
@@ -334,6 +344,26 @@ def _rules_table() -> list[str]:
     return lines
 
 
+def _host_services(config: Any) -> list[str]:
+    """The research servers, which run on the host and never in Compose: only `live`
+    research starts one, bound to loopback (Iteration 2)."""
+    from urllib.parse import urlparse
+
+    from bidwright.config import HttpServer
+
+    rows = []
+    for name, server in sorted(config.research.servers.items()):
+        if not isinstance(server, HttpServer):
+            continue
+        package = f"`{server.package}=={server.version}`" if server.package else "Not pinned"
+        address = urlparse(server.url).netloc or server.url
+        rows.append(
+            f"| `{name}` | {package}, started on the host for `live` research | `{address}`"
+            " | Host only |"
+        )
+    return rows
+
+
 def _gateway_control() -> str:
     from bidwright.harness.rules import RULES
 
@@ -439,6 +469,7 @@ def ai_bom_md() -> str:
         ports = ", ".join(f"`{p}`" for p in service.get("ports", [])) or "None"
         profiles = ", ".join(service.get("profiles", [])) or "default"
         lines.append(f"| `{name}` | {_cell(image)} | {ports} | {profiles} |")
+    lines += _host_services(config)
 
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     lock = tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))

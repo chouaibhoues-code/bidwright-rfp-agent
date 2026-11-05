@@ -72,7 +72,7 @@ from bidwright.graph.triage import triage
 from bidwright.guard import GuardResult, PolicyBlocked, run_guard
 from bidwright.harness.budget import BudgetExceeded, RunBudget
 from bidwright.harness.context import CONTEXT_DIR, ContextManager, prompt_tokens
-from bidwright.harness.egress import check_run
+from bidwright.harness.egress import RESEARCH_DESTINATION, check_run
 from bidwright.harness.gateway import ToolGateway, ToolLog
 from bidwright.harness.recovery import DEAD_LETTERS, CircuitBreaker, DeadLetters
 from bidwright.harness.supervisor import STOP_REASON, RunSupervisor, environment, read_manifest
@@ -969,6 +969,12 @@ def execute(
     )
     endpoint = trace_endpoint()
     parses = docling_mode in ("live", "record") and needs_docling(preflight.documents, config)
+    research_mode = research or config.research.mode
+    research_server = (
+        (RESEARCH_DESTINATION, config.research.servers[RESEARCH_DESTINATION])
+        if research_mode == "live"
+        else None
+    )
     refused = check_run(
         run_backends,
         endpoint,
@@ -976,6 +982,7 @@ def execute(
         preflight.data_class,
         register=config.egress,
         consent=profile == "free" and consent == CONSENT,
+        research=research_server,
     )
     started = datetime.now(UTC)
     suffix = f"-{baseline}" if baseline else ""
@@ -998,7 +1005,7 @@ def execute(
         "batch_size": batch_size or config.limits.batch_size,
         "second_pass": second,
         "extract_prompt": extract_id,
-        "research": research or config.research.mode,
+        "research": research_mode,
         "repeat": repeat,
         "cache": cache,
         "docling_mode": docling_mode,

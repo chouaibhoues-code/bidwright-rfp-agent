@@ -5,12 +5,12 @@
 ## `bidwright`
 
 ```text
-usage: bidwright [-h] {run,demo,record,stop,resume,purge,matrix} ...
+usage: bidwright [-h] {run,demo,record,stop,resume,purge,matrix,research} ...
 
 Bidwright: RFP to proposal.
 
 positional arguments:
-  {run,demo,record,stop,resume,purge,matrix}
+  {run,demo,record,stop,resume,purge,matrix,research}
     run                 run one RFP file or package folder live
     demo                replay the recorded development run, with no keys
     record              run live and record cassettes, on the host
@@ -18,6 +18,7 @@ positional arguments:
     resume              continue a run from its last checkpoint
     purge               delete a run and its cache entries, or expired runs
     matrix              run a matrix of rungs and repeats
+    research            manage the research server
 
 options:
   -h, --help            show this help message and exit
@@ -127,6 +128,16 @@ positional arguments:
 options:
   -h, --help  show this help message and exit
   --resume    skip the runs that finished and go on
+```
+
+## `bidwright research pin`
+
+```text
+usage: bidwright research pin [-h] [--server SERVER]
+
+options:
+  -h, --help       show this help message and exit
+  --server SERVER  a server in config/research.yaml
 ```
 
 ## `bidwright-eval`
