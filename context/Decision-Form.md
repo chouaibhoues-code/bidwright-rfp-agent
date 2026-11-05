@@ -32,6 +32,17 @@ tags: [bidwright, decisions, governance]
 
 **Recommendation.** A. It only tightens a privacy control; no current setup breaks, since outside Docker the defaults are `localhost` and inside the container the image sets the flag; a misconfiguration becomes a clear refusal instead of a silent leak; and it costs about an hour, with an ADR beside ADR-026. Reasoned step by step with the sequential-thinking tool on 2026-11-04. The owner deferred it the same day to after the delivery, since every run so far is synthetic; until it is built, `docs/architecture.md` lists the gap as technical debt.
 
+### D-10: The Iteration 3 design doc's decisions, due at its Stage 9 review
+
+**Context.** [`docs/designs/iteration-3.md`](../docs/designs/iteration-3.md) closes the four open decisions of Iteration 3 and proposes the solution path, `techcheck`'s recorded answers, `assess`'s contract, the gate, `reflect`, the ablation's machinery and the examples' return. It departs from the Master-Plan twice and adds three process changes.
+
+**Options.**
+- **A.** Accept ADR-039 to ADR-049, the two departures (the RK rungs read a frozen full run; `decide` asks only the run's own research) and CH-92 to CH-94 (gold v4, the owner's spot-check of 10 assessments, the Cerebras key at the build's start), as the review leaves them.
+- **B.** Accept them, and stop the iteration after Phase A, with a working solution path and no ablation, moving the measurements to a later iteration; this shortens the iteration but leaves the Iteration 3 gate's ablation and statistical checks unmet.
+- **C.** Change or decline named parts.
+
+**Recommendation.** A, after the review. The design follows the Master-Plan's scope; Phase B is what shows each agent earns its place, which the plan's thesis requires; and the two phases already give a stopping point if the owner later chooses one.
+
 ### Decisions closed in later design docs
 
 | Iteration | Decisions its design doc closes |
@@ -50,7 +61,7 @@ Not decisions, but work only the owner can do.
 | Iteration 0b | The first Goldfish architecture review is triaged (2026-11-03, ADR-022 to ADR-025). Start the drift report at the tag, `/egm:egm-drift-report docs`, limited to `architecture.md`, `agents.md` and `security.md`, and triage it with Claude |
 | Iteration 1 | Review gold v2, about 1 hour; write the held-out list, about 1 hour; confirm the 555-01XX fiction block before step 4; read the paid-tier limits in AI Studio (V-03) before step 9; confirm CrackedPDFs access and license (V-02) before step 19; the NotebookLM login for the step-1 research launches; decide D-01 at the exit. The Stage 9 review was triaged on 2026-11-03; gold v2 was reviewed and hashed, V-02 confirmed, D-01 decided, the held-out list written and its gold hashed, and the paid limits read (V-03) on 2026-11-04. |
 | Iteration 2 | The NotebookLM login for `live` research (done 2026-11-05); triage Stage 9 (done); decide D-08 and D-09 (done 2026-11-05); run the drift report at the tag (done, triaged and applied 2026-11-05); approve the tag `v0.2` (done 2026-11-05, with the iteration's hours still to enter in `TIMELOG.md`) |
-| Iteration 3 | The Cerebras key (D-03); approve one manifest at the gate; triage Stage 9 |
+| Iteration 3 | Triage Stage 9 and decide D-10; the Cerebras key at the build's start (D-03); review and hash gold v4; approve one manifest at the gate and spot-check 10 assessments; triage the second architecture review |
 | Iteration 4 | Review the two skills and one drafted section; triage Stage 9 |
 | Iteration 5 | 40 judge-calibration labels and 10 accept or reject decisions, about 45 minutes |
 | Release | Write a one-page brief; read the code against the defense notes; rehearse the live changes; record the demo; choose the tag to release |
