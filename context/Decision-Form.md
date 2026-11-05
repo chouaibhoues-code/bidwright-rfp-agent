@@ -26,17 +26,6 @@ tags: [bidwright, decisions, governance]
 
 **Recommendation.** A. It only tightens a privacy control; no current setup breaks, since outside Docker the defaults are `localhost` and inside the container the image sets the flag; a misconfiguration becomes a clear refusal instead of a silent leak; and it costs about an hour, with an ADR beside ADR-026. Reasoned step by step with the sequential-thinking tool on 2026-11-04. The owner deferred it the same day to after the delivery, since every run so far is synthetic; until it is built, `docs/architecture.md` lists the gap as technical debt.
 
-### D-11: How the UI reads scores and ladder reports in Docker, due before Iteration 3's step 1
-
-**Context.** WP-3.6, which D-10's option C added, shows a run's scores and the ladders' reports. They sit in `evals/results/`, which the `app` service has never mounted, so the container that runs the pipeline never holds gold-derived files. The committed results hold scores, gold ids and the passage ids of missed clauses, but no clause text, spec or gold file. The re-audit's other point for D-11, a narrower `reflect` trigger, was withdrawn on 2026-11-05 after a second check: a turn with no progress is a code-checked signal, as CH-68 has it, so the design keeps CH-68's triggers and departs from the Master-Plan twice, as D-10 accepted.
-
-**Options.**
-- **A.** A separate `ui` service runs the UI, with the `app` service's mounts and keys plus `evals/results/` read-only. `app` keeps its mounts, so every run started in it, matrices included, keeps gold-derived files out of reach; only a part of a run that the Review page resumes runs where results are visible. This is ADR-050 as the design proposes it.
-- **B.** No mount: in Docker the UI shows a run's files, the ledger, the gate and span replay, and it shows scores and ladder tables only when it runs on the host (`uv run bidwright ui`).
-- **C.** Mount `evals/results/` read-only into the `app` service itself, the first proposal: one service, but every pipeline run in Docker then has gold ids in reach, guarded by a test only.
-
-**Recommendation.** A. It gives the Docker dashboard the measurements that the owner's reasons for WP-3.6 name, at about a dozen lines of `compose.yaml`, and keeps the structural control for every run started in `app`. The exposure that remains, a resumed gate, runs code that reads only its run folder, which `test_isolation.py` checks. B is simpler and keeps the control whole, but a reviewer on Docker then sees a dashboard without its scores; A dominates C. Reasoned step by step with the sequential-thinking tool on 2026-11-05.
-
 ### Decisions closed in later design docs
 
 | Iteration | Decisions its design doc closes |
@@ -55,7 +44,7 @@ Not decisions, but work only the owner can do.
 | Iteration 0b | The first Goldfish architecture review is triaged (2026-11-03, ADR-022 to ADR-025). Start the drift report at the tag, `/egm:egm-drift-report docs`, limited to `architecture.md`, `agents.md` and `security.md`, and triage it with Claude |
 | Iteration 1 | Review gold v2, about 1 hour; write the held-out list, about 1 hour; confirm the 555-01XX fiction block before step 4; read the paid-tier limits in AI Studio (V-03) before step 9; confirm CrackedPDFs access and license (V-02) before step 19; the NotebookLM login for the step-1 research launches; decide D-01 at the exit. The Stage 9 review was triaged on 2026-11-03; gold v2 was reviewed and hashed, V-02 confirmed, D-01 decided, the held-out list written and its gold hashed, and the paid limits read (V-03) on 2026-11-04. |
 | Iteration 2 | The NotebookLM login for `live` research (done 2026-11-05); triage Stage 9 (done); decide D-08 and D-09 (done 2026-11-05); run the drift report at the tag (done, triaged and applied 2026-11-05); approve the tag `v0.2` (done 2026-11-05, with the iteration's hours still to enter in `TIMELOG.md`) |
-| Iteration 3 | Triage Stage 9 (done 2026-11-05); decide D-10 (done 2026-11-05, option C) and D-11; the Cerebras key (done 2026-11-05, D-03) and the Groq key (done 2026-11-05); review and hash gold v4; approve one manifest at the gate and spot-check 10 assessments; triage the second architecture review |
+| Iteration 3 | Triage Stage 9 (done 2026-11-05); decide D-10 and D-11 (done 2026-11-05, options C and A); the Cerebras key (done 2026-11-05, D-03) and the Groq key (done 2026-11-05); review and hash gold v4; approve one manifest at the gate and spot-check 10 assessments; triage the second architecture review |
 | Iteration 4 | Review the two skills and one drafted section; triage Stage 9 |
 | Iteration 5 | 40 judge-calibration labels and 10 accept or reject decisions, about 45 minutes |
 | Release | Write a one-page brief; read the code against the defense notes; rehearse the live changes; record the demo; choose the tag to release |
@@ -81,3 +70,4 @@ Not decisions, but work only the owner can do.
 | D-09: authority tiers for audit and parliamentary hosts | Option C: the tiers stay as the design set them, so `nao.org.uk`, `parliament.uk`, `audit.scot` and `audit.wales` stay at tier 4, and the hero pack stays at version 2. Declined: tier 1 with a rebuilt pack (A), and tier 2 (B). | No change; ADR-033 and `config/research.yaml` stand | 2026-11-05 |
 | D-03: when to create the Cerebras key | The owner created it before the Iteration 3 design's Stage 9 review; its trial credits run until 2026-12-03, four weeks from the day the owner reported it, and the Iteration 3 ladders run before that date | `.env`; the Iteration 3 design, step 1 | 2026-11-05 |
 | D-10: the Iteration 3 design doc's decisions | Option C: option A, that is ADR-039 to ADR-049, the two departures and CH-92 and CH-93 as the Stage 9 review and its re-audit leave them, plus WP-3.6, the first version of the Streamlit UI with span replay into Phoenix, moved forward from WP-6.1 (CH-94) | The Iteration 3 design; the change log, CH-92 to CH-94 | 2026-11-05 |
+| D-11: how the UI reads scores and ladder reports in Docker | Option A: a separate `ui` service with the `app` service's mounts and keys plus `evals/results/` read-only; `app` keeps its mounts. The narrower `reflect` trigger first proposed with it was withdrawn after a second check | ADR-050 | 2026-11-05 |

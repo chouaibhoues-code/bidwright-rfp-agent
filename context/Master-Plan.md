@@ -13,7 +13,7 @@ tags: [bidwright, project-management, plan, roadmap]
 > [!summary] Status on 2026-11-05
 > - Released: `v0.0`, Iteration 0a, the walking skeleton; `v0.0.1`, Iteration 0b, documents and review; `v0.1`, Iteration 1, on 2026-11-04, with the matcher's correction after the tag (ADR-030).
 > - Released: `v0.2`, Iteration 2, on 2026-11-05, approved by the owner with D-08 and D-09 decided; its close-out notes are in section 9.4.
-> - Next: Iteration 3. Its design doc, `docs/designs/iteration-3.md`, passed its Stage 9 review and re-audit; the owner chose D-10's option C on 2026-11-05, which adds WP-3.6 (CH-94), and D-11 is open. The Cerebras key is in place, its credits running until 2026-12-03 (D-03), and the Groq key since 2026-11-05.
+> - Next: Iteration 3. Its design doc, `docs/designs/iteration-3.md`, passed its Stage 9 review and re-audit; the owner chose D-10's option C on 2026-11-05, which adds WP-3.6 (CH-94), and D-11's option A, so ADR-039 to ADR-050 are accepted. The Cerebras key is in place, its credits running until 2026-12-03 (D-03), and the Groq key since 2026-11-05.
 > - At each tag the owner chooses to continue, release or stop (section 2.8).
 
 This file owns the scope, the work-package register, the assignment trace, the gates, the risks, the change log, the close-out notes and the full vision with its unbuilt scope. Other facts have one owner each: the current architecture is in `docs/architecture.md`, decisions in `DECISIONS.md`, assumptions in `ASSUMPTIONS.md`, hours in `TIMELOG.md`, research in [[Research-Register]], open decisions in [[Decision-Form]], and deferred work in [[Project-Backlog]].
@@ -352,7 +352,7 @@ Each iteration's gate. Entry must hold before work starts; Items are its package
 - Result: every check passed, with no exception; section 9.4 gives the evidence. Closed on 2026-11-05.
 
 **Iteration 3, `v0.3`.**
-- Entry: `v0.2`; Stage 9 passed, with D-10 decided and D-11 answered; a Cerebras key (D-03), whose credits run until 2026-12-03.
+- Entry: `v0.2`; Stage 9 passed, with D-10 and D-11 decided on 2026-11-05; a Cerebras key (D-03), whose credits run until 2026-12-03.
 - Items: WP-3.1 to 3.6.
 - Exit and Verify: two requirement groups get different tool decisions in one run; a capability the knowledge base cannot support comes back `UNVERIFIED` with no prompt instruction; every tool call in a trace matches `config/agents.yaml`; `assess` never receives the author's reasoning; the capability map follows its rule, `PARTNER` first; in `pack` mode `techcheck` replays recorded Context7 answers and `discover` makes no LLM call; `options` scores reproduce from the logged scores and published weights, including a tie-break; every manifest fact has an evidence class and an existing source, every binding requirement maps to a work package or a gap, and every work package has effort with a basis; no risk carries an invented rating; a false technology claim is `INVALIDATED` and blocks the gate until revised or overridden with a logged reason, and under `--auto-select` the blocked run ends `POLICY_BLOCKED`; with no human the run waits in `WAITING_HUMAN`, and an edited field re-runs `techcheck` and `risk`; S-12 is reported; the small ablation is scored under the keep-or-drop rule; `reflect`, when enabled, is offered only after a failure signal and allows 2 thoughts; QS-2, QS-3, QS-5 and QS-8 pass on 5 live hero repeats or the owner accepts a recorded exception; the Run, Review and Ops pages show a run's files, the Review page reaches the gate as `bidwright approve` does, Ops totals match `ledger.jsonl`, and `spans.jsonl` replays into the local Phoenix; the second architecture review is triaged.
 
@@ -1297,7 +1297,7 @@ Compliance status defaults to `UNVERIFIED` and stays separate from delivery mode
 
 | Service | Image | Job | Profile | From |
 |---|---|---|---|---|
-| `app` | Built here, multi-stage with `uv`, non-root | The `bidwright` CLI through `docker compose run`, and Streamlit on `:8501` from Iteration 3 (CH-94), in its own `ui` service if D-11 accepts ADR-050 | Default | 0a |
+| `app` | Built here, multi-stage with `uv`, non-root | The `bidwright` CLI through `docker compose run`, and Streamlit on `:8501` from Iteration 3 (CH-94), in its own `ui` service (ADR-050) | Default | 0a |
 | `phoenix` | `arizephoenix/phoenix`, pinned | Traces and experiments on `:6006` | Default | 0a |
 | `eval` | Same image as `app` | `bidwright-eval`: scores frozen runs. The only service that sees gold. | `eval` | 0a |
 | `test` | Same image | Replay tests with no keys and no network, the same command CI runs | `test` | 0a |
@@ -1311,7 +1311,7 @@ Compliance status defaults to `UNVERIFIED` and stays separate from delivery mode
 | `config/`, `prompts/`, `skills/`, `knowledge_base/` | Read-only | Read-only | Read-only |
 | `outputs/` | Read-write | Read-only | Temporary copy |
 | `evals/corpus/`, `evals/gold/` | **Never** | Read-only | Never |
-| `evals/results/` | Never; from Iteration 3 a separate `ui` service reads it, if D-11 accepts ADR-050 | Read-write | Never |
+| `evals/results/` | Never; from Iteration 3 a separate `ui` service reads it (ADR-050) | Read-write | Never |
 | `tests/cassettes/` | Never | Never | Read-only |
 | Named volumes for SQLite state | Read-write | Own volume | Temporary |
 

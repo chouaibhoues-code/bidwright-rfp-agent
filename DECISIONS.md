@@ -13,7 +13,7 @@ Model and prompt ADRs also give the evaluation evidence and the model's expected
 
 ## ADRs
 
-ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05.
+ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05. ADR-039 to ADR-050 were proposed by the Iteration 3 design doc, `docs/designs/iteration-3.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-05: ADR-039 to ADR-049 with D-10's option C, and ADR-050 with D-11's option A.
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -701,7 +701,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-028: The `extract` prompt drops its examples, and the second pass is on
 
-**Status:** accepted, 2026-11-04, under the decision rules the plan fixed before each spike ran and hashed with the gold in `evals/hypotheses.yaml`; the owner chose to run both spikes in Iteration 1 (CH-86).
+**Status:** accepted, 2026-11-04, under the decision rules the plan fixed before each spike ran and hashed with the gold in `evals/hypotheses.yaml`; the owner chose to run both spikes in Iteration 1 (CH-86). Its first decision, the examples dropped, is superseded by ADR-049 (2026-11-05), after ADR-030's correction reversed S-10.
 
 **Context.** S-10 asks whether the worked examples in `extract.md` earn their tokens: they stay only if they lower the median missed mandatory requirements by more than the spread of the prompt without them (`superiority`). S-13 asks whether a second reading of `OBLIGATION` zones, over the passages the first reading found nothing binding in, lowers the median misses while costing at most 3 points of low precision (`improvement`). Both ran on the hero package to `coverage`, with packs of 40 and five repeats a rung, S-13 on the prompt S-10 chose.
 
@@ -934,6 +934,261 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** A licensed research source with provenance metadata replaces NotebookLM, or the pattern's false matches cost research items that matter.
 
 **Provenance.** D-08 in `context/Decision-Form.md`; the failure-mode row of 2026-11-05 on the development PDF's research pack.
+
+### ADR-039: The solution path in the run
+
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C). It departs from the Master-Plan once: `decide`'s `ask_research` answers only from the research the run already holds.
+
+**Context.** Iteration 3 turns the verified requirements and the domain research into a solution a bid team can defend. The Master-Plan places `decide`, `assess`, `options`, `blueprint`, `techcheck`, the full `risk` and `solution_gate` after research, and asks each agent to earn its place in a measured comparison.
+
+**Decision.**
+- After research, `decide_plan` lists the needs: one per requirement group holding a `BINDING` or `OPTIONAL` requirement, and one per need of the domain brief, at most 24 a run, `RFP` needs first. `decide` runs one agent loop per need (4 turns, 6 tool calls, `search_capabilities`, `search_rfp`, `read_section`, `ask_research`), and `decide_join` numbers the claims and questions in need order.
+- `assess` makes one call per claim that cites evidence, then code builds the capability map; `options`, `blueprint` (ADR-043), `techcheck` (ADR-044), the full `risk` with `sla_calc`, and `solution_gate` (ADR-046) follow, then `draft` and `render`.
+- `decide`'s `ask_research` reads the loaded research pack in research mode `pack` and the run's `research.json` in `live`, and is not offered in `off`: a live question per need would spend research quota and send text out once per need.
+- The `approach` node of `v0.2` stays, as the SO0 baseline, as the path below the manifest rung, and as the fallback when `blueprint` fails twice.
+- The run limits rise: development RFPs to 150 requests and 600,000 tokens (30 active minutes on `free` and `paid`, 90 on `local`), the hero package to 450 requests, 3,000,000 tokens and 120 minutes.
+
+**Consequences.** Every recorded call changes once, at the build step that wires the path, and the recordings are made again. A hero run makes several times the requests of `v0.2`.
+
+**Options.** One agent for the whole solution, which loses the per-need contrast and the independent assessor; a fixed pipeline with no loop, which the SO1-F rung measures; live research questions from `decide`.
+
+**Confirmation.** `test_two_needs_get_different_decisions`, `test_decide_context_holds_no_other_need` and `test_every_tool_call_matches_agents_yaml`; the SO ladder under the keep-or-drop rule.
+
+**Reverse if.** The SO ladder drops `decide` (SO1 does not beat SO1-F), or a need-level loop costs more than the paid budget allows on the hero package.
+
+**Provenance.** `docs/designs/iteration-3.md`, sections 3, 4.1 and 4.2; the Master-Plan's workflow.
+
+### ADR-040: Every claim `decide` drafts is material
+
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C).
+
+**Context.** The Master-Plan asks which claims are material, and so must be assessed before a solution may rest on them. A claim left unassessed could state a capability the supplier cannot show.
+
+**Decision.**
+- Every `CapabilityClaim` is material. A claim has one of six kinds (`capability`, `certification`, `delivery`, `technology`, `figure`, `role`), at most 300 characters, 0 to 3 knowledge-base ids and 1 to 3 passage ids.
+- Code keeps an evidence id only when the need's loop received it from `search_capabilities`, and a passage id only when it belongs to the need or the loop received it; a claim left with no passage id is dropped.
+- The manifest asserts a capability only by citing a claim assessed `SUPPORTED` or `PARTIALLY_SUPPORTED`; nothing else may state what the supplier can deliver, and a fact citing an unsupported claim becomes an `ASSUMPTION` that needs proof.
+
+**Consequences.** Every claim with evidence costs one `assess` call; a claim with none is `UNVERIFIED` in code at no cost.
+
+**Options.** Materiality by a threshold, or judged by a model, either of which adds a decision that can let a gap through.
+
+**Confirmation.** `test_assess_no_evidence`; the provenance checks in `test_blueprint_closure`; seeded gaps claimed at 0 on the hero repeats.
+
+**Reverse if.** Assessing every claim exceeds the assessor's quota on the hero package, and an ablation shows that a defined subset loses no seeded gap.
+
+**Provenance.** `docs/designs/iteration-3.md`, sections 3, 4.2 and 4.5.
+
+### ADR-041: `options` weighting when weights are unstated or a factor is pass or fail
+
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C).
+
+**Context.** `options` scores each option from 0 to 4 on each in-scope evaluation factor, and code weights the scores. RFPs give weights as numbers, as percentages or points, as words, or not at all, and some factors are pass or fail.
+
+**Decision.**
+- A factor is pass-or-fail when its weight reads "pass/fail", "pass or fail" or "pass-fail", in any case, or its scoring quote holds both "pass" and "fail". It carries no weight, and an option scored below 2 on it fails that gate; every option that passes its gates ranks above every option that fails one.
+- A stated weight is the number at the start of the weight text ("40", "40%" and "40 points" are 40); any other text counts as `not_stated`.
+- When every other in-scope factor has a stated weight, an option's total is `sum(score × weight) / sum(weight)`; when any is `not_stated`, all count equally and the ranking is marked provisional. With no weighted factor, every total is 0.
+- Ties break on fewer open gaps (`GAP` needs the option marks neither `PARTNER` nor `ALTERNATIVE`), then fewer claims needing proof, then fewer `CUSTOM` needs, then option order. The ranking is hypothetical without an approved bid policy.
+
+**Consequences.** Any ranking can be recomputed from `options.json`'s logged scores and the brief's weights.
+
+**Options.** Model-assigned weights, which invents what the buyer did not state; dropping unweighted factors, which loses them.
+
+**Confirmation.** `test_options_scores_reproduce_from_the_logged_scores`, with a tie-break case; the scorer's options-reproduced line.
+
+**Reverse if.** An approved bid policy states its own weighting rule, or a corpus RFP states weights in a form the rule reads wrongly.
+
+**Provenance.** `docs/designs/iteration-3.md`, section 4.4.
+
+### ADR-042: The bid policy and the bid signal
+
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C).
+
+**Context.** The Master-Plan's bid signal is `UNDETERMINED` unless an approved `bid_policy.yaml` exists, and no probability of winning is ever invented. The policy's schema was open.
+
+**Decision.**
+- A policy names its approver by role, a date and a version; fatal triggers and conditions from a fixed set that code evaluates (`hazard_on_gap`, `gap_on_mandatory`, `contract_flag` with `ContractCategory` values, `deadline_within_days`, `every_option_needs_proof`); a minimum covered share of binding needs; and the inputs it requires. An unknown trigger fails at load.
+- A policy loads only when `--bid-policy` names it, and the run manifest records its hash. A fatal trigger gives `NO_GO`; a condition, or a covered share below the minimum, gives `CONDITIONAL_GO`; else `GO`; no policy, or a missing input such as an unstated deadline, gives `UNDETERMINED`.
+- `bid_memo.md` gives the signal, its triggers with their record ids, the covered share, the options' ranking, the open questions and the unvalidated technology claims, and says that a person decides.
+
+**Consequences.** The signal is reproducible from the policy and the run's files; nothing in it is a model's judgment.
+
+**Options.** Free-text policy rules read by a model; a scored signal.
+
+**Confirmation.** `tests/test_bid_signal.py`: each trigger kind, the missing-input cases, and an unknown trigger refused at load.
+
+**Reverse if.** A bid team's policy needs a trigger outside the fixed set.
+
+**Provenance.** `docs/designs/iteration-3.md`, sections 4.9 and 6.3.
+
+### ADR-043: The solution manifest's fields and its checks in code
+
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C).
+
+**Context.** The manifest is the one source for every later proposal output. A judged rubric cannot validly gate a plan or a work breakdown; structural checks must come first. The sources hold no evidence on effort estimates made by language models.
+
+**Decision.**
+- Two calls: P01 gives the plan (current and target state, workstreams, the work breakdown, assumptions, ground rules, technology claims), which code settles with the tree, 100%, trace and provenance checks, one format repair and one closure repair; P02 gives each work package's dictionary, provisional effort, verification and predecessors, and the PDCA, benefits and win themes. P03 revises the plan after an `INVALIDATED` technology claim, and P02 runs again.
+- Code checks the tree, the 100% rule (every binding requirement in a work package or listed as a gap), the backward trace, dictionary binding, effort (a range, a basis and known roles), schedule logic (a cycle loses its closing edges) and provenance: a fact's evidence class comes from what it cites, strongest first, and a work package's from its claims.
+- Effort is labeled provisional at maturity class 5, conceptual. A fact holding a currency amount, or a date no passage holds, is dropped.
+- A failed check is listed, shown at the gate and scored, and never blocks. Two schema failures in a call fall back to the `approach` node, and the run ends `DEGRADED`.
+
+**Consequences.** A reviewer sees every gap and every unsupported fact; the manifest may be imperfect, but never silently so.
+
+**Options.** One call for the whole manifest; a judged quality gate.
+
+**Confirmation.** `test_blueprint_closure` and the manifest's checks on every hero repeat.
+
+**Reverse if.** The SO ladder drops SO3, or a measured comparison shows one call meeting the checks as often as two.
+
+**Provenance.** `docs/designs/iteration-3.md`, section 4.5.
+
+### ADR-044: `techcheck` and its recorded answers
+
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C).
+
+**Context.** The Master-Plan checks each library claim in the manifest against current documentation, and an `INVALIDATED` claim blocks approval. Replays and research mode `pack` must make no network call, and a client run must reach no remote server.
+
+**Decision.**
+- In research mode `live`, code calls Context7's remote server, pinned, through the gateway for agent `techcheck`: G3 checks every query against the run's passages and G4 the pins; one resolve call per library and a cache per query. The documentation is split into paragraphs, screened for planted instructions, cut within 4,500 tokens, and written to `tech_docs.jsonl`.
+- One `assess`-role call per checkable technology claim, at most 15, gives a verdict with a quote; a quote not found in the documentation makes it `INSUFFICIENT_DOCS`.
+- In research mode `pack`, a committed library pack, built by `bidwright research libraries` and hashed, answers by ADR-034's matching rule; in `off`, every checkable claim is `UNVALIDATED`.
+- An `INVALIDATED` claim sends `blueprint` one revision; one still `INVALIDATED` blocks the gate.
+
+**Consequences.** Replays and CI need no Context7 access; the library pack must be extended when a manifest names a new library.
+
+**Options.** Recording Context7's answers per run as cassettes; a web search per claim.
+
+**Confirmation.** `tests/test_techcheck.py` on a fake Context7 server; `bidwright-eval techcheck` over the labeled technology seeds.
+
+**Reverse if.** Context7 becomes unavailable or changes its terms, or the verdicts fail the seed rule (each false seed `INVALIDATED` in at least 4 of 5 repeats, no true seed ever).
+
+**Provenance.** `docs/designs/iteration-3.md`, section 4.6.
+
+### ADR-045: `assess` judges entailment over cited evidence, on a route set once a run
+
+**Status:** accepted, 2026-11-05, by the owner (D-10 option C, with the route's recording from the Stage 9 re-audit). Model ADR: `gpt-oss-120b` on Cerebras, whose trial credits run until 2026-12-03, with Groq's `openai/gpt-oss-120b` as the fallback route.
+
+**Context.** The plan gave assessment to another model family to reduce correlated errors. A review of the published evidence found no direct comparison of same-family and cross-family judges, no inflation in the one test of same-lab judging, a serving route that moved scores more than the family did, and errors that persisted across families; it found structure helped. The Master-Plan's fallback for that case applies.
+
+**Decision.**
+- `assess` sees the claim, its cited records in full and its need's statements, never the author's reasoning; it gives its reason before its disposition; a claim with no evidence is `UNVERIFIED` in code. Code drops ids outside the cited ones and records the serving route of every assessment.
+- The route is set once, at run start: `primary` (Cerebras), else `fallback` (Groq), else `same` (the `reason` role's model); a replay takes its recording's route, a resume its first part's. A run on route `same` on a profile that names another family ends `DEGRADED`; on `local`, where the same family is configured, assessments are flagged and the status stands. A client run takes route `same`.
+- The scorer reports the joint error of `decide` and `assess`, and the owner spot-checks 10 assessments by hand (CH-93).
+
+**Consequences.** Independence rests on the structure first and the family second. Trial credits are outside the paid budget unless the owner says they count.
+
+**Options.** Cross-family assessment as the control of independence; a same-family assessor everywhere.
+
+**Confirmation.** `test_assess_never_receives_the_authors_reasoning`, `test_assess_no_evidence`, the route tests of the build's step 1, and the spot-check.
+
+**Reverse if.** A measured comparison shows a same-family assessor's errors match a cross-family one's, or no non-Gemini route remains after the trial.
+
+**Provenance.** `docs/designs/iteration-3.md`, sections 2 and 4.3; Q-04 in the Research-Register.
+
+### ADR-046: `solution_gate`, its approval and `bidwright approve`
+
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C). It builds the approval file of ADR-035.
+
+**Context.** A person approves the manifest before anything is drafted from it. Tests, matrices and recordings need a gate that passes without a person, and a blocked gate must never pass on its own.
+
+**Decision.**
+- The gate writes `review/solution_gate.md`, then interrupts; the run waits in `WAITING_HUMAN`. Resumed, the node runs again and receives the approval, which it writes in ADR-035's format, with the hashes the approver saw and, after edits, the manifest's new hash; a changed hash voids it.
+- `bidwright approve <run> --role ... [--option] [--edit FILE|-] [--override] [--reject]`: the option switch returns to `blueprint`; edits on a fixed set of field paths are applied by `blueprint`, then `techcheck` and `risk` run again; an override passes a blocked gate with its reason; a reject ends the run `POLICY_BLOCKED`.
+- `execute` takes `gate="auto"` by default for its programmatic callers; `bidwright run` waits unless `--auto-select` is given. Automatic approval takes the top-ranked option and never passes a blocked gate. The Review page builds the same `approve` command.
+
+**Consequences.** A waiting run exits 0 and names the review file and the command.
+
+**Options.** A decision in the run manifest; approval through a flag on `run`.
+
+**Confirmation.** `test_gate_waiting_human`, `test_gate_recheck` and `test_techcheck_blocks_gate`; the owner's approval in the build's step 21.
+
+**Reverse if.** Iteration 6's review needs a richer record, as ADR-035 says.
+
+**Provenance.** `docs/designs/iteration-3.md`, section 4.8; ADR-035.
+
+### ADR-047: `reflect`, a gated thought after a failed or empty turn
+
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C). It follows CH-68's triggers.
+
+**Context.** The evidence supports reflection gated on a poor step, not reflection at every step, and tool-grounded feedback over self-critique alone.
+
+**Decision.**
+- The reference sequential-thinking server, pinned and installed in the image, runs over stdio, one process a thought. The model sees `reflect(thought)`; code fills the server's counters.
+- G6, before the call cap, allows a thought only when the agent's limits say `reflect: true` and the last other tool result failed or the last turn of other tools made no progress (a rejected quote does not arise for `decide` and `risk`), at most 2 thoughts an invocation, outside the agent's caps. With `reflect: true`, such a turn does not end the loop while a thought is left; with `false`, the definition is not sent and the loop is as before.
+- Off by default; only the SO1-T and RK1-T rungs switch it on.
+
+**Consequences.** No recorded call changes while it is off.
+
+**Options.** Reflection at every turn; no reflection tool.
+
+**Confirmation.** `test_reflect_gating`; the SO1-T and RK1-T rungs.
+
+**Reverse if.** The rungs and Iteration 6's local comparison show no gain; the flag then stays off with this ADR's record.
+
+**Provenance.** `docs/designs/iteration-3.md`, sections 4.10 and 6.2; CH-68.
+
+### ADR-048: How the ablation runs
+
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C). It departs from the Master-Plan once: the SO rungs read a frozen run of the EX3 configuration to `brief`, and the RK rungs a frozen full run.
+
+**Context.** The Master-Plan's keep-or-drop rule (CH-54) decides each rung from 5 repeats against the last configuration kept. An EX3 run stopped at `coverage` holds no groups or brief for the solution path, and the full `risk` reads a manifest.
+
+**Decision.**
+- Each rung is a set of switches (`solution`, `risk_mode`, `reflect`, `extract_context`, `triage`, `coverage`), whose defaults live in `config/limits.yaml`; after a ladder, the last rung kept on its main chain sets them, with an ADR. The honesty controls stay on whatever the ladders show, so the default `solution` is never below `assess`.
+- `bidwright seed` freezes a run with its checkpoint and hashes; `seed_load` checks them and the prompt hashes, restores the listed state keys and files, and the run continues from `research` or `risk`.
+- A repeat that ends `BUDGET_EXCEEDED`, `POLICY_BLOCKED`, on a fallback model, or `DEGRADED` for an unplanned reason runs again, at most twice, then counts as invalid.
+- `keep_or_drop`: with the signed difference of medians `d` and its 90% bootstrap interval `[lo, hi]` (standard-library random generator seeded from the matrix name, 10,000 resamples), a rung is kept when `lo > 0`, or, with a margin `m`, when `lo > -m` and its secondary metric's median improves. Side rungs are compared with the rung they extend. Cost is reported per avoided miss and never decides.
+
+**Consequences.** The SO and RK ladders measure their steps on fixed inputs; results recompute from the committed runs.
+
+**Options.** Unseeded rungs, which mix extraction noise into every solution metric; a statistical package for the bootstrap.
+
+**Confirmation.** `tests/test_report.py` and `tests/test_seed.py`; the three ladders' reports.
+
+**Reverse if.** A larger repeat count makes a simpler rule workable, as CH-54 says.
+
+**Provenance.** `docs/designs/iteration-3.md`, section 4.11; CH-54 and CH-55.
+
+### ADR-049: The `extract` examples return
+
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C), as CH-90 scheduled. It supersedes ADR-028's first decision. Prompt ADR: `extract.md` 0.5.0 on `gemini-3.5-flash-lite`, with `gemini-3.1-flash-lite` as fallback.
+
+**Context.** ADR-028 dropped the worked examples from `extract.md` after S-10. ADR-030 corrected the matcher, and S-10 scored again under the hashed rule reversed: with the examples, the median missed mandatory requirements were 3 (2-4) of 45 against 6 (5-7) without, beyond the control's spread of 2, while the median low precision fell from 0.83 to 0.74 and the tokens rose by about 45%.
+
+**Decision.** `extract.md` 0.5.0 is 0.4.0 with the examples of 0.3.0 back; `extract_oneshot.md` stays at 0.4.0. Every EX rung but EX0 uses it, and EX4 measures the second pass on the prompt that has the examples.
+
+**Consequences.** Every recorded `extract` call changes once, when the recordings are made again.
+
+**Options.** Keeping the examples out until after the delivery, which CH-90 set aside.
+
+**Confirmation.** `test_prompts.py`'s version checks; the EX ladder.
+
+**Reverse if.** The EX ladder shows the examples raising misses or losing precision beyond its margin.
+
+**Provenance.** S-10 rescored under ADR-030 (`evals/results/s10-examples/`); CH-90; ADR-028.
+
+### ADR-050: A separate `ui` service reads the scores in Docker
+
+**Status:** accepted, 2026-11-05, by the owner (D-11, option A).
+
+**Context.** WP-3.6 brings the Streamlit Run, Review and Ops pages into Iteration 3 (CH-94). They show a run's scores and the ladders' reports, which sit in `evals/results/`. The `app` service, which runs the pipeline, has never mounted that folder, so the pipeline's container never holds gold-derived files. The committed results hold scores, gold ids and the passage ids of missed clauses, but no clause text, spec or gold file.
+
+**Decision.**
+- A `ui` service, under the Compose profile `ui`, runs the UI from the same image: it publishes `127.0.0.1:8501`, mounts what `app` mounts plus `evals/results/` read-only, and takes the same keys and environment, so its Review page can resume a waiting run.
+- The `app` service keeps its mounts, so every run started in it, matrices included, keeps gold-derived files out of reach. `evals/gold` and `evals/corpus` stay in the `eval` service only.
+- `test_isolation.py` checks that no module under `src/bidwright` names `evals/`, and `test_compose_lockdown.py` that only the `ui` and `eval` services mount `evals/results/` and only `ui` publishes `8501`.
+
+**Consequences.** The one place pipeline code runs with results visible is a part of a run that the Review page resumes, and that code reads only its run folder.
+
+**Options.** B: no mount, scores shown only by the UI on the host; C: mounting the results into `app` itself, which puts gold ids in reach of every Docker run.
+
+**Confirmation.** `test_compose_lockdown.py` and `test_isolation.py`; the pages' tests in the build's steps 13 and 17.
+
+**Reverse if.** A production deployment separates viewing from running, or the results begin to hold clause text.
+
+**Provenance.** D-11 in `context/Decision-Form.md`; `docs/designs/iteration-3.md`, section 4.14; CH-94.
 
 ## Failure modes hit
 
