@@ -1,5 +1,6 @@
-"""FastAPI wrapper tests (`WP-3.6`): `TestClient` over `samples/dev` and synthetic fixtures."""
+"""FastAPI wrapper tests (`WP-3.6`, `ADR-051`): `TestClient` over `samples/dev` and fixtures."""
 
+import ast
 import json
 import shutil
 from pathlib import Path
@@ -13,7 +14,8 @@ from bidwright.preflight import HOME
 from bidwright.render import STATUS_LINE
 
 DEV_SAMPLE = HOME / "samples" / "dev"
-client = TestClient(app)
+POST_HEADERS = {"X-Bidwright": "1"}
+client = TestClient(app, base_url="http://127.0.0.1:8001")
 
 
 def test_health_and_runs_include_unreviewed_draft_status_line(
@@ -82,9 +84,34 @@ def test_unknown_or_traversal_run_id_is_rejected_with_404(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(DEV_SAMPLE))
-    for bad_id in ("nonexistent", "..", "../private"):
+    for bad_id in ("nonexistent", "..", "../private", "dev/../../private"):
         res = client.get(f"/runs/{bad_id}")
         assert res.status_code == 404
+
+
+def test_post_without_x_bidwright_header_and_foreign_host_are_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(DEV_SAMPLE))
+    no_header = client.post("/runs/dev/stop")
+    assert no_header.status_code == 403
+    assert no_header.json()["status_line"] == STATUS_LINE
+
+    wrong_header = client.post("/runs/dev/stop", headers={"X-Bidwright": "0"})
+    assert wrong_header.status_code == 403
+
+    foreign_get = client.get("/health", headers={"Host": "evil.example:8001"})
+    assert foreign_get.status_code == 400
+    assert foreign_get.json()["status_line"] == STATUS_LINE
+
+    foreign_post = client.post(
+        "/runs/demo",
+        headers={"Host": "evil.example:8001", "X-Bidwright": "1"},
+    )
+    assert foreign_post.status_code == 400
+
+    localhost_ok = client.get("/health", headers={"Host": "localhost:8001"})
+    assert localhost_ok.status_code == 200
 
 
 def test_stop_endpoint_writes_stop_request_for_running_run_and_409_when_completed(
@@ -99,13 +126,13 @@ def test_stop_endpoint_writes_stop_request_for_running_run_and_409_when_complete
     manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
 
     monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(tmp_path))
-    ok = client.post("/runs/run-active/stop")
+    ok = client.post("/runs/run-active/stop", headers=POST_HEADERS)
     assert ok.status_code == 200
     assert ok.json()["status"] == "STOP_REQUESTED"
     assert (running_dir / "control" / "stop.request").is_file()
 
     monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(DEV_SAMPLE))
-    refused = client.post("/runs/dev/stop")
+    refused = client.post("/runs/dev/stop", headers=POST_HEADERS)
     assert refused.status_code == 409
 
 
@@ -116,6 +143,7 @@ def test_spans_replay_endpoint_refuses_unlisted_host_with_400(
     res = client.post(
         "/runs/dev/spans/replay",
         json={"endpoint": "https://collector.example.com:6006"},
+        headers=POST_HEADERS,
     )
     assert res.status_code == 400
     assert "phoenix" in res.json()["detail"]
@@ -134,9 +162,21 @@ def test_demo_endpoint_invokes_cli_demo_and_returns_latest_run(
 
     monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(tmp_path))
     monkeypatch.setattr("bidwright.cli.main", fake_main)
-    res = client.post("/runs/demo")
+    res = client.post("/runs/demo", headers=POST_HEADERS)
     assert res.status_code == 200
     body = res.json()
     assert body["run_id"] == "20261105T150000Z-demo"
     assert body["status"] == "COMPLETED"
     assert body["status_line"] == STATUS_LINE
+
+
+def test_api_module_writes_no_file_directly() -> None:
+    api_path = HOME / "app" / "api.py"
+    tree = ast.parse(api_path.read_text(encoding="utf-8"))
+    forbidden_attrs = {"write_text", "write_bytes", "mkdir", "unlink", "rmdir"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name) and node.func.id == "open":
+                raise AssertionError("app/api.py must not call open()")
+            if isinstance(node.func, ast.Attribute) and node.func.attr in forbidden_attrs:
+                raise AssertionError(f"app/api.py must not call .{node.func.attr}()")

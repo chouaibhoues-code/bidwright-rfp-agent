@@ -7,11 +7,13 @@ display, plus safe control endpoints (`POST /runs/demo`, `POST /runs/{run_id}/st
 `app/api.py` never writes run files directly.
 """
 
+from collections.abc import Awaitable, Callable
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.data import RunData, list_runs, load_run_data, outputs_dir
@@ -20,11 +22,39 @@ from bidwright.obs.replay import replay_spans
 from bidwright.preflight import Refused
 from bidwright.render import STATUS_LINE
 
+ALLOWED_HOSTS = frozenset({"127.0.0.1:8001", "localhost:8001"})
+
 app = FastAPI(
     title="Bidwright API (UNREVIEWED_DRAFT)",
     version="0.2.0",
     description=STATUS_LINE,
 )
+
+
+@app.middleware("http")
+async def _loopback_guard(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    """Enforce ADR-051: allow only loopback Host headers and require `X-Bidwright: 1` on POST."""
+    host = request.headers.get("host", "").strip().lower()
+    if host not in ALLOWED_HOSTS:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status_line": STATUS_LINE,
+                "detail": f"Refused foreign Host header: {host!r}",
+            },
+        )
+    if request.method.upper() == "POST" and request.headers.get("x-bidwright") != "1":
+        return JSONResponse(
+            status_code=403,
+            content={
+                "status_line": STATUS_LINE,
+                "detail": "POST requests require header X-Bidwright: 1",
+            },
+        )
+    return await call_next(request)
 
 
 class ReplayRequest(BaseModel):
