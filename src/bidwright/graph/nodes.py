@@ -16,8 +16,9 @@ import re
 import threading
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from openinference.semconv.trace import OpenInferenceSpanKindValues, SpanAttributes
 from pydantic import BaseModel
@@ -34,6 +35,7 @@ from bidwright.llm.types import Message
 from bidwright.obs.ledger import LedgerFile
 from bidwright.obs.tracing import Tracing, maybe_span, record_llm, set_attribute
 from bidwright.prompts import Prompt
+from bidwright.retrieval import PassageIndex
 from bidwright.schemas import (
     QUOTE_MAX_CHARS,
     ApproachInput,
@@ -43,6 +45,7 @@ from bidwright.schemas import (
     CandidateRow,
     ContextPack,
     CueHit,
+    DateFact,
     DraftResult,
     DraftTask,
     ExtractBatch,
@@ -51,10 +54,12 @@ from bidwright.schemas import (
     LedgerEntry,
     OpenQuestion,
     Passage,
+    PassageView,
     ProposalSection,
     Requirement,
     RequirementView,
     Risk,
+    RiskFixedInput,
     RiskInput,
     RiskProposal,
     RiskRegister,
@@ -66,7 +71,8 @@ from bidwright.schemas import (
 # Re-exported, unchanged, from their new home (Iteration 2): clusters.py reads them here.
 from bidwright.text import STOPWORDS as STOPWORDS
 from bidwright.text import content_stems as content_stems
-from bidwright.verify import QuoteCheck, check_quote, missing_values, shown_text
+from bidwright.tools import DateArgs, SearchArgs, date_calc, search_tool
+from bidwright.verify import QuoteCheck, check_quote, missing_values, shown_text, values
 
 PREDICTIONS = ("BINDING", "OPTIONAL")
 RATING_WORDS = frozenset(
@@ -106,6 +112,9 @@ class RunContext:
     # The run's ledger.jsonl (ADR-031); without one, as in the test doubles and gen_docs.py,
     # the ledger is kept in memory only.
     ledger_file: LedgerFile | None = None
+    # The UTC date of the run manifest's `started`, which a resume keeps (Iteration 3, step 9);
+    # the risk baselines count days from it.
+    started: date | None = None
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
     def __post_init__(self) -> None:
@@ -899,6 +908,146 @@ def risk(
         for q in parsed.open_questions
     ]
     return RiskOutcome(risks, questions, rejected, stop_reason, turns)
+
+
+# --- the risk baselines (Iteration 3, step 9) ----------------------------------------------
+
+RiskMode = Literal["loop", "oneshot", "fixed"]
+FIXED_PASSAGES = 5  # the passages RK1-F retrieves for each hazard
+
+
+def fixed_facts(
+    ctx: RunContext, requirements: Sequence[Requirement], index: "PassageIndex"
+) -> tuple[list[DateFact], list[PassageView]]:
+    """RK1-F's evidence, computed in code: each date a hazard's quote states, with its day
+    count from the run's start and its weekday from `date_calc`, and the top passages
+    `search_rfp` returns for each hazard's statement."""
+    if ctx.started is None:
+        raise ValueError("the fixed risk baseline needs the run's start date")
+    dates: list[DateFact] = []
+    chosen = predictions(requirements)
+    search = search_tool(index, {r.id: r.src_ids for r in chosen})
+    passages: dict[str, PassageView] = {}
+    for requirement in (r for r in chosen if r.hazard):
+        for value in dict.fromkeys(v for v in values(requirement.quote) if isinstance(v, date)):
+            day = value.isoformat()
+            diff = date_calc(DateArgs(date=ctx.started.isoformat(), op="diff", other_date=day))
+            weekday = date_calc(DateArgs(date=day, op="weekday"))
+            if diff.status != "OK" or weekday.status != "OK":
+                continue
+            dates.append(
+                DateFact(
+                    requirement_id=requirement.id,
+                    date=day,
+                    days_from_start=int(diff.data["result"]),
+                    weekday=str(weekday.data["result"]),
+                )
+            )
+        found = search.run(SearchArgs(query=requirement.statement[:200], k=FIXED_PASSAGES))
+        for hit in found.data or []:
+            passage = ctx.passages.get(hit["src_id"])
+            if passage is not None and passage.id not in passages:
+                passages[passage.id] = PassageView(
+                    src_id=passage.id, section_path=passage.section_path, text=hit["text"]
+                )
+    return dates, list(passages.values())
+
+
+def _resolved_evidence(
+    proposals: Sequence[RiskProposal], requirements: Mapping[str, Requirement]
+) -> list[RiskProposal]:
+    """In the baselines only, a requirement id in `evidence_src_ids` becomes the passages its
+    quote comes from, since RK0 receives no passage id to cite."""
+    resolved = []
+    for proposal in proposals:
+        ids: list[str] = []
+        for cited in proposal.evidence_src_ids:
+            ids += requirements[cited].src_ids if cited in requirements else [cited]
+        resolved.append(proposal.model_copy(update={"evidence_src_ids": list(dict.fromkeys(ids))}))
+    return resolved
+
+
+def risk_baseline(
+    ctx: RunContext,
+    requirements: Sequence[Requirement],
+    approach_items: Sequence[ApproachItem],
+    mode: Literal["oneshot", "fixed"],
+    *,
+    index: "PassageIndex | None" = None,
+    manifests: CallManifests | None = None,
+) -> RiskOutcome:
+    """RK0 (`oneshot`) and RK1-F (`fixed`): one `risk_oneshot.md` call with no tools, then the
+    checks of the loop and its one retry after generic risks. Calls are `R-<mode>`, a format
+    repair `R-<mode>-repair` and the retry `R-<mode>-generic`; they run as node `risk`."""
+    prompt = ctx.prompts["risk_oneshot"]
+    chosen = predictions(requirements)
+    dates: list[DateFact] = []
+    passages: list[PassageView] = []
+    if mode == "fixed":
+        if index is None:
+            raise ValueError("the fixed risk baseline needs the run's search index")
+        dates, passages = fixed_facts(ctx, requirements, index)
+    view = RiskFixedInput(
+        requirements=requirement_views(chosen),
+        approach=[
+            ApproachItemView(id=a.id, text=a.text, requirement_ids=a.requirement_ids)
+            for a in approach_items
+        ],
+        hazards=[r.id for r in chosen if r.hazard],
+        dates=dates,
+        passages=passages,
+    )
+    data = view.model_dump_json()
+    rendered = prompt.render(data, run_id=ctx.run_id)
+    records = [r.id for r in chosen] + [a.id for a in approach_items]
+    call_id = f"R-{mode}"
+    given = [p.src_id for p in passages]
+
+    def record(name: str, history: Sequence[Message]) -> None:
+        if manifests is not None:
+            turns = history[len(rendered.messages) :]
+            manifests.record(prompt, "risk", name, records, data, turns, given)
+
+    record(call_id, rendered.messages)
+    parsed, history = ctx.structured(
+        prompt,
+        rendered.messages,
+        RiskRegister,
+        node="risk",
+        input_hash=rendered.input_hash,
+        on_repair=lambda sent: record(f"{call_id}-repair", sent),
+    )
+    if not isinstance(parsed, RiskRegister):
+        return RiskOutcome([], [], [], mode, 1, failure=MALFORMED_TWICE)
+    by_id = {r.id: r for r in chosen}
+    accepted, rejected = _screen(_resolved_evidence(parsed.risks, by_id), ctx.passages)
+    if rejected:
+        reasons = json.dumps([[entry["event"], entry["reason"]] for entry in rejected])
+        retry = [*history, Message("user", prompt.task_text("repair_generic", rejected=reasons))]
+        record(f"{call_id}-generic", retry)
+        second = ctx.call(
+            prompt,
+            retry,
+            RiskRegister,
+            node="risk",
+            input_hash=sha256_of([rendered.input_hash, reasons]),
+        )
+        if isinstance(second.parsed, RiskRegister):
+            parsed = second.parsed
+            accepted, rejected = _screen(_resolved_evidence(parsed.risks, by_id), ctx.passages)
+    risks = [
+        Risk(
+            id=f"RSK-{n:03d}",
+            **proposal.model_dump(exclude={"evidence_src_ids"}),
+            evidence_src_ids=ids,
+        )
+        for n, (proposal, ids) in enumerate(accepted, start=1)
+    ]
+    questions = [
+        OpenQuestion(text=q.text, src_ids=[s for s in q.src_ids if s in ctx.passages])
+        for q in parsed.open_questions
+    ]
+    return RiskOutcome(risks, questions, rejected, mode, 1)
 
 
 def _progress_keys(tool: str, result: ToolResult) -> list[str]:

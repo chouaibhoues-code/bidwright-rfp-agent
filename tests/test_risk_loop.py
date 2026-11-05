@@ -1,17 +1,20 @@
-"""The risk agent's tool loop: caps, no-progress stop, typed tool results, generic risks."""
+"""The risk agent's tool loop: caps, no-progress stop, typed tool results, generic risks;
+and from Iteration 3, step 9, its one-call baselines RK0 (`oneshot`) and RK1-F (`fixed`)."""
 
 from pathlib import Path
 
 import pytest
 
 from bidwright.config import AgentLimits
-from bidwright.graph.nodes import MALFORMED_TWICE, risk
+from bidwright.graph.nodes import MALFORMED_TWICE, risk, risk_baseline
+from bidwright.retrieval import PassageIndex
 from tests.node_fakes import (
     GENERIC_RISK,
     GOOD_RISK,
     RISK_LIMITS,
     ScriptBackend,
     context,
+    dev_ingest,
     dev_requirements,
     gateway,
     text,
@@ -148,3 +151,92 @@ def test_without_a_no_progress_stop_the_loop_runs_to_its_cap(tmp_path: Path) -> 
     backend = ScriptBackend([tools(search), tools(search), tools(search), REGISTER])
     outcome = risk(context(backend), dev_requirements(), [], gateway(tmp_path, limits), limits)
     assert outcome.turns == 3 and outcome.stop_reason == "turn_cap"
+
+
+# --- Iteration 3, step 9: the risk baselines -------------------------------------------------
+
+STARTED = "2026-11-05"
+BY_REQUIREMENT = GOOD_RISK | {"evidence_src_ids": ["REQ-0003", "REQ-0004"]}
+
+
+def _index(tmp_path: Path) -> PassageIndex:
+    return PassageIndex.build(dev_ingest().passages, tmp_path / "search.sqlite")
+
+
+def _dated_hazard() -> list:
+    """The development requirements with the go-live date as a hazard."""
+    requirements = dev_requirements()
+    requirements[2] = requirements[2].model_copy(update={"hazard": True})
+    return requirements
+
+
+def test_the_oneshot_mode_makes_one_call_with_no_tools_and_no_dates_or_passages() -> None:
+    backend = ScriptBackend([text({"risks": [BY_REQUIREMENT], "open_questions": []})])
+    ctx = context(backend)
+    outcome = risk_baseline(ctx, dev_requirements(), [], "oneshot")
+    [request] = backend.requests
+    assert request.tools == () and request.schema_name == "RiskRegister"
+    sent = request.messages[-1].content
+    assert '"dates":[]' in sent and '"passages":[]' in sent
+    assert [r.id for r in outcome.risks] == ["RSK-001"] and outcome.rejected == []
+    assert outcome.risks[0].evidence_src_ids == ["SRC-0032", "SRC-0026"], "requirement ids resolve"
+    assert (outcome.stop_reason, outcome.turns) == ("oneshot", 1)
+
+
+def test_the_fixed_mode_computes_its_dates_in_code_before_its_one_call(tmp_path: Path) -> None:
+    from datetime import date
+
+    backend = ScriptBackend([text({"risks": [GOOD_RISK], "open_questions": []})])
+    ctx = context(backend)
+    ctx.started = date.fromisoformat(STARTED)
+    outcome = risk_baseline(ctx, _dated_hazard(), [], "fixed", index=_index(tmp_path))
+    [request] = backend.requests
+    sent = request.messages[-1].content
+    days = (date(2027, 1, 11) - date.fromisoformat(STARTED)).days
+    assert f'"date":"2027-01-11","days_from_start":{days},"weekday":"Monday"' in sent
+    assert '"src_id":"SRC-0032"' in sent, "search_rfp's top passages for the hazard"
+    assert request.tools == () and len(outcome.risks) == 1
+
+
+def test_the_fixed_mode_needs_the_runs_start_date(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="start date"):
+        risk_baseline(
+            context(ScriptBackend([])), _dated_hazard(), [], "fixed", index=_index(tmp_path)
+        )
+
+
+@pytest.mark.parametrize("mode", ["oneshot", "fixed"])
+def test_the_generic_risk_check_applies_to_both_baselines(tmp_path: Path, mode: str) -> None:
+    from datetime import date
+
+    first = text({"risks": [GOOD_RISK, GENERIC_RISK], "open_questions": []})
+    backend = ScriptBackend([first, text({"risks": [GOOD_RISK], "open_questions": []})])
+    ctx = context(backend)
+    ctx.started = date.fromisoformat(STARTED)
+    outcome = risk_baseline(ctx, _dated_hazard(), [], mode, index=_index(tmp_path))  # type: ignore[arg-type]
+    assert "were rejected" in backend.requests[1].messages[-1].content
+    assert [r.id for r in outcome.risks] == ["RSK-001"] and outcome.rejected == []
+
+
+@pytest.mark.parametrize("mode", ["loop", "oneshot", "fixed"])
+def test_risk_no_invented_rating(tmp_path: Path, mode: str) -> None:
+    """A register with a probability is rejected in all three modes (RISK-002)."""
+    from datetime import date
+
+    rated = GOOD_RISK | {"effect": "There is a 40% chance that lookups miss documents."}
+    register = text({"risks": [rated], "open_questions": []})
+    if mode == "loop":
+        backend = ScriptBackend(["Done.", register, register])
+        outcome = risk(context(backend), dev_requirements(), [], gateway(tmp_path), RISK_LIMITS)
+    else:
+        backend = ScriptBackend([register, register])
+        ctx = context(backend)
+        ctx.started = date.fromisoformat(STARTED)
+        outcome = risk_baseline(ctx, _dated_hazard(), [], mode, index=_index(tmp_path))  # type: ignore[arg-type]
+    assert outcome.risks == []
+    assert outcome.rejected[0]["reason"] == "carries a rating or a probability"
+
+
+def test_a_baseline_degrades_after_two_schema_failures() -> None:
+    outcome = risk_baseline(context(ScriptBackend(["{}", "[]"])), dev_requirements(), [], "oneshot")
+    assert outcome.risks == [] and outcome.failure == MALFORMED_TWICE

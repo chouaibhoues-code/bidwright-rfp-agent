@@ -329,3 +329,12 @@ def test_the_techcheck_example_quotes_its_documentation_for_each_settling_verdic
         shown.add(answer.verdict)
     assert shown == {"VALIDATED", "INVALIDATED", "INSUFFICIENT_DOCS"}
     assert "docforge" in load_prompt("techcheck").system
+
+
+def test_the_risk_oneshot_prompt_shows_given_passages_and_its_elements() -> None:
+    """Iteration 3, step 9: RK0 and RK1-F's prompt, with `risk.md`'s example register."""
+    oneshot = load_prompt("risk_oneshot")
+    assert "Passages given:" in oneshot.system and "search_rfp" not in oneshot.system
+    assert "SRC-0910" in oneshot.system
+    assert set(oneshot.tasks) == {"task", "repair_generic", "repair_format"}
+    assert "REQ-0001" in oneshot.task_text("repair_generic", rejected="REQ-0001")

@@ -111,6 +111,16 @@ techcheck:
   model_role: assess
   tools: [resolve-library-id, query-docs]
 
+# Iteration 3 (step 9): RK0 and RK1-F, the risk agent's one-call baselines; their calls run
+# under the node name risk.
+risk_oneshot:
+  kind: function
+  input: RiskFixedInput
+  output: RiskRegister
+  prompt: risk_oneshot@0.1.0
+  model_role: reason
+  tools: []
+
 draft:
   kind: function
   input: DraftTask

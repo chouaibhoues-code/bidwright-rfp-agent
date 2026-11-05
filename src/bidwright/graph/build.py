@@ -1294,6 +1294,7 @@ def execute(
             view=view,
             repeat=repeat,
             ledger_file=ledger_file,
+            started=supervisor.manifest.started.astimezone(UTC).date(),
         )
         rt = Runtime(
             ctx=ctx,

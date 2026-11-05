@@ -201,6 +201,10 @@ def _template(text: str, path: Path) -> Template:
 # --- Few-shot examples, rendered from prompts/examples/mini_rfp.yaml ---------------------
 
 
+# risk_oneshot.md (Iteration 3, step 9) shows risk.md's example, as given passages.
+SHARED_EXAMPLES = {"risk_oneshot": "risk"}
+
+
 def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
     sets = yaml.safe_load((root / EXAMPLES_FILE).read_text(encoding="utf-8"))
     renderers: dict[str, Callable[[Any], str]] = {
@@ -218,10 +222,12 @@ def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
         "blueprint": _blueprint_examples,
         "blueprint_detail": _blueprint_detail_examples,
         "techcheck": _techcheck_examples,
+        "risk_oneshot": _risk_oneshot_examples,
     }
-    if name not in renderers or name not in sets:
+    data = SHARED_EXAMPLES.get(name, name)  # a set another prompt's examples come from
+    if name not in renderers or data not in sets:
         raise ValueError(f"no example set {name!r} in {EXAMPLES_FILE}")
-    return renderers[name](sets[name])
+    return renderers[name](sets[data])
 
 
 def _dump(value: Any) -> str:
@@ -298,6 +304,28 @@ def _risk_examples(example: dict[str, Any]) -> str:
             "Passages found with search_rfp:",
             "\n".join(f" {_dump(passage)}" for passage in example["evidence"]),
             "A final register built on them:",
+            _json_list(
+                "{",
+                "risks",
+                register["risks"],
+                f', "open_questions": {_dump(register["open_questions"])}}}',
+            ),
+            "Not acceptable, because " + example["generic"]["why"] + ":",
+            f" {_dump(example['generic']['risk'])}",
+        ]
+    )
+
+
+def _risk_oneshot_examples(example: dict[str, Any]) -> str:
+    """`risk.md`'s example for the one-call baselines: the passages are given, not searched."""
+    schemas.RiskRegister.model_validate(example["register"])
+    schemas.RiskProposal.model_validate(example["generic"]["risk"])
+    register = example["register"]
+    return "\n".join(
+        [
+            "Passages given:",
+            "\n".join(f" {_dump(passage)}" for passage in example["evidence"]),
+            "A register built on them:",
             _json_list(
                 "{",
                 "risks",

@@ -35,6 +35,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `extract_oneshot` | 0.4.0 | extract | `sha256:cda10111ce58` |
 | `options` | 0.1.0 | reason | `sha256:0d38b5d27fbf` |
 | `risk` | 0.2.0 | reason | `sha256:10c255fbf785` |
+| `risk_oneshot` | 0.1.0 | reason | `sha256:482f584a78f0` |
 | `techcheck` | 0.1.0 | assess | `sha256:88c175538fd6` |
 | `triage` | 0.1.0 | extract | `sha256:7e154ae7564a` |
 
@@ -54,6 +55,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `blueprint` | function | None | 1 call and 1 repair, fixed in code |
 | `blueprint_detail` | function | None | 1 call and 1 repair, fixed in code |
 | `techcheck` | function | `resolve-library-id`, `query-docs` | 1 call and 1 repair, fixed in code |
+| `risk_oneshot` | function | None | 1 call and 1 repair, fixed in code |
 | `draft` | function | None | 1 call and 1 repair, fixed in code |
 | `consolidate` | function | None | 1 call and 1 repair, fixed in code |
 

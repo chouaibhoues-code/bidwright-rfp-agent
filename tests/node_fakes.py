@@ -45,6 +45,7 @@ PROMPT_IDS = (
     "blueprint",
     "blueprint_detail",
     "techcheck",
+    "risk_oneshot",
 )
 RISK_LIMITS = AgentLimits(max_turns=4, max_tool_calls=6, stop_on_no_progress=True)
 USAGE = Usage(tokens_in=500, tokens_out=100)

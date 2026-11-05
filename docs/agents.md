@@ -20,6 +20,7 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | `blueprint` | function | `BlueprintPlanTask` | `BlueprintPlan` | `blueprint@0.1.0` | reason | None | None |
 | `blueprint_detail` | function | `BlueprintDetailTask` | `BlueprintDetail` | `blueprint_detail@0.1.0` | reason | None | None |
 | `techcheck` | function | `TechVerdictTask` | `TechVerdict` | `techcheck@0.1.0` | assess | `resolve-library-id`, `query-docs` | None |
+| `risk_oneshot` | function | `RiskFixedInput` | `RiskRegister` | `risk_oneshot@0.1.0` | reason | None | None |
 | `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | None |
 | `consolidate` | function | `ClusterTask` | `ConsolidationResult` | `consolidate@0.1.0` | reason | None | None |
 
@@ -42,6 +43,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | `extract_oneshot` | 0.4.0 | extract | plain instruction | `ExtractResult` | gemini: thinking medium; ollama: think False | never |
 | `options` | 0.1.0 | reason | Distinct options compared before scoring, in one call; the baseline first | `OptionsResult` | gemini: thinking medium; ollama: think False | never |
 | `risk` | 0.2.0 | reason | Multi-Perspective pre-mortem in one call | `RiskRegister` | gemini: thinking low; ollama: think False | 2026-11-04 |
+| `risk_oneshot` | 0.1.0 | reason | Plain instruction, no tools, one call (the RK0 and RK1-F baselines) | `RiskRegister` | gemini: thinking low; ollama: think False | never |
 | `techcheck` | 0.1.0 | assess | A strict three-way verdict; unsure means INSUFFICIENT_DOCS; the quote copied from the documentation | `TechVerdict` | cerebras: reasoning_effort medium; groq: reasoning_effort medium; gemini: thinking low; ollama: think False | never |
 | `triage` | 0.1.0 | extract | plain rules and a zone table, positive directives | `TriageResult` | gemini: thinking low; ollama: think False | 2026-11-04 |
 
