@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from evals.funnel import STAGES
-from evals.score import score_run
-from tests.eval_fakes import gold, hidden_traps, oracle, record, write_run
+from evals.score import factor_results, score_run, scorecard
+from tests.eval_fakes import gold, hidden_traps, oracle, oracle_brief, record, write_run
 from tests.node_fakes import dev_ingest
 
 pytestmark = pytest.mark.gold
@@ -102,3 +102,48 @@ def test_no_approach_mapping_and_no_risks_score_zero(tmp_path: Path) -> None:
     records, _ = oracle(dev_ingest())
     scores = score_run(write_run(tmp_path / "bare", dev_ingest(), records, [], mapped=False))
     assert scores["approach_mapping"] == 0.0 and scores["risk_seed_recall"] == 0.0
+
+
+# --- the factor line (gold v3, Iteration 2) ---------------------------------------------------
+
+
+def test_an_oracle_brief_matches_every_factor_seed(tmp_path: Path) -> None:
+    records, risks = oracle(dev_ingest())
+    factors = score_run(write_run(tmp_path / "oracle", dev_ingest(), records, risks))["factors"]
+    assert factors == {
+        "state": "scored",
+        "total": 4,
+        "matched": ["FS-01", "FS-02", "FS-03", "FS-04"],
+        "wrong_status": [],
+        "extra": 0,
+    }
+
+
+def test_one_changed_weight_loses_exactly_one_factor(tmp_path: Path) -> None:
+    records, risks = oracle(dev_ingest())
+    brief = oracle_brief(dev_ingest())
+    first = brief.factors[0].model_copy(update={"weight": "45%"})
+    changed = brief.model_copy(update={"factors": [first, *brief.factors[1:]]})
+    run = write_run(tmp_path / "weight", dev_ingest(), records, risks, brief=changed)
+    factors = score_run(run)["factors"]
+    assert factors["matched"] == ["FS-02", "FS-03", "FS-04"] and factors["extra"] == 1
+
+
+def test_a_wrong_status_is_counted_and_casing_is_not(tmp_path: Path) -> None:
+    records, risks = oracle(dev_ingest())
+    brief = oracle_brief(dev_ingest())
+    price = brief.factors[-1].model_copy(update={"name": "PRICE", "status": "IN_SCOPE"})
+    changed = brief.model_copy(update={"factors": [*brief.factors[:-1], price]})
+    run = write_run(tmp_path / "status", dev_ingest(), records, risks, brief=changed)
+    factors = score_run(run)["factors"]
+    assert factors["wrong_status"] == ["FS-04"] and factors["extra"] == 0
+
+
+def test_the_factor_line_without_a_brief_or_without_seeds(tmp_path: Path) -> None:
+    records, risks = oracle(dev_ingest())
+    run = write_run(tmp_path / "no-brief", dev_ingest(), records, risks)
+    (run / "brief.json").unlink()
+    scores = score_run(run)
+    assert scores["factors"]["state"] == "not run"
+    assert "Evaluation factors matched / wrong status / extra" in scorecard(scores)
+    assert factor_results([], run, {})["state"] == "no factor seeds"

@@ -10,14 +10,19 @@ import pdfplumber
 import pytest
 
 from bidwright.schemas import ContractCategory
+from bidwright.text import normalized_words
 from evals.render.gold import GOLD_DIR, gold_lines
 from evals.render.package import INPUTS_DIR, MANIFEST, render_package
 from evals.render.spec import (
     CORPUS_DIR,
     HIDDEN_LAYERS,
     VISIBLE_LAYERS,
+    Clause,
+    DomainSeed,
+    FactorSeed,
     Implicit,
     Spec,
+    TableBlock,
     load_spec,
 )
 from tests.render_checks import normalized, text_in_layer, visible_text
@@ -92,10 +97,10 @@ def test_committed_gold_matches_the_spec(spec: Spec) -> None:
     assert all(line["gold_version"] == spec.gold_version for line in lines)
 
 
-def test_dev_gold_v2_has_the_planned_contents() -> None:
+def test_dev_gold_v3_has_the_planned_contents() -> None:
     spec = load_spec("dev")
     lines = gold_lines(spec)
-    assert spec.gold_version == 2
+    assert spec.gold_version == 3
     requirements = [line for line in lines if line["kind"] == "requirement"]
     assert len(requirements) == 12
     assert sum(line["mandatory"] for line in requirements) == 8
@@ -111,7 +116,12 @@ def test_dev_gold_v2_has_the_planned_contents() -> None:
         line["gold_id"]: line["category"] for line in lines if line["kind"] == "personal_data"
     }
     assert personal == {"PD-01": "PERSON", "PD-02": "EMAIL", "PD-03": "PHONE"}
-    kinds = {"requirement", "background", "risk_seed", "trap", "personal_data"}
+    factors = [line for line in lines if line["kind"] == "factor_seed"]
+    assert [(f["name"], f["status"]) for f in factors if f["status"] == "OUT_OF_SCOPE"] == [
+        ("Price", "OUT_OF_SCOPE")
+    ]
+    assert len(factors) == 4
+    kinds = {"requirement", "background", "risk_seed", "trap", "personal_data", "factor_seed"}
     assert {line["kind"] for line in lines} == kinds
 
 
@@ -180,3 +190,67 @@ def test_the_dev_pdf_has_four_pages_with_a_repeated_header(spec: Spec, rendered:
         first_lines = [(page.extract_text() or "").splitlines()[0] for page in pdf.pages]
     assert len(first_lines) == 4
     assert len(set(first_lines)) == 1
+
+
+# --- gold v3 (Iteration 2, step 8) ------------------------------------------------------------
+
+
+def _cell_text(cell: str | Clause) -> str:
+    return cell if isinstance(cell, str) else cell.text
+
+
+def _evaluation_rows(spec: Spec, doc_id: str) -> list[tuple[str, str]]:
+    """The (criterion, weight) rows of a document's evaluation tables: those whose header
+    starts with Criterion and Weight."""
+    rows = []
+    for document in spec.documents:
+        if document.doc_id != doc_id:
+            continue
+        for section in document.sections:
+            for block in section.blocks:
+                if isinstance(block, TableBlock) and block.table.header[0][:2] == [
+                    "Criterion",
+                    "Weight",
+                ]:
+                    rows += [(_cell_text(r[0]), _cell_text(r[1])) for r in block.table.rows]
+    return rows
+
+
+def test_every_factor_seed_sits_in_one_row_of_its_evaluation_table(spec: Spec) -> None:
+    seeds = [seed for seed in spec.seeds if isinstance(seed, FactorSeed)]
+    for doc_id in {seed.doc_id for seed in seeds}:
+        rows = _evaluation_rows(spec, doc_id)
+        mine = [(s.name, s.weight) for s in seeds if s.doc_id == doc_id]
+        assert sorted(mine) == sorted(rows), "one factor seed for each row, and no more"
+        assert all(rows.count(row) == 1 for row in mine)
+    for seed in seeds:
+        priced = "price" in seed.name.casefold()
+        assert seed.status == ("OUT_OF_SCOPE" if priced else "IN_SCOPE"), seed.id
+
+
+def _holds(words: list[str], term: list[str]) -> bool:
+    size = len(term)
+    return any(words[start : start + size] == term for start in range(len(words) - size + 1))
+
+
+def test_no_domain_seed_term_occurs_in_its_rfp(spec: Spec, rendered: Path) -> None:
+    """A domain seed is what the RFP never states, so a run cannot find it in the RFP."""
+    seeds = [seed for seed in spec.seeds if isinstance(seed, DomainSeed)]
+    words = [
+        word
+        for document in spec.documents
+        for word in normalized_words(
+            visible_text(rendered / spec.package / document.file, document.format)
+        )
+    ]
+    for seed in seeds:
+        for group in seed.terms:
+            for term in group:
+                assert not _holds(words, normalized_words(term)), f"{seed.id}: {term}"
+
+
+def test_the_hero_has_its_domain_seeds() -> None:
+    seeds = [seed for seed in load_spec("hero").seeds if isinstance(seed, DomainSeed)]
+    assert 10 <= len(seeds) <= 14
+    assert {seed.category for seed in seeds} == {"pattern", "standard", "pitfall"}
+    assert all(seed.doc_id == "hero-rfp" for seed in seeds)

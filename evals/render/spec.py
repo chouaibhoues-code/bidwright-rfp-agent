@@ -12,7 +12,7 @@ from typing import Annotated, Literal, NamedTuple
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from bidwright.schemas import ContractCategory, LintKind, Modality, Zone
+from bidwright.schemas import ContractCategory, DomainKind, FactorStatus, LintKind, Modality, Zone
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CORPUS_DIR = REPO_ROOT / "evals" / "corpus"
@@ -355,6 +355,31 @@ class DuplicateSeed(Strict):
     anchors: list[str] = Field(min_length=2, max_length=2)
 
 
+class FactorSeed(Strict):
+    """One row of an RFP's evaluation table (gold v3, Iteration 2): what `brief` must copy
+    exactly. It anchors to no clause, so it names its document."""
+
+    id: str = Field(pattern=r"^FS-\d{2}$")
+    type: Literal["factor"]
+    doc_id: str
+    name: str = Field(min_length=1)
+    weight: str = Field(min_length=1)
+    status: FactorStatus
+
+
+class DomainSeed(Strict):
+    """A pattern, standard or pitfall of the RFP's domain that the RFP never states (gold v3,
+    Iteration 2), from a page of a standards body or a public body read directly. Each inner
+    list of `terms` holds synonyms; scored from Iteration 3."""
+
+    id: str = Field(pattern=r"^DM-\d{2}$")
+    type: Literal["domain"]
+    doc_id: str
+    category: DomainKind
+    terms: list[list[str]] = Field(min_length=1)
+    source: str = Field(pattern=r"^https://")
+
+
 Seed = Annotated[
     RiskSeed
     | GapSeed
@@ -362,7 +387,9 @@ Seed = Annotated[
     | DiscrepancySeed
     | ContractTermSeed
     | LintSeed
-    | DuplicateSeed,
+    | DuplicateSeed
+    | FactorSeed
+    | DomainSeed,
     Field(discriminator="type"),
 ]
 
@@ -440,7 +467,12 @@ class Spec(Strict):
             if duplicates:
                 raise ValueError(f"duplicate {label} ids: {duplicates}")
         known = {at.clause.id for at in self.clauses()}
+        documents = {document.doc_id for document in self.documents}
         for seed in self.seeds:
+            if isinstance(seed, FactorSeed | DomainSeed):
+                if seed.doc_id not in documents:
+                    raise ValueError(f"{seed.id} names an unknown document: {seed.doc_id}")
+                continue
             missing = sorted(set(seed.anchors) - known)
             if missing:
                 raise ValueError(f"{seed.id} anchors unknown clauses: {missing}")

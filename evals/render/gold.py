@@ -9,7 +9,16 @@ import json
 from pathlib import Path
 from typing import Any
 
-from evals.render.spec import REPO_ROOT, ClauseAt, DatumAt, Seed, Spec, TrapAt
+from evals.render.spec import (
+    REPO_ROOT,
+    ClauseAt,
+    DatumAt,
+    DomainSeed,
+    FactorSeed,
+    Seed,
+    Spec,
+    TrapAt,
+)
 
 GOLD_DIR = REPO_ROOT / "evals" / "gold"
 SEED_KIND = {
@@ -20,6 +29,8 @@ SEED_KIND = {
     "contract_term": "contract_term",
     "lint": "lint_seed",
     "duplicate": "duplicate_seed",
+    "factor": "factor_seed",
+    "domain": "domain_seed",
 }
 
 
@@ -77,13 +88,19 @@ def _datum_line(spec: Spec, at: DatumAt) -> dict[str, Any]:
 
 
 def _seed_line(spec: Spec, seed: Seed) -> dict[str, Any]:
+    """A seed's line. A factor or domain seed anchors to no clause and names its document."""
+    doc_id = (
+        seed.doc_id
+        if isinstance(seed, FactorSeed | DomainSeed)
+        else spec.document_of(seed.anchors[0]).doc_id
+    )
     line: dict[str, Any] = {
         "gold_id": seed.id,
         "gold_version": spec.gold_version,
-        "doc_id": spec.document_of(seed.anchors[0]).doc_id,
+        "doc_id": doc_id,
         "kind": SEED_KIND[seed.type],
     }
-    line |= seed.model_dump(exclude={"id", "type"})
+    line |= seed.model_dump(exclude={"id", "type", "doc_id"})
     return line
 
 

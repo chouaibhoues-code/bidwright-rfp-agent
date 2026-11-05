@@ -15,6 +15,8 @@ from bidwright.schemas import (
     CandidateRow,
     ControlRegister,
     CoverageReport,
+    EvaluationFactor,
+    OpportunityBrief,
     Passage,
     QuarantineRecord,
     Requirement,
@@ -136,6 +138,31 @@ def oracle(ingest: IngestResult) -> tuple[list[Requirement], list[dict[str, Any]
     return records, risks
 
 
+def oracle_brief(ingest: IngestResult) -> OpportunityBrief:
+    """A brief that copies every factor seed of the development gold exactly, each citing the
+    table row that holds it (gold v3)."""
+    factors = []
+    for number, seed in enumerate(
+        (line for line in gold() if line["kind"] == "factor_seed"), start=1
+    ):
+        row = next(
+            p
+            for p in ingest.passages
+            if p.kind == "table_row" and seed["name"] in p.text and seed["weight"] in p.text
+        )
+        factors.append(
+            EvaluationFactor(
+                id=f"EF-{number:02d}",
+                name=seed["name"],
+                weight=seed["weight"],
+                scoring="not_stated",
+                src_ids=[row.id],
+                status=seed["status"],
+            )
+        )
+    return OpportunityBrief(factors=factors)
+
+
 def _lines(path: Path, rows: list[Any]) -> None:
     path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
 
@@ -148,9 +175,11 @@ def write_run(
     mapped: bool = True,
     quarantine: list[QuarantineRecord] | None = None,
     rejected: list[dict[str, Any]] | None = None,
+    brief: OpportunityBrief | None = None,
 ) -> Path:
-    """Every file the scorer reads. Quarantine defaults to the hidden traps' records, and
-    each passage's ledger row lists the dispositions of the records that cite it."""
+    """Every file the scorer reads. Quarantine defaults to the hidden traps' records, each
+    passage's ledger row lists the dispositions of the records that cite it, and the brief
+    defaults to the oracle's."""
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "frozen.txt").write_text(ingest.frozen_text, encoding="utf-8")
     _lines(run_dir / "passages.jsonl", [p.model_dump(mode="json") for p in ingest.passages])
@@ -223,4 +252,6 @@ def write_run(
     )  # type: ignore[arg-type]
     (run_dir / "run_manifest.json").write_text(manifest.model_dump_json(), encoding="utf-8")
     (run_dir / "ledger.jsonl").write_text("", encoding="utf-8")
+    written = brief if brief is not None else oracle_brief(ingest)
+    (run_dir / "brief.json").write_text(written.model_dump_json(indent=1), encoding="utf-8")
     return run_dir

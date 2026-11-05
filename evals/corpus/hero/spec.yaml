@@ -21,7 +21,7 @@
 # of CAP-005 (pdfplumber reads PDF files and writes no PDF/A).
 
 corpus: hero
-gold_version: 2
+gold_version: 3
 package: hero
 documents:
   - doc_id: hero-rfp
@@ -661,3 +661,54 @@ seeds:
   - {id: LS-05, type: lint, lint_kind: MISSING_UNIT, anchors: [GR-0020]}
   - {id: LS-06, type: lint, lint_kind: NON_SINGULAR, anchors: [GR-0027]}
   - {id: DP-01, type: duplicate, anchors: [GR-0013, GR-0052]}
+  # Gold v3 (Iteration 2, step 8). Factor seeds: one per row of the evaluation table in
+  # section 13, each with its weight as the table writes it; the price row is OUT_OF_SCOPE.
+  - {id: FS-01, type: factor, doc_id: hero-rfp, name: "Technical solution", weight: "20", status: IN_SCOPE}
+  - {id: FS-02, type: factor, doc_id: hero-rfp, name: "Integration and migration", weight: "15", status: IN_SCOPE}
+  - {id: FS-03, type: factor, doc_id: hero-rfp, name: "Implementation", weight: "10", status: IN_SCOPE}
+  - {id: FS-04, type: factor, doc_id: hero-rfp, name: "Service management", weight: "10", status: IN_SCOPE}
+  - {id: FS-05, type: factor, doc_id: hero-rfp, name: "Social value", weight: "5", status: IN_SCOPE}
+  - {id: FS-06, type: factor, doc_id: hero-rfp, name: "Price", weight: "40", status: OUT_OF_SCOPE}
+  # Domain seeds: what a bid for a council's digital case management service should cover and
+  # the hero never states, each from a page of a standards body or a public body read directly
+  # on 2026-11-05, written before DR-18 is read. The comment above each seed quotes its page.
+  # Scored from Iteration 3 (SO4); each inner list of terms holds synonyms.
+  # DM-01, W3C: "three levels of conformance are defined: A (lowest), AA, and AAA (highest)."
+  - {id: DM-01, type: domain, doc_id: hero-rfp, category: standard, terms: [[WCAG, Web Content Accessibility Guidelines]], source: "https://www.w3.org/TR/WCAG22/"}
+  # DM-02, GOV.UK: "Public sector bodies must publish an accessibility statement and review it
+  # regularly."
+  - {id: DM-02, type: domain, doc_id: hero-rfp, category: standard, terms: [[accessibility statement]], source: "https://www.gov.uk/guidance/accessibility-requirements-for-public-sector-websites-and-apps"}
+  # DM-03, GOV.UK: "The Technology Code of Practice (TCoP) is the agreed standard for
+  # cross-government projects and programmes."
+  - {id: DM-03, type: domain, doc_id: hero-rfp, category: standard, terms: [[Technology Code of Practice, TCoP]], source: "https://www.gov.uk/guidance/the-technology-code-of-practice"}
+  # DM-04, NCSC: "The cloud security principles are designed to help you choose a cloud
+  # provider that meets your security needs."
+  - {id: DM-04, type: domain, doc_id: hero-rfp, category: standard, terms: [[cloud security principles]], source: "https://www.ncsc.gov.uk/collection/cloud/the-cloud-security-principles"}
+  # DM-05, NCSC: "Cyber Essentials is the minimum standard of cyber security recommended by the
+  # Government for organisations of all sizes."
+  - {id: DM-05, type: domain, doc_id: hero-rfp, category: standard, terms: [[Cyber Essentials]], source: "https://www.ncsc.gov.uk/cyberessentials/overview"}
+  # DM-06, Local Digital: "where appropriate, every new IT solution procured must operate
+  # according to the technology code of practice, putting us in control of our service data,
+  # using open standards where they exist and contributing to their creation where they don't."
+  - {id: DM-06, type: domain, doc_id: hero-rfp, category: pattern, terms: [[Local Digital Declaration]], source: "https://www.localdigital.gov.uk/declaration/"}
+  # DM-07, GOV.UK Service Manual: "Sometimes users will need help to use online parts of your
+  # service. This is known as 'assisted digital support'."
+  - {id: DM-07, type: domain, doc_id: hero-rfp, category: pattern, terms: [[assisted digital]], source: "https://www.gov.uk/service-manual/helping-people-to-use-your-service/assisted-digital-support-introduction"}
+  # DM-08, GOV.UK Service Manual: "Understand user needs: plan research, prepare for sessions,
+  # share and analyse findings."
+  - {id: DM-08, type: domain, doc_id: hero-rfp, category: pattern, terms: [[user research]], source: "https://www.gov.uk/service-manual/user-research"}
+  # DM-09, GOV.UK (Technology Code of Practice, point 4): "Using open standards increases
+  # interoperability and means you:" ... "avoid vendor lock-in"
+  - {id: DM-09, type: domain, doc_id: hero-rfp, category: pitfall, terms: [[lock-in, locked in]], source: "https://www.gov.uk/guidance/make-use-of-open-standards"}
+  # DM-10, GOV.UK (Technology Code of Practice, point 3): take into account "the total cost of
+  # migrating, including exit and transition costs"
+  - {id: DM-10, type: domain, doc_id: hero-rfp, category: pitfall, terms: [[exit costs, transition costs]], source: "https://www.gov.uk/guidance/be-open-and-use-open-source"}
+  # DM-11, UK GDPR Article 35(1): where processing "is likely to result in a high risk to the
+  # rights and freedoms of natural persons, the controller shall, prior to the processing, carry
+  # out an assessment of the impact of the envisaged processing operations on the protection of
+  # personal data."
+  - {id: DM-11, type: domain, doc_id: hero-rfp, category: pitfall, terms: [[data protection impact assessment, DPIA]], source: "https://www.legislation.gov.uk/eur/2016/679/article/35"}
+  # DM-12, Freedom of Information Act 2000, section 10(1): "a public authority must comply with
+  # section 1(1) promptly and in any event not later than the twentieth working day following
+  # the date of receipt."
+  - {id: DM-12, type: domain, doc_id: hero-rfp, category: pitfall, terms: [[Freedom of Information, FOI]], source: "https://www.legislation.gov.uk/ukpga/2000/36/section/10"}

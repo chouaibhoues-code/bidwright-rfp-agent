@@ -2,6 +2,7 @@
 to either refuses the score until the change is versioned."""
 
 import hashlib
+import json
 import shutil
 from pathlib import Path
 
@@ -40,7 +41,14 @@ def _frozen_copy(tmp_path: Path) -> Path:
 def test_a_frozen_copy_scores_and_names_its_corpus(tmp_path: Path) -> None:
     gold = _frozen_copy(tmp_path)
     corpus, lines = gold_for("dev-rfp-db9eeb00", gold)
-    assert corpus == "dev" and all(line["gold_version"] == 2 for line in lines)
+    assert corpus == "dev" and all(line["gold_version"] == 3 for line in lines)
+
+
+def test_the_hero_and_the_development_pdf_are_at_gold_version_3() -> None:
+    """Gold v3 (Iteration 2) adds the factor seeds, and the hero's domain seeds."""
+    for corpus in ("hero", "dev"):
+        lines = (GOLD_DIR / corpus / "gold.jsonl").read_text(encoding="utf-8").splitlines()
+        assert {json.loads(line)["gold_version"] for line in lines} == {3}, corpus
 
 
 def test_a_changed_gold_file_is_refused(tmp_path: Path) -> None:

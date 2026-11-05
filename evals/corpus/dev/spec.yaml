@@ -13,7 +13,7 @@
 # its lead-in's modality; risk-seed terms are lowercase word prefixes.
 
 corpus: dev
-gold_version: 2
+gold_version: 3
 package: dev
 documents:
   - doc_id: dev-rfp
@@ -159,3 +159,9 @@ seeds:
     note: "The winter closure ends 2027-01-04, leaving four working days before go-live for testing and training."
     anchors: [GB-0003, GR-0012]
     terms: [[clos, holiday, break], [test, train]]
+  # Gold v3 (Iteration 2, step 8). Factor seeds: one per row of the evaluation table in
+  # section 7, each with its weight as the table writes it; the price row is OUT_OF_SCOPE.
+  - {id: FS-01, type: factor, doc_id: dev-rfp, name: "Technical approach", weight: "40%", status: IN_SCOPE}
+  - {id: FS-02, type: factor, doc_id: dev-rfp, name: "Service levels and support", weight: "20%", status: IN_SCOPE}
+  - {id: FS-03, type: factor, doc_id: dev-rfp, name: "Integration and migration", weight: "20%", status: IN_SCOPE}
+  - {id: FS-04, type: factor, doc_id: dev-rfp, name: "Price", weight: "20%", status: OUT_OF_SCOPE}

@@ -12,3 +12,9 @@ hero recording made with packs of 40, after gold v2 was hashed, and the `gold` C
 hero replay against it (`tests/test_hero_replay.py`). It was written again the same day after
 ADR-030 corrected the matcher, since a gate must compare scores from one matcher: 3 of 45
 missed, where the first scoring of the same replay counted 8.
+
+It was written once more on 2026-11-05, after gold v3 was hashed (Iteration 2, step 8), since
+the gate blocks a baseline scored on other gold. Gold v3 adds the factor seeds and the hero's
+domain seeds and changes no requirement, so the scores held: 3 of 45 missed (GR-0030, GR-0042
+and GR-0045). The new factor line reads "not run", because the replay stops after
+`consolidate`, before `brief`.

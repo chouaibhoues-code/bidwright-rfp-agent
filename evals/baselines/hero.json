@@ -1,8 +1,8 @@
 {
  "run_id": "replay-hero",
  "corpus": "hero",
- "gold_version": 2,
- "gold_sha256": "9e6f4ecc6ef6205447cd3533a26303896cdfc2ab06c6093916a137e0c66bef8a",
+ "gold_version": 3,
+ "gold_sha256": "5dcaccd57fe0e766ca77d5e2d12ee142b08ebbd2b186f08a7792bc479c628322",
  "status": "COMPLETED",
  "missed_mandatory": [
   "GR-0030",
@@ -252,6 +252,13 @@
  "unauthorized_tool_calls": 0,
  "unauthorized_calls": [],
  "approach_mapping": 0.0,
+ "factors": {
+  "state": "not run",
+  "total": 6,
+  "matched": [],
+  "wrong_status": [],
+  "extra": 0
+ },
  "risk_seed_recall": 0.0,
  "risk_seeds": {
   "RS-01": false,

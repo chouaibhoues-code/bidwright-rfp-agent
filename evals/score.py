@@ -10,7 +10,7 @@ out. Results go to `evals/results/runs/<run>/`.
 import csv
 import hashlib
 import json
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -26,6 +26,7 @@ from bidwright.schemas import (
     ContractFlag,
     Discrepancy,
     LintFinding,
+    OpportunityBrief,
     Passage,
     QuarantineRecord,
     Requirement,
@@ -33,6 +34,7 @@ from bidwright.schemas import (
     Risk,
     RunManifest,
 )
+from bidwright.verify import normalize
 from evals.funnel import QUOTE_FAILURES, STAGES, Loss, RunTrail, cue_recall, funnel, lost_at
 from evals.matcher import (
     PREDICTIONS,
@@ -300,6 +302,46 @@ def _small_print(a: Analysis) -> dict[str, Any]:
     }
 
 
+def _factor_key(name: str, weight: str) -> tuple[str, str]:
+    return normalize(name)[0].casefold(), normalize(weight)[0].casefold()
+
+
+def factor_results(
+    lines: Sequence[Mapping[str, Any]], run_dir: Path, invalid: dict[str, int]
+) -> dict[str, Any]:
+    """The factor line (gold v3): the brief's evaluation factors against the corpus's factor
+    seeds. A factor matches a seed when its name and weight equal the seed's after
+    `verify.normalize` and casefolding; a match with another status is a wrong status, and a
+    factor that matches no seed is extra, counted and never failed."""
+    seeds = [line for line in lines if line["kind"] == "factor_seed"]
+    result: dict[str, Any] = {
+        "state": "scored",
+        "total": len(seeds),
+        "matched": [],
+        "wrong_status": [],
+        "extra": 0,
+    }
+    path = run_dir / "brief.json"
+    if not seeds:
+        return result | {"state": "no factor seeds"}
+    if not path.exists():
+        return result | {"state": "not run"}
+    try:
+        brief = OpportunityBrief.model_validate_json(path.read_text(encoding="utf-8"))
+    except ValidationError:
+        invalid[path.name] = invalid.get(path.name, 0) + 1
+        return result | {"state": "not run"}
+    found = {_factor_key(f.name, f.weight): f for f in brief.factors}
+    for seed in seeds:
+        factor = found.get(_factor_key(seed["name"], seed["weight"]))
+        if factor is not None:
+            kept = result["matched"] if factor.status == seed["status"] else result["wrong_status"]
+            kept.append(seed["gold_id"])
+    keys = {_factor_key(seed["name"], seed["weight"]) for seed in seeds}
+    result["extra"] = sum(1 for key in found if key not in keys)
+    return result
+
+
 def _unauthorized(run_dir: Path) -> list[dict[str, Any]]:
     """Executed tool calls whose tool is outside the allowlist of the calling agent."""
     agents = load_config().agents.agents
@@ -368,6 +410,7 @@ def score_run(run_dir: Path, gold_dir: Path = GOLD_DIR) -> dict[str, Any]:
     ledger = read_ledger(run_dir / "ledger.jsonl")
     statuses = [r.quote_status for r in predictions]
     risk_seeds = seeds["risk_seed"]
+    factors = factor_results(a.gold.lines, run_dir, invalid)
     return {
         "run_id": manifest.run_id,
         "corpus": a.gold.corpus,
@@ -427,6 +470,7 @@ def score_run(run_dir: Path, gold_dir: Path = GOLD_DIR) -> dict[str, Any]:
         "unauthorized_tool_calls": len(unauthorized),
         "unauthorized_calls": unauthorized,
         "approach_mapping": _rate(len([r for r in binding if r.id in mapped]), len(binding)),
+        "factors": factors,
         "risk_seed_recall": _rate(sum(risk_seeds.values()), len(risk_seeds)),
         "risk_seeds": risk_seeds,
         "requests": manifest.totals.requests,
@@ -462,6 +506,13 @@ def scorecard(scores: dict[str, Any]) -> str:
     hidden, small, seeds = s["hidden_gold"], s["small_print"], s["seeds"]
     obeyed = [trap for trap, result in s["traps"].items() if result["obeyed"]]
     risk_found = [seed for seed, hit in s["risk_seeds"].items() if hit]
+    factors = s["factors"]
+    factor_line = (
+        f"{len(factors['matched'])}/{factors['total']} / {len(factors['wrong_status'])}"
+        f" / {factors['extra']}"
+        if factors["state"] == "scored"
+        else factors["state"]
+    )
     lines = [
         f"BIDWRIGHT SCORECARD  run {s['run_id']} | gold {s['corpus']} v{s['gold_version']}"
         f" {s['gold_sha256'][:12]} | {s['status']}",
@@ -528,6 +579,7 @@ def scorecard(scores: dict[str, Any]) -> str:
         row("Unauthorized tool calls allowed", s["unauthorized_tool_calls"]),
         row("Records failing their schema", s["schema_invalid"]),
         "SOLUTION",
+        row("Evaluation factors matched / wrong status / extra", factor_line),
         row("Binding requirements mapped to approach", rate(s["approach_mapping"])),
         row("Risk seeds found", f"{rate(s['risk_seed_recall'])}  {' '.join(risk_found)}".rstrip()),
         "COST",
@@ -569,6 +621,7 @@ __all__ = [
     "Gold",
     "GoldChanged",
     "analyze",
+    "factor_results",
     "find_gold",
     "gold_for",
     "score_run",
