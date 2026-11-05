@@ -80,6 +80,13 @@ class ScriptedModel:
             return {"reason": "Not stated.", "disposition": "UNVERIFIED", "supporting_ids": []}
         if name == "DecideResult":  # Iteration 3: a gap, which copies no document text
             return {"decision": "PROCEED_WITH_GAP", "reason": "No evidence.", "gap": "None."}
+        if name == "BlueprintPlan":  # Iteration 3: one work package with every requirement
+            ids = [r["id"] for n in data.get("needs", []) for r in n["requirements"]]
+            work = {"code": "1.1", "name": "Work", "requirement_ids": ids}
+            nodes = [{"code": "1", "name": "Delivery"}, work]
+            return {"workstreams": [{"name": "Delivery"}], "wbs": nodes}
+        if name == "BlueprintDetail":
+            return {"packages": []}
         if name == "OptionsResult":  # Iteration 3: two options, the first the baseline
             first = {"name": "Configured product", "baseline": True, "scores": []}
             return {"options": [first, {"name": "Built service", "scores": []}]}

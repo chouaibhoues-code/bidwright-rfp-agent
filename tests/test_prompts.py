@@ -294,3 +294,22 @@ def test_the_options_example_has_a_baseline_first_and_keeps_its_gap_and_price_ou
     options = load_prompt("options")
     assert "Configured retention, Halden left out" in options.system
     assert "repair_format" in options.tasks
+
+
+def test_the_blueprint_prompts_hold_their_examples_and_elements() -> None:
+    """Iteration 3, step 7: P01's plan example passes the tree check, and P02's covers each of
+    its work packages; the closure and revision elements take their values."""
+    from bidwright.graph.blueprint import leaves, tree_problems
+    from bidwright.schemas import BlueprintDetail, BlueprintPlan
+
+    example = yaml.safe_load((PROMPTS_DIR / "examples" / "mini_rfp.yaml").read_text("utf-8"))
+    plan = BlueprintPlan.model_validate(example["blueprint"]["result"])
+    assert tree_problems(plan) == []
+    answer = BlueprintDetail.model_validate(example["blueprint_detail"]["result"])
+    assert [p.code for p in answer.packages] == [n.code for n in leaves(plan.wbs)]
+    plan_prompt, detail_prompt = load_prompt("blueprint"), load_prompt("blueprint_detail")
+    assert "Retention rules configured" in plan_prompt.system
+    assert "ROLE-901" in detail_prompt.system
+    assert "REQ-0002" in plan_prompt.task_text("repair_closure", ids="REQ-0002")
+    assert "data-x" in plan_prompt.task_text("revise", data_tag="data-x")
+    assert set(detail_prompt.tasks) == {"task", "repair_format"}

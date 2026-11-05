@@ -16,6 +16,7 @@ import re
 import threading
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from openinference.semconv.trace import OpenInferenceSpanKindValues, SpanAttributes
@@ -754,6 +755,21 @@ def approach(
         )
         questions.append(OpenQuestion(text=question.text, src_ids=src_ids))
     return ApproachOutcome(items, unmapped, questions)
+
+
+def write_approach(run_dir: Path, outcome: ApproachOutcome) -> dict[str, Any]:
+    """`approach.json`, written by this function only: by the `approach` node, or by
+    `blueprint` with the manifest's view (Iteration 3, step 7). Returns what it wrote."""
+    data = {
+        "items": [a.model_dump(mode="json") for a in outcome.items],
+        "unmapped": outcome.unmapped,
+        "questions": [q.model_dump(mode="json") for q in outcome.questions],
+        "failure": outcome.failure,
+    }
+    (run_dir / "approach.json").write_text(
+        json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+    )
+    return data
 
 
 # --- risk -----------------------------------------------------------------------------------

@@ -24,6 +24,8 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 |---|---|---|---|
 | `approach` | 0.2.0 | reason | `sha256:d95f06596240` |
 | `assess` | 0.1.0 | assess | `sha256:2aa0d0fe6317` |
+| `blueprint` | 0.1.0 | reason | `sha256:834762b36438` |
+| `blueprint_detail` | 0.1.0 | reason | `sha256:2b4a3a6bf768` |
 | `brief` | 0.2.0 | extract | `sha256:58dc56bb634a` |
 | `consolidate` | 0.1.0 | reason | `sha256:0e4706513b48` |
 | `decide` | 0.1.0 | reason | `sha256:7fad296ecb75` |
@@ -48,6 +50,8 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `decide` | agent | `search_capabilities`, `search_rfp`, `read_section`, `ask_research` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
 | `assess` | function | None | 1 call and 1 repair, fixed in code |
 | `options` | function | None | 1 call and 1 repair, fixed in code |
+| `blueprint` | function | None | 1 call and 1 repair, fixed in code |
+| `blueprint_detail` | function | None | 1 call and 1 repair, fixed in code |
 | `draft` | function | None | 1 call and 1 repair, fixed in code |
 | `consolidate` | function | None | 1 call and 1 repair, fixed in code |
 

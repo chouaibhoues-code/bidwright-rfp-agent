@@ -76,6 +76,7 @@ from bidwright.graph.nodes import (
     link_hazards,
     risk,
     section_records,
+    write_approach,
 )
 from bidwright.graph.state import BatchState, ClusterState, RunState
 from bidwright.graph.triage import triage
@@ -712,16 +713,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
 
     def approach_node(state: RunState) -> dict[str, Any]:
         outcome = approach(ctx, requirements_of(state), manifests(state, "approach"))
-        data = {
-            "items": [a.model_dump(mode="json") for a in outcome.items],
-            "unmapped": outcome.unmapped,
-            "questions": [q.model_dump(mode="json") for q in outcome.questions],
-            "failure": outcome.failure,
-        }
-        (rt.run_dir / "approach.json").write_text(
-            json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
-        )
-        return {"approach": data}
+        return {"approach": write_approach(rt.run_dir, outcome)}
 
     def risk_node(state: RunState) -> dict[str, Any]:
         passages(state)

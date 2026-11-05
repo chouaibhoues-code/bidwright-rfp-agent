@@ -42,6 +42,8 @@ PROMPT_IDS = (
     "decide",
     "assess",
     "options",
+    "blueprint",
+    "blueprint_detail",
 )
 RISK_LIMITS = AgentLimits(max_turns=4, max_tool_calls=6, stop_on_no_progress=True)
 USAGE = Usage(tokens_in=500, tokens_out=100)
@@ -152,6 +154,10 @@ class RuleBackend:
                 "missing": "",
             }
             return Response(text=json.dumps(result), usage=USAGE)
+        if name == "BlueprintPlan":
+            return Response(text=json.dumps(_blueprint_plan(data)), usage=USAGE)
+        if name == "BlueprintDetail":
+            return Response(text=json.dumps(_blueprint_detail(data)), usage=USAGE)
         if name == "OptionsResult":
             return Response(text=json.dumps(_options(data)), usage=USAGE)
         if name == "ApproachResult":
@@ -415,6 +421,81 @@ GENERIC_RISK = {
     "residual_exposure": "Medium.",
     "evidence_src_ids": [],
 }
+
+
+def _blueprint_plan(data: dict[str, Any]) -> dict[str, Any]:
+    """P01: one workstream, a two-level breakdown with one work package per RFP need the
+    option does not exclude. P03 (a revision task): the plan again, without the technology
+    claims the documentation contradicts."""
+    if "invalidated" in data:
+        wrong = {item["text"] for item in data["invalidated"]}
+        plan = dict(data["plan"])
+        plan["tech_claims"] = [t for t in plan.get("tech_claims", []) if t["text"] not in wrong]
+        return plan
+    modes = {a["need_id"]: a for a in data["option"]["approach"]}
+    wbs: list[dict[str, Any]] = [
+        {"code": "1", "name": "Delivery", "deliverable": "The service in use"}
+    ]
+    for need in data.get("needs", []):
+        approach = modes.get(need["need_id"], {})
+        if need["origin"] != "RFP" or approach.get("delivery_mode") == "EXCLUDED":
+            continue
+        wbs.append(
+            {
+                "code": f"1.{len(wbs)}",
+                "name": need.get("topic") or need["need_id"],
+                "deliverable": "The need met",
+                "requirement_ids": [r["id"] for r in need["requirements"]],
+                "need_ids": [need["need_id"]],
+                "claim_ids": approach.get("claim_ids", []),
+            }
+        )
+    if len(wbs) == 1:
+        wbs.append({"code": "1.1", "name": "Project management", "deliverable": "A plan"})
+    return {
+        "current_state": [],
+        "target_state": [],
+        "workstreams": [{"name": "Delivery", "objective": "Deliver the chosen option."}],
+        "wbs": wbs,
+        "assumptions": [{"text": "The buyer's staff take part in testing."}],
+        "ground_rules": [],
+        "tech_claims": [],
+    }
+
+
+def _blueprint_detail(data: dict[str, Any]) -> dict[str, Any]:
+    """P02: one detail per work package, with the first role, and each requirement tested."""
+    wbs = data["plan"]["wbs"]
+    parents = {n["code"].rsplit(".", 1)[0] for n in wbs if "." in n["code"]}
+    roles = [r["id"] for r in data.get("roles", [])][:1]
+    packages = [
+        {
+            "code": n["code"],
+            "scope": f"Deliver {n['name']}.",
+            "exclusions": "Nothing beyond its requirements.",
+            "acceptance": "The buyer accepts its tests.",
+            "effort": {
+                "low_days": 5,
+                "high_days": 10,
+                "basis": "analogy",
+                "basis_text": "Similar work done before.",
+                "role_ids": roles,
+                "uncertainty": "Moderate.",
+            },
+            "verification": [
+                {"requirement_id": r, "method": "TEST"} for r in n.get("requirement_ids", [])
+            ],
+            "predecessors": [],
+        }
+        for n in wbs
+        if n["code"] not in parents
+    ]
+    streams = data["plan"].get("workstreams", [])
+    pdca = [
+        {"workstream": w["name"], "plan": "Plan.", "do": "Do.", "check": "Check.", "act": "Act."}
+        for w in streams
+    ]
+    return {"packages": packages, "pdca": pdca, "benefits": [], "win_themes": []}
 
 
 def _options(data: dict[str, Any]) -> dict[str, Any]:

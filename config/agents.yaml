@@ -83,6 +83,24 @@ options:
   model_role: reason
   tools: []
 
+# Iteration 3 (ADR-043): P01 plans and P02 details the chosen option; code checks both. P02's
+# calls, and P03's revision, run under the node name blueprint.
+blueprint:
+  kind: function
+  input: BlueprintPlanTask
+  output: BlueprintPlan
+  prompt: blueprint@0.1.0
+  model_role: reason
+  tools: []
+
+blueprint_detail:
+  kind: function
+  input: BlueprintDetailTask
+  output: BlueprintDetail
+  prompt: blueprint_detail@0.1.0
+  model_role: reason
+  tools: []
+
 draft:
   kind: function
   input: DraftTask

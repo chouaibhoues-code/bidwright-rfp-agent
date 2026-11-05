@@ -439,3 +439,80 @@ options:
           - {need_id: RG-902, delivery_mode: ALTERNATIVE, claim_ids: []}
         assumptions: ["The Trust's team can run a nightly export from Halden."]
         scores: [{factor_id: EF-01, score: 3, reason: "Meets retention and offers a way to share Halden data, which depends on the Trust."}]
+# blueprint (Iteration 3): the options example's baseline planned in one workstream; its
+# excluded need stays out of the breakdown and becomes an assumption.
+blueprint:
+  task:
+    option:
+      option_id: OPT-1
+      name: "Configured retention, Halden left out"
+      summary: "Configure retention for consent forms, and exclude the Halden integration, stating it as a gap."
+      approach:
+        - {need_id: RG-901, delivery_mode: CONFIG, claim_ids: [CL-901]}
+        - {need_id: RG-902, delivery_mode: EXCLUDED, claim_ids: []}
+      assumptions: ["The Trust accepts the Halden integration as out of scope for the first release."]
+    needs:
+      - need_id: RG-901
+        origin: RFP
+        topic: "Retention of signed consent forms"
+        requirements:
+          - {id: REQ-0901, statement: "The Supplier shall keep signed consent forms for ten years.", modality: shall, quote: "The Supplier shall keep signed consent forms for ten years.", src_ids: [SRC-0901]}
+      - need_id: RG-902
+        origin: RFP
+        topic: "Integration with the Halden patient record system"
+        requirements:
+          - {id: REQ-0902, statement: "The Supplier shall integrate with the Halden patient record system.", modality: shall, quote: "The Supplier shall integrate with the Halden patient record system.", src_ids: [SRC-0902]}
+    claims:
+      - {claim_id: CL-901, text: "Retention periods are set per document type and enforced automatically.", disposition: SUPPORTED}
+    scope_in: [{id: BI-901, text: "Electronic consent forms for the Trust's clinics."}]
+    scope_out: []
+    constraints: []
+    never: [{id: BI-902, text: "Never move patient records out of the Trust's systems."}]
+  result: &blueprint_plan
+    current_state:
+      - {text: "Signed consent forms must be kept for ten years.", src_ids: [SRC-0901], requirement_ids: [REQ-0901], claim_ids: [], domain_item_ids: []}
+    target_state:
+      - {text: "Each consent form is kept for ten years under a retention rule set in the product.", src_ids: [], requirement_ids: [REQ-0901], claim_ids: [CL-901], domain_item_ids: []}
+    workstreams:
+      - {name: "Retention service", objective: "Configure retention for consent forms and hand it over to the clinics."}
+    wbs:
+      - {code: "1", name: "Retention service", deliverable: "Retention for consent forms in use", requirement_ids: [], need_ids: [], claim_ids: []}
+      - {code: "1.1", name: "Retention rules configured", deliverable: "A ten-year rule for consent forms", requirement_ids: [REQ-0901], need_ids: [RG-901], claim_ids: [CL-901]}
+      - {code: "1.2", name: "Clinic staff trained", deliverable: "Clinic staff who apply the retention rules", requirement_ids: [], need_ids: [RG-901], claim_ids: []}
+    assumptions:
+      - {text: "The Trust accepts the Halden integration as out of scope for the first release.", src_ids: [], requirement_ids: [REQ-0902], claim_ids: [], domain_item_ids: []}
+    ground_rules:
+      - {text: "Retention periods follow the period the RFP states.", src_ids: [SRC-0901], requirement_ids: [], claim_ids: [], domain_item_ids: []}
+    tech_claims:
+      - {text: "Retention rules are set in the product's configuration, without custom code.", library: null, version: null, wbs_code: "1.1"}
+# blueprint_detail (Iteration 3): the detail of the blueprint example's plan.
+blueprint_detail:
+  task:
+    plan: *blueprint_plan
+    claims:
+      - {claim_id: CL-901, text: "Retention periods are set per document type and enforced automatically.", disposition: SUPPORTED}
+    roles:
+      - {id: ROLE-901, title: "Solution architect", summary: "Designs the configuration of document types and their retention."}
+      - {id: ROLE-902, title: "Trainer", summary: "Delivers role-based training and writes the guides for each role."}
+  result:
+    packages:
+      - code: "1.1"
+        scope: "Set a ten-year retention rule for signed consent forms and test it on sample forms."
+        exclusions: "Other document types and the Halden integration."
+        acceptance: "A sample consent form shows the ten-year rule applied."
+        effort: {low_days: 5, high_days: 10, basis: analogy, basis_text: "Retention configured for other document types took a similar range.", role_ids: [ROLE-901], uncertainty: "The Trust's schedule may hold more types of form than the RFP names."}
+        verification: [{requirement_id: REQ-0901, method: TEST}]
+        predecessors: []
+      - code: "1.2"
+        scope: "Train each clinic's staff on the retention rules."
+        exclusions: "Training on the other parts of the product."
+        acceptance: "Each clinic's staff have attended a session."
+        effort: {low_days: 2, high_days: 4, basis: expert_judgment, basis_text: "One session per clinic, with its guide.", role_ids: [ROLE-902], uncertainty: "The number of clinics is not stated."}
+        verification: []
+        predecessors: ["1.1"]
+    pdca:
+      - {workstream: "Retention service", plan: "Agree the retention schedule with the Trust.", do: "Configure and test the rules.", check: "Review a sample of forms each month.", act: "Correct any rule the review finds wrong."}
+    benefits:
+      - {hypothesis: "Clinic staff spend less time finding old consent forms.", measure: "The time to find a form, before and after.", need_id: RG-901}
+    win_themes:
+      - {feature: "Retention set per document type", metric: "Every consent form under a ten-year rule", benefit: "The Trust meets its retention duty without tracking forms by hand", proof_claim_id: CL-901}

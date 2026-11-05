@@ -34,7 +34,7 @@ PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
 EXAMPLES_FILE = Path("examples") / "mini_rfp.yaml"
 NOTES_HEADING = "## Why it works"
 _TASK_ELEMENT = re.compile(
-    r"\s*<(task|final_task|second_pass|ask|extract|reminder|envelope|fixed|repair_[a-z_]+)>\s*(.*?)"
+    r"\s*<(task|final_task|second_pass|ask|extract|reminder|envelope|fixed|revise|repair_[a-z_]+)>\s*(.*?)"
     r"\s*</\1>",
     re.DOTALL,
 )
@@ -215,6 +215,8 @@ def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
         "decide": _decide_examples,
         "assess": _assess_examples,
         "options": _options_examples,
+        "blueprint": _blueprint_examples,
+        "blueprint_detail": _blueprint_detail_examples,
     }
     if name not in renderers or name not in sets:
         raise ValueError(f"no example set {name!r} in {EXAMPLES_FILE}")
@@ -327,6 +329,65 @@ def _options_examples(example: dict[str, Any]) -> str:
             "The factors, the map and the gaps:",
             f" {_dump(example['task'])}",
             "Two options:",
+            f" {_dump(example['result'])}",
+        ]
+    )
+
+
+def _blueprint_examples(example: dict[str, Any]) -> str:
+    """One task and its plan: every id a node or a fact names is in the task, and an excluded
+    need stays out of the breakdown."""
+    task = schemas.BlueprintPlanTask.model_validate(example["task"])
+    plan = schemas.BlueprintPlan.model_validate(example["result"])
+    requirements = {r.id for n in task.needs for r in n.requirements}
+    passages = {s for n in task.needs for r in n.requirements for s in r.src_ids}
+    needs = {n.need_id for n in task.needs}
+    claims = {c.claim_id for c in task.claims}
+    excluded = {a.need_id for a in task.option.approach if a.delivery_mode == "EXCLUDED"}
+    codes = [node.code for node in plan.wbs]
+    if len(set(codes)) != len(codes):
+        raise ValueError("the blueprint example repeats a code")
+    for node in plan.wbs:
+        if not (
+            set(node.requirement_ids) <= requirements and set(node.need_ids) <= needs - excluded
+        ):
+            raise ValueError(f"the blueprint example's node {node.code} names what the task lacks")
+        if not set(node.claim_ids) <= claims:
+            raise ValueError(f"the blueprint example's node {node.code} cites an unknown claim")
+    for fact in [*plan.current_state, *plan.target_state, *plan.assumptions, *plan.ground_rules]:
+        if not (set(fact.src_ids) <= passages and set(fact.requirement_ids) <= requirements):
+            raise ValueError(f"a blueprint example fact cites what the task lacks: {fact.text}")
+    return "\n".join(
+        [
+            "The option, the needs, the claims and the brief:",
+            f" {_dump(example['task'])}",
+            "The plan:",
+            f" {_dump(example['result'])}",
+        ]
+    )
+
+
+def _blueprint_detail_examples(example: dict[str, Any]) -> str:
+    """One settled plan and its detail: one detail per work package, under its code, with
+    roles from the task only."""
+    task = schemas.BlueprintDetailTask.model_validate(example["task"])
+    answer = schemas.BlueprintDetail.model_validate(example["result"])
+    parents = {node.code.rsplit(".", 1)[0] for node in task.plan.wbs if "." in node.code}
+    work = {node.code for node in task.plan.wbs if node.code not in parents}
+    roles = {r.id for r in task.roles}
+    if {p.code for p in answer.packages} != work:
+        raise ValueError("the blueprint_detail example misses or adds a work package")
+    for package in answer.packages:
+        if (
+            not set(package.effort.role_ids) <= roles
+            or package.effort.low_days > package.effort.high_days
+        ):
+            raise ValueError(f"the blueprint_detail example's {package.code} has a bad effort")
+    return "\n".join(
+        [
+            "The settled plan, the claims and the roles:",
+            f" {_dump(example['task'])}",
+            "The detail:",
             f" {_dump(example['result'])}",
         ]
     )

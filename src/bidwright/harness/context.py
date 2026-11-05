@@ -22,7 +22,8 @@ Three paths pack the model calls of Iteration 1, and each writes one manifest pe
   excerpts rather than packed passages, naming them in `included_record_ids`: `discover`'s
   calls `D01` onward; `approach`'s `A01`; `risk`'s `R01` onward, one per turn, with the
   passages its searches returned in `included_src_ids`, then `R-final`; `draft`'s `S01` to
-  `S03` by section (step 14); and, from Iteration 3, `options`'s `O01`. A repair call adds
+  `S03` by section (step 14); and, from Iteration 3, `options`'s `O01` and `blueprint`'s `P01`
+  to `P03`, with `P01-closure` and `P02-revision`. A repair call adds
   `-repair` to its call's id, and `risk`'s retry after generic risks is `R-final-generic`, so
   every model call has a manifest. Call ids name manifest files only and never enter a
   rendered prompt.
@@ -75,6 +76,7 @@ CALL_PREFIX = {
     "risk": "R",
     "draft": "S",
     "options": "O",  # Iteration 3: O01, and its format repair O01-repair
+    "blueprint": "P",  # Iteration 3: P01 to P03, their repairs, and P02-revision
 }
 # Iteration 3 (ADR-039): nodes whose call ids name their unit, a need, a claim or a technology
 # claim, as `consolidate`'s name the cluster, with no prefix.

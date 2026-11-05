@@ -211,6 +211,21 @@ def values(text: str) -> list[Value]:
     return list(dict.fromkeys(found))
 
 
+def dates(text: str) -> list[tuple[tuple[int, int], date | str]]:
+    """Each calendar date the text states, with its span, as `values` reads them: an
+    impossible date stays text (Iteration 3, step 7, for `blueprint`'s "[removed]")."""
+    found: list[tuple[tuple[int, int], date | str]] = []
+    for match in _ISO_DATE.finditer(text):
+        found.append((match.span(), _date(match.group(1), int(match.group(2)), match.group(3))))
+    for match in _DAY_MONTH.finditer(text):
+        month = MONTHS.index(match.group(2).lower()) + 1
+        found.append((match.span(), _date(match.group(3), month, match.group(1))))
+    for match in _MONTH_DAY.finditer(text):
+        month = MONTHS.index(match.group(1).lower()) + 1
+        found.append((match.span(), _date(match.group(3), month, match.group(2))))
+    return found
+
+
 def _same(wanted: Value, offered: Value) -> bool:
     if isinstance(wanted, str) and isinstance(offered, str):
         # A time with no zone word matches the same time with any zone word.
