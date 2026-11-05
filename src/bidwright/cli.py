@@ -27,6 +27,7 @@
                          builds research_packs/<domain>/ from a finished live run, or
                          from an existing NotebookLM job in a run of its own, on the host
     bidwright ui         starts the local Streamlit UI on 127.0.0.1:8501
+    bidwright api        starts the local FastAPI wrapper on 127.0.0.1:8001
     bidwright spans replay <run> [--endpoint URL]
                          replays a run's spans.jsonl into Phoenix over OTLP HTTP
 
@@ -315,6 +316,23 @@ def _ui() -> int:
     return subprocess.run(cmd, cwd=HOME, check=False).returncode  # noqa: S603
 
 
+def _api() -> int:
+    """Start the local FastAPI wrapper (`app/api.py`) on `127.0.0.1:8001`."""
+    import subprocess
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "uvicorn",
+        "app.api:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001",
+    ]
+    return subprocess.run(cmd, cwd=HOME, check=False).returncode  # noqa: S603
+
+
 def _spans_replay(args: argparse.Namespace) -> int:
     """Replay `<run>/spans.jsonl` into Phoenix over OTLP HTTP."""
     from bidwright.obs.replay import replay_spans
@@ -431,6 +449,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     pack.add_argument("--profile", choices=["free", "paid"], default="free")
     sub.add_parser("ui", help="start the local Streamlit UI on 127.0.0.1:8501")
+    sub.add_parser("api", help="start the local FastAPI wrapper on 127.0.0.1:8001")
     spans = sub.add_parser("spans", help="manage recorded OpenTelemetry spans")
     spans_sub = spans.add_subparsers(dest="spans_command", required=True)
     spans_replay = spans_sub.add_parser(
@@ -457,6 +476,8 @@ def main(argv: list[str] | None = None) -> int:
         return _matrix(args)
     if args.command == "ui":
         return _ui()
+    if args.command == "api":
+        return _api()
     if args.command == "spans":
         return _spans_replay(args)
     from bidwright.graph.build import execute

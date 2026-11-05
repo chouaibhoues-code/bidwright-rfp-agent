@@ -5,12 +5,12 @@
 ## `bidwright`
 
 ```text
-usage: bidwright [-h] {run,demo,record,stop,resume,purge,matrix,research,ui,spans} ...
+usage: bidwright [-h] {run,demo,record,stop,resume,purge,matrix,research,ui,api,spans} ...
 
 Bidwright: RFP to proposal.
 
 positional arguments:
-  {run,demo,record,stop,resume,purge,matrix,research,ui,spans}
+  {run,demo,record,stop,resume,purge,matrix,research,ui,api,spans}
     run                 run one RFP file or package folder live
     demo                replay the recorded development run, with no keys
     record              run live and record cassettes, on the host
@@ -20,6 +20,7 @@ positional arguments:
     matrix              run a matrix of rungs and repeats
     research            manage the research server
     ui                  start the local Streamlit UI on 127.0.0.1:8501
+    api                 start the local FastAPI wrapper on 127.0.0.1:8001
     spans               manage recorded OpenTelemetry spans
 
 options:
@@ -178,6 +179,15 @@ options:
 
 ```text
 usage: bidwright ui [-h]
+
+options:
+  -h, --help  show this help message and exit
+```
+
+## `bidwright api`
+
+```text
+usage: bidwright api [-h]
 
 options:
   -h, --help  show this help message and exit

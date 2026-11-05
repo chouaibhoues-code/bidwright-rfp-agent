@@ -44,7 +44,7 @@ services:
     <<: *image
     profiles: [ui]
     command: ["ui"]
-    ports: ["127.0.0.1:8501:8501"]
+    ports: ["127.0.0.1:8501:8501", "127.0.0.1:8001:8001"]
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env for live runs}
       GEMINI_PAID_API_KEY: ${GEMINI_PAID_API_KEY:-}
