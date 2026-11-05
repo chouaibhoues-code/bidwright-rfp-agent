@@ -29,7 +29,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from bidwright.config import BreakerConfig
-from bidwright.fileio import write_atomic
+from bidwright.fileio import read_lines, write_atomic
 from bidwright.llm.limits import QUOTA_DIR, model_key
 from bidwright.llm.types import CircuitOpen
 from bidwright.schemas import DeadLetter
@@ -164,11 +164,7 @@ class DeadLetters:
 
 def read_dead_letters(path: Path) -> list[DeadLetter]:
     """The file's rows; a last line that a kill cut short is skipped, as in the ledger."""
-    if not path.exists():
-        return []
-    data = path.read_bytes()
-    whole = data[: data.rfind(b"\n") + 1].decode("utf-8")
-    return [DeadLetter.model_validate_json(line) for line in whole.splitlines() if line.strip()]
+    return [DeadLetter.model_validate_json(line) for line in read_lines(path)]
 
 
 __all__ = [

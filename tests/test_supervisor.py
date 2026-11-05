@@ -14,6 +14,7 @@ from bidwright.config import Config, RunLimits, load_config
 from bidwright.graph.build import RunResult, execute
 from bidwright.harness import supervisor
 from bidwright.harness.budget import RunBudget
+from bidwright.harness.recovery import read_dead_letters
 from bidwright.harness.supervisor import RunBusy, RunLock, environment
 from bidwright.llm.simulator import ProviderSimulator
 from bidwright.llm.types import Backend, Request, Response
@@ -122,6 +123,7 @@ def test_a_finished_run_is_not_resumed(tmp_path: Path) -> None:
         ({"run_args": {"mode": "replay"}}, "replay mode is not resumed"),
         ({"run_args": {"environment": "container-elsewhere"}}, "started in container-elsewhere"),
         ({"prompt_hashes": {"risk": "sha256:" + "0" * 64}}, "the prompts risk"),
+        ({"input_hashes": {"dev_rfp.pdf": "sha256:" + "0" * 64}}, "input files dev_rfp.pdf"),
     ],
 )
 def test_a_resume_is_refused_and_leaves_the_run_as_it_was(
@@ -295,16 +297,27 @@ def test_paid_resumes_only_a_free_run_that_paused_on_its_quota(tmp_path: Path) -
         _run(tmp_path, profile="paid", resume=True)
 
 
-def test_a_cut_ledger_line_is_removed_on_resume_and_recorded(tmp_path: Path) -> None:
+def test_cut_lines_are_removed_from_every_line_file_on_resume(tmp_path: Path) -> None:
+    """A kill can cut the last line of any of the four line files; a resume cuts each before
+    it appends, so no new line lands on a cut one, and records each cut."""
     run_dir = _run(tmp_path, control=_drained()).run_dir
-    with (run_dir / "ledger.jsonl").open("a", encoding="utf-8") as stream:
-        stream.write('{"run_id": "run", "node": "tri')
+    for name in ("ledger.jsonl", "events.jsonl", "tool_calls.jsonl", "dead_letter.jsonl"):
+        with (run_dir / name).open("a", encoding="utf-8") as stream:
+            stream.write('{"run_id": "run", "node": "tri')
     resumed = _run(tmp_path, resume=True)
     assert resumed.status == "COMPLETED", resumed.reason
     recovery = [e for e in read_events(run_dir / "events.jsonl") if e.kind == "recovery"]
-    assert [(e.part, e.detail.split(":")[0]) for e in recovery] == [(1, "ledger_cut")]
+    assert [(e.part, e.detail.split(":")[0]) for e in recovery] == [
+        (1, "events_cut"),
+        (1, "ledger_cut"),
+        (1, "tool_calls_cut"),
+        (1, "dead_letter_cut"),
+    ]
     manifest = _manifest(run_dir)
     assert manifest.totals.requests == len(read_ledger(run_dir / "ledger.jsonl")) > 0
+    assert read_dead_letters(run_dir / "dead_letter.jsonl") == []
+    for line in (run_dir / "tool_calls.jsonl").read_text(encoding="utf-8").splitlines():
+        json.loads(line)
 
 
 class _Interrupted(RuleBackend):

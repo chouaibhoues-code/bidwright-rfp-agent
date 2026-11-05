@@ -207,7 +207,7 @@ class CallManifests:
         src_ids: Sequence[str] = (),
     ) -> None:
         per_token = self.manager.limits.chars_per_token
-        chars = len(data) + sum(_message_chars(m) for m in turns)
+        chars = len(data) + sum(message_chars(m) for m in turns)
         self.manager.record_manifest(
             node,
             call_id,
@@ -219,7 +219,8 @@ class CallManifests:
         )
 
 
-def _message_chars(message: Message) -> int:
+def message_chars(message: Message) -> int:
+    """A turn's characters as a manifest counts them: its text and its tool calls."""
     calls = sum(len(json.dumps(c.arguments)) + len(c.name) for c in message.tool_calls)
     return len(message.content) + calls
 

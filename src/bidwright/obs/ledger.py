@@ -13,6 +13,7 @@ run appends.
 from collections.abc import Sequence
 from pathlib import Path
 
+from bidwright.fileio import read_lines, repair_lines
 from bidwright.schemas import LedgerEntry, RunTotals
 
 
@@ -39,15 +40,9 @@ def models_used(ledger: Sequence[LedgerEntry]) -> dict[str, list[str]]:
 
 def read_ledger(path: Path) -> list[LedgerEntry]:
     """The entries of a ledger file, without a last line that a kill cut short."""
-    data = path.read_bytes()
-    whole = data[: _complete(data)].decode("utf-8")
-    return [LedgerEntry.model_validate_json(line) for line in whole.splitlines() if line.strip()]
-
-
-def _complete(data: bytes) -> int:
-    """How many bytes of `data` end at a newline: everything after the last one is a line that
-    was never finished."""
-    return data.rfind(b"\n") + 1
+    if not path.exists():
+        raise FileNotFoundError(path)
+    return [LedgerEntry.model_validate_json(line) for line in read_lines(path)]
 
 
 class LedgerFile:
@@ -64,13 +59,7 @@ class LedgerFile:
 
     def repair(self) -> str:
         """Cut a last line that a kill left without its newline, and return the text cut."""
-        data = self.path.read_bytes()
-        end = _complete(data)
-        if end == len(data):
-            return ""
-        with self.path.open("r+b") as stream:
-            stream.truncate(end)
-        return data[end:].decode("utf-8", errors="replace")
+        return repair_lines(self.path)
 
     def append(self, entry: LedgerEntry) -> None:
         """Write one entry as one line, flushed before the call that made it returns."""

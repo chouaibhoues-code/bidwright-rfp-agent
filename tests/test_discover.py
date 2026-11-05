@@ -5,6 +5,7 @@ and its resume, a crash after `discover_start`, a resume at `discover_ask`, and 
 on the server."""
 
 import json
+import shutil
 import time
 from collections.abc import Iterator, Sequence
 from datetime import UTC, date, datetime
@@ -12,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 
 from bidwright.candidates import cut
 from bidwright.config import Config, ResearchConfig, ServerPins, compile_patterns, load_config
@@ -36,6 +38,7 @@ from bidwright.obs.events import EventRecorder, read_events
 from bidwright.research.audit import query_overlaps
 from bidwright.research.mcp_client import McpClient
 from bidwright.research.nlm import SENT, NotebookLMProvider
+from bidwright.research.pack import digest
 from bidwright.research.pins import pinned
 from bidwright.research.provider import ResearchProvider
 from bidwright.schemas import (
@@ -234,6 +237,12 @@ def test_a_live_discovery_runs_end_to_end_and_writes_both_files(
     ]
     manifests = sorted(p.name for p in (tmp_path / "context").glob("discover-*.json"))
     assert manifests == [f"discover-D0{n}.json" for n in range(1, 5)]
+    first_ask, second_ask = (
+        json.loads((tmp_path / "context" / f"discover-{c}.json").read_text("utf-8"))
+        for c in ("D02", "D03")
+    )
+    evidence = [m["tokens_by_layer"]["evidence"] for m in (first_ask, second_ask)]
+    assert evidence[1] > evidence[0], "the second turn's manifest counts the answer before it"
     extract_manifest = json.loads((tmp_path / "context" / "discover-D04.json").read_text("utf-8"))
     assert extract_manifest["included_record_ids"] == ["PX-0001"]
     nodes = [entry.node for entry in discovery.ctx.ledger]
@@ -553,11 +562,81 @@ def test_an_item_that_shares_no_word_with_its_excerpts_is_dropped() -> None:
     for mode in ("live", "pack"):
         brief, notes = settle_brief(proposal, [excerpt], [source], mode=mode, tier_rule=False)
         assert [i.statement for i in brief.items] == ["Forms meet testable success criteria."]
+        assert [i.id for i in brief.items] == ["DI-001"], "numbered from 1 without ids"
         assert brief.needs == []
         assert (
             "pattern 'Keep audit logs.' dropped: it shares no word with the excerpts it cites"
             in (notes)
         )
+
+
+def test_acronyms_and_numbers_count_as_shared_words_and_a_pack_keeps_its_ids() -> None:
+    """An entry whose only words in common with its excerpt are ISO, SSO and 27001 is kept;
+    a pack's recorded ids survive a load in which an entry before them drops."""
+    source = PackSource(
+        id="PS-001",
+        provider_source_id="a",
+        url=WCAG_URL,
+        title=WCAG,
+        host="www.w3.org",
+        tier=1,
+        retrieved=date(2026, 11, 5),
+    )
+    excerpt = PackExcerpt(
+        id="PX-0001", source_id="PS-001", text="Councils ask for ISO/IEC 27001 and SSO."
+    )
+    proposal = DiscoveryExtract.model_validate(
+        {
+            "summary": "",
+            "items": [
+                {"kind": "pattern", "statement": "Keep audit logs.", "excerpt_ids": ["PX-0001"]},
+                {
+                    "kind": "standard",
+                    "statement": "Hold ISO 27001; use SSO.",
+                    "excerpt_ids": ["PX-0001"],
+                },
+            ],
+            "needs": [],
+            "open_questions": [],
+        }
+    )
+    brief, _ = settle_brief(
+        proposal,
+        [excerpt],
+        [source],
+        mode="pack",
+        tier_rule=False,
+        ids=(["DI-004", "DI-007"], []),
+    )
+    assert [(i.id, i.statement) for i in brief.items] == [("DI-007", "Hold ISO 27001; use SSO.")]
+
+
+def test_a_pack_that_keeps_nothing_at_load_is_a_shortfall(tmp_path: Path) -> None:
+    """A pack whose every entry fails the rules when it loads is refused as a shortfall, the
+    way an empty live extraction is, and writes no domain brief."""
+    packs = tmp_path / "packs"
+    shutil.copytree(PACKS / "fixture", packs / "fixture")
+    folder = packs / "fixture"
+    brief = json.loads((folder / BRIEF_FILE).read_text(encoding="utf-8"))
+    for entry in brief["items"]:
+        entry["statement"] = "Zebras graze quietly."
+    for entry in brief["needs"]:
+        entry["need"] = "Quiet zebras"
+    (folder / BRIEF_FILE).write_text(json.dumps(brief), encoding="utf-8", newline="\n")
+    manifest = yaml.safe_load((folder / "pack.yaml").read_text(encoding="utf-8"))
+    manifest["files"][BRIEF_FILE] = digest((folder / BRIEF_FILE).read_bytes())
+    (folder / "pack.yaml").write_text(yaml.safe_dump(manifest), encoding="utf-8")
+    config = _research().model_copy(update={"packs_dir": str(packs)})
+    run_dir = tmp_path / "run"
+    discovery, backend = _discovery(run_dir, [], None, mode="pack", config=config)
+    loaded = discovery.load(PACK_TOPICS)
+    assert loaded.domain_brief is None and backend.requests == []
+    assert loaded.degraded == (
+        "research: the research pack fixture-records-management holds no item or need that"
+        " rests on its excerpts"
+    )
+    assert not (run_dir / BRIEF_FILE).exists()
+    assert _record(run_dir).pack_id is None
 
 
 def test_an_extraction_that_keeps_nothing_is_a_research_failure(tmp_path: Path) -> None:

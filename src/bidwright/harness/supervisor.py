@@ -10,8 +10,9 @@ Windows, `os.kill` ends the process it tests, and ids are reused.
 
 A resume rereads the stored manifest under the lock and refuses a finished run, one that
 predates `v0.2` (no `run_args`), one run in the client's `record` or `replay` mode, one started
-in another environment, a profile change other than `free` to `paid` after `QUOTA_PAUSED`, and
-prompts whose hashes changed, since their journal keys would no longer match. A refused resume
+in another environment, a profile change other than `free` to `paid` after `QUOTA_PAUSED`,
+prompts whose hashes changed, since their journal keys would no longer match, and input files
+whose hashes changed, since its checkpoints hold the old passages. A refused resume
 leaves the run as it was. Otherwise the two manifests are merged: `started` and
 `status_history` are kept and `overrides` appended, the budget's counts and raises come back
 from `control/budget.json`, and a stop request left from the last part is removed.
@@ -35,7 +36,7 @@ from typing import IO
 
 from langgraph.runtime import RunControl
 
-from bidwright.fileio import write_atomic
+from bidwright.fileio import repair_lines, write_atomic
 from bidwright.harness.budget import RunBudget
 from bidwright.obs.events import EventRecorder, utc_now
 from bidwright.preflight import Refused
@@ -177,6 +178,13 @@ def refusal(stored: RunManifest, new: RunManifest, where: str) -> str | None:
             f"the prompts {', '.join(changed)} changed since the run started, so the journal's"
             " answers no longer match their calls; start the run again"
         )
+    if stored.input_hashes and new.input_hashes != stored.input_hashes:
+        files = sorted(set(stored.input_hashes) | set(new.input_hashes))
+        moved = [f for f in files if stored.input_hashes.get(f) != new.input_hashes.get(f)]
+        return (
+            f"the input files {', '.join(moved)} changed since the run started, so its"
+            " checkpoints hold passages of another version; start a new run"
+        )
     return None
 
 
@@ -282,12 +290,18 @@ class RunSupervisor:
                 self.budget.restore(BudgetSnapshot.model_validate_json(text))
             if self.raise_budget:
                 self.budget.raise_by(self.raise_budget)
+            # Before this part's first event, so it never lands on the end of a cut line.
+            cut = repair_lines(self.events.path)
         else:
             self.events.create()
+            cut = ""
         self.events.part = self.part
         self.stop_request.unlink(missing_ok=True)
         self.manifest = self.manifest.model_copy(update={"pid": os.getpid(), "ended": None})
         self.transition("RUNNING", reason)
+        if cut:
+            detail = f"events_cut: {len(cut)} characters of an unfinished last line removed"
+            self.events.record("recovery", None, detail)
 
     def transition(self, status: RunStatus, reason: str | None = None) -> None:
         """Record a status: in the manifest's history, in the events log, and on disk."""

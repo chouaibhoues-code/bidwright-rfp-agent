@@ -51,6 +51,7 @@ from bidwright.candidates import CompiledCues, cue_hits, defined_terms, write_ca
 from bidwright.clusters import Cluster, build_clusters, precedence_passages
 from bidwright.config import Config, ResearchConfig, compile_patterns, load_config
 from bidwright.coverage import degraded_reason, next_step, write_report
+from bidwright.fileio import repair_lines
 from bidwright.graph.brief import brief as write_brief
 from bidwright.graph.consolidate import (
     GroupDraft,
@@ -1194,10 +1195,16 @@ def execute(
     with supervisor:
         ledger_file = LedgerFile(run_dir / "ledger.jsonl")
         if resume and ledger_file.path.exists():
-            cut = ledger_file.repair()
-            if cut:
-                detail = f"ledger_cut: {len(cut)} characters of an unfinished last line removed"
-                supervisor.events.record("recovery", None, detail)
+            # Each line file a kill can cut, before anything appends to it again.
+            for name, path in (
+                ("ledger", ledger_file.path),
+                ("tool_calls", run_dir / "tool_calls.jsonl"),
+                ("dead_letter", run_dir / DEAD_LETTERS),
+            ):
+                cut = repair_lines(path)
+                if cut:
+                    detail = f"{name}_cut: {len(cut)} characters of an unfinished last line removed"
+                    supervisor.events.record("recovery", None, detail)
         else:
             ledger_file.create()
         events = supervisor.events

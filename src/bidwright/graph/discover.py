@@ -73,7 +73,7 @@ from openinference.semconv.trace import OpenInferenceSpanKindValues, SpanAttribu
 from bidwright.candidates import cut
 from bidwright.config import AgentConfig, ResearchConfig
 from bidwright.fileio import write_atomic
-from bidwright.graph.nodes import RunContext
+from bidwright.graph.nodes import RunContext, message_chars
 from bidwright.harness.context import ContextManager, estimate_tokens, prompt_tokens
 from bidwright.harness.egress import RESEARCH_DESTINATION
 from bidwright.harness.gateway import ToolGateway, ToolLog
@@ -237,10 +237,21 @@ def _supported(
     if tier_rule and all(tiers[i] == 4 for i in kept):
         notes.append(f"{what} dropped: its excerpts all come from tier-4 sources")
         return None
-    if not content_stems(statement) & content_stems(" ".join(texts[i] for i in kept)):
+    cited = " ".join(texts[i] for i in kept)
+    shared = content_stems(statement) & content_stems(cited)
+    if not shared and not _salient(statement) & _salient(cited):
         notes.append(f"{what} dropped: it shares no word with the excerpts it cites")
         return None
     return kept
+
+
+_SALIENT = re.compile(r"\b(?:[A-Z][A-Z0-9]{1,}|\d{2,})\b")
+
+
+def _salient(text: str) -> set[str]:
+    """The acronyms and numbers of a text, such as ISO, SSO and 27001, which `content_stems`
+    leaves out as short or not words, lowercased."""
+    return {token.lower() for token in _SALIENT.findall(text)}
 
 
 def _cut(text: str, limit: int, what: str, notes: list[str]) -> str:
@@ -259,16 +270,19 @@ def settle_brief(
     mode: ResearchModeName,
     domain_id: str | None = None,
     tier_rule: bool = True,
+    ids: tuple[Sequence[str], Sequence[str]] | None = None,
 ) -> tuple[DomainBrief, list[str]]:
     """The extraction as a `DomainBrief`, by the rules above, and the notes that name each
     drop and cut. A research pack's recorded brief goes through them again each time it loads,
     without the tier rule, which its live extraction applied: a pack loses only what now cites a
-    quarantined or unknown excerpt, or what shares no word with its excerpts."""
+    quarantined or unknown excerpt, or what shares no word with its excerpts. `ids`, the item
+    and need ids of a recorded brief, keeps them, so a pack's entries keep their ids in the run
+    when one before them drops; without it, entries are numbered from 1."""
     tiers = _excerpt_tiers(excerpts, sources)
     texts = {e.id: e.text for e in excerpts if e.id in tiers}
     notes: list[str] = []
     items: list[DomainItem] = []
-    for item in proposal.items:
+    for index, item in enumerate(proposal.items):
         what = f"{item.kind} {' '.join(item.statement.split())[:40]!r}"
         statement = _cut(item.statement, DOMAIN_STATEMENT_MAX_CHARS, what, notes)
         kept = (
@@ -279,14 +293,14 @@ def settle_brief(
         if kept:
             items.append(
                 DomainItem(
-                    id=f"DI-{len(items) + 1:03d}",
+                    id=ids[0][index] if ids is not None else f"DI-{len(items) + 1:03d}",
                     kind=item.kind,
                     statement=statement,
                     excerpt_ids=kept,
                 )
             )
     needs: list[DomainNeed] = []
-    for need in proposal.needs:
+    for index, need in enumerate(proposal.needs):
         what = f"need {' '.join(need.need.split())[:40]!r}"
         text = _cut(need.need, DOMAIN_NEED_MAX_CHARS, what, notes)
         kept = (
@@ -295,7 +309,8 @@ def settle_brief(
             else None
         )
         if kept:
-            needs.append(DomainNeed(id=f"DN-{len(needs) + 1:03d}", need=text, excerpt_ids=kept))
+            need_id = ids[1][index] if ids is not None else f"DN-{len(needs) + 1:03d}"
+            needs.append(DomainNeed(id=need_id, need=text, excerpt_ids=kept))
     questions = [" ".join(q.split()) for q in proposal.open_questions if q.strip()]
     if len(questions) > OPEN_QUESTIONS_MAX:
         notes.append(f"open questions after the first {OPEN_QUESTIONS_MAX} dropped")
@@ -382,6 +397,13 @@ class Discovery:
             self.store.note(reason)
             return LoadOutcome(None, f"{failure}; {reason}" if failure else reason)
         brief = self._pack_brief(pack)
+        if not brief.items and not brief.needs:
+            reason = (
+                f"research: the research pack {pack.domain_id} holds no item or need that"
+                " rests on its excerpts"
+            )
+            self.store.note(reason)
+            return LoadOutcome(None, f"{failure}; {reason}" if failure else reason)
         record = self.store.load()
         self.store.save(
             record.model_copy(update={"pack_id": pack.domain_id, "pack_sha256": pack.sha256})
@@ -400,6 +422,10 @@ class Discovery:
             mode="pack",
             domain_id=pack.domain_id,
             tier_rule=False,
+            ids=(
+                [i.id for i in pack.domain_brief.items],
+                [n.id for n in pack.domain_brief.needs],
+            ),
         )
         if notes:
             self.store.note(*(f"pack {pack.domain_id}: {note}" for note in notes))
@@ -436,6 +462,7 @@ class Discovery:
                     specs,
                     "discover_start",
                     sha256_of([rendered.input_hash, transcript, turn]),
+                    first=len(rendered.messages),
                 )
                 for call in completion.tool_calls:
                     self._tool(gateway, call, turn, transcript, messages)
@@ -584,6 +611,7 @@ class Discovery:
                 specs,
                 "discover_ask",
                 sha256_of([rendered.input_hash, transcript]),
+                first=len(rendered.messages),
             )
             if not completion.tool_calls:
                 break
@@ -922,16 +950,19 @@ class Discovery:
     def _enter(self, record: ResearchRecord) -> None:
         self._base, self._made, self._failure = record.calls, 0, None
 
-    def _manifest(self, task: DiscoveryTask, element: str) -> None:
-        """The context manifest of the node's next model call, `D` ids across the nodes."""
+    def _manifest(self, task: DiscoveryTask, element: str, turns: Sequence[Message] = ()) -> None:
+        """The context manifest of the node's next model call, `D` ids across the nodes; its
+        evidence is the task's data and the turns after the rendered prompt: answers, tool
+        results and the reminder, as `graph.nodes.CallManifests` counts them."""
         per_token = self.manager.limits.chars_per_token
+        chars = len(task.model_dump_json()) + sum(message_chars(m) for m in turns)
         self.manager.record_manifest(
             NODE,
             f"D{self._base + self._made + 1:02d}",
             [e.id for e in task.excerpts],
             [],
             prompt_tokens(self.prompt, per_token, task=element),
-            estimate_tokens(len(task.model_dump_json()), per_token),
+            estimate_tokens(chars, per_token),
             self.budget_tokens,
         )
         self._made += 1
@@ -944,8 +975,11 @@ class Discovery:
         specs: Sequence[Any],
         node: str,
         input_hash: str,
+        first: int,
     ) -> Completion:
-        self._manifest(task, element)
+        """One call; `first` is the number of rendered messages, so the turns after them count
+        in its manifest."""
+        self._manifest(task, element, messages[first:])
         completion = self.ctx.call(
             self.prompt, messages, None, node=node, tools=specs, input_hash=input_hash
         )

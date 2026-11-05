@@ -52,7 +52,6 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-import yaml
 from langgraph.runtime import RunControl
 from openinference.semconv.trace import OpenInferenceSpanKindValues
 from pydantic import BaseModel, ValidationError
@@ -94,6 +93,7 @@ from bidwright.research.pack import (
     load_pack,
     pack_keywords,
     packs_root,
+    read_manifest,
 )
 from bidwright.research.provider import ResearchProvider
 from bidwright.restricted import RestrictedNames
@@ -284,9 +284,9 @@ def _stored_manifest(folder: Path) -> PackManifest | None:
     if not path.is_file():
         return None
     try:
-        return PackManifest.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
-    except (yaml.YAMLError, ValidationError) as exc:
-        raise BuildRefused(f"{folder.name}/{PACK_FILE} is not a pack manifest: {exc}") from exc
+        return read_manifest(path)
+    except PackRefused as exc:
+        raise BuildRefused(str(exc)) from exc
 
 
 # --- the run that reads an existing job --------------------------------------------------------

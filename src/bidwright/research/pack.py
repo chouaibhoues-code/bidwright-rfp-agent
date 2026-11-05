@@ -80,7 +80,8 @@ class Pack:
         return self.manifest.domain_id
 
 
-def _manifest(path: Path) -> PackManifest:
+def read_manifest(path: Path) -> PackManifest:
+    """A pack's `pack.yaml`, refused with `PackRefused` when it is not a pack manifest."""
     try:
         return PackManifest.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
     except (OSError, yaml.YAMLError, ValidationError) as exc:
@@ -138,7 +139,7 @@ def load_pack(
     manifest_path = path / PACK_FILE
     if not manifest_path.is_file():
         raise PackRefused(f"{name}: no {PACK_FILE}")
-    manifest = _manifest(manifest_path)
+    manifest = read_manifest(manifest_path)
     unknown = sorted(set(manifest.files) - set(DATA_FILES))
     if unknown:
         raise PackRefused(f"{name}: {PACK_FILE} lists files a pack does not hold: {unknown}")
@@ -202,7 +203,7 @@ def pack_keywords(packs_dir: str | Path) -> dict[str, tuple[Path, list[str]]]:
     """Each pack's folder and keywords, by domain id; two folders holding one domain refuse."""
     found: dict[str, tuple[Path, list[str]]] = {}
     for manifest_path in sorted(packs_root(packs_dir).glob(f"*/{PACK_FILE}")):
-        manifest = _manifest(manifest_path)
+        manifest = read_manifest(manifest_path)
         domain = manifest.domain_id
         if domain in found:
             raise PackRefused(
@@ -328,5 +329,6 @@ __all__ = [
     "load_pack",
     "pack_keywords",
     "packs_root",
+    "read_manifest",
     "select_pack",
 ]

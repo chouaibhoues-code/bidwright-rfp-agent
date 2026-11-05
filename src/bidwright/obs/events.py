@@ -12,6 +12,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
+from bidwright.fileio import read_lines
 from bidwright.schemas import Attribution, EventKind, EventRecord
 
 
@@ -56,11 +57,7 @@ class EventRecorder:
 
 def read_events(path: Path) -> list[EventRecord]:
     """The log's rows; a last line that a kill cut short is skipped, as in the ledger."""
-    if not path.exists():
-        return []
-    data = path.read_bytes()
-    whole = data[: data.rfind(b"\n") + 1].decode("utf-8")
-    return [EventRecord.model_validate_json(line) for line in whole.splitlines() if line.strip()]
+    return [EventRecord.model_validate_json(line) for line in read_lines(path)]
 
 
 __all__ = ["EventRecorder", "read_events", "utc_now"]
