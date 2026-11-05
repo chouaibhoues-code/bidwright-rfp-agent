@@ -29,6 +29,7 @@ from bidwright.ingest import display_text
 from bidwright.llm.client import Completion, LLMClient
 from bidwright.llm.schema import sha256_of
 from bidwright.llm.types import Message
+from bidwright.obs.ledger import LedgerFile
 from bidwright.obs.tracing import Tracing, maybe_span, record_llm, set_attribute
 from bidwright.prompts import Prompt
 from bidwright.schemas import (
@@ -101,6 +102,9 @@ class RunContext:
     tracing: Tracing | None = None
     view: TextView | None = None  # the run's text view (D-05); None is the frozen text
     repeat: int = 0  # the repeat index every call passes, so repeats never share a cassette
+    # The run's ledger.jsonl (ADR-031); without one, as in the test doubles and gen_docs.py,
+    # the ledger is kept in memory only.
+    ledger_file: LedgerFile | None = None
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
     def __post_init__(self) -> None:
@@ -110,6 +114,8 @@ class RunContext:
     def record(self, entry: LedgerEntry) -> None:
         with self._lock:
             self.ledger.append(entry)
+            if self.ledger_file is not None:
+                self.ledger_file.append(entry)
             self.budget.record(entry)
 
     def span(self, name: str, kind: OpenInferenceSpanKindValues, **attributes: Any) -> Any:

@@ -3,6 +3,13 @@
 The key covers the prompt text's hash, the schema hash, the tool definitions' hash, the
 model, the decoding and thinking settings, the input's hash taken before delimiters are
 inserted, and the repeat index. Delimiter tags are seeded per run, so they never enter it.
+
+The same store holds the test cassettes, the response cache (`llm/cache.py`) and, from
+Iteration 2, each run's journal (ADR-031). Each entry is written whole through
+`fileio.write_atomic`. An entry keeps the backend's native turn when the response has one, such
+as Gemini's `types.Content` with its thought signatures, dumped to JSON without its unset
+fields; `load` returns it as a dict, which the Gemini adapter validates back into its type, and
+an entry written without one loads as before. The native turn is not part of the key.
 """
 
 import json
@@ -10,6 +17,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from pydantic import BaseModel
+
+from bidwright.fileio import write_atomic
 from bidwright.llm.schema import sha256_of
 from bidwright.llm.types import Response, ToolCall, Usage
 
@@ -55,23 +65,35 @@ class CassetteStore:
             text=body["text"],
             tool_calls=tuple(ToolCall(**call) for call in body["tool_calls"]),
             usage=Usage(**body["usage"]),
+            native=body.get("native"),
         )
 
     def save(self, key: str, meta: dict[str, Any], response: Response) -> None:
-        self.root.mkdir(parents=True, exist_ok=True)
+        body: dict[str, Any] = {
+            "text": response.text,
+            "tool_calls": [
+                {"id": c.id, "name": c.name, "arguments": c.arguments} for c in response.tool_calls
+            ],
+            "usage": response.usage.__dict__,
+        }
+        native = _native(response.native)
+        if native is not None:
+            body["native"] = native
         record = {
             "key": key,
             **meta,
-            "response": {
-                "text": response.text,
-                "tool_calls": [
-                    {"id": c.id, "name": c.name, "arguments": c.arguments}
-                    for c in response.tool_calls
-                ],
-                "usage": response.usage.__dict__,
-            },
+            "response": body,
             "recorded": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
-        self._path(key).write_text(
-            json.dumps(record, ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n"
-        )
+        write_atomic(self._path(key), json.dumps(record, ensure_ascii=False, indent=1) + "\n")
+
+
+def _native(native: Any) -> Any:
+    """A native turn as JSON. A Pydantic model, such as Gemini's `types.Content`, is dumped
+    without its unset fields, and its bytes, such as thought signatures, as base64; a turn read
+    back from a store is a dict already."""
+    if native is None or isinstance(native, dict):
+        return native
+    if isinstance(native, BaseModel):
+        return native.model_dump(mode="json", exclude_none=True)
+    raise TypeError(f"a native turn is a Pydantic model or a dict, not {type(native).__name__}")

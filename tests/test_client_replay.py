@@ -108,3 +108,33 @@ def test_bad_decoding_settings_are_rejected(decoding: dict[str, dict[str, object
     client = LLMClient(load_config(), "free", {"gemini": FakeBackend()})
     with pytest.raises(ValueError):
         client.complete("reason", MESSAGES, ExtractResult, **CALL, decoding=decoding)
+
+
+def test_a_resume_finds_the_answer_the_fallback_gave(tmp_path: Path) -> None:
+    """A spent quota moved the call to the fallback model, so its answer sits under the
+    fallback's key; a resume looks under every model of the role and pays for neither."""
+    journal = CassetteStore(tmp_path / "journal")
+    config = load_config()
+    spent = ProviderSimulator(FakeBackend(), [{"call": 1, "fault": "quota_exhausted"}])
+    first = LLMClient(config, "free", {"gemini": spent}, journal=journal)
+    answered = first.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert answered.model == "gemini-3.1-flash-lite" and not answered.replayed
+    backend = FakeBackend()
+    resumed = LLMClient(config, "free", {"gemini": backend}, journal=journal, journal_read=True)
+    again = resumed.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert again.replayed and again.model == "gemini-3.1-flash-lite"
+    assert again.text == answered.text and backend.requests == []
+
+
+def test_the_journal_is_not_written_in_record_or_replay_mode(tmp_path: Path) -> None:
+    """Only a live run's answers are journaled: `record` writes cassettes, and `replay` reads
+    them."""
+    journal, store = CassetteStore(tmp_path / "journal"), CassetteStore(tmp_path / "cassettes")
+    config = load_config()
+    recorder = LLMClient(
+        config, "free", {"gemini": FakeBackend()}, mode="record", cassettes=store, journal=journal
+    )
+    recorder.complete("extract", MESSAGES, ExtractResult, **CALL)
+    replay = LLMClient(config, "free", mode="replay", cassettes=store, journal=journal)
+    replay.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert not journal.root.exists()

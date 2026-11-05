@@ -1,8 +1,10 @@
 """Gemini through the native `google-genai` SDK (ADR-001).
 
 Gemini 3 function calling needs the model's turn sent back unchanged, with its thought
-signatures, so each response keeps the model's `Content` as `Response.native`. The native
-usage metadata is also the documented source of cached and thinking token counts.
+signatures, so each response keeps the model's `Content` as `Response.native`. A turn read back
+from a run's journal or a cassette arrives as a dict, its JSON dump, and is validated back into
+a `Content` with its signatures intact (ADR-031). The native usage metadata is also the
+documented source of cached and thinking token counts.
 """
 
 import json
@@ -77,6 +79,9 @@ class GenaiBackend:
 
 
 def _content(message: Message) -> types.Content:
+    if isinstance(message.native, dict):
+        # A turn read back from the run's journal or a cassette, which keep it as JSON.
+        return types.Content.model_validate(message.native)
     if message.native is not None:
         return message.native
     if message.role == "tool":

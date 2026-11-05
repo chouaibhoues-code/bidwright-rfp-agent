@@ -1,7 +1,7 @@
 """Render a run's records into its outputs, all labeled `UNREVIEWED_DRAFT`.
 
 `render` is the only writer of `solution_summary.md` and `.json`, `proposal.md`,
-`run_manifest.json`, `ledger.jsonl`, and from Iteration 1 `compliance_matrix.xlsx` and `.csv`
+`run_manifest.json`, and from Iteration 1 `compliance_matrix.xlsx` and `.csv`
 (`render_xlsx.py`), `clarification_questions.md`, `submission_checklist.md` and
 `review/quarantine.md`. Every record is validated against its schema first, and a schema
 failure in any list blocks all output. The summary lists hazards first, then the rest of the
@@ -32,7 +32,6 @@ from bidwright.schemas import (
     ControlRegister,
     CoverageReport,
     Discrepancy,
-    LedgerEntry,
     LintFinding,
     OpenQuestion,
     Passage,
@@ -336,11 +335,10 @@ def proposal_markdown(records: RunRecords) -> str:
     return "\n".join(lines)
 
 
-def write_manifest(run_dir: Path, manifest: RunManifest, ledger: Sequence[LedgerEntry]) -> None:
-    """Also used when a run stops early, so a failed run still leaves its manifest and ledger."""
+def write_manifest(run_dir: Path, manifest: RunManifest) -> None:
+    """Also used when a run stops early, so a failed run still leaves its manifest. The ledger
+    is `LedgerFile`'s, appended as each call finishes (ADR-031)."""
     run_dir.mkdir(parents=True, exist_ok=True)
-    body = "".join(entry.model_dump_json() + "\n" for entry in ledger)
-    (run_dir / "ledger.jsonl").write_text(body, encoding="utf-8", newline="\n")
     (run_dir / "run_manifest.json").write_text(
         manifest.model_dump_json(indent=1) + "\n", encoding="utf-8", newline="\n"
     )

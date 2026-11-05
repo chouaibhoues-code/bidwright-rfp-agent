@@ -12,8 +12,9 @@ back to `extract` as gap packs, and `verify` runs again over every outcome.
 
 The SQLite checkpointer keeps each step's state in the run folder. The LLM client, budget,
 prompts and search index stay outside the state, in `Runtime`, so a checkpoint holds plain data
-only. Each node writes its own files; `render` writes the summary, the proposal pack files, the
-manifest and the ledger.
+only. Each node writes its own files; `render` writes the summary, the proposal pack files and
+the manifest. The run's `ledger.jsonl` gains each entry as its call finishes, and a live run's
+answers go to its journal (ADR-031), so a killed run keeps both.
 
 Before the run folder exists, `execute` checks the run's outbound channels against the egress
 register (D-05): the backends of the profile's providers, which are the only backends the client
@@ -73,12 +74,12 @@ from bidwright.harness.gateway import ToolGateway
 from bidwright.harness.view import TextView
 from bidwright.ingest import doc_id_for, ingest_package
 from bidwright.lint import run_lint, write_lint
-from bidwright.llm.cache import response_cache
+from bidwright.llm.cache import response_cache, run_journal
 from bidwright.llm.client import LLMClient, Mode
 from bidwright.llm.limits import Limiter, tier_for
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Backend, LLMError, QuotaExhausted
-from bidwright.obs.ledger import models_used, totals_of
+from bidwright.obs.ledger import LedgerFile, models_used, totals_of
 from bidwright.obs.tracing import Tracing, maybe_span, set_attribute, trace_endpoint
 from bidwright.parsers.docling_client import CASSETTES as DOCLING_CASSETTES
 from bidwright.parsers.docling_client import DoclingClient, DoclingError
@@ -113,6 +114,7 @@ from bidwright.schemas import (
     DocumentHash,
     DuplicatePair,
     ExtractItem,
+    LedgerEntry,
     LintFinding,
     OpenQuestion,
     Passage,
@@ -947,6 +949,8 @@ def execute(
         run_id = f"{started:%Y%m%dT%H%M%SZ}-{package_id}-{profile}{suffix}"
     run_dir = outputs / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    ledger_file = LedgerFile(run_dir / "ledger.jsonl")
+    ledger_file.create()
     client = LLMClient(
         config,
         profile,
@@ -956,6 +960,8 @@ def execute(
         run_id=run_id,
         limiter=Limiter(config.limits, tier_for(profile)) if mode != "replay" else None,
         cache=response_cache() if cache and mode == "live" else None,
+        # A fresh run only writes its journal; a resume reads it (ADR-031).
+        journal=run_journal(run_dir) if mode == "live" else None,
         fallback=fallback,
     )
     budget = RunBudget(config.limits.run(limits or preflight.tier, profile))
@@ -965,7 +971,17 @@ def execute(
         None if refused else endpoint,
         os.environ.get("PHOENIX_API_KEY") or None,
     )
-    ctx = RunContext(run_id, client, budget, prompts, {}, tracing=tracing, view=view, repeat=repeat)
+    ctx = RunContext(
+        run_id,
+        client,
+        budget,
+        prompts,
+        {},
+        tracing=tracing,
+        view=view,
+        repeat=repeat,
+        ledger_file=ledger_file,
+    )
     rt = Runtime(
         ctx=ctx,
         config=config,
@@ -1030,12 +1046,13 @@ def execute(
             hashes = {
                 document.path.name: f"sha256:{document.sha256}" for document in preflight.documents
             } or {source.name: _file_hash(source)}
+            entries = _ledger_entries(ledger_file, ctx.ledger)
             manifest = RunManifest(
                 run_id=run_id,
                 commit=_commit(),
                 profile=profile,
                 models={role: rc.model for role, rc in config.models.profiles[profile].items()},
-                models_used=models_used(ctx.ledger),
+                models_used=models_used(entries),
                 prompt_hashes={name: prompt.hash for name, prompt in prompts.items()},
                 input_hashes=hashes,
                 started=started,
@@ -1043,10 +1060,20 @@ def execute(
                 status=status,
                 status_reason=reason,
                 overrides=overrides,
-                totals=totals_of(ctx.ledger, budget.active_seconds),
+                totals=totals_of(entries, budget.active_seconds),
                 documents=_documents(preflight, preflight.data_class),
                 data_class=preflight.data_class,
                 refused_destinations=refused,
             )
-            write_manifest(run_dir, manifest, ctx.ledger)
+            write_manifest(run_dir, manifest)
     return RunResult(run_id, run_dir, status, reason)
+
+
+def _ledger_entries(ledger_file: LedgerFile, kept: list[LedgerEntry]) -> list[LedgerEntry]:
+    """The entries `ledger.jsonl` holds, which the manifest's totals come from. If the file
+    cannot be read, the entries this process kept in memory stand in: the manifest is written
+    whatever happened."""
+    try:
+        return ledger_file.load()
+    except (OSError, ValueError):
+        return list(kept)

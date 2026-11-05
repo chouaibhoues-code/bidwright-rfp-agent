@@ -3,6 +3,11 @@
 The run manifest's `totals` are computed here from the same entries that `ledger.jsonl`
 holds, so the two always agree. Cost is real spend on paid calls only; the shadow cost
 prices every call at the paid list rate of the role's shadow model.
+
+From Iteration 2 (ADR-031), `LedgerFile` appends each entry to `ledger.jsonl` as its call
+finishes, so a killed run keeps its ledger. A kill can cut the last line short of its newline;
+`read_ledger` and `LedgerFile.load` skip such a line, and `repair` cuts it off before a resumed
+run appends.
 """
 
 from collections.abc import Sequence
@@ -33,5 +38,48 @@ def models_used(ledger: Sequence[LedgerEntry]) -> dict[str, list[str]]:
 
 
 def read_ledger(path: Path) -> list[LedgerEntry]:
-    lines = path.read_text(encoding="utf-8").splitlines()
-    return [LedgerEntry.model_validate_json(line) for line in lines if line.strip()]
+    """The entries of a ledger file, without a last line that a kill cut short."""
+    data = path.read_bytes()
+    whole = data[: _complete(data)].decode("utf-8")
+    return [LedgerEntry.model_validate_json(line) for line in whole.splitlines() if line.strip()]
+
+
+def _complete(data: bytes) -> int:
+    """How many bytes of `data` end at a newline: everything after the last one is a line that
+    was never finished."""
+    return data.rfind(b"\n") + 1
+
+
+class LedgerFile:
+    """A run's `ledger.jsonl`, written one line per finished call. `RunContext` appends under
+    its thread lock, so the `Send` workers' lines never interleave."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+    def create(self) -> None:
+        """An empty ledger, written when a run starts."""
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text("", encoding="utf-8", newline="\n")
+
+    def repair(self) -> str:
+        """Cut a last line that a kill left without its newline, and return the text cut."""
+        data = self.path.read_bytes()
+        end = _complete(data)
+        if end == len(data):
+            return ""
+        with self.path.open("r+b") as stream:
+            stream.truncate(end)
+        return data[end:].decode("utf-8", errors="replace")
+
+    def append(self, entry: LedgerEntry) -> None:
+        """Write one entry as one line, flushed before the call that made it returns."""
+        with self.path.open("a", encoding="utf-8", newline="\n") as stream:
+            stream.write(entry.model_dump_json() + "\n")
+            stream.flush()
+
+    def load(self) -> list[LedgerEntry]:
+        return read_ledger(self.path)
+
+
+__all__ = ["LedgerFile", "models_used", "read_ledger", "totals_of"]

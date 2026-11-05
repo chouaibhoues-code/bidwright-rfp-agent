@@ -1,6 +1,7 @@
 """Offline checks that each provider adapter maps the provider's fields as documented."""
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -15,12 +16,14 @@ from openai.types.completion_usage import CompletionTokensDetails, PromptTokensD
 from bidwright.llm.genai import GenaiBackend, _content, _response, _translate
 from bidwright.llm.ollama import TRUNCATION_MARGIN, OllamaBackend
 from bidwright.llm.openai_compat import _usage
+from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import (
     Message,
     ProviderError,
     QuotaExhausted,
     RateLimited,
     Request,
+    Response,
     ToolCall,
     TransientError,
     Usage,
@@ -65,6 +68,41 @@ def test_genai_sends_the_model_turn_back_unchanged() -> None:
     native = types.Content(role="model", parts=[signed])
     message = Message("assistant", tool_calls=(ToolCall("call_0", "date_calc", {}),), native=native)
     assert _content(message) is native
+
+
+def test_genai_a_journaled_turn_goes_back_with_its_thought_signatures(tmp_path: Path) -> None:
+    """A resume sends the turn the journal kept: dumped without its unset fields, it is read
+    back as a dict and validated into the same `Content`, its signatures byte for byte."""
+    signature = bytes(range(256)) + b"\x00 signature"
+    turn = types.Content(
+        role="model",
+        parts=[
+            types.Part(text="Checking the deadline.", thought=True, thought_signature=signature),
+            types.Part(
+                function_call=types.FunctionCall(name="date_calc", args={"op": "weekday"}),
+                thought_signature=signature,
+            ),
+        ],
+    )
+    call = ToolCall("call_0", "date_calc", {"op": "weekday"})
+    store = CassetteStore(tmp_path)
+    store.save("sha256:ab", {}, Response(text="", tool_calls=(call,), native=turn))
+    stored = json.loads((tmp_path / "ab.json").read_text(encoding="utf-8"))["response"]["native"]
+    assert "null" not in json.dumps(stored), "unset fields are left out"
+    loaded = store.load("sha256:ab")
+    assert loaded is not None and isinstance(loaded.native, dict)
+    sent = _content(Message("assistant", tool_calls=loaded.tool_calls, native=loaded.native))
+    assert sent == turn
+    assert [part.thought_signature for part in sent.parts or []] == [signature, signature]
+
+
+def test_an_entry_without_a_native_turn_loads_as_before(tmp_path: Path) -> None:
+    store = CassetteStore(tmp_path)
+    store.save("sha256:cd", {}, Response(text='{"risks": []}'))
+    stored = json.loads((tmp_path / "cd.json").read_text(encoding="utf-8"))["response"]
+    assert "native" not in stored
+    loaded = store.load("sha256:cd")
+    assert loaded is not None and loaded.native is None and loaded.text == '{"risks": []}'
 
 
 def test_genai_tool_results_become_function_responses() -> None:

@@ -21,7 +21,6 @@ same `QuotaExhausted`, decides (ADR-029). The per-minute limits always apply.
 
 import json
 import math
-import os
 import threading
 import time
 from collections import deque
@@ -31,6 +30,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from bidwright.config import LimitsConfig, ModelQuota
+from bidwright.fileio import write_atomic
 from bidwright.llm.types import QuotaExhausted
 from bidwright.preflight import HOME
 
@@ -151,10 +151,7 @@ def _read(path: Path) -> int:
 
 def _write(path: Path, body: dict[str, object]) -> None:
     """The count, written whole, so a reader never sees half a file."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    staged = path.with_suffix(".tmp")
-    staged.write_text(json.dumps(body) + "\n", encoding="utf-8", newline="\n")
-    os.replace(staged, path)
+    write_atomic(path, json.dumps(body) + "\n")
 
 
 __all__ = ["QUOTA_DIR", "Limiter", "daily_allowance", "tier_for"]

@@ -18,6 +18,12 @@ and raises `QuotaExhausted` on a spent daily allowance, which moves the call to 
 model. The response cache (`llm/cache.py`) is read before a live attempt and written after one;
 a hit is reported as replayed and skips the budget's attempt count and the limiter. Both apply
 to provider attempts only: a replayed call never reaches them, and `record` ignores the cache.
+
+The run's journal (Iteration 2, ADR-031) is a cassette store in the run folder. In `live` mode
+every answer that parses is saved to it, a cache hit included, whatever the cache's setting.
+With `journal_read`, which a resume turns on, a call is looked up in the journal under every
+model of its role, primary first, before any attempt, so a call the fallback answered is not
+paid again; a hit is reported as replayed, at no cost and with no budget attempt.
 """
 
 import os
@@ -105,6 +111,8 @@ class LLMClient:
         before_attempt: Callable[[], None] | None = None,
         limiter: Limiter | None = None,
         cache: CassetteStore | None = None,
+        journal: CassetteStore | None = None,
+        journal_read: bool = False,
         fallback: bool = True,
         sleep: Callable[[float], None] = time.sleep,
         rng: Callable[[], float] = random.random,
@@ -123,6 +131,8 @@ class LLMClient:
         self.before_attempt = before_attempt
         self.limiter = limiter
         self.cache = cache
+        self.journal = journal
+        self.journal_read = journal_read
         self.fallback = fallback
         self._sleep = sleep
         self._rng = rng
@@ -155,27 +165,43 @@ class LLMClient:
         settings = _settings(role_config)
         fallback = role_config.fallback if self.fallback else None
         models = [role_config.model] + ([fallback] if fallback else [])
+        schema_hash = sha256_of(schema_json) if schema_json is not None else None
+        timeout_s = self.config.limits.call.timeout_for(self.profile)
+        plans = [
+            (
+                cache_key(
+                    prompt_hash=prompt_hash,
+                    schema_hash=schema_hash,
+                    tools_hash=tools_hash,
+                    model=model,
+                    settings=settings,
+                    input_hash=input_hash,
+                    repeat=repeat,
+                ),
+                Request(
+                    model=model,
+                    messages=tuple(messages),
+                    schema=schema_json,
+                    schema_name=schema.__name__ if schema is not None else None,
+                    tools=tool_specs,
+                    settings=settings,
+                    timeout_s=timeout_s,
+                ),
+            )
+            for model in models
+        ]
+        journaled = self._journaled(plans)
+        if journaled is not None:
+            request, response = journaled
+            completion = _completion(
+                response, schema, 0, role_config.provider, request.model, True, 0
+            )
+            self._report(role, node, agent, completion, None, prompt_hash, input_hash, repeat)
+            return completion
         last_error: LLMError | None = None
         attempts = _Attempts()
-        for model in models:
-            key = cache_key(
-                prompt_hash=prompt_hash,
-                schema_hash=sha256_of(schema_json) if schema_json is not None else None,
-                tools_hash=tools_hash,
-                model=model,
-                settings=settings,
-                input_hash=input_hash,
-                repeat=repeat,
-            )
-            request = Request(
-                model=model,
-                messages=tuple(messages),
-                schema=schema_json,
-                schema_name=schema.__name__ if schema is not None else None,
-                tools=tool_specs,
-                settings=settings,
-                timeout_s=self.config.limits.call.timeout_for(self.profile),
-            )
+        for key, request in plans:
+            model = request.model
             try:
                 response, latency_ms, replayed, backend = self._obtain(
                     role_config, request, key, attempts
@@ -201,21 +227,44 @@ class LLMClient:
                 retries,
                 tuple(attempts.reasons),
             )
-            if (
-                self.mode == "live"
-                and self.cache is not None
-                and not replayed
-                and completion.parse_error is None
-            ):
+            if self.mode == "live" and completion.parse_error is None:
                 # Only an answer that parsed is kept: a malformed one is a fault to retry, not
-                # a result a later run should be handed again.
-                meta = {**_meta(role_config, request), "run_id": self.run_id}
-                self.cache.save(key, meta, response)
+                # a result a later run should be handed again. The journal is written before
+                # the ledger entry, so a kill between the two never makes a resume pay again.
+                self._keep(key, role_config, request, response, from_cache=replayed)
             self._report(role, node, agent, completion, backend, prompt_hash, input_hash, repeat)
             return completion
         if isinstance(last_error, CassetteMissing | QuotaExhausted):
             raise last_error
         raise UnrecoverableFault(f"{role} failed on every model: {last_error}")
+
+    def _journaled(self, plans: Sequence[tuple[str, Request]]) -> tuple[Request, Response] | None:
+        """On a resume, the answer the run's journal holds for this call, under the role's
+        models in order, primary first."""
+        if self.mode != "live" or self.journal is None or not self.journal_read:
+            return None
+        for key, request in plans:
+            response = self.journal.load(key)
+            if response is not None:
+                return request, response
+        return None
+
+    def _keep(
+        self,
+        key: str,
+        role_config: RoleConfig,
+        request: Request,
+        response: Response,
+        *,
+        from_cache: bool,
+    ) -> None:
+        """Save an answer that parsed: to the shared cache when the model gave it, and to the
+        run's journal whatever its source, so the journal holds every answer the run had."""
+        meta = {**_meta(role_config, request), "run_id": self.run_id}
+        if self.cache is not None and not from_cache:
+            self.cache.save(key, meta, response)
+        if self.journal is not None:
+            self.journal.save(key, meta, response)
 
     def _store(self) -> CassetteStore:
         if self.cassettes is None:
