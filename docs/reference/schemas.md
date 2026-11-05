@@ -100,6 +100,8 @@ The assignment's output. Lists hold record ids; the JSON twin adds full records.
 | `risks` | list[str (pattern ^RSK-\d{3}$)] | no | [] |  |
 | `open_questions` | list[OpenQuestion] | no | [] |  |
 | `counts` | dict[str, int] | no | {} |  |
+| `factors` | list[str (pattern ^EF-\d{2}$)] | no | [] |  |
+| `domain_items` | list[str (pattern ^DI-\d{3}$)] | no | [] |  |
 
 ## `ProposalSection`
 
@@ -155,7 +157,7 @@ The assignment's output. Lists hold record ids; the JSON twin adds full records.
 | `shadow_cost_usd` | float (ge 0) | yes |  |  |
 | `replayed` | bool | yes |  |  |
 | `retries` | int (ge 0) | no | 0 |  |
-| `retry_reasons` | list[one of 'rate_limited', 'timeout', 'server_error', 'transport', 'quota'] | no | [] |  |
+| `retry_reasons` | list[one of 'rate_limited', 'timeout', 'server_error', 'transport', 'quota', 'circuit'] | no | [] |  |
 
 ## `RunTotals`
 
@@ -178,6 +180,29 @@ The assignment's output. Lists hold record ids; the JSON twin adds full records.
 | `file` | str | yes |  |  |
 | `sha256` | str | yes |  |  |
 
+## `StatusChange`
+
+One transition of a run's status (Iteration 2).
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `at` | datetime | yes |  |  |
+| `status` | one of 'RUNNING', 'WAITING_HUMAN', 'WAITING_RESEARCH', 'QUOTA_PAUSED', 'STOPPED', 'BUDGET_EXCEEDED', 'COMPLETED', 'DEGRADED', 'POLICY_BLOCKED', 'UNRECOVERABLE_FAULT' | yes |  |  |
+| `reason` | str \| None | no | None |  |
+
+## `ResearchSummary`
+
+The manifest's research block (Iteration 2): what `research.json` holds, in brief.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `mode` | one of 'off', 'pack', 'live' | yes |  |  |
+| `pack_id` | str \| None | no | None |  |
+| `pack_sha256` | str (pattern ^sha256:[0-9a-f]{64}$) \| None | no | None |  |
+| `jobs` | int (ge 0) | no | 0 |  |
+| `questions` | int (ge 0) | no | 0 |  |
+| `notes` | list[str] | no | [] |  |
+
 ## `RunManifest`
 
 | Field | Type | Required | Default | Description |
@@ -198,6 +223,10 @@ The assignment's output. Lists hold record ids; the JSON twin adds full records.
 | `documents` | list[DocumentHash] | no | [] |  |
 | `data_class` | one of 'synthetic', 'client' | no | 'synthetic' |  |
 | `refused_destinations` | list[str] | no | [] |  |
+| `pid` | int \| None | no | None |  |
+| `status_history` | list[StatusChange] | no | [] |  |
+| `run_args` | dict[str, Any] | no | {} |  |
+| `research` | ResearchSummary \| None | no | None |  |
 
 ## `PassageView`
 
@@ -691,12 +720,12 @@ The stored form of `triage.json`.
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `id` | str (pattern ^CQ-\d{3}$) | yes |  |  |
-| `group_id` | str (pattern ^RG-\d{3}$) | yes |  |  |
+| `group_id` | str (pattern ^RG-\d{3}$) \| None | no | None |  |
 | `text` | str | yes |  |  |
 | `requirement_ids` | list[str (pattern ^REQ-\d{4}$)] | no | [] |  |
 | `src_ids` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
 | `lint_finding_ids` | list[str (pattern ^LF-\d{4}$)] | no | [] |  |
-| `origin` | one of 'consolidate', 'lint_template' | yes |  |  |
+| `origin` | one of 'consolidate', 'lint_template', 'brief' | yes |  |  |
 
 ## `LayerTokens`
 
@@ -717,6 +746,7 @@ The stored form of `triage.json`.
 | `context_src_ids` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
 | `terms` | list[str] | no | [] |  |
 | `dropped_src_ids` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
+| `included_record_ids` | list[str] | no | [] |  |
 | `tokens_by_layer` | LayerTokens | no | LayerTokens(rules=0, examples=0, evidence=0, task=0) |  |
 | `budget_tokens` | int (ge 1) | yes |  |  |
 | `utilization` | float (ge 0) | yes |  |  |
@@ -732,3 +762,336 @@ What one LLM call sees. Built in code, never stored as a file.
 | `context` | list[ContextPassageView] | no | [] |  |
 | `terms` | list[TermView] | no | [] |  |
 | `manifest` | ContextManifest | yes |  |  |
+
+## `EvaluationFactorProposal`
+
+One evaluation factor as the model reads it. Code checks the name and the weight against a cited passage and sets the status; the model gives none.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `name` | str | no | '' |  |
+| `weight` | str | no | 'not_stated' |  |
+| `scoring` | str | no | 'not_stated' |  |
+| `src_ids` | list[str] | no | [] |  |
+
+## `BriefItemProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `text` | str | no | '' |  |
+| `src_ids` | list[str] | no | [] |  |
+
+## `BriefSection`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `doc_id` | str | yes |  |  |
+| `section_path` | str | yes |  |  |
+| `passages` | list[PassageView] | no | [] |  |
+
+## `BriefInput`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `sections` | list[BriefSection] | no | [] |  |
+| `profile` | RfpProfile | no | RfpProfile(buyer='not_stated', procurement='not_stated', submission_deadline='not_stated', submission_format='not_stated', evaluation_method='not_stated', contract_length='not_stated') |  |
+| `requirements` | list[RequirementView] | no | [] |  |
+
+## `BriefResult`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `factors` | list[EvaluationFactorProposal] | no | [] |  |
+| `scoring_method` | BriefItemProposal \| None | no | None |  |
+| `needs` | list[BriefItemProposal] | no | [] |  |
+| `scope_in` | list[BriefItemProposal] | no | [] |  |
+| `scope_out` | list[BriefItemProposal] | no | [] |  |
+| `constraints` | list[BriefItemProposal] | no | [] |  |
+| `never` | list[BriefItemProposal] | no | [] |  |
+| `ask` | list[BriefItemProposal] | no | [] |  |
+| `always` | list[BriefItemProposal] | no | [] |  |
+| `topics` | list[str] | no | [] |  |
+
+## `EvaluationFactor`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^EF-\d{2}$) | yes |  |  |
+| `name` | str (min length 1, max length 80) | yes |  |  |
+| `weight` | str (min length 1, max length 20) | yes |  |  |
+| `scoring` | str (min length 1, max length 200) | yes |  |  |
+| `src_ids` | list[str (pattern ^SRC-\d{4}$)] (min length 1, max length 3) | yes |  |  |
+| `status` | one of 'IN_SCOPE', 'OUT_OF_SCOPE' | yes |  |  |
+
+## `BriefItem`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^BI-\d{3}$) | yes |  |  |
+| `text` | str (min length 1, max length 200) | yes |  |  |
+| `src_ids` | list[str (pattern ^SRC-\d{4}$)] (min length 1, max length 3) | yes |  |  |
+
+## `FactorDiscrepancy`
+
+One factor name with two different weights in the RFP (Iteration 2, ADR-036).
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^DS-\d{3}$) | yes |  |  |
+| `kind` | one of 'INCONSISTENT_VALUE' | no | 'INCONSISTENT_VALUE' |  |
+| `state` | one of 'established' | no | 'established' |  |
+| `factor` | str (min length 1) | yes |  |  |
+| `weights` | list[str] (min length 2) | yes |  |  |
+| `src_ids` | list[str (pattern ^SRC-\d{4}$)] (min length 1) | yes |  |  |
+
+## `OpportunityBrief`
+
+The stored form of `brief.json`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `factors` | list[EvaluationFactor] | no | [] |  |
+| `scoring_method` | BriefItem \| None | no | None |  |
+| `needs` | list[BriefItem] | no | [] |  |
+| `scope_in` | list[BriefItem] | no | [] |  |
+| `scope_out` | list[BriefItem] | no | [] |  |
+| `constraints` | list[BriefItem] | no | [] |  |
+| `never` | list[BriefItem] | no | [] |  |
+| `ask` | list[BriefItem] | no | [] |  |
+| `always` | list[BriefItem] | no | [] |  |
+| `topics` | list[str (min length 1, max length 80)] (max length 5) | no | [] |  |
+| `discrepancies` | list[FactorDiscrepancy] | no | [] |  |
+| `questions` | list[ClarificationQuestion] | no | [] |  |
+| `notes` | list[str] | no | [] |  |
+
+## `ListedSource`
+
+One source a research job found, as its `research_status` listing gives it.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `index` | int (ge 0) | yes |  |  |
+| `title` | str | yes |  |  |
+| `url` | str \| None | no | None |  |
+| `type_name` | str | yes |  |  |
+| `cited` | bool | no | False |  |
+
+## `JobStatus`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `state` | one of 'running', 'completed', 'failed' | yes |  |  |
+| `task_id` | str | yes |  |  |
+| `report` | str \| None | no | None |  |
+| `listing` | list[ListedSource] | no | [] |  |
+
+## `Reference`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `source_id` | str | yes |  |  |
+| `citation_number` | int (ge 0) | yes |  |  |
+| `cited_text` | str | yes |  |  |
+
+## `PackSource`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^PS-\d{3}$) | yes |  |  |
+| `provider_source_id` | str | yes |  |  |
+| `url` | str (min length 1) | yes |  |  |
+| `title` | str | yes |  |  |
+| `host` | str (min length 1) | yes |  |  |
+| `tier` | int (ge 1, le 4) | yes |  |  |
+| `retrieved` | date | yes |  |  |
+
+## `PackExcerpt`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^PX-\d{4}$) | yes |  |  |
+| `source_id` | str (pattern ^PS-\d{3}$) | yes |  |  |
+| `text` | str (min length 1, max length 300) | yes |  |  |
+| `quarantined` | bool | no | False |  |
+
+## `PackAnswer`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `question` | str (min length 1) | yes |  |  |
+| `answer` | str (max length 2000) | yes |  |  |
+| `excerpt_ids` | list[str (pattern ^PX-\d{4}$)] | no | [] |  |
+| `quarantined` | bool | no | False |  |
+
+## `AskResult`
+
+What the research provider's `ask` returns, from a research pack or from NotebookLM.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `answer` | str \| None | no | None |  |
+| `excerpts` | list[PackExcerpt] | no | [] |  |
+| `sources` | list[PackSource] | no | [] |  |
+
+## `ExcerptView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str | yes |  |  |
+| `source_title` | str | yes |  |  |
+| `tier` | int | yes |  |  |
+| `text` | str | yes |  |  |
+
+## `AnswerView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `question` | str | yes |  |  |
+| `answer` | str | yes |  |  |
+| `excerpt_ids` | list[str] | no | [] |  |
+
+## `DiscoveryTask`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `topics` | list[str] | no | [] |  |
+| `report` | str \| None | no | None |  |
+| `answers` | list[AnswerView] | no | [] |  |
+| `excerpts` | list[ExcerptView] | no | [] |  |
+| `questions_left` | int | no | 0 |  |
+| `jobs_left` | int | no | 0 |  |
+
+## `DomainItemProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `kind` | one of 'pattern', 'standard', 'pitfall' | no | 'pattern' |  |
+| `statement` | str | no | '' |  |
+| `excerpt_ids` | list[str] | no | [] |  |
+
+## `DomainNeedProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need` | str | no | '' |  |
+| `excerpt_ids` | list[str] | no | [] |  |
+
+## `DiscoveryExtract`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `summary` | str | no | '' |  |
+| `items` | list[DomainItemProposal] | no | [] |  |
+| `needs` | list[DomainNeedProposal] | no | [] |  |
+| `open_questions` | list[str] | no | [] |  |
+
+## `DomainItem`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^DI-\d{3}$) | yes |  |  |
+| `kind` | one of 'pattern', 'standard', 'pitfall' | yes |  |  |
+| `statement` | str (min length 1, max length 300) | yes |  |  |
+| `excerpt_ids` | list[str (pattern ^PX-\d{4}$)] (min length 1, max length 3) | yes |  |  |
+
+## `DomainNeed`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^DN-\d{3}$) | yes |  |  |
+| `need` | str (min length 1, max length 200) | yes |  |  |
+| `excerpt_ids` | list[str (pattern ^PX-\d{4}$)] (min length 1, max length 3) | yes |  |  |
+
+## `DomainBrief`
+
+The stored form of `domain_brief.json`. Never promoted to capability evidence.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `domain_id` | str \| None | no | None |  |
+| `mode` | one of 'pack', 'live' | yes |  |  |
+| `summary` | str (max length 1200) | no | '' |  |
+| `items` | list[DomainItem] | no | [] |  |
+| `needs` | list[DomainNeed] | no | [] |  |
+| `open_questions` | list[str] (max length 5) | no | [] |  |
+| `evidence_class` | one of 'EXTERNAL_RESEARCH' | no | 'EXTERNAL_RESEARCH' |  |
+
+## `ResearchJob`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `label` | str (pattern ^J\d+$) | yes |  |  |
+| `notebook_id` | str | yes |  |  |
+| `task_id` | str | yes |  |  |
+| `query` | str | yes |  |  |
+| `query_sha256` | str (pattern ^sha256:[0-9a-f]{64}$) | yes |  |  |
+| `state` | one of 'running', 'completed', 'failed', 'timed_out' | yes |  |  |
+| `started` | datetime | yes |  |  |
+| `waited_seconds` | float (ge 0) | no | 0.0 |  |
+
+## `ResearchRecord`
+
+The stored form of `research.json`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `mode` | one of 'off', 'pack', 'live' | yes |  |  |
+| `pack_id` | str \| None | no | None |  |
+| `pack_sha256` | str (pattern ^sha256:[0-9a-f]{64}$) \| None | no | None |  |
+| `notebooks` | list[str] | no | [] |  |
+| `jobs` | list[ResearchJob] | no | [] |  |
+| `answers` | list[PackAnswer] | no | [] |  |
+| `excerpts` | list[PackExcerpt] | no | [] |  |
+| `sources` | list[PackSource] | no | [] |  |
+| `tool_calls` | int (ge 0) | no | 0 |  |
+| `notes` | list[str] | no | [] |  |
+
+## `PackManifest`
+
+The stored form of a research pack's `pack.yaml`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `domain_id` | str (pattern ^[a-z0-9][a-z0-9-]*$) | yes |  |  |
+| `title` | str (min length 1) | yes |  |  |
+| `version` | int (ge 1) | yes |  |  |
+| `created` | date | yes |  |  |
+| `keywords` | list[str] (min length 2) | yes |  |  |
+| `topics` | list[str] | no | [] |  |
+| `files` | dict[str, str (pattern ^sha256:[0-9a-f]{64}$)] | yes |  |  |
+| `counts` | dict[str, int] | no | {} |  |
+
+## `EventRecord`
+
+One line of `events.jsonl`. `part` is the run's resume count.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `at` | datetime | yes |  |  |
+| `part` | int (ge 0) | no | 0 |  |
+| `kind` | one of 'status', 'gateway', 'recovery', 'research', 'security' | yes |  |  |
+| `node` | str \| None | no | None |  |
+| `detail` | str | yes |  |  |
+| `attribution` | one of 'injection-dominant', 'authorization-dominant', 'combined', 'indeterminate' \| None | no | None |  |
+
+## `DeadLetter`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^DL-\d{3}$) | yes |  |  |
+| `node` | str | yes |  |  |
+| `call_id` | str | yes |  |  |
+| `reason` | str | yes |  |  |
+| `attempts` | int (ge 1) | yes |  |  |
+| `manifest` | str \| None | no | None |  |
+
+## `BudgetSnapshot`
+
+The stored form of `control/budget.json`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `attempts` | int (ge 0) | yes |  |  |
+| `tokens` | int (ge 0) | yes |  |  |
+| `active_seconds` | float (ge 0) | yes |  |  |
+| `raise_percent` | int (ge 0) | no | 0 |  |

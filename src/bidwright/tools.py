@@ -10,7 +10,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -28,6 +28,26 @@ class SearchArgs(BaseModel):
 
     query: str = Field(min_length=1, max_length=200, description="Plain search words.")
     k: int = Field(default=5, ge=1, le=MAX_K, description="How many passages to return, 1 to 8.")
+
+
+class StartResearchArgs(BaseModel):
+    """`start_research` (Iteration 2): the model plans the question; code builds the query
+    from the research envelope and binds the notebook, so no notebook appears here (G2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(min_length=1, max_length=300, description="What to research.")
+    topics: list[Annotated[str, Field(min_length=1, max_length=80)]] = Field(
+        min_length=1, max_length=5, description="The brief's topics the question covers."
+    )
+
+
+class AskResearchArgs(BaseModel):
+    """`ask_research` (Iteration 2): one stand-alone question for the bound notebook or pack."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(min_length=1, max_length=300, description="One stand-alone question.")
 
 
 class DateArgs(BaseModel):

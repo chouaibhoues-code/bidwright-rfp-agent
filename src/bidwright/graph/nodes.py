@@ -326,7 +326,11 @@ def _second_pass(
     if not ids:
         return
     rendered = prompt.render(data, run_id=ctx.run_id, task="second_pass", ids=json.dumps(ids))
-    pack_hash = sha256_of(pack.model_dump(mode="json"))
+    # The key predates the manifest's `included_record_ids` (Iteration 2), which an extract
+    # pack always leaves empty; leaving it out keeps every recorded key as it was (S-10).
+    pack_hash = sha256_of(
+        pack.model_dump(mode="json", exclude={"manifest": {"included_record_ids"}})
+    )
     result, _ = ctx.structured(
         prompt,
         rendered.messages,

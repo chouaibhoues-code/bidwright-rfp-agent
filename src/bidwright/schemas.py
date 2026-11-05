@@ -10,10 +10,15 @@ Field order in model-facing models is deliberate: the quote comes before the lab
 Iteration 1 adds the guard, ingest, candidate, triage, coverage, lint, consolidation and
 context models of its design document (section 5.1). Every field it adds to a `v0.0` record
 has a default, so records written by `v0.0` stay valid until the step that fills the field.
+
+Iteration 2 adds the brief, research and control models of its design document (section 5.1),
+under the same rule. Its model-facing models carry types only, with every list defaulting to
+empty: code enforces each length and count per item, as ADR-024 settled for `ExtractItem`, so
+one long item never fails a whole call. Stored records carry the limits as constraints.
 """
 
 from collections.abc import Callable
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
 from pydantic import (
@@ -129,7 +134,13 @@ ContractCategory = Literal[
 ]
 DiscrepancyKind = Literal["CONFLICT", "INCONSISTENT_VALUE", "SUPERSEDED"]
 DiscrepancyState = Literal["conditional", "established"]
-QuestionOrigin = Literal["consolidate", "lint_template"]
+QuestionOrigin = Literal["consolidate", "lint_template", "brief"]
+FactorStatus = Literal["IN_SCOPE", "OUT_OF_SCOPE"]
+ResearchModeName = Literal["off", "pack", "live"]
+DomainKind = Literal["pattern", "standard", "pitfall"]
+JobState = Literal["running", "completed", "failed", "timed_out"]
+EventKind = Literal["status", "gateway", "recovery", "research", "security"]
+Attribution = Literal["injection-dominant", "authorization-dominant", "combined", "indeterminate"]
 
 SrcId = Annotated[str, Field(pattern=r"^SRC-\d{4}$")]
 ReqId = Annotated[str, Field(pattern=r"^REQ-\d{4}$")]
@@ -142,6 +153,15 @@ FlagId = Annotated[str, Field(pattern=r"^CF-\d{3}$")]
 GroupId = Annotated[str, Field(pattern=r"^RG-\d{3}$")]
 DiscrepancyId = Annotated[str, Field(pattern=r"^DS-\d{3}$")]
 QuestionId = Annotated[str, Field(pattern=r"^CQ-\d{3}$")]
+FactorId = Annotated[str, Field(pattern=r"^EF-\d{2}$")]
+BriefItemId = Annotated[str, Field(pattern=r"^BI-\d{3}$")]
+PackSourceId = Annotated[str, Field(pattern=r"^PS-\d{3}$")]
+ExcerptId = Annotated[str, Field(pattern=r"^PX-\d{4}$")]
+DomainItemId = Annotated[str, Field(pattern=r"^DI-\d{3}$")]
+DomainNeedId = Annotated[str, Field(pattern=r"^DN-\d{3}$")]
+DeadLetterId = Annotated[str, Field(pattern=r"^DL-\d{3}$")]
+JobLabel = Annotated[str, Field(pattern=r"^J\d+$")]
+Sha256 = Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")]
 
 QUOTE_MAX_CHARS = 300
 DEFINITION_MAX_CHARS = 300
@@ -264,6 +284,8 @@ class SolutionSummary(Record):
     risks: list[RiskId] = Field(default_factory=list)
     open_questions: list[OpenQuestion] = Field(default_factory=list)
     counts: dict[str, int] = Field(default_factory=dict)
+    factors: list[FactorId] = Field(default_factory=list)  # Iteration 2: the brief's factors
+    domain_items: list[DomainItemId] = Field(default_factory=list)  # the research appendix
 
 
 class ProposalSection(Record):
@@ -290,7 +312,7 @@ class ToolResult(Record):
 
 # Why one provider attempt failed: a 429, a timeout, a 5xx, a connection failure, or a spent
 # daily quota that moved the call to its fallback model.
-RetryReason = Literal["rate_limited", "timeout", "server_error", "transport", "quota"]
+RetryReason = Literal["rate_limited", "timeout", "server_error", "transport", "quota", "circuit"]
 
 
 class LedgerEntry(Record):
@@ -336,6 +358,25 @@ class DocumentHash(Record):
     sha256: str
 
 
+class StatusChange(Record):
+    """One transition of a run's status (Iteration 2)."""
+
+    at: datetime
+    status: RunStatus
+    reason: str | None = None
+
+
+class ResearchSummary(Record):
+    """The manifest's research block (Iteration 2): what `research.json` holds, in brief."""
+
+    mode: ResearchModeName
+    pack_id: str | None = None
+    pack_sha256: Sha256 | None = None
+    jobs: int = Field(default=0, ge=0)
+    questions: int = Field(default=0, ge=0)
+    notes: list[str] = Field(default_factory=list)
+
+
 class RunManifest(Record):
     run_id: str
     commit: str
@@ -353,6 +394,12 @@ class RunManifest(Record):
     documents: list[DocumentHash] = Field(default_factory=list)
     data_class: DataClass = "synthetic"  # D-05
     refused_destinations: list[str] = Field(default_factory=list)  # D-05
+    # Iteration 2 (ADR-031): the process that runs it, for information only; every status it
+    # has had; the arguments a resume calls `execute` with; and its research.
+    pid: int | None = None
+    status_history: list[StatusChange] = Field(default_factory=list)
+    run_args: dict[str, Any] = Field(default_factory=dict)
+    research: ResearchSummary | None = None
 
 
 # --- Model-facing requests and responses ----------------------------------------------
@@ -790,7 +837,7 @@ class Discrepancy(Record):
 
 class ClarificationQuestion(Record):
     id: QuestionId
-    group_id: GroupId
+    group_id: GroupId | None = None  # None for the brief's questions, which have no group
     text: str
     requirement_ids: list[ReqId] = Field(default_factory=list)
     src_ids: list[SrcId] = Field(default_factory=list)  # resolved by code
@@ -815,6 +862,8 @@ class ContextManifest(Record):
     context_src_ids: list[SrcId] = Field(default_factory=list)
     terms: list[str] = Field(default_factory=list)
     dropped_src_ids: list[SrcId] = Field(default_factory=list)  # always empty: overflow splits
+    # Iteration 2: the records or excerpts a call was given, when its evidence is not passages.
+    included_record_ids: list[str] = Field(default_factory=list)
     tokens_by_layer: LayerTokens = Field(default_factory=LayerTokens)
     budget_tokens: int = Field(ge=1)
     utilization: float = Field(ge=0)
@@ -828,3 +877,307 @@ class ContextPack(Record):
     context: list[ContextPassageView] = Field(default_factory=list)
     terms: list[TermView] = Field(default_factory=list)
     manifest: ContextManifest
+
+
+# --- Iteration 2: the brief ------------------------------------------------------------------
+
+NOT_STATED = "not_stated"
+FACTOR_NAME_MAX_CHARS = 80
+FACTOR_WEIGHT_MAX_CHARS = 20
+FACTOR_SCORING_MAX_CHARS = 200
+BRIEF_ITEM_MAX_CHARS = 200
+TOPICS_MAX = 5
+TOPIC_MAX_CHARS = 80
+
+
+class EvaluationFactorProposal(Facing):
+    """One evaluation factor as the model reads it. Code checks the name and the weight
+    against a cited passage and sets the status; the model gives none."""
+
+    name: str = ""
+    weight: str = NOT_STATED
+    scoring: str = NOT_STATED
+    src_ids: list[str] = Field(default_factory=list)
+
+
+class BriefItemProposal(Facing):
+    text: str = ""
+    src_ids: list[str] = Field(default_factory=list)
+
+
+class BriefSection(Facing):
+    doc_id: str
+    section_path: str
+    passages: list[PassageView] = Field(default_factory=list)
+
+
+class BriefInput(Facing):
+    sections: list[BriefSection] = Field(default_factory=list)
+    profile: RfpProfile = Field(default_factory=RfpProfile)
+    requirements: list[RequirementView] = Field(default_factory=list)
+
+
+class BriefResult(Facing):
+    factors: list[EvaluationFactorProposal] = Field(default_factory=list)
+    scoring_method: BriefItemProposal | None = None
+    needs: list[BriefItemProposal] = Field(default_factory=list)
+    scope_in: list[BriefItemProposal] = Field(default_factory=list)
+    scope_out: list[BriefItemProposal] = Field(default_factory=list)
+    constraints: list[BriefItemProposal] = Field(default_factory=list)
+    never: list[BriefItemProposal] = Field(default_factory=list)
+    ask: list[BriefItemProposal] = Field(default_factory=list)
+    always: list[BriefItemProposal] = Field(default_factory=list)
+    topics: list[str] = Field(default_factory=list)
+
+
+class EvaluationFactor(Record):
+    id: FactorId
+    name: str = Field(min_length=1, max_length=FACTOR_NAME_MAX_CHARS)
+    weight: str = Field(min_length=1, max_length=FACTOR_WEIGHT_MAX_CHARS)
+    scoring: str = Field(min_length=1, max_length=FACTOR_SCORING_MAX_CHARS)
+    src_ids: list[SrcId] = Field(min_length=1, max_length=3)
+    status: FactorStatus
+
+
+class BriefItem(Record):
+    id: BriefItemId
+    text: str = Field(min_length=1, max_length=BRIEF_ITEM_MAX_CHARS)
+    src_ids: list[SrcId] = Field(min_length=1, max_length=3)
+
+
+class FactorDiscrepancy(Record):
+    """One factor name with two different weights in the RFP (Iteration 2, ADR-036)."""
+
+    id: DiscrepancyId
+    kind: Literal["INCONSISTENT_VALUE"] = "INCONSISTENT_VALUE"
+    state: Literal["established"] = "established"
+    factor: str = Field(min_length=1)
+    weights: list[str] = Field(min_length=2)
+    src_ids: list[SrcId] = Field(min_length=1)
+
+
+class OpportunityBrief(Record):
+    """The stored form of `brief.json`."""
+
+    factors: list[EvaluationFactor] = Field(default_factory=list)
+    scoring_method: BriefItem | None = None
+    needs: list[BriefItem] = Field(default_factory=list)
+    scope_in: list[BriefItem] = Field(default_factory=list)
+    scope_out: list[BriefItem] = Field(default_factory=list)
+    constraints: list[BriefItem] = Field(default_factory=list)
+    never: list[BriefItem] = Field(default_factory=list)
+    ask: list[BriefItem] = Field(default_factory=list)
+    always: list[BriefItem] = Field(default_factory=list)
+    topics: list[Annotated[str, Field(min_length=1, max_length=TOPIC_MAX_CHARS)]] = Field(
+        default_factory=list, max_length=TOPICS_MAX
+    )
+    discrepancies: list[FactorDiscrepancy] = Field(default_factory=list)
+    questions: list[ClarificationQuestion] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+# --- Iteration 2: research -------------------------------------------------------------------
+
+EXCERPT_MAX_CHARS = 300
+ANSWER_MAX_CHARS = 2000
+DOMAIN_STATEMENT_MAX_CHARS = 300
+DOMAIN_NEED_MAX_CHARS = 200
+DOMAIN_SUMMARY_MAX_CHARS = 1200
+OPEN_QUESTIONS_MAX = 5
+
+
+class ListedSource(Record):
+    """One source a research job found, as its `research_status` listing gives it."""
+
+    index: int = Field(ge=0)
+    title: str
+    url: str | None = None
+    type_name: str  # `deep_report` for the job's own report, `web` for a page
+    cited: bool = False
+
+
+class JobStatus(Record):
+    state: Literal["running", "completed", "failed"]
+    task_id: str  # the id the poll returned, which can differ from the one asked for
+    report: str | None = None
+    listing: list[ListedSource] = Field(default_factory=list)
+
+
+class Reference(Record):
+    source_id: str
+    citation_number: int = Field(ge=0)
+    cited_text: str
+
+
+class PackSource(Record):
+    id: PackSourceId
+    provider_source_id: str
+    url: str = Field(min_length=1)
+    title: str
+    host: str = Field(min_length=1)
+    tier: int = Field(ge=1, le=4)
+    retrieved: date
+
+
+class PackExcerpt(Record):
+    id: ExcerptId
+    source_id: PackSourceId
+    text: str = Field(min_length=1, max_length=EXCERPT_MAX_CHARS)
+    quarantined: bool = False
+
+
+class PackAnswer(Record):
+    question: str = Field(min_length=1)
+    answer: str = Field(max_length=ANSWER_MAX_CHARS)
+    excerpt_ids: list[ExcerptId] = Field(default_factory=list)
+    quarantined: bool = False
+
+
+class AskResult(Record):
+    """What the research provider's `ask` returns, from a research pack or from NotebookLM."""
+
+    answer: str | None = None
+    excerpts: list[PackExcerpt] = Field(default_factory=list)
+    sources: list[PackSource] = Field(default_factory=list)
+
+
+class ExcerptView(Facing):
+    id: str
+    source_title: str
+    tier: int
+    text: str
+
+
+class AnswerView(Facing):
+    question: str
+    answer: str
+    excerpt_ids: list[str] = Field(default_factory=list)
+
+
+class DiscoveryTask(Facing):
+    topics: list[str] = Field(default_factory=list)
+    report: str | None = None
+    answers: list[AnswerView] = Field(default_factory=list)
+    excerpts: list[ExcerptView] = Field(default_factory=list)
+    questions_left: int = 0
+    jobs_left: int = 0
+
+
+class DomainItemProposal(Facing):
+    kind: DomainKind = "pattern"
+    statement: str = ""
+    excerpt_ids: list[str] = Field(default_factory=list)
+
+
+class DomainNeedProposal(Facing):
+    need: str = ""
+    excerpt_ids: list[str] = Field(default_factory=list)
+
+
+class DiscoveryExtract(Facing):
+    summary: str = ""
+    items: list[DomainItemProposal] = Field(default_factory=list)
+    needs: list[DomainNeedProposal] = Field(default_factory=list)
+    open_questions: list[str] = Field(default_factory=list)
+
+
+class DomainItem(Record):
+    id: DomainItemId
+    kind: DomainKind
+    statement: str = Field(min_length=1, max_length=DOMAIN_STATEMENT_MAX_CHARS)
+    excerpt_ids: list[ExcerptId] = Field(min_length=1, max_length=3)
+
+
+class DomainNeed(Record):
+    id: DomainNeedId
+    need: str = Field(min_length=1, max_length=DOMAIN_NEED_MAX_CHARS)
+    excerpt_ids: list[ExcerptId] = Field(min_length=1, max_length=3)
+
+
+class DomainBrief(Record):
+    """The stored form of `domain_brief.json`. Never promoted to capability evidence."""
+
+    domain_id: str | None = None  # None before a research pack exists
+    mode: Literal["pack", "live"]
+    summary: str = Field(default="", max_length=DOMAIN_SUMMARY_MAX_CHARS)
+    items: list[DomainItem] = Field(default_factory=list)
+    needs: list[DomainNeed] = Field(default_factory=list)
+    open_questions: list[str] = Field(default_factory=list, max_length=OPEN_QUESTIONS_MAX)
+    evidence_class: Literal["EXTERNAL_RESEARCH"] = "EXTERNAL_RESEARCH"
+
+
+class ResearchJob(Record):
+    label: JobLabel
+    notebook_id: str
+    task_id: str
+    query: str  # the text sent, kept so the queries can be audited (step 11)
+    query_sha256: Sha256
+    state: JobState
+    started: datetime
+    waited_seconds: float = Field(default=0.0, ge=0)
+
+
+class ResearchRecord(Record):
+    """The stored form of `research.json`."""
+
+    mode: ResearchModeName
+    pack_id: str | None = None
+    pack_sha256: Sha256 | None = None  # the hash of the pack's pack.yaml
+    notebooks: list[str] = Field(default_factory=list)
+    jobs: list[ResearchJob] = Field(default_factory=list)
+    answers: list[PackAnswer] = Field(default_factory=list)
+    excerpts: list[PackExcerpt] = Field(default_factory=list)
+    sources: list[PackSource] = Field(default_factory=list)
+    tool_calls: int = Field(default=0, ge=0)  # the run's `discover` tool calls so far
+    notes: list[str] = Field(default_factory=list)
+
+
+class PackManifest(Record):
+    """The stored form of a research pack's `pack.yaml`."""
+
+    domain_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]*$")
+    title: str = Field(min_length=1)
+    version: int = Field(ge=1)
+    created: date
+    keywords: list[str] = Field(min_length=2)
+    topics: list[str] = Field(default_factory=list)
+    files: dict[str, Sha256]
+    counts: dict[str, int] = Field(default_factory=dict)
+
+
+# --- Iteration 2: control --------------------------------------------------------------------
+
+
+class EventRecord(Record):
+    """One line of `events.jsonl`. `part` is the run's resume count."""
+
+    at: datetime
+    part: int = Field(default=0, ge=0)
+    kind: EventKind
+    node: str | None = None
+    detail: str
+    attribution: Attribution | None = None
+
+    @model_validator(mode="after")
+    def _attribution_marks_security_events(self) -> "EventRecord":
+        if self.attribution is not None and self.kind != "security":
+            raise ValueError("only a security event carries an attribution")
+        return self
+
+
+class DeadLetter(Record):
+    id: DeadLetterId
+    node: str
+    call_id: str
+    reason: str
+    attempts: int = Field(ge=1)
+    manifest: str | None = None  # the call's context manifest, relative to the run folder
+
+
+class BudgetSnapshot(Record):
+    """The stored form of `control/budget.json`."""
+
+    attempts: int = Field(ge=0)
+    tokens: int = Field(ge=0)
+    active_seconds: float = Field(ge=0)
+    raise_percent: int = Field(default=0, ge=0)

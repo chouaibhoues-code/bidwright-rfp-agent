@@ -1,6 +1,9 @@
 """Schema tests: JSON round trips, id patterns, and the rules the contract enforces."""
 
-from datetime import UTC, datetime
+import json
+from datetime import UTC, date, datetime
+from pathlib import Path
+from typing import get_args
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -263,10 +266,150 @@ V01_RECORDS = [
     QUESTION,
     PACK,
 ]
-EXAMPLES: dict[type[BaseModel], BaseModel] = {type(r): r for r in V00_RECORDS + V01_RECORDS}
+HASH = "sha256:" + "0" * 64
+NOW = datetime(2026, 11, 6, 10, 12, tzinfo=UTC)
+FACTOR = s.EvaluationFactor(
+    id="EF-06",
+    name="Price",
+    weight="40",
+    scoring="Price is scored by dividing the lowest total price by the bidder's total price.",
+    src_ids=["SRC-0241"],
+    status="OUT_OF_SCOPE",
+)
+BRIEF_ITEM = s.BriefItem(
+    id="BI-001", text="A resident portal for case updates.", src_ids=["SRC-0012"]
+)
+FACTOR_DISCREPANCY = s.FactorDiscrepancy(
+    id="DS-004", factor="Price", weights=["40", "30"], src_ids=["SRC-0241", "SRC-0250"]
+)
+BRIEF = s.OpportunityBrief(
+    factors=[FACTOR],
+    needs=[BRIEF_ITEM],
+    topics=["digital case management"],
+    discrepancies=[FACTOR_DISCREPANCY],
+    questions=[
+        s.ClarificationQuestion(
+            id="CQ-009",
+            text="The RFP gives Price two weights, 40 and 30; which applies?",
+            src_ids=["SRC-0241", "SRC-0250"],
+            origin="brief",
+        )
+    ],
+    notes=["dropped a factor whose weight occurs in no cited passage"],
+)
+SOURCE = s.PackSource(
+    id="PS-003",
+    provider_source_id="7606fd89",
+    url="https://www.w3.org/TR/WCAG22/",
+    title="Web Content Accessibility Guidelines (WCAG) 2.2",
+    host="www.w3.org",
+    tier=1,
+    retrieved=date(2026, 11, 6),
+)
+EXCERPT = s.PackExcerpt(id="PX-0007", source_id="PS-003", text="Content must be perceivable.")
+ANSWER = s.PackAnswer(
+    question="What do accessible online forms need?",
+    answer="Labels and error messages that assistive technology can read [1].",
+    excerpt_ids=["PX-0007"],
+)
+JOB = s.ResearchJob(
+    label="J1",
+    notebook_id="37b853c9",
+    task_id="08b1a4a6",
+    query="Research digital case management in local government.",
+    query_sha256=HASH,
+    state="completed",
+    started=NOW,
+    waited_seconds=412.5,
+)
+RESEARCH = s.ResearchRecord(
+    mode="live",
+    notebooks=["37b853c9"],
+    jobs=[JOB],
+    answers=[ANSWER],
+    excerpts=[EXCERPT],
+    sources=[SOURCE],
+    tool_calls=3,
+)
+DOMAIN = s.DomainBrief(
+    domain_id="local-government-case-management",
+    mode="pack",
+    summary="Case management services in local government.",
+    items=[
+        s.DomainItem(
+            id="DI-004",
+            kind="pitfall",
+            statement="Migration is underestimated.",
+            excerpt_ids=["PX-0007"],
+        )
+    ],
+    needs=[s.DomainNeed(id="DN-002", need="Accessible online forms", excerpt_ids=["PX-0007"])],
+)
+PACK_MANIFEST = s.PackManifest(
+    domain_id="local-government-case-management",
+    title="Digital case-management services for local government",
+    version=1,
+    created=date(2026, 11, 6),
+    keywords=["case management", "local government"],
+    files={"summary.md": HASH},
+    counts={"sources": 1},
+)
+LISTING = s.JobStatus(
+    state="completed",
+    task_id="08b1a4a6",
+    report="# Report",
+    listing=[
+        s.ListedSource(index=0, title="Report", url=None, type_name="deep_report", cited=True),
+        s.ListedSource(
+            index=1,
+            title="WCAG 2.2",
+            url="https://www.w3.org/TR/WCAG22/",
+            type_name="web",
+            cited=True,
+        ),
+    ],
+)
+EVENT = s.EventRecord(
+    at=NOW,
+    part=1,
+    kind="security",
+    node="discover_ask",
+    detail="G3 denied ask_research",
+    attribution="indeterminate",
+)
+DEAD_LETTER = s.DeadLetter(
+    id="DL-001",
+    node="extract",
+    call_id="B04",
+    reason="malformed output after repair",
+    attempts=2,
+    manifest="context/extract-B04.json",
+)
+SNAPSHOT = s.BudgetSnapshot(attempts=14, tokens=61234, active_seconds=72.4, raise_percent=50)
+V02_RECORDS = [
+    FACTOR,
+    BRIEF_ITEM,
+    FACTOR_DISCREPANCY,
+    BRIEF,
+    SOURCE,
+    EXCERPT,
+    ANSWER,
+    JOB,
+    RESEARCH,
+    DOMAIN,
+    PACK_MANIFEST,
+    LISTING,
+    s.AskResult(answer="Yes [1].", excerpts=[EXCERPT], sources=[SOURCE]),
+    EVENT,
+    DEAD_LETTER,
+    SNAPSHOT,
+]
+EXAMPLES: dict[type[BaseModel], BaseModel] = {
+    type(r): r for r in V00_RECORDS + V01_RECORDS + V02_RECORDS
+}
 
 
-@pytest.mark.parametrize("record", V00_RECORDS + V01_RECORDS)
+@pytest.mark.parametrize("record", V00_RECORDS + V01_RECORDS + V02_RECORDS)
 def test_json_round_trip(record: BaseModel) -> None:
     assert type(record).model_validate_json(record.model_dump_json()) == record
 
@@ -287,6 +430,15 @@ def test_json_round_trip(record: BaseModel) -> None:
         (s.ClarificationQuestion, "id", "cq-001"),
         (s.Discrepancy, "group_id", "RG-0001"),
         (s.CueHit, "src_id", "SRC-01"),
+        (s.EvaluationFactor, "id", "EF-6"),
+        (s.BriefItem, "id", "BI-01"),
+        (s.FactorDiscrepancy, "id", "DQ-004"),
+        (s.PackSource, "id", "PS-0003"),
+        (s.PackExcerpt, "id", "PX-007"),
+        (s.ResearchJob, "label", "job1"),
+        (s.ResearchJob, "query_sha256", "sha256:abc"),
+        (s.DeadLetter, "id", "DL-1"),
+        (s.PackManifest, "domain_id", "Local Government"),
     ],
 )
 def test_ids_must_match_their_pattern(model: type[BaseModel], field: str, bad: str) -> None:
@@ -436,3 +588,73 @@ def test_extract_item_schema_puts_the_quote_before_the_labels() -> None:
     order = list(s.ExtractItem.model_json_schema()["properties"])
     assert order[:2] == ["src_ids", "quote"]
     assert order.index("quote") < order.index("disposition")
+
+
+# --- Iteration 2 ---------------------------------------------------------------------------
+
+
+def test_a_v01_manifest_from_the_samples_still_validates() -> None:
+    """Every field Iteration 2 adds to a stored record has a default."""
+    data = json.loads(Path("samples/dev/run_manifest.json").read_text(encoding="utf-8"))
+    manifest = s.RunManifest.model_validate(data)
+    assert manifest.pid is None and manifest.status_history == [] and manifest.run_args == {}
+    assert manifest.research is None
+    summary = s.SolutionSummary.model_validate(SUMMARY.model_dump())
+    assert summary.factors == [] and summary.domain_items == []
+
+
+def test_model_facing_brief_and_discovery_models_carry_types_only() -> None:
+    """ADR-024's lesson: one long or missing item must not fail a whole call."""
+    empty = s.BriefResult.model_validate({})
+    assert empty.factors == [] and empty.topics == [] and empty.scoring_method is None
+    long = s.EvaluationFactorProposal.model_validate({"name": "x" * 81, "src_ids": []})
+    assert len(long.name) == 81 and long.weight == s.NOT_STATED
+    many = s.BriefResult.model_validate({"topics": [f"topic {n}" for n in range(9)]})
+    assert len(many.topics) == 9
+    assert s.DiscoveryExtract.model_validate({}).items == []
+    assert s.DiscoveryExtract.model_validate({"summary": "y" * 5000}).summary
+
+
+def test_stored_brief_and_research_records_keep_their_limits() -> None:
+    with pytest.raises(ValidationError):
+        s.EvaluationFactor.model_validate({**FACTOR.model_dump(), "name": "x" * 81})
+    with pytest.raises(ValidationError):
+        s.EvaluationFactor.model_validate({**FACTOR.model_dump(), "src_ids": []})
+    with pytest.raises(ValidationError):
+        s.OpportunityBrief.model_validate({"topics": [f"topic {n}" for n in range(6)]})
+    with pytest.raises(ValidationError):
+        s.PackExcerpt.model_validate({**EXCERPT.model_dump(), "text": "z" * 301})
+    with pytest.raises(ValidationError):
+        s.PackSource.model_validate({**SOURCE.model_dump(), "tier": 5})
+    with pytest.raises(ValidationError):
+        s.FactorDiscrepancy.model_validate({**FACTOR_DISCREPANCY.model_dump(), "weights": ["40"]})
+    with pytest.raises(ValidationError):
+        s.PackManifest.model_validate({**PACK_MANIFEST.model_dump(), "keywords": ["one"]})
+
+
+def test_only_a_security_event_carries_an_attribution() -> None:
+    with pytest.raises(ValidationError, match="only a security event"):
+        s.EventRecord.model_validate({**EVENT.model_dump(), "kind": "gateway"})
+    plain = s.EventRecord.model_validate(
+        {**EVENT.model_dump(), "kind": "gateway", "attribution": None}
+    )
+    assert plain.attribution is None
+
+
+def test_the_brief_questions_need_no_group_and_name_their_origin() -> None:
+    question = BRIEF.questions[0]
+    assert question.group_id is None and question.origin == "brief"
+    assert "circuit" in get_args(s.RetryReason)
+
+
+def test_the_research_tool_arguments_forbid_extra_keys() -> None:
+    """G2 also checks names; the schema refuses a notebook id outright."""
+    from bidwright.tools import AskResearchArgs, StartResearchArgs
+
+    assert StartResearchArgs.model_validate({"question": "q", "topics": ["t"]}).topics == ["t"]
+    with pytest.raises(ValidationError):
+        StartResearchArgs.model_validate({"question": "q", "topics": ["t"], "notebook_id": "x"})
+    with pytest.raises(ValidationError):
+        StartResearchArgs.model_validate({"question": "q", "topics": []})
+    with pytest.raises(ValidationError):
+        AskResearchArgs.model_validate({"question": "q" * 301})
