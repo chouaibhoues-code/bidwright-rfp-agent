@@ -1,0 +1,15 @@
+{
+  "option": {
+    "option_id": "OPT-3",
+    "name": "Effort Estimation Option",
+    "summary": "Effort estimation across work packages",
+    "approach": [],
+    "assumptions": []
+  },
+  "needs": [],
+  "claims": [],
+  "scope_in": [{"id": "SC-03", "text": "Effort estimates"}],
+  "scope_out": [],
+  "constraints": [],
+  "never": []
+}

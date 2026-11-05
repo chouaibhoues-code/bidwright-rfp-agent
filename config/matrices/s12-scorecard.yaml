@@ -1,0 +1,15 @@
+# S-12 scorecard matrix: development PDF, 5 repeats, max_cost_usd: 1 (Iteration 3, steps 18-19).
+# Compares every method card family off (control) against rungs for families that pass S-12 cases.
+# Step 19 fills rungs for families that passed S-12 negative cases.
+name: s12-scorecard
+rfp: inputs/dev/dev_rfp.pdf
+profile: paid
+repeats: 5
+until: render
+max_cost_usd: 1
+allow_degraded: []
+rungs:
+  - name: "off"
+    flags: {methods: []}
+  - name: "on"
+    flags: {methods: [req, cfg, ba, del, ben, risk, gov]}

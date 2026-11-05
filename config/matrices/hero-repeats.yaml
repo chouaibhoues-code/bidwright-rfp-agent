@@ -1,0 +1,13 @@
+# Statistical scenarios on hero package (Iteration 3, step 20).
+# 5 live repeats on hero package with switches defaults, research mode pack, automatic approval.
+# Scored for QS-2, QS-3, QS-5, QS-8.
+name: hero-repeats
+rfp: inputs/hero
+profile: paid
+repeats: 5
+until: render
+max_cost_usd: 6
+allow_degraded: []
+rungs:
+  - name: default
+    flags: {research: pack}

@@ -1,0 +1,19 @@
+{
+  "cluster_id": "CLUST-S12-CFG002",
+  "members": [
+    {
+      "id": "REQ-106",
+      "src_id": "SRC-005",
+      "statement": "Upstream architecture change without evidence",
+      "modality": "shall",
+      "disposition": "BINDING",
+      "quote": "Upstream architecture change without evidence",
+      "doc_id": "DOC-01",
+      "section_path": "7.0"
+    }
+  ],
+  "context": [],
+  "precedence": [],
+  "precedence_clause": [],
+  "lint": []
+}

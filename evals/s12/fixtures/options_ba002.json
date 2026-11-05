@@ -1,0 +1,22 @@
+{
+  "factors": [
+    {
+      "factor_id": "F-01",
+      "name": "Delivery Cost",
+      "weight": "40%",
+      "scoring": "linear",
+      "status": "IN_SCOPE"
+    }
+  ],
+  "needs": [
+    {
+      "need_id": "NEED-S12-OPT01",
+      "origin": "RFP",
+      "text": "Core workflow deployment",
+      "status": "COVERED",
+      "claims": []
+    }
+  ],
+  "domain_items": [],
+  "gaps": []
+}

@@ -1,0 +1,16 @@
+{
+  "batch_id": "BATCH-S12-REQ002",
+  "passages": [
+    {
+      "src_id": "SRC-002",
+      "text": "Section 4.1: Data retention is 5 years. Section 9.2: All financial logs retained for 7 years.",
+      "doc_id": "DOC-01",
+      "section_path": "4.1 Data Retention",
+      "lead_in": "",
+      "neighbor": "",
+      "term": ""
+    }
+  ],
+  "context": [],
+  "terms": []
+}

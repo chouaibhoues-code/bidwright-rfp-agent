@@ -1,0 +1,16 @@
+{
+  "batch_id": "BATCH-S12-REQ003",
+  "passages": [
+    {
+      "src_id": "SRC-003",
+      "text": "Clause A: Audits occur annually except during emergency operations. Clause B: Audits occur bi-annually with no exceptions.",
+      "doc_id": "DOC-01",
+      "section_path": "5.0 Audits",
+      "lead_in": "",
+      "neighbor": "",
+      "term": ""
+    }
+  ],
+  "context": [],
+  "terms": []
+}

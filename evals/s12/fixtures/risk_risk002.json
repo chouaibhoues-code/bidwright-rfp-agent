@@ -1,0 +1,21 @@
+{
+  "requirements": [
+    {
+      "id": "REQ-302",
+      "statement": "Third-party payment gateway integration SLA is 99.99%.",
+      "modality": "shall",
+      "mandatory": true,
+      "hazard": false
+    }
+  ],
+  "approach": [
+    {
+      "id": "APP-302",
+      "text": "Payment gateway connector with circuit breaker",
+      "requirement_ids": ["REQ-302"]
+    }
+  ],
+  "hazards": [
+    "PENALTY: SLA breaches incur liquidated damages"
+  ]
+}

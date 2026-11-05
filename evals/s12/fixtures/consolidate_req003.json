@@ -1,0 +1,29 @@
+{
+  "cluster_id": "CLUST-S12-REQ003",
+  "members": [
+    {
+      "id": "REQ-103",
+      "src_id": "SRC-003",
+      "statement": "Audits occur annually except during emergency operations",
+      "modality": "shall",
+      "disposition": "BINDING",
+      "quote": "Audits occur annually except during emergency operations",
+      "doc_id": "DOC-01",
+      "section_path": "5.0"
+    },
+    {
+      "id": "REQ-104",
+      "src_id": "SRC-003",
+      "statement": "Audits occur bi-annually with no exceptions",
+      "modality": "shall",
+      "disposition": "BINDING",
+      "quote": "Audits occur bi-annually with no exceptions",
+      "doc_id": "DOC-01",
+      "section_path": "5.0"
+    }
+  ],
+  "context": [],
+  "precedence": [],
+  "precedence_clause": [],
+  "lint": []
+}

@@ -1,0 +1,21 @@
+{
+  "requirements": [
+    {
+      "id": "REQ-303",
+      "statement": "Disaster recovery failover must execute within 15 minutes.",
+      "modality": "must",
+      "mandatory": true,
+      "hazard": true
+    }
+  ],
+  "approach": [
+    {
+      "id": "APP-303",
+      "text": "Multi-region active-passive replica failover",
+      "requirement_ids": ["REQ-303"]
+    }
+  ],
+  "hazards": [
+    "BUSINESS_CONTINUITY: RTO exceeds allowable threshold"
+  ]
+}

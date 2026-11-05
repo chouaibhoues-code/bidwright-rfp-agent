@@ -1,0 +1,21 @@
+{
+  "requirements": [
+    {
+      "id": "REQ-301",
+      "statement": "Data migration shall complete within 48 hour maintenance window.",
+      "modality": "shall",
+      "mandatory": true,
+      "hazard": true
+    }
+  ],
+  "approach": [
+    {
+      "id": "APP-301",
+      "text": "Automated ETL migration pipeline",
+      "requirement_ids": ["REQ-301"]
+    }
+  ],
+  "hazards": [
+    "UNCAPPED_LIABILITY: Contractor bears unlimited liability for migration delay"
+  ]
+}
