@@ -933,6 +933,7 @@ What the research provider's `ask` returns, from a research pack or from Noteboo
 | `answer` | str \| None | no | None |  |
 | `excerpts` | list[PackExcerpt] | no | [] |  |
 | `sources` | list[PackSource] | no | [] |  |
+| `dropped` | int | no | 0 |  |
 
 ## `ExcerptView`
 

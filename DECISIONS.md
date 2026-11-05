@@ -13,7 +13,7 @@ Model and prompt ADRs also give the evaluation evidence and the model's expected
 
 ## ADRs
 
-ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07).
+ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05.
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -54,6 +54,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 035 | The approval file beside a gate's review file | accepted |
 | 036 | Research in the run: `brief`, then `discover`, behind a research provider | accepted |
 | 037 | Three planned components wait for their consumers | accepted |
+| 038 | Research leaves out a source that reads like a published solicitation | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -912,6 +913,27 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** A second reader of `config/agents.yaml` needs per-run policy computed in one place, or Iteration 3 or 4 begins.
 
 **Provenance.** `docs/designs/iteration-2.md`, section 3; ADR-025.
+
+### ADR-038: Research leaves out a source that reads like a published solicitation
+
+**Status:** accepted, 2026-11-05, by the owner (D-08, option A). Built before the tag `v0.2`.
+
+**Context.** The first live research job on the development PDF returned a university's published request for proposal among its 26 sources, and its excerpts reached the extraction call. The data rule keeps real tenders out of prompts and out of the repository. The pack builder already left such a source out of a committed pack, on the operator's word, and listed any source whose title or URL reads like a solicitation for review; in research mode `live`, nothing stopped one before a model saw it.
+
+**Decision.**
+- The NotebookLM research provider leaves out a cited source whose title or URL matches the solicitation pattern, which `research/trust.py` now holds for the provider and the pack builder alike, before any excerpt of it is made.
+- An answer that cited such a source has its text withheld, as a suspect answer's is, since the answer is a synthesis that can carry the source's content; its clean excerpts still return.
+- `AskResult.dropped` counts the sources left out, and `discover` notes each case in `research.json` with the count and the question, never the source's title, since the notes reach the run manifest.
+
+**Consequences.** A real tender found by live research reaches neither the record nor a prompt through an answer or an excerpt. A false match loses one source, such as a guide whose title names an RFP. The job's own report, which has no per-source structure, is not filtered, and a solicitation's content can still reach the extraction call through it.
+
+**Options.** B: also end the run `DEGRADED` when a source is left out; C: no filter, with a statement in `ASSUMPTIONS.md`. Both were offered in D-08; the owner chose A.
+
+**Confirmation.** `test_a_source_that_reads_like_a_solicitation_is_left_out_before_any_excerpt` in `tests/test_mcp_client.py` and `test_a_solicitation_among_the_sources_reaches_neither_the_record_nor_the_model` in `tests/test_discover.py`, on the fake server's `--tender` listing.
+
+**Reverse if.** A licensed research source with provenance metadata replaces NotebookLM, or the pattern's false matches cost research items that matter.
+
+**Provenance.** D-08 in `context/Decision-Form.md`; the failure-mode row of 2026-11-05 on the development PDF's research pack.
 
 ## Failure modes hit
 

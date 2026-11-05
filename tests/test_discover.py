@@ -52,7 +52,7 @@ from bidwright.schemas import (
     ResearchRecord,
     RunManifest,
 )
-from tests.mcp_fakes import INJECTED, WCAG, WCAG_URL, http_server, serving
+from tests.mcp_fakes import INJECTED, TENDER, TENDER_TEXT, WCAG, WCAG_URL, http_server, serving
 from tests.node_fakes import (
     DEV_RFP,
     USAGE,
@@ -201,6 +201,31 @@ def _first_ready(
     assert discovery.start(TOPICS).failed is None
     assert discovery.wait().failed is None
     return discovery, backend
+
+
+def test_a_solicitation_among_the_sources_reaches_neither_the_record_nor_the_model(
+    tmp_path: Path,
+) -> None:
+    """ADR-038 (D-08): a cited source that reads like a published request for proposals is left
+    out before any excerpt is made; `research.json` notes it without its title, and the model
+    sees neither its excerpt nor the answer's text."""
+    with serving("--tender") as url:
+        discovery, backend = _discovery(
+            tmp_path, [_start(), _asking(), DONE, EXTRACTION], _provider(url)
+        )
+        assert discovery.start(TOPICS).failed is None
+        assert discovery.wait().failed is None
+        assert discovery.ask(TOPICS).failed is None
+        assert discovery.extract(TOPICS).failed is None
+    record = _record(tmp_path)
+    assert [s.title for s in record.sources] == [WCAG]
+    assert [e.id for e in record.excerpts] == ["PX-0001"]
+    [answer] = record.answers
+    assert answer.answer == "" and answer.excerpt_ids == ["PX-0001"]
+    [note] = [n for n in record.notes if "ADR-038" in n]
+    assert "1 cited source left out" in note and TENDER not in note
+    seen = json.dumps([data_of(request) for request in backend.requests])
+    assert TENDER not in seen and TENDER_TEXT not in seen
 
 
 def test_a_live_discovery_runs_end_to_end_and_writes_both_files(

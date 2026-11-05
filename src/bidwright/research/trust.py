@@ -7,6 +7,11 @@ back, and each match records a security event attributed `injection-dominant`. A
 excerpt is never returned and no item may cite it; a quarantined answer's text is withheld
 while its clean excerpts still return. A research pack is screened again each time it loads.
 
+`solicitation` tells whether a source's title or URL reads like a published solicitation, such
+as a request for proposal: the data rule keeps real tenders out of prompts and out of the
+repository, so the NotebookLM provider leaves such a source out before any excerpt is made
+(ADR-038), and the pack builder lists any that remain for review.
+
 `tier` gives a source URL's authority tier from its host, read with `egress.hostname`, by the
 tier rule of `research.provider.tier_of`. Everything research yields carries the evidence class
 `EXTERNAL_RESEARCH` and is never promoted to capability evidence.
@@ -22,6 +27,16 @@ from bidwright.research.provider import tier_of
 from bidwright.schemas import Attribution, PackAnswer, PackExcerpt
 
 ATTRIBUTION: Attribution = "injection-dominant"
+# A title or URL that reads like a published solicitation, which the data rule keeps out.
+SOLICITATION = re.compile(
+    r"(?i)\b(rfp|rfq|itt|request\W+for\W+(proposals?|quotations?|tenders?)|invitation\W+to"
+    r"\W+tender|tender\W+documents?|solicitation|bid\W+opportunit\w*)\b"
+)
+
+
+def solicitation(title: str, url: str) -> bool:
+    """Whether a source's title or URL reads like a published solicitation (ADR-038)."""
+    return SOLICITATION.search(f"{title} {url}") is not None
 
 
 def suspect(text: str, patterns: Sequence[re.Pattern[str]]) -> bool:
@@ -66,4 +81,4 @@ def tier(url: str, tiers: TiersConfig) -> int:
     return tier_of(hostname(url), tiers)
 
 
-__all__ = ["ATTRIBUTION", "screen", "suspect", "tier"]
+__all__ = ["ATTRIBUTION", "SOLICITATION", "screen", "solicitation", "suspect", "tier"]

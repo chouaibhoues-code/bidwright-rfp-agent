@@ -79,7 +79,7 @@ Each place a run, or a tool around it, can send text. The rules come from D-05 (
 - Nothing masks personal data before a hosted call; the text view is the seam for Iteration 5's masking.
 - The consent override on `free` admits a client document against the free tier's terms, which say not to submit sensitive, confidential or personal information; the owner accepted that risk, and each use is recorded.
 - The egress register decides locality by host name, so a Compose service name copied into `.env` on the host could resolve to another computer (D-06, deferred).
-- In research mode `live`, a source the web search returns, such as a published tender, reaches the extraction prompt before a person sees it (D-08).
+- In research mode `live`, a source that reads like a published solicitation is left out before any excerpt is made (ADR-038), but a tender under a plain title, and the job's own report, are not filtered.
 - Run folders rely on the operating system for protection at rest.
 
 Research jobs DR-20 and DR-21 tested the first proposals on 2026-11-03 (section 17 of [`context/Research-Register.md`](../context/Research-Register.md)). A clean scan cannot clear a document, and pseudonymization is fragile on a round trip and leaves the sender's duties in place, so the measures treat every client document as confidential and route by the providers' terms.

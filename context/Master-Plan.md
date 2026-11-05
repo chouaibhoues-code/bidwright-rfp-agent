@@ -12,7 +12,8 @@ tags: [bidwright, project-management, plan, roadmap]
 
 > [!summary] Status on 2026-11-05
 > - Released: `v0.0`, Iteration 0a, the walking skeleton; `v0.0.1`, Iteration 0b, documents and review; `v0.1`, Iteration 1, on 2026-11-04, with the matcher's correction after the tag (ADR-030).
-> - Iteration 2 is built: its fifteen steps are committed with CI green, and its close-out notes are in section 9.4. The tag `v0.2` waits for the owner: the drift report, the iteration's hours or an exception, D-08 and D-09, and the approval.
+> - Released: `v0.2`, Iteration 2, on 2026-11-05, approved by the owner with D-08 and D-09 decided; its close-out notes are in section 9.4.
+> - Next: Iteration 3, from its design doc and Stage 9 review; D-03, the Cerebras key, is due at its entry.
 > - At each tag the owner chooses to continue, release or stop (section 2.8).
 
 This file owns the scope, the work-package register, the assignment trace, the gates, the risks, the change log, the close-out notes and the full vision with its unbuilt scope. Other facts have one owner each: the current architecture is in `docs/architecture.md`, decisions in `DECISIONS.md`, assumptions in `ASSUMPTIONS.md`, hours in `TIMELOG.md`, research in [[Research-Register]], open decisions in [[Decision-Form]], and deferred work in [[Project-Backlog]].
@@ -343,11 +344,11 @@ Each iteration's gate. Entry must hold before work starts; Items are its package
 - Exit and Verify: a package folder with an addendum runs end to end, and the control register lists every document; oversized files, paths outside `inputs/` and zip bombs are refused before parsing, and a scanned PDF is reported; hidden injections are removed before parsing and reported, the visible one is flagged and its requested action is not taken, and visible small print is extracted and flagged; the XLSX annex's hidden sheet is quarantined; every passage has a disposition, and rejected candidates are visible (CH-79 replaced the unflagged sample); a "shall:" list keeps its lead-in on every item; the union of the context packs equals the passage set (a property test); gold v2 is hashed before its first score, and the scorecard shows missed mandatory requirements for the hero and the development DOCX, with the funnel and B0 beside it; the compliance matrix, clarification questions and submission checklist are produced, and planted contract terms appear only as contract flags; every packed LLM call (`triage`, `extract`, `consolidate`) has a context manifest (CH-81), and the limiter and the cache are tested on a fake clock and a repeated call; `guard` runs on the CrackedPDFs test split and its F1 sits beside the published figures; the regression gate blocks a deliberate rise in missed mandatory requirements; Docling responses replay with no network; the matrix runner runs a rung with its repeats, and `evals/hypotheses.yaml` is hashed before the first ablation run; S-03 sets the batch size on the hero; the owner's held-out requirement list is rendered and frozen; a measured partial hero run gives the token and cost figures for the budget decision.
 - Result: every check passed, with no exception; section 9.3 gives the evidence.
 
-**Iteration 2, `v0.2`.**
+**Iteration 2, `v0.2`. Closed on 2026-11-05.**
 - Entry: `v0.1`; Stage 9 passed on its design doc (2026-11-04, a first round and its re-audit, D-07); the NotebookLM login for `live`.
 - Items: WP-2.1 to 2.4.
 - Exit and Verify: `bidwright stop` halts a run between nodes, and `bidwright resume` completes it without re-spending cached calls, including after a killed run; FI-01, FI-02, FI-09, FI-10 and FI-11 pass offline with clean controls; a call that breaks a gateway rule gets that rule's outcome; `pack` mode runs with no login, and `ask_research` returns `NOT_IN_PACK` for an unanswerable question; `live` completes one real job; no logged query contains RFP text, every copied passage in the test set is denied, and the paraphrase pass rate is reported; notebook ids come from code, and a crash in `discover` resumes without a second job; the brief copies factors and weights exactly and marks the price factor `OUT_OF_SCOPE`.
-- Result: every check passed, with no exception; section 9.4 gives the evidence. The tag waits for the owner's inputs listed there.
+- Result: every check passed, with no exception; section 9.4 gives the evidence. Closed on 2026-11-05.
 
 **Iteration 3, `v0.3`.**
 - Entry: `v0.2`; Stage 9 passed; a Cerebras key, created at the start of this iteration so its 30-day trial covers it.
@@ -507,6 +508,7 @@ Every accepted change since the first agreed design, one line each. The Kind col
 | CH-88 | Gold v3 adds the evaluation factors of the hero package and the development PDF, and the hero's research seeds, written from sources read directly; the owner reviews and hashes it before the first research pack is built (Iteration 2, step 8 before step 13) | Seeds written after the research would reflect what it found, so SO4 would overstate the gain; the rule is section 10.9's, and this places it in the build order. D-07, 2026-11-04. | None: an ordering line | Process |
 | CH-89 | Node, the pinned sequential-thinking package, `package-lock.json` and `npm audit` join the image in Iteration 3 with `reflect`, their only consumer, instead of in Iteration 2; C7-17's recheck at version lock moves with them | Nothing in Iteration 2 uses them, and the MCP client's stdio path is tested against a small Python server. D-07, 2026-11-04. | An Iteration 2 node needs a stdio server | Process |
 | CH-90 | The `extract` examples return, with the second pass measured on the prompt that has them, at the start of Iteration 3's extraction ladder instead of after the delivery; the ADR superseding ADR-028's first decision is written then | The delivery is deferred, and the ladder measures extraction under the keep-or-drop rule anyway. The owner accepted the recommendation, D-07, 2026-11-04. | The delivery is set before Iteration 3 starts | Process |
+| CH-91 | Research mode `live` leaves out a cited source whose title or URL reads like a published solicitation before any excerpt is made, and withholds the text of an answer that cited one (ADR-038) | A live job returned a university's published request for proposal, whose excerpts reached the extraction call; the data rule keeps real tenders out of prompts. The owner chose option A, D-08, 2026-11-05. | A licensed research source with provenance metadata replaces NotebookLM | ADR |
 
 ## 9. Close-out notes
 
@@ -649,7 +651,7 @@ Three tags give the schedule index only, since a package earns nothing until it 
 
 ### 9.4 Iteration 2, `v0.2`
 
-Built on 2026-11-04 and 2026-11-05, with CI green on all 11 jobs at each of its commits. The tag `v0.2` marks the commit the owner approves, after the inputs listed under the Definition of Done below.
+Closed on 2026-11-05, with CI green on all 11 jobs at each of its commits; the tag `v0.2` marks the commit that adds ADR-038 and these notes, which the owner approved.
 
 **Planned against delivered.**
 
@@ -664,9 +666,9 @@ Built on 2026-11-04 and 2026-11-05, with CI green on all 11 jobs at each of its 
 
 **Exit checks with accepted exceptions.** None. The evidence for each check is listed in section 7 of `docs/designs/iteration-2.md`; the measured figures are in `docs/evaluation.md`, results at `v0.2`.
 
-**Definition of Done, items waiting for the owner.** `TIMELOG.md` holds the iteration's rows without hours, for the owner to enter or record an exception. The drift report (`/egm:egm-drift-report docs`) runs once these notes are committed, and its triage, with any fix, comes before the tag. The security review found no vulnerability at high confidence; the code review at medium effort raised ten findings, of which eight were fixed and two kept as designed, for reasons recorded in their commit. The sample in `samples/dev/` is a live run of the development PDF at the last code commit, with research mode `pack`.
+**Definition of Done with an accepted exception.** `TIMELOG.md` holds the iteration's rows without hours: on 2026-11-05 the owner approved the tag with the hours still to enter, as at `v0.1`. The drift report (`/egm:egm-drift-report docs`, in `private/egm/`) found small divergences between the documents and the code; each fix was validated step by step with the sequential-thinking tool before it was applied, three of them in code, each with a test. The security review found no vulnerability at high confidence; the code review at medium effort raised ten findings, of which eight were fixed and two kept as designed, for reasons recorded in their commit. The sample in `samples/dev/` is a live run of the development PDF at the last code commit, with research mode `pack`.
 
-**Decisions taken during the iteration.** ADR-031 to ADR-037 and CH-88 to CH-90, accepted with the design doc (D-07). Two decisions were opened for the owner: D-08, whether the research provider drops solicitation-like sources in research mode `live`, and D-09, the authority tier of audit and parliamentary hosts.
+**Decisions taken during the iteration.** ADR-031 to ADR-037 and CH-88 to CH-90, accepted with the design doc (D-07). Two decisions were opened and taken by the owner on 2026-11-05: D-08, option A, so research mode `live` leaves out a source that reads like a published solicitation (ADR-038, CH-91), built before the tag; and D-09, option C, so audit and parliamentary hosts keep the tier the design gave them and the hero pack stays at version 2.
 
 **Lessons learned.**
 - A new prompt meets the corpus's traps again: `brief` 0.1.0 copied the development PDF's visible trap into an `always` item at its first live call, though `extract` had handled the same passage for two iterations. `brief.md` 0.2.0 took `extract.md`'s rule for such passages, and `discover.md` took it before its first live run.

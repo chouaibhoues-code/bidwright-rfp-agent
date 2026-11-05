@@ -96,6 +96,7 @@ from bidwright.research.pack import (
     read_manifest,
 )
 from bidwright.research.provider import ResearchProvider
+from bidwright.research.trust import solicitation
 from bidwright.restricted import RestrictedNames
 from bidwright.schemas import (
     DiscoveryExtract,
@@ -119,11 +120,6 @@ LABEL = "J1"  # the job a build reads, as its run records it
 EXISTING_JOB = "an existing research job, read by bidwright research pack"
 FINISHED = ("COMPLETED", "DEGRADED")
 LIMITS_TIER = "dev"  # a build's run makes a few model calls, well inside the dev limits
-# A title or URL that reads like a published solicitation, which the data rule keeps out.
-SOLICITATION = re.compile(
-    r"(?i)\b(rfp|rfq|itt|request\W+for\W+(proposals?|quotations?|tenders?)|invitation\W+to"
-    r"\W+tender|tender\W+documents?|solicitation|bid\W+opportunit\w*)\b"
-)
 
 
 class BuildRefused(Exception):
@@ -582,9 +578,7 @@ def _pack_texts(
     for name, text in texts.items():
         if flags(text):
             raise BuildRefused(f"{name} would still hold a restricted name")
-    review = [
-        f"{s.id}: {s.title}, {s.url}" for s in sources if SOLICITATION.search(f"{s.title} {s.url}")
-    ]
+    review = [f"{s.id}: {s.title}, {s.url}" for s in sources if solicitation(s.title, s.url)]
     return texts, left_out, review
 
 

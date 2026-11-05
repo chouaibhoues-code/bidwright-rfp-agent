@@ -10,7 +10,7 @@ Where the build departs from this plan, the code, the ADRs and the failure-mode 
 - **Prompt versions:** `brief.md` is at 0.2.0 and `discover.md` at 0.4.0, and `config/agents.yaml` names `brief@0.2.0` and `discover@0.4.0`. `brief` 0.1.0 listed the visible trap TR-01 as an `always` item at its first live call; `discover` 0.2.0 asked no question; `discover` 0.3.0 attached excerpt ids on another subject. Each is a row of the failure-mode log of 2026-11-05 (5.3, steps 9 and 11).
 - **Settling an extraction:** besides the plan's checks, an item or need that shares no content word with the excerpts it cites is dropped, with acronyms and numbers such as ISO and 27001 counted as words, in every extraction and at every pack load; an extraction that keeps no item or need is a research failure and writes no `domain_brief.json`; a pack whose entries all fail at load is a shortfall, and the run ends `DEGRADED`; a pack's entry ids are kept at load (4.4, step 11).
 - **Resume:** before anything appends, a resume repairs all four line files, `ledger.jsonl`, `events.jsonl`, `tool_calls.jsonl` and `dead_letter.jsonl`, each cut recorded as a recovery event `<name>_cut`, where the plan repaired only the ledger with `ledger_cut`; and `refusal()` also refuses a run whose input files' hashes changed, since its checkpoints hold the old passages (4.2, step 4).
-- **The pack builder:** `bidwright research pack` takes `--leave-out`, which leaves a source out with its excerpts and every answer citing them; it lists for review any kept source whose title or URL reads like a solicitation; and it settles the extraction again with the tier rule (step 13). A live research job had returned a university's published request for proposal; D-08 asks whether research mode `live` should drop such sources too.
+- **The pack builder:** `bidwright research pack` takes `--leave-out`, which leaves a source out with its excerpts and every answer citing them; it lists for review any kept source whose title or URL reads like a solicitation; and it settles the extraction again with the tier rule (step 13). A live research job had returned a university's published request for proposal.
 - **`RuleContext`:** it takes `rfp: bool = True`; a context with `rfp=False`, the pack builder's run, holds no passages, and only `rfp=True` requires them (step 6).
 
 **Additions this plan does not describe**
@@ -23,6 +23,10 @@ Where the build departs from this plan, the code, the ADRs and the failure-mode 
 - `EventRecord.kind` no longer lists `gateway`, which nothing wrote: a gateway denial is a row of `tool_calls.jsonl`, and G2 and G3 denials are also security events, as ADR-032 has it (5.1).
 - A run paused on a spent daily quota says to resume it with `bidwright resume` after the quota resets, or with `--profile paid`, where it said to run it again (4.3).
 - Research mode `live` is refused in the client's `record` and `replay` modes, before the run folder exists, since MCP calls have no cassettes and a replay would reach the research server (step 12).
+
+**Decided by the owner on 2026-11-05, built before the tag**
+- D-08, ADR-038: the NotebookLM research provider leaves out a cited source whose title or URL reads like a published solicitation, the pattern the pack builder already used, now in `research/trust.py`, before any excerpt is made; an answer that cited one has its text withheld; `AskResult.dropped` counts them, and `discover` notes each case in `research.json` without the source's title (4.4, 5.1).
+- D-09: the authority tiers stay as `config/research.yaml` sets them (6.1).
 
 **Corrected in place:** the status line above.
 

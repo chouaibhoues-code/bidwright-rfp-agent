@@ -33,6 +33,7 @@ from bidwright.llm.types import Breaker
 from bidwright.research.mcp_client import McpClient, McpToolError
 from bidwright.research.pins import ServerRefused, check
 from bidwright.research.provider import NotebookSource, ResearchRefused, tier_of
+from bidwright.research.trust import solicitation
 from bidwright.schemas import (
     EXCERPT_MAX_CHARS,
     AskResult,
@@ -182,7 +183,13 @@ class NotebookLMProvider:
         excerpts: list[PackExcerpt] = []
         used: dict[str, PackSource] = {}
         seen: set[tuple[str, str]] = set()
+        dropped: set[str] = set()  # sources that read like a published solicitation (ADR-038)
         for reference in references:
+            if reference.source_id not in self._sources:
+                title = titles.get(reference.source_id, "")
+                if solicitation(title, urls.get(title, "")):
+                    dropped.add(reference.source_id)
+                    continue
             source = self._source(reference.source_id, titles, urls)
             text = cut(reference.cited_text.strip(), EXCERPT_MAX_CHARS)
             if source is None or not text or (source.id, text) in seen:
@@ -193,8 +200,11 @@ class NotebookLMProvider:
             excerpts.append(
                 PackExcerpt(id=f"PX-{self._excerpts:04d}", source_id=source.id, text=text)
             )
+        # The answer is a synthesis that can carry a left-out source's content, so it is
+        # withheld when it cited one; its clean excerpts still return.
+        answer = None if dropped else payload.get("answer") or None
         return AskResult(
-            answer=payload.get("answer") or None, excerpts=excerpts, sources=list(used.values())
+            answer=answer, excerpts=excerpts, sources=list(used.values()), dropped=len(dropped)
         )
 
     def _source(

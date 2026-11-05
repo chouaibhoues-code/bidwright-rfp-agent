@@ -25,7 +25,7 @@ from bidwright.research.mcp_client import McpClient, McpToolError, McpUnavailabl
 from bidwright.research.nlm import SENT, NotebookLMProvider
 from bidwright.research.pins import ServerRefused, check, pinned
 from bidwright.research.provider import ResearchRefused
-from tests.mcp_fakes import CITED_TEXT, NAME, WCAG, WCAG_URL
+from tests.mcp_fakes import CITED_TEXT, NAME, TENDER, TENDER_TEXT, WCAG, WCAG_URL
 from tests.node_fakes import DEV_RFP, RuleBackend
 
 CONFIG = load_config()
@@ -182,6 +182,26 @@ def test_a_job_runs_and_a_poll_that_returns_a_new_task_id_updates_it(fake_url: s
     assert len(excerpt.text) <= 300 and CITED_TEXT.startswith(excerpt.text)
     again = provider.ask("And for documents?")
     assert again.sources[0].id == "PS-001" and again.excerpts[0].id == "PX-0002"
+
+
+def test_a_source_that_reads_like_a_solicitation_is_left_out_before_any_excerpt() -> None:
+    """ADR-038 (D-08): the provider leaves out a cited source whose title or URL reads like a
+    published request for proposals, makes no excerpt of it and withholds the answer's text,
+    which may carry its content; the clean excerpt still returns."""
+    with _serving("--tender") as url:
+        provider = _provider(url)
+        notebook = provider.create_notebook("run-4")
+        task = provider.start(notebook, "Electronic signature services")
+        provider.status(notebook, task, 0)
+        done = provider.status(notebook, task, 0)
+        assert TENDER in [s.title for s in done.listing], "the job found the solicitation"
+        assert provider.import_sources(notebook, done.task_id) == 2
+        provider.bind(notebook)
+        result = provider.ask("Which standard applies to online forms?")
+    assert result.dropped == 1 and result.answer is None
+    assert [(s.id, s.title) for s in result.sources] == [("PS-001", WCAG)]
+    assert [e.id for e in result.excerpts] == ["PX-0001"]
+    assert all(TENDER_TEXT not in e.text for e in result.excerpts)
 
 
 def test_a_resumed_provider_numbers_on_from_the_record(fake_url: str) -> None:

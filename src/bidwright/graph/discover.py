@@ -762,6 +762,14 @@ class Discovery:
             screened = screen(result.excerpts, self.patterns, self.events, node="discover_ask")
             fresh = [e for e in screened if e.id not in known]
             notes: list[str] = []
+            if result.dropped:
+                left_out = (
+                    f"the answer to {question!r}: {result.dropped} cited source"
+                    f"{'s' if result.dropped > 1 else ''} left out, whose title or URL reads like"
+                    " a published solicitation, and the answer's text withheld (ADR-038)"
+                )
+                notes.append(left_out)
+                self._event(left_out, "discover_ask")
             text = _cut(result.answer or "", ANSWER_MAX_CHARS, f"the answer to {question!r}", notes)
             answer = PackAnswer(
                 question=question,

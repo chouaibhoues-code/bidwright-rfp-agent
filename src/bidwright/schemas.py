@@ -1041,6 +1041,9 @@ class AskResult(Record):
     answer: str | None = None
     excerpts: list[PackExcerpt] = Field(default_factory=list)
     sources: list[PackSource] = Field(default_factory=list)
+    # Sources the answer cited whose title or URL reads like a published solicitation, left out
+    # with their excerpts before any was made; the answer's text is then withheld (ADR-038).
+    dropped: int = 0
 
 
 class ExcerptView(Facing):
