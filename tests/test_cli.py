@@ -10,6 +10,7 @@ import pytest
 from bidwright import cli
 from bidwright.config import load_config
 from bidwright.graph.build import RunResult, execute
+from bidwright.llm.client import Mode
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Response
 from bidwright.preflight import Refused
@@ -176,6 +177,24 @@ def test_an_extract_prompt_a_run_does_not_load_is_refused_before_a_run_folder_ex
     assert not (tmp_path / "out").exists()
     with pytest.raises(Refused, match="no extract prompt 'approach'"):
         execute(source=DEV_RFP, profile="free", outputs=tmp_path / "out", extract_prompt="approach")
+
+
+@pytest.mark.parametrize("mode", ["record", "replay"])
+def test_live_research_is_refused_when_recording_or_replaying(tmp_path: Path, mode: Mode) -> None:
+    """MCP calls have no cassettes, so a recording in research mode live would reach the
+    research server when replayed (drift report of 2026-11-05)."""
+    with pytest.raises(Refused, match=f"client's {mode} mode"):
+        execute(
+            docling_mode="replay",
+            source=DEV_RFP,
+            profile="free",
+            outputs=tmp_path / "out",
+            mode=mode,
+            cassettes=CassetteStore(tmp_path / "cassettes"),
+            backends={"gemini": RuleBackend()},
+            research="live",
+        )
+    assert not (tmp_path / "out").exists()
 
 
 def test_load_env_never_overrides_and_skips_empty_values(

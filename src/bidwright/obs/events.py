@@ -3,8 +3,9 @@
 `EventRecorder` is the file's only writer. It appends under a lock, since the `Send` workers
 record events in parallel, and each row carries `part`, the run's resume count, so a row written
 again after a resume is told apart from the first and nothing is ever deleted. Kinds are
-`status` (every transition the supervisor records), `gateway`, `recovery`, `research` and
-`security`; only a security event carries an attribution class.
+`status` (every transition the supervisor records), `recovery`, `research` and `security`;
+only a security event carries an attribution class. A gateway denial is a row of
+`tool_calls.jsonl`, and G2 and G3 denials are also security events (ADR-032).
 """
 
 import threading

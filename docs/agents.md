@@ -71,7 +71,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 
 ## Runtime graph
 
-Drawn from the compiled LangGraph graph. The dotted edges are conditional: the `Send` fan-outs, one `extract` worker per pack and one `consolidate` worker per cluster the model step takes, and the stops that `until` and `--baseline b0` choose.
+Drawn from the compiled LangGraph graph. The dotted edges are conditional: the `Send` fan-outs, one `extract` worker per pack and one `consolidate` worker per cluster the model step takes; the stops that `until` and `--baseline b0` choose; the research mode's branches after `brief`; and each live research node's fallback to `discover_load`.
 
 ```mermaid
 ---

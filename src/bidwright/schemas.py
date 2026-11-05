@@ -139,7 +139,8 @@ FactorStatus = Literal["IN_SCOPE", "OUT_OF_SCOPE"]
 ResearchModeName = Literal["off", "pack", "live"]
 DomainKind = Literal["pattern", "standard", "pitfall"]
 JobState = Literal["running", "completed", "failed", "timed_out"]
-EventKind = Literal["status", "gateway", "recovery", "research", "security"]
+# Gateway denials are in `tool_calls.jsonl`; G2 and G3 also record `security` events (ADR-032).
+EventKind = Literal["status", "recovery", "research", "security"]
 Attribution = Literal["injection-dominant", "authorization-dominant", "combined", "indeterminate"]
 
 SrcId = Annotated[str, Field(pattern=r"^SRC-\d{4}$")]

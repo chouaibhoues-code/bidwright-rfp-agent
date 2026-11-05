@@ -172,7 +172,8 @@ def agents_md() -> str:
         "",
         "Drawn from the compiled LangGraph graph. The dotted edges are conditional: the `Send`"
         " fan-outs, one `extract` worker per pack and one `consolidate` worker per cluster the"
-        " model step takes, and the stops that `until` and `--baseline b0` choose.",
+        " model step takes; the stops that `until` and `--baseline b0` choose; the research mode's"
+        " branches after `brief`; and each live research node's fallback to `discover_load`.",
         "",
         "```mermaid",
         mermaid,

@@ -284,6 +284,7 @@ def test_a_paused_free_run_resumes_on_paid_and_records_the_switch(tmp_path: Path
     spent = ProviderSimulator(RuleBackend(), [{"call": 1, "fault": "quota_exhausted"}])
     paused = _run(tmp_path, spent, fallback=False)
     assert paused.status == "QUOTA_PAUSED", paused.reason
+    assert paused.reason is not None and "bidwright resume" in paused.reason
     resumed = _run(tmp_path, profile="paid", resume=True, fallback=False)
     assert resumed.status == "COMPLETED", resumed.reason
     manifest = _manifest(resumed.run_dir)

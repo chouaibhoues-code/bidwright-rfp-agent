@@ -636,9 +636,9 @@ def test_stored_brief_and_research_records_keep_their_limits() -> None:
 
 def test_only_a_security_event_carries_an_attribution() -> None:
     with pytest.raises(ValidationError, match="only a security event"):
-        s.EventRecord.model_validate({**EVENT.model_dump(), "kind": "gateway"})
+        s.EventRecord.model_validate({**EVENT.model_dump(), "kind": "status"})
     plain = s.EventRecord.model_validate(
-        {**EVENT.model_dump(), "kind": "gateway", "attribution": None}
+        {**EVENT.model_dump(), "kind": "status", "attribution": None}
     )
     assert plain.attribution is None
 

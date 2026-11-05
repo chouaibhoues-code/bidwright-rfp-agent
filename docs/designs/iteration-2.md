@@ -1,6 +1,30 @@
 # Iteration 2 design: research the domain
 
-**Status:** accepted for the build on 2026-11-04 (D-07 in [`context/Decision-Form.md`](../../context/Decision-Form.md)), after the Stage 9 review's first round (53 issues) and its one re-audit (29 issues), both resolved the same day. Its decisions are ADR-031 to ADR-037 in [`DECISIONS.md`](../../DECISIONS.md) (ADR-037 records three of the six departures, and ADR-034 and ADR-036 the other three) and CH-88 to CH-90 in the Master-Plan's change log; the examples' return goes to the start of Iteration 3's extraction ladder (CH-90). It builds on ADR-022 (the request budget), ADR-023 (the run entry), ADR-024 (acceptance checks), ADR-025 (agent configuration), ADR-026 (client documents), ADR-029 (the free tier's daily quota) and ADR-030 (the matcher), and on the checks of 2026-11-04 in [`docs/verification_log.md`](../verification_log.md): C7-06 again, C7-16, the NotebookLM server and its result shapes, and S-11.
+**Status:** built, at the end of Iteration 2 on 2026-11-05; the iteration closes with the tag `v0.2`. The plan below is kept as written, and the section "As built at `v0.2`" records where the build departs from it. It was accepted for the build on 2026-11-04 (D-07 in [`context/Decision-Form.md`](../../context/Decision-Form.md)), after the Stage 9 review's first round (53 issues) and its one re-audit (29 issues), both resolved the same day. Its decisions are ADR-031 to ADR-037 in [`DECISIONS.md`](../../DECISIONS.md) (ADR-037 records three of the six departures, and ADR-034 and ADR-036 the other three) and CH-88 to CH-90 in the Master-Plan's change log; the examples' return goes to the start of Iteration 3's extraction ladder (CH-90). It builds on ADR-022 (the request budget), ADR-023 (the run entry), ADR-024 (acceptance checks), ADR-025 (agent configuration), ADR-026 (client documents), ADR-029 (the free tier's daily quota) and ADR-030 (the matcher), and on the checks of 2026-11-04 in [`docs/verification_log.md`](../verification_log.md): C7-06 again, C7-16, the NotebookLM server and its result shapes, and S-11.
+
+## As built at `v0.2`
+
+Where the build departs from this plan, the code, the ADRs and the failure-mode log of [`DECISIONS.md`](../../DECISIONS.md) hold. The departures, with the sections they touch:
+
+**Decisions taken after this plan, from live failures and the code review**
+- **Prompt versions:** `brief.md` is at 0.2.0 and `discover.md` at 0.4.0, and `config/agents.yaml` names `brief@0.2.0` and `discover@0.4.0`. `brief` 0.1.0 listed the visible trap TR-01 as an `always` item at its first live call; `discover` 0.2.0 asked no question; `discover` 0.3.0 attached excerpt ids on another subject. Each is a row of the failure-mode log of 2026-11-05 (5.3, steps 9 and 11).
+- **Settling an extraction:** besides the plan's checks, an item or need that shares no content word with the excerpts it cites is dropped, with acronyms and numbers such as ISO and 27001 counted as words, in every extraction and at every pack load; an extraction that keeps no item or need is a research failure and writes no `domain_brief.json`; a pack whose entries all fail at load is a shortfall, and the run ends `DEGRADED`; a pack's entry ids are kept at load (4.4, step 11).
+- **Resume:** before anything appends, a resume repairs all four line files, `ledger.jsonl`, `events.jsonl`, `tool_calls.jsonl` and `dead_letter.jsonl`, each cut recorded as a recovery event `<name>_cut`, where the plan repaired only the ledger with `ledger_cut`; and `refusal()` also refuses a run whose input files' hashes changed, since its checkpoints hold the old passages (4.2, step 4).
+- **The pack builder:** `bidwright research pack` takes `--leave-out`, which leaves a source out with its excerpts and every answer citing them; it lists for review any kept source whose title or URL reads like a solicitation; and it settles the extraction again with the tier rule (step 13). A live research job had returned a university's published request for proposal; D-08 asks whether research mode `live` should drop such sources too.
+- **`RuleContext`:** it takes `rfp: bool = True`; a context with `rfp=False`, the pack builder's run, holds no passages, and only `rfp=True` requires them (step 6).
+
+**Additions this plan does not describe**
+- **Schemas:** `PackAnswer` has `job`, the label of the job it was asked of, and `ResearchRecord` has `calls`, the run's `discover` model calls so far, so a rerun node names its calls and journal keys as before (5.1, step 11).
+- **The research provider:** `bind(notebook_id, *, known=(), excerpts=0)` takes the sources and the excerpt count a run already holds, so new source and excerpt ids continue from them on a resume (4.4).
+- **G1 and G5:** a `start_research` whose query is a recorded job's starts nothing and passes G1, and a recorded question, answered from `research.json`, passes G5, so a resumed node's replayed calls pass the caps; [`docs/agents.md`](../agents.md) gives the rules' checks as built (6.2).
+- **Call ids:** the retry after generic risks is `R-final-generic`, and the three nodes' manifests are written through `CallManifests` in `graph/nodes.py`, which calls `ContextManager.record_manifest` and counts every turn after the rendered prompt (step 14).
+
+**Changed by the drift report of 2026-11-05**
+- `EventRecord.kind` no longer lists `gateway`, which nothing wrote: a gateway denial is a row of `tool_calls.jsonl`, and G2 and G3 denials are also security events, as ADR-032 has it (5.1).
+- A run paused on a spent daily quota says to resume it with `bidwright resume` after the quota resets, or with `--profile paid`, where it said to run it again (4.3).
+- Research mode `live` is refused in the client's `record` and `replay` modes, before the run folder exists, since MCP calls have no cassettes and a replay would reach the research server (step 12).
+
+**Corrected in place:** the status line above.
 
 ## 1. Purpose
 

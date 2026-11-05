@@ -1071,7 +1071,7 @@ One line of `events.jsonl`. `part` is the run's resume count.
 |---|---|---|---|---|
 | `at` | datetime | yes |  |  |
 | `part` | int (ge 0) | no | 0 |  |
-| `kind` | one of 'status', 'gateway', 'recovery', 'research', 'security' | yes |  |  |
+| `kind` | one of 'status', 'recovery', 'research', 'security' | yes |  |  |
 | `node` | str \| None | no | None |  |
 | `detail` | str | yes |  |  |
 | `attribution` | one of 'injection-dominant', 'authorization-dominant', 'combined', 'indeterminate' \| None | no | None |  |

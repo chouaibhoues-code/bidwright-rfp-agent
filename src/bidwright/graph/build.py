@@ -159,6 +159,14 @@ SECTIONS = ("understanding", "approach", "risks_and_assumptions")
 UNTIL = ("verify", "coverage", "consolidate", "brief", "render")
 # The research nodes after `brief`, by research mode.
 AFTER_BRIEF = {"off": "approach", "pack": "discover_load", "live": "discover_start"}
+# A spent daily quota pauses a run; `bidwright resume` continues it (ADR-031).
+QUOTA_ADVICE = "resume it with bidwright resume after the quota resets, or with --profile paid"
+# MCP calls have no cassettes, so a recording in research mode live would reach the research
+# server when replayed; the client's record and replay modes refuse it.
+LIVE_RESEARCH_UNRECORDED = (
+    "research mode live cannot run in the client's {mode} mode: MCP calls have no cassettes,"
+    " so a replay would reach the research server; use --research pack or off"
+)
 
 
 class NodeFunction(Protocol):
@@ -1095,6 +1103,8 @@ def execute(
         until = chosen.until
     docling_mode = docling_mode or mode
     config = config or load_config()
+    if (research or config.research.mode) == "live" and mode != "live":
+        raise Refused(LIVE_RESEARCH_UNRECORDED.format(mode=mode))
     prompts = run_prompts(config)
     extract_id = extract_prompt or (chosen.extract_prompt if chosen else "extract")
     check_extract_prompt(extract_id, prompts)
@@ -1310,7 +1320,7 @@ def execute(
         except BudgetExceeded as exc:
             status, reason = "BUDGET_EXCEEDED", str(exc)
         except QuotaExhausted as exc:
-            status, reason = "QUOTA_PAUSED", f"{exc}; rerun after the quota resets"
+            status, reason = "QUOTA_PAUSED", f"{exc}; {QUOTA_ADVICE}"
         except CircuitOpen as exc:
             status, reason = "QUOTA_PAUSED", str(exc)
         except ResearchPending as exc:
