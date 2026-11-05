@@ -33,6 +33,7 @@ PROMPT_IDS = (
     "extract",
     "extract_oneshot",
     "triage",
+    "brief",
     "consolidate",
     "approach",
     "risk",
@@ -111,6 +112,8 @@ class RuleBackend:
             return Response(text=json.dumps(_extract(data)), usage=USAGE)
         if name == "TriageResult":
             return Response(text=json.dumps(_triage(data)), usage=USAGE)
+        if name == "BriefResult":
+            return Response(text=json.dumps(_brief(data)), usage=USAGE)
         if name == "ConsolidationResult":
             return Response(text=json.dumps(_consolidate(data)), usage=USAGE)
         if name == "ApproachResult":
@@ -180,6 +183,28 @@ def _triage(outline: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _brief(task: dict[str, Any]) -> dict[str, Any]:
+    """Each `EVALUATION` table row as a factor, its first cell the name and its second the
+    weight, skipping header rows, whose weight cell holds no digit; and one topic."""
+    factors = []
+    for section in task["sections"]:
+        for passage in section["passages"]:
+            cells = [cell.strip() for cell in passage["text"].split("|")]
+            if passage.get("zone") != "EVALUATION" or len(cells) < 2:
+                continue
+            if not cells[0] or not any(ch.isdigit() for ch in cells[1]):
+                continue
+            factors.append(
+                {
+                    "name": cells[0],
+                    "weight": cells[1],
+                    "scoring": "not_stated",
+                    "src_ids": [passage["src_id"]],
+                }
+            )
+    return {"factors": factors, "topics": ["digital service procurement"]}
+
+
 def _consolidate(task: dict[str, Any]) -> dict[str, Any]:
     """The first member's section title as topic, and nothing else."""
     title = task["members"][0]["section_path"].split(" > ")[-1] or "Untitled section"
@@ -202,7 +227,7 @@ def dev_ingest() -> IngestResult:
 
 
 def context(
-    backend: ScriptBackend | None,
+    backend: ScriptBackend | RuleBackend | None,
     *,
     mode: str = "live",
     cassettes: CassetteStore | None = None,

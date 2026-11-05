@@ -20,6 +20,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | Prompt | Version | Role | Hash |
 |---|---|---|---|
 | `approach` | 0.2.0 | reason | `sha256:d95f06596240` |
+| `brief` | 0.1.0 | extract | `sha256:89ab16a08371` |
 | `consolidate` | 0.1.0 | reason | `sha256:0e4706513b48` |
 | `draft` | 0.2.0 | reason | `sha256:e565f6bb6f35` |
 | `extract` | 0.4.0 | extract | `sha256:11cde3336a38` |
@@ -32,6 +33,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | Agent or function | Kind | Tools it may call | Limits |
 |---|---|---|---|
 | `triage` | function | None | 1 call and 1 repair, fixed in code |
+| `brief` | function | None | 1 call and 1 repair, fixed in code |
 | `extract` | function | None | 1 call and 1 repair, fixed in code |
 | `approach` | function | None | 1 call and 1 repair, fixed in code |
 | `risk` | agent | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |

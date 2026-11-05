@@ -277,3 +277,42 @@ consolidate:
       questions: []
       references:
         - {requirement_id: REQ-0922, target: "Section 2", resolved_ids: [REQ-0921]}
+
+# For brief: an evaluation section whose table has a price row and whose scoring rule is quoted
+# exactly, and an instruction section with a constraint and a prohibition.
+brief:
+  input:
+    sections:
+      - doc_id: example-rfp
+        section_path: "6 Evaluation"
+        passages:
+          - {src_id: SRC-0991, section_path: "6 Evaluation", text: "Tenders are scored on quality and price, and the contract goes to the highest total score.", zone: EVALUATION}
+          - {src_id: SRC-0992, section_path: "6 Evaluation", text: "Criterion | Weight", zone: EVALUATION}
+          - {src_id: SRC-0993, section_path: "6 Evaluation", text: "Quality of the service | 50%", zone: EVALUATION}
+          - {src_id: SRC-0994, section_path: "6 Evaluation", text: "Delivery plan | 20%", zone: EVALUATION}
+          - {src_id: SRC-0995, section_path: "6 Evaluation", text: "Price | 30%", zone: EVALUATION}
+          - {src_id: SRC-0996, section_path: "6 Evaluation", text: "Two evaluators score each quality criterion from 0 to 5.", zone: EVALUATION}
+      - doc_id: example-rfp
+        section_path: "2 Submitting a tender"
+        passages:
+          - {src_id: SRC-0961, section_path: "2 Submitting a tender", text: "Tenders must be uploaded to the portal as one PDF of no more than 30 pages.", zone: INSTRUCTION}
+          - {src_id: SRC-0962, section_path: "2 Submitting a tender", text: "The Trust does not accept variant bids.", zone: INSTRUCTION}
+    profile: {buyer: "The Trust"}
+    requirements:
+      - {id: REQ-0961, statement: "Upload one PDF of no more than 30 pages to the portal.", modality: must, mandatory: true, hazard: true}
+  output:
+    factors:
+      - {name: "Quality of the service", weight: "50%", scoring: "Two evaluators score each quality criterion from 0 to 5.", src_ids: [SRC-0993, SRC-0996]}
+      - {name: "Delivery plan", weight: "20%", scoring: "Two evaluators score each quality criterion from 0 to 5.", src_ids: [SRC-0994, SRC-0996]}
+      - {name: "Price", weight: "30%", scoring: not_stated, src_ids: [SRC-0995]}
+    scoring_method: {text: "Quality and price are scored, and the highest total score wins the contract.", src_ids: [SRC-0991]}
+    needs: []
+    scope_in: []
+    scope_out: []
+    constraints:
+      - {text: "One PDF of no more than 30 pages, uploaded to the portal.", src_ids: [SRC-0961]}
+    never:
+      - {text: "Submit a variant bid.", src_ids: [SRC-0962]}
+    ask: []
+    always: []
+    topics: ["records services for healthcare trusts", "public sector service procurement"]

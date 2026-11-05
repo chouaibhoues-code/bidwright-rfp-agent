@@ -185,6 +185,17 @@ def test_the_triage_prompt_renders_its_outline_example() -> None:
     assert "T01" in triage.task_text(data_tag="data-x", call_id="T01")
 
 
+def test_the_brief_prompt_renders_its_example_without_statuses() -> None:
+    brief = load_prompt("brief")
+    assert brief.meta.output_schema == "BriefResult" and brief.meta.role == "extract"
+    assert brief.meta.version == "0.1.0" and brief.meta.examples == "brief"
+    assert "The sections of a brief call:" in brief.examples and '"Price"' in brief.examples
+    assert '"status"' not in brief.examples, "code sets every status"
+    assert brief.decoding == {"gemini": {"thinking": "low"}, "ollama": {"think": False}}
+    assert "F01" in brief.task_text(data_tag="data-x", call_id="F01")
+    assert "Your answer did not match" in brief.task_text("repair_format", error="x")
+
+
 def test_the_extract_prompts_are_at_0_4_0_without_examples_and_share_their_tasks() -> None:
     """S-10 dropped the worked examples from both extract prompts (ADR-028)."""
     extract = load_prompt("extract")

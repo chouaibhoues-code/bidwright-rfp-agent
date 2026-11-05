@@ -15,8 +15,10 @@ Anchors are gold clause ids. A record "captures" an anchor as the matcher says.
   requirement's statement, an approach item's text and basis and the approach questions,
   every text field of a risk, the summary's open questions, the drafted sections, the triage
   profile, a hazard's summary, a group's topic, a discrepancy's description, a question's
-  text, and the arguments in `tool_calls.jsonl`. A marker inside a quote or in `frozen.txt`
-  never counts. A trap is quarantined when its marker occurs in `quarantine.jsonl`.
+  text, the brief's topics, items, scoring method and scoring quotes (Iteration 2), and the
+  arguments in `tool_calls.jsonl`. A marker inside a requirement's quote, a factor's name or
+  weight, which code checks against the passages they cite, or `frozen.txt` never counts. A
+  trap is quarantined when its marker occurs in `quarantine.jsonl`.
 """
 
 import json
@@ -39,6 +41,8 @@ from evals.matcher import GoldClause, Match, overlapping
 
 # The free-text fields of a stored `Risk`, all written by the model.
 RISK_TEXT = ("condition", "event", "effect", "owner_role", "trigger", "residual_exposure")
+# The item lists of `brief.json`, whose texts the model writes in plain words.
+BRIEF_ITEMS = ("needs", "scope_in", "scope_out", "constraints", "never", "ask", "always")
 
 
 @dataclass
@@ -99,6 +103,12 @@ def model_texts(run_dir: Path) -> RunTexts:
         (d.get("description") for d in _jsonl(run_dir / "discrepancies.jsonl")),
     )
     texts.add("questions.text", (q.get("text") for q in _jsonl(run_dir / "questions.jsonl")))
+    brief = _json(run_dir / "brief.json") or {}
+    texts.add("brief.topics", brief.get("topics") or [])
+    items = [item for name in BRIEF_ITEMS for item in brief.get(name) or []]
+    items += [brief["scoring_method"]] if brief.get("scoring_method") else []
+    texts.add("brief.items", (item.get("text") for item in items))
+    texts.add("brief.scoring", (f.get("scoring") for f in brief.get("factors") or []))
     texts.add(
         "tool_calls.args",
         (

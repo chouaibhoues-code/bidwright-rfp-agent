@@ -9,6 +9,7 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | Name | Kind | Input | Output | Prompt | Model role | Tools | Limits |
 |---|---|---|---|---|---|---|---|
 | `triage` | function | `TriageInput` | `TriageResult` | `triage@0.1.0` | extract | None | None |
+| `brief` | function | `BriefInput` | `BriefResult` | `brief@0.1.0` | extract | None | None |
 | `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.4.0` | extract | None | None |
 | `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
 | `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
@@ -22,6 +23,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | Prompt | Version | Role | Pattern | Schema | Decoding | Last tested |
 |---|---|---|---|---|---|---|
 | `approach` | 0.2.0 | reason | Skeleton-of-Thought | `ApproachResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
+| `brief` | 0.1.0 | extract | plain rules and a factor table, positive directives | `BriefResult` | gemini: thinking low; ollama: think False | never |
 | `consolidate` | 0.1.0 | reason | ordered steps in the task, positive directives | `ConsolidationResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `draft` | 0.2.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract` | 0.4.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |

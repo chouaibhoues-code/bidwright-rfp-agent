@@ -11,6 +11,14 @@ triage:
   model_role: extract
   tools: []
 
+brief:
+  kind: function
+  input: BriefInput
+  output: BriefResult
+  prompt: brief@0.1.0
+  model_role: extract
+  tools: []
+
 extract:
   kind: function
   input: ExtractBatch

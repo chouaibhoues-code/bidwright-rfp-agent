@@ -207,6 +207,7 @@ def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
         "draft": _draft_examples,
         "triage": _triage_examples,
         "consolidate": _consolidate_examples,
+        "brief": _brief_examples,
     }
     if name not in renderers or name not in sets:
         raise ValueError(f"no example set {name!r} in {EXAMPLES_FILE}")
@@ -341,6 +342,39 @@ def _triage_examples(example: dict[str, Any]) -> str:
             "Its result:",
             _json_list("{", "zones", output["zones"], profile)
             + _json_list(", ", "hazards", output["hazards"]),
+        ]
+    )
+
+
+def _brief_examples(example: dict[str, Any]) -> str:
+    """One brief's input and its result, holding to the rules code enforces: every cited id is
+    in the input, each factor's name and weight sit in one cited passage, and each scoring
+    quote is in a cited passage."""
+    data = schemas.BriefInput.model_validate(example["input"])
+    result = schemas.BriefResult.model_validate(example["output"])
+    texts = {p.src_id: p.text for section in data.sections for p in section.passages}
+    items = [result.scoring_method] if result.scoring_method is not None else []
+    for name in ("needs", "scope_in", "scope_out", "constraints", "never", "ask", "always"):
+        items += getattr(result, name)
+    cited = [i for f in result.factors for i in f.src_ids] + [i for t in items for i in t.src_ids]
+    unknown = sorted(set(cited) - set(texts))
+    if unknown:
+        raise ValueError(f"the brief example cites ids its input does not hold: {unknown}")
+    for factor in result.factors:
+        passages = [texts[i] for i in factor.src_ids]
+        weighted = factor.weight == schemas.NOT_STATED or any(
+            factor.name in t and factor.weight in t for t in passages
+        )
+        if not weighted:
+            raise ValueError(f"brief example {factor.name!r}: name and weight not in one passage")
+        if factor.scoring != schemas.NOT_STATED and not any(factor.scoring in t for t in passages):
+            raise ValueError(f"brief example {factor.name!r}: the scoring quote is not cited")
+    return "\n".join(
+        [
+            "The sections of a brief call:",
+            _dump(example["input"]),
+            "Its brief:",
+            _dump(example["output"]),
         ]
     )
 

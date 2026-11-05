@@ -14,6 +14,10 @@ Three paths pack the model calls of Iteration 1, and each writes one manifest pe
   rule, and `sections_in` gives back the sections of one call.
 - `pack_cluster` checks one `consolidate` cluster task against its budget, under the group id; a
   task over the budget is a fault, since the cluster rule caps a cluster at 12 members.
+- `pack_brief` (Iteration 2) groups the `EVALUATION` sections, then the `INSTRUCTION` sections,
+  each whole and in document order, with the verified requirements their passages hold and the
+  RFP profile, into `brief` calls, `F01` onward, by the same budget rule; a section larger than
+  the budget goes alone. A manifest's `included_record_ids` names the requirements it holds.
 
 Tokens are estimated as characters divided by `chars_per_token`, rounded up. A manifest's
 `tokens_by_layer` takes `rules` (the system text less its examples), `examples` and `task` from
@@ -36,6 +40,7 @@ from bidwright.harness.view import IdentityView, TextView
 from bidwright.prompts import Prompt
 from bidwright.schemas import (
     DEFINITION_MAX_CHARS,
+    BriefSection,
     ClusterTask,
     ContextManifest,
     ContextPack,
@@ -45,15 +50,22 @@ from bidwright.schemas import (
     LayerTokens,
     Passage,
     PassageView,
+    Requirement,
+    RequirementView,
+    RfpProfile,
     SectionView,
     TermView,
     ZoneRecord,
 )
 
-CALL_PREFIX = {"extract": "B", "triage": "T"}
+CALL_PREFIX = {"extract": "B", "triage": "T", "brief": "F"}
+BRIEF_ZONES = ("EVALUATION", "INSTRUCTION")  # packed in this order
 CONTEXT_DIR = "context"
 _PACK_KEYS = len(json.dumps({"passages": [], "context": [], "terms": []}, separators=(",", ":")))
 _SECTION_KEYS = len(json.dumps({"sections": []}, separators=(",", ":")))
+_BRIEF_KEYS = len(
+    json.dumps({"sections": [], "profile": {}, "requirements": []}, separators=(",", ":"))
+)
 
 
 class ContextOverflow(ValueError):
@@ -361,6 +373,105 @@ class ContextManager:
     def _section_tokens(self, sizes: Sequence[int]) -> int:
         return estimate_tokens(_SECTION_KEYS + _list_chars(sizes), self.limits.chars_per_token)
 
+    # --- brief ---------------------------------------------------------------------------------
+
+    def pack_brief(
+        self,
+        sections: Sequence[ZoneRecord],
+        requirements: Sequence[Requirement],
+        profile: RfpProfile,
+        *,
+        view: TextView | None = None,
+        fixed_tokens: LayerTokens,
+        budget_tokens: int,
+    ) -> list[ContextPack]:
+        """`brief` calls, `F01` onward, from the zone records of every section: the
+        `EVALUATION` sections first, then the `INSTRUCTION` sections, each whole and in
+        document order. A pack's passages carry their zone, and its manifest names the
+        requirements whose passages it holds; a section larger than the budget goes alone."""
+        prefix = _prefix("brief")
+        _check_budget(budget_tokens)
+        chosen = sorted(
+            (
+                z
+                for z in sections
+                if z.zone in BRIEF_ZONES and (z.doc_id, z.section_path) in self._sections
+            ),
+            key=lambda z: (
+                BRIEF_ZONES.index(z.zone),
+                self.order[self._sections[(z.doc_id, z.section_path)][0]],
+            ),
+        )
+        packer = _Packer(
+            manager=self,
+            view=view or IdentityView(self.passages.values()),
+            terms=(),
+            neighbors=0,
+            zones={(z.doc_id, z.section_path): z.zone for z in sections},
+            cues={},
+        )
+        members: list[list[str]] = []
+        held: list[list[Requirement]] = []
+        sizes: list[int] = []
+        for zone in chosen:
+            ids = self._sections[(zone.doc_id, zone.section_path)]
+            inside = set(ids)
+            holds = [r for r in requirements if inside & set(r.src_ids)]
+            section = BriefSection(
+                doc_id=zone.doc_id,
+                section_path=zone.section_path,
+                passages=[packer.passage_view(self.passages[s]) for s in ids],
+            )
+            views = [len(requirement_view(r).model_dump_json()) for r in holds]
+            sizes.append(len(section.model_dump_json()) + _list_chars(views) + 1)
+            members.append(ids)
+            held.append(holds)
+        fixed = _BRIEF_KEYS + len(profile.model_dump_json())
+        room = budget_tokens - _fixed(fixed_tokens)
+        groups: list[list[int]] = []
+        current: list[int] = []
+        for index in range(len(chosen)):
+            trial = _list_chars([sizes[i] for i in [*current, index]])
+            if current and estimate_tokens(fixed + trial, self.limits.chars_per_token) > room:
+                groups.append(current)
+                current = []
+            current.append(index)
+        if current:
+            groups.append(current)
+        packs = []
+        for number, group in enumerate(groups, start=1):
+            call_id = f"{prefix}{number:02d}"
+            included = [src for i in group for src in members[i]]
+            records = list(dict.fromkeys(r.id for i in group for r in held[i]))
+            evidence = estimate_tokens(
+                fixed + _list_chars([sizes[i] for i in group]), self.limits.chars_per_token
+            )
+            manifest = self._manifest(
+                "brief",
+                call_id,
+                included,
+                [],
+                [],
+                fixed_tokens,
+                evidence,
+                budget_tokens,
+                records=records,
+            )
+            views = [packer.passage_view(self.passages[s]) for s in included]
+            packs.append(ContextPack(call_id=call_id, passages=views, manifest=manifest))
+        return packs
+
+    def brief_sections(self, pack: ContextPack) -> list[BriefSection]:
+        """The sections of one `brief` pack, whole, in pack order."""
+        found: dict[tuple[str, str], list[PassageView]] = {}
+        for view in pack.passages:
+            passage = self.passages[view.src_id]
+            found.setdefault((passage.doc_id, passage.section_path), []).append(view)
+        return [
+            BriefSection(doc_id=doc_id, section_path=path, passages=views)
+            for (doc_id, path), views in found.items()
+        ]
+
     # --- consolidate -----------------------------------------------------------------------------
 
     def pack_cluster(
@@ -419,6 +530,8 @@ class ContextManager:
         fixed_tokens: LayerTokens,
         evidence: int,
         budget_tokens: int,
+        *,
+        records: Sequence[str] = (),
     ) -> ContextManifest:
         layers = LayerTokens(
             rules=fixed_tokens.rules,
@@ -433,6 +546,7 @@ class ContextManager:
             context_src_ids=context,
             terms=terms,
             dropped_src_ids=[],
+            included_record_ids=list(records),
             tokens_by_layer=layers,
             budget_tokens=budget_tokens,
             utilization=round((_fixed(layers) + evidence) / budget_tokens, 4),
@@ -443,6 +557,17 @@ class ContextManager:
             manifest.model_dump_json() + "\n", encoding="utf-8", newline="\n"
         )
         return manifest
+
+
+def requirement_view(requirement: Requirement) -> RequirementView:
+    """A verified requirement as a model call sees it."""
+    return RequirementView(
+        id=requirement.id,
+        statement=requirement.statement,
+        modality=requirement.modality,
+        mandatory=requirement.mandatory,
+        hazard=requirement.hazard,
+    )
 
 
 def _prefix(node: str) -> str:
@@ -458,9 +583,11 @@ def _check_budget(budget_tokens: int) -> None:
 
 
 __all__ = [
+    "BRIEF_ZONES",
     "CALL_PREFIX",
     "ContextManager",
     "ContextOverflow",
     "estimate_tokens",
     "prompt_tokens",
+    "requirement_view",
 ]

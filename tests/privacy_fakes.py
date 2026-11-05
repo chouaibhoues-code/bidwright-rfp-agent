@@ -68,6 +68,8 @@ class ScriptedModel:
             return self._extract(data["passages"])
         if name == "TriageResult":
             return {"zones": [], "profile": {}, "hazards": []}
+        if name == "BriefResult":
+            return {"factors": [], "topics": ["digital service procurement"]}
         if name == "ConsolidationResult":
             return {"topic": "Requirements of one section", "duplicates": [], "references": []}
         if name == "ApproachResult":
