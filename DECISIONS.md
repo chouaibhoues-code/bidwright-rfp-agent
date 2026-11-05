@@ -13,7 +13,7 @@ Model and prompt ADRs also give the evaluation evidence and the model's expected
 
 ## ADRs
 
-ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05. ADR-039 to ADR-050 were proposed by the Iteration 3 design doc, `docs/designs/iteration-3.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-05: ADR-039 to ADR-049 with D-10's option C, and ADR-050 with D-11's option A.
+ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05. ADR-039 to ADR-050 were proposed by the Iteration 3 design doc, `docs/designs/iteration-3.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-05: ADR-039 to ADR-049 with D-10's option C, and ADR-050 with D-11's option A. ADR-051 records the owner's addition of a loopback API to WP-3.6, the same day.
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -1171,7 +1171,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-050: A separate `ui` service reads the scores in Docker
 
-**Status:** accepted, 2026-11-05, by the owner (D-11, option A).
+**Status:** accepted, 2026-11-05, by the owner (D-11, option A). ADR-051 adds a loopback API to the `ui` service.
 
 **Context.** WP-3.6 brings the Streamlit Run, Review and Ops pages into Iteration 3 (CH-94). They show a run's scores and the ladders' reports, which sit in `evals/results/`. The `app` service, which runs the pipeline, has never mounted that folder, so the pipeline's container never holds gold-derived files. The committed results hold scores, gold ids and the passage ids of missed clauses, but no clause text, spec or gold file.
 
@@ -1189,6 +1189,27 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** A production deployment separates viewing from running, or the results begin to hold clause text.
 
 **Provenance.** D-11 in `context/Decision-Form.md`; `docs/designs/iteration-3.md`, section 4.14; CH-94.
+
+### ADR-051: A loopback API beside the UI
+
+**Status:** accepted, 2026-11-05, by the owner, as part of WP-3.6 (CH-94). It extends ADR-050.
+
+**Context.** WP-3.6's pages show a run's files to a person. The owner asked for the same files, and the run controls the pages use, to be reachable by programs too, without a second reader of the run folder.
+
+**Decision.**
+- `app/api.py` is a FastAPI application over `app/data.py`, `obs/replay.py` and the CLI's own functions: `GET /health`, `GET /runs`, `GET /runs/{run_id}`, `GET /runs/{run_id}/manifest`, `/summary`, `/matrix`, `/quarantine`, `/ledger` and `/scores`, `POST /runs/demo`, `POST /runs/{run_id}/stop` and `POST /runs/{run_id}/spans/replay`. `bidwright api` starts it with `uvicorn app.api:app --host 127.0.0.1 --port 8001`; the `ui` service binds it to `0.0.0.0` inside the container, since a container's loopback is not reachable through a published port, and publishes `127.0.0.1:8001` beside `127.0.0.1:8501`.
+- Every response carries `status_line: UNREVIEWED_DRAFT`. A `{run_id}` is accepted only when it equals one of the names `list_runs()` returns, so no request names a path. The API writes no run file itself: the demo, the stop request and the replay go through the functions the CLI calls.
+- Any web page open in the reviewer's browser can send requests to a loopback port, so the API accepts only a `Host` of `127.0.0.1:8001` or `localhost:8001`, against DNS rebinding, and takes a POST only with the header `X-Bidwright: 1`, which a page of another origin cannot send without a preflight the API never grants.
+
+**Consequences.** Scripts and tests can read a run's files and start the demo, a stop or a span replay over HTTP; who writes each file does not change.
+
+**Options.** No API, as ADR-050 left it; an API that reads the run folder itself, which would give the folder a second reader with its own path handling.
+
+**Confirmation.** `tests/test_api.py` with FastAPI's `TestClient`: each endpoint, the status line, a `{run_id}` holding `..` or a slash refused, a POST without the header refused, and a foreign `Host` refused.
+
+**Reverse if.** No program uses the API by the release, or a production deployment puts an authenticated service in its place.
+
+**Provenance.** The owner's update to WP-3.6 on 2026-11-05; CH-94; ADR-050; `docs/designs/iteration-3.md`, section 4.14.
 
 ## Failure modes hit
 
