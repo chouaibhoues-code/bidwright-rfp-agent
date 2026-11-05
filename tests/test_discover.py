@@ -5,6 +5,7 @@ and its resume, a crash after `discover_start`, a resume at `discover_ask`, and 
 on the server."""
 
 import json
+import time
 from collections.abc import Iterator, Sequence
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -587,11 +588,22 @@ def _manifest(run_dir: Path) -> RunManifest:
     return RunManifest.model_validate_json((run_dir / "run_manifest.json").read_text("utf-8"))
 
 
+class HeldPoll(NotebookLMProvider):
+    """A poll held 100 milliseconds before its answer, as the real server holds one for up to
+    its `max_wait`. The fake answers at once, so without the hold a fast machine fits both of
+    the job's polls inside the test's 30-millisecond cap, and the job completes."""
+
+    def status(self, notebook_id: str, task_id: str, wait_s: float) -> JobStatus:
+        time.sleep(0.1)
+        return super().status(notebook_id, task_id, wait_s)
+
+
 def test_a_live_run_waits_for_research_and_a_resume_completes_it(
     tmp_path: Path, fake_url: str
 ) -> None:
     capped = _config(wait_minutes=0.0005, poll_seconds=0.01)  # a cap of 30 milliseconds
-    waiting = _live(tmp_path, _provider(fake_url), "waiting", config=capped)
+    held = _provider(fake_url, kind=HeldPoll)
+    waiting = _live(tmp_path, held, "waiting", config=capped)
     assert waiting.status == "WAITING_RESEARCH", waiting.reason
     assert "J1 still runs after" in (waiting.reason or "")
     assert _record(waiting.run_dir).jobs[0].state == "timed_out"
