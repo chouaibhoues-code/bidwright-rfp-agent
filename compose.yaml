@@ -33,6 +33,7 @@ services:
       - ./inputs:/app/inputs:ro
       - ./config:/app/config:ro
       - ./prompts:/app/prompts:ro
+      - ./research_packs:/app/research_packs:ro
       - ./outputs:/app/outputs
     depends_on: [phoenix, docling]
 

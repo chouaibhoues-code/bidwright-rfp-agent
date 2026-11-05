@@ -1,0 +1,13 @@
+domain_id: fixture-records-management
+title: "Records management for public bodies (test fixture)"
+version: 1
+created: 2026-11-05
+keywords: [records management, retention schedule, digital records, archives]
+topics: [records management in public bodies]
+files:
+  summary.md: "sha256:b3173f16003db5c6bb9c08d700a8bdb8101083ec6efcbf9c3c9b9b7181eb3599"
+  sources.jsonl: "sha256:c6c84a2abfd075424702d0f9840561d5e5b38d9b5d20b41f0b0daca206afd9f2"
+  excerpts.jsonl: "sha256:be32d3698578b3f93504b08a7178e3bd1c9422e0d3fe7a9f4cb2590de3355183"
+  domain_brief.json: "sha256:671cfbf317f46400e4040e23af0b72e33ae2bd11418ff5e6501636bd64aae0f1"
+  answers.jsonl: "sha256:a7d7d80797ae114c9690dd3d2aafe679ab80b71d390fd4ee8a5be38ffd980b4f"
+counts: {sources: 3, excerpts: 6, items: 2, needs: 1, answers: 4}

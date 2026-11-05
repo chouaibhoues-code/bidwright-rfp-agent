@@ -20,6 +20,7 @@ COPY --from=build /app /app
 COPY config ./config
 COPY prompts ./prompts
 COPY knowledge_base ./knowledge_base
+COPY research_packs ./research_packs
 COPY inputs ./inputs
 COPY tests ./tests
 # BIDWRIGHT_ENV names the environment a run records, so a run started here is resumed and

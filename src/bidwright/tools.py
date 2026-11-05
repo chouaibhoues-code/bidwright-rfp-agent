@@ -1,8 +1,10 @@
-"""The 0a agent tools, `search_rfp` and `date_calc`, with their argument schemas.
+"""The agent tools, `search_rfp` and `date_calc` (0a) and `ask_research` (Iteration 2), with
+their argument schemas; `start_research`'s argument schema too, whose tool `discover` builds.
 
 Each tool validates its arguments with a Pydantic model, and its JSON Schema, offered to the
-model, is generated from that same model. A tool never raises: it returns a typed
-`ToolResult` with status `OK`, `EMPTY` or `FAILED`. `ToolGateway` adds `DENIED`.
+model, is generated from that same model. A tool returns a typed `ToolResult` with status
+`OK`, `EMPTY` or `FAILED`. `ToolGateway` adds `DENIED`, and turns an exception into `FAILED`:
+`search_rfp` and `date_calc` never raise, while `ask_research` passes on a research provider's.
 """
 
 import calendar
@@ -17,6 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from bidwright.llm.schema import clean_schema
 from bidwright.llm.types import ToolSpec
+from bidwright.research.provider import ResearchProvider
 from bidwright.retrieval import MAX_K, PassageIndex
 from bidwright.schemas import ToolResult
 
@@ -236,3 +239,50 @@ def _ok(result: object, explanation: str) -> ToolResult:
 
 def _failed(reason: str) -> ToolResult:
     return ToolResult(status="FAILED", data=None, reason=reason)
+
+
+# --- ask_research (Iteration 2) ------------------------------------------------------------
+
+NOT_IN_PACK = "NOT_IN_PACK"  # a research pack holds nothing on the question
+NO_SOURCED_ANSWER = "no answer with a source"  # a live question no source supports
+
+
+def ask_tool(
+    provider: ResearchProvider, *, max_excerpts: int, empty_reason: str = NOT_IN_PACK
+) -> Tool:
+    """`ask_research` over a research provider: a research pack answers by ADR-034's rule, and
+    NotebookLM from its bound notebook (step 11). The result holds the answer, `None` when only
+    excerpts matched, and at most `max_excerpts` excerpts, each with its source's title and
+    tier. A quarantined excerpt, or one whose source the answer does not carry, never returns;
+    with no excerpt left, the result is `EMPTY` with `empty_reason`, since an answer without a
+    source is no answer. A provider that raises, as NotebookLM can, gives the gateway's
+    `FAILED` result."""
+
+    def run(args: AskResearchArgs) -> ToolResult:
+        result = provider.ask(args.question)
+        sources = {source.id: source for source in result.sources}
+        excerpts = [e for e in result.excerpts if not e.quarantined and e.source_id in sources]
+        if not excerpts:
+            return ToolResult(status="EMPTY", data=None, reason=empty_reason)
+        views = [
+            {
+                "id": excerpt.id,
+                "source": sources[excerpt.source_id].title,
+                "tier": sources[excerpt.source_id].tier,
+                "text": excerpt.text,
+            }
+            for excerpt in excerpts[:max_excerpts]
+        ]
+        return ToolResult(status="OK", data={"answer": result.answer, "excerpts": views})
+
+    return Tool(
+        name="ask_research",
+        description=(
+            "Ask one stand-alone question about the RFP's domain, in general words. Returns the"
+            f" research's answer when one matches, and up to {max_excerpts} excerpts, each with"
+            " its id, its source's title, the source's authority tier (1 highest, 4 lowest) and"
+            " its text. EMPTY means the research holds nothing on the question."
+        ),
+        args_model=AskResearchArgs,
+        run=run,
+    )

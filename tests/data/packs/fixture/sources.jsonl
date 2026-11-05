@@ -1,0 +1,3 @@
+{"id": "PS-001", "provider_source_id": "fixture-source-1", "url": "https://guidance.example.org/records/retention", "title": "Records retention guidance for public bodies", "host": "guidance.example.org", "tier": 4, "retrieved": "2026-11-05"}
+{"id": "PS-002", "provider_source_id": "fixture-source-2", "url": "https://standards.example.com/digital-records", "title": "A digital records standard", "host": "standards.example.com", "tier": 4, "retrieved": "2026-11-05"}
+{"id": "PS-003", "provider_source_id": "fixture-source-3", "url": "https://notes.example.net/records-services", "title": "Notes on records services", "host": "notes.example.net", "tier": 4, "retrieved": "2026-11-05"}
