@@ -214,6 +214,7 @@ def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
         "discover": _discover_examples,
         "decide": _decide_examples,
         "assess": _assess_examples,
+        "options": _options_examples,
     }
     if name not in renderers or name not in sets:
         raise ValueError(f"no example set {name!r} in {EXAMPLES_FILE}")
@@ -302,6 +303,31 @@ def _risk_examples(example: dict[str, Any]) -> str:
             ),
             "Not acceptable, because " + example["generic"]["why"] + ":",
             f" {_dump(example['generic']['risk'])}",
+        ]
+    )
+
+
+def _options_examples(example: dict[str, Any]) -> str:
+    """One task and its options: a baseline first, a gap never delivered, and no score for an
+    out-of-scope factor."""
+    task = schemas.OptionsTask.model_validate(example["task"])
+    result = schemas.OptionsResult.model_validate(example["result"])
+    out = {f.factor_id for f in task.factors if f.status == "OUT_OF_SCOPE"}
+    gaps = {row.need_id for row in task.needs if row.status == "GAP"}
+    for option in result.options:
+        if any(score.factor_id in out for score in option.scores):
+            raise ValueError("an example option scores an out-of-scope factor")
+        if any(
+            a.need_id in gaps and a.delivery_mode not in ("EXCLUDED", "PARTNER", "ALTERNATIVE")
+            for a in option.approach
+        ):
+            raise ValueError("an example option delivers a gap")
+    return "\n".join(
+        [
+            "The factors, the map and the gaps:",
+            f" {_dump(example['task'])}",
+            "Two options:",
+            f" {_dump(example['result'])}",
         ]
     )
 

@@ -41,6 +41,7 @@ PROMPT_IDS = (
     "draft",
     "decide",
     "assess",
+    "options",
 )
 RISK_LIMITS = AgentLimits(max_turns=4, max_tool_calls=6, stop_on_no_progress=True)
 USAGE = Usage(tokens_in=500, tokens_out=100)
@@ -151,6 +152,8 @@ class RuleBackend:
                 "missing": "",
             }
             return Response(text=json.dumps(result), usage=USAGE)
+        if name == "OptionsResult":
+            return Response(text=json.dumps(_options(data)), usage=USAGE)
         if name == "ApproachResult":
             items = [
                 {
@@ -412,6 +415,44 @@ GENERIC_RISK = {
     "residual_exposure": "Medium.",
     "evidence_src_ids": [],
 }
+
+
+def _options(data: dict[str, Any]) -> dict[str, Any]:
+    """Two options, the first the baseline: it configures what the map supports and excludes
+    each gap; the second builds instead, and meets each gap through a partner."""
+    usable = {"SUPPORTED", "PARTIALLY_SUPPORTED"}
+    factors = [f["factor_id"] for f in data.get("factors", []) if f["status"] == "IN_SCOPE"]
+
+    def option(name: str, baseline: bool, mode: str, gap_mode: str, score: int) -> dict[str, Any]:
+        approach = []
+        for need in data.get("needs", []):
+            gap = need["status"] == "GAP"
+            claims = [c["claim_id"] for c in need["claims"] if c.get("disposition") in usable]
+            approach.append(
+                {
+                    "need_id": need["need_id"],
+                    "delivery_mode": gap_mode if gap else mode,
+                    "claim_ids": [] if gap else claims,
+                }
+            )
+        scores = [
+            {"factor_id": f, "score": score, "reason": "It meets the factor."} for f in factors
+        ]
+        return {
+            "name": name,
+            "summary": f"{name}: the needs as the map shows them.",
+            "baseline": baseline,
+            "approach": approach,
+            "assumptions": ["The buyer's staff take part in testing."],
+            "scores": scores,
+        }
+
+    return {
+        "options": [
+            option("Configured product", True, "CONFIG", "EXCLUDED", 3),
+            option("Built service", False, "CUSTOM", "PARTNER", 2),
+        ]
+    }
 
 
 def _decide(request: Request, data: dict[str, Any]) -> dict[str, Any]:

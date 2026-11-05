@@ -55,7 +55,7 @@ providers:
         openai/gpt-oss-120b: {rpm: 30, tpm: 8000, rpd: 1000, tpd: 200000, reserve: 0.0}
 coverage: {max_rounds: 2, gap_pack_size: 5}
 clusters: {max_members: 12, max_context: 8, duplicate_jaccard: 0.6}
-context: {budgets: {triage: 8000, extract: 12000, consolidate: 8000, brief: 8000, discover: 16000, approach: 16000, risk: 16000, draft: 10000, decide: 16000, assess: 4000}, chars_per_token: 4, neighbors: 1, max_terms: 10}
+context: {budgets: {triage: 8000, extract: 12000, consolidate: 8000, brief: 8000, discover: 16000, approach: 16000, risk: 16000, draft: 10000, decide: 16000, assess: 4000, options: 16000}, chars_per_token: 4, neighbors: 1, max_terms: 10}
 cache: {matrix: true, single: false}
 # S-13 turned the second pass on, on 2026-11-04 (ADR-028).
 second_pass: true

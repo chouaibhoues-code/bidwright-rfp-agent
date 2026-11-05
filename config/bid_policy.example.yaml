@@ -1,0 +1,15 @@
+# An example bid policy (Iteration 3, ADR-042). Never loaded unless `bidwright run --bid-policy`
+# names it. The approver is a role, never a name. The signal it gives is advice: a person
+# decides whether to bid.
+approved_by: "Head of bids"
+approved_on: 2026-11-05
+version: 1
+fatal:
+  - {id: F1, when: hazard_on_gap}                          # a submission hazard's need is GAP
+  - {id: F2, when: contract_flag, categories: [LIABILITY]}
+conditions:
+  - {id: C1, when: gap_on_mandatory}                       # a binding need is GAP
+  - {id: C2, when: deadline_within_days, days: 10}
+  - {id: C3, when: every_option_needs_proof}
+min_covered_share: 0.7                                     # binding needs COVERED or PARTNER
+required_inputs: [capability_map, options, tech_validations]

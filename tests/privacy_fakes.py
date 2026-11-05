@@ -80,6 +80,9 @@ class ScriptedModel:
             return {"reason": "Not stated.", "disposition": "UNVERIFIED", "supporting_ids": []}
         if name == "DecideResult":  # Iteration 3: a gap, which copies no document text
             return {"decision": "PROCEED_WITH_GAP", "reason": "No evidence.", "gap": "None."}
+        if name == "OptionsResult":  # Iteration 3: two options, the first the baseline
+            first = {"name": "Configured product", "baseline": True, "scores": []}
+            return {"options": [first, {"name": "Built service", "scores": []}]}
         if name == "ApproachResult":
             ids = [r["id"] for r in data["requirements"]]
             item = {"text": "Deliver each requirement.", "requirement_ids": ids, "basis": "Stated."}

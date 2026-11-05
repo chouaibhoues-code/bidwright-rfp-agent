@@ -6,6 +6,7 @@ or cue kind (Iteration 1, step 1). Every model forbids unknown fields, so a key 
 reads cannot be declared (ADR-025).
 """
 
+import hashlib
 import os
 import re
 from datetime import date
@@ -302,6 +303,54 @@ class PricingConfig(Strict):
             if entry.model == model and starts_ok and ends_ok:
                 return entry.usd_per_mtok
         return None
+
+
+# --- a bid policy (Iteration 3, ADR-042), loaded only when `--bid-policy` names one -------------
+
+BidWhen = Literal[
+    "hazard_on_gap",
+    "gap_on_mandatory",
+    "contract_flag",
+    "deadline_within_days",
+    "every_option_needs_proof",
+]
+BidInput = Literal["capability_map", "options", "manifest", "tech_validations"]
+
+
+class BidRule(Strict):
+    """One fatal trigger or condition, from the fixed set code evaluates."""
+
+    id: str = Field(min_length=1)
+    when: BidWhen
+    categories: list[ContractCategory] = Field(default_factory=list)  # contract_flag only
+    days: int | None = Field(default=None, ge=0)  # deadline_within_days only
+
+    @model_validator(mode="after")
+    def _its_parameters(self) -> "BidRule":
+        if (self.when == "contract_flag") != bool(self.categories):
+            raise ValueError(f"{self.id}: contract_flag, and only it, names its categories")
+        if (self.when == "deadline_within_days") != (self.days is not None):
+            raise ValueError(f"{self.id}: deadline_within_days, and only it, sets days")
+        return self
+
+
+class BidPolicy(Strict):
+    """An approved bid policy. The approver is a role, never a name."""
+
+    approved_by: str = Field(min_length=1)
+    approved_on: date
+    version: int = Field(ge=1)
+    fatal: list[BidRule] = Field(default_factory=list)
+    conditions: list[BidRule] = Field(default_factory=list)
+    min_covered_share: float | None = Field(default=None, ge=0, le=1)
+    required_inputs: list[BidInput] = Field(default_factory=list)
+
+
+def load_bid_policy(path: Path) -> tuple[BidPolicy, str]:
+    """The policy in `path` and its file's hash, which the run manifest records."""
+    data = path.read_bytes()
+    policy = BidPolicy.model_validate(yaml.safe_load(data.decode("utf-8")))
+    return policy, f"sha256:{hashlib.sha256(data).hexdigest()}"
 
 
 # --- ingest.yaml ----------------------------------------------------------------------------

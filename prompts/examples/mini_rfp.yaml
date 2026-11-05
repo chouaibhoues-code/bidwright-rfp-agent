@@ -410,3 +410,32 @@ assess:
         - {id: CERT-903, kind: certification, name: "ISO 9001", text: "ISO 9001, held by the supplier, valid until 2028-01-31."}
       need_text: "Keep signed consent forms for ten years."
     result: {reason: "CERT-903 states ISO 9001, but quality certification does not address keeping consent forms for ten years.", disposition: NOT_APPLICABLE, supporting_ids: [], missing: ""}
+# options (Iteration 3): two options over a supported need and a gap, the baseline first.
+options:
+  task:
+    factors:
+      - {factor_id: EF-01, name: "Quality of the solution", weight: "60%", scoring: "Scored 0 to 4", status: IN_SCOPE}
+      - {factor_id: EF-02, name: "Price", weight: "40%", scoring: "Lowest price scores highest", status: OUT_OF_SCOPE}
+    needs:
+      - {need_id: RG-901, origin: RFP, text: "Retention of signed consent forms", status: COVERED, claims: [{claim_id: CL-901, text: "Retention periods are set per document type and enforced automatically.", disposition: SUPPORTED}]}
+      - {need_id: RG-902, origin: RFP, text: "Integration with the Halden patient record system", status: GAP, claims: []}
+    domain_items: []
+    gaps: [{need_id: RG-902, gap: "No evidence of an integration with the Halden system."}]
+  result:
+    options:
+      - name: "Configured retention, Halden left out"
+        summary: "Configure retention for consent forms, and exclude the Halden integration, stating it as a gap."
+        baseline: true
+        approach:
+          - {need_id: RG-901, delivery_mode: CONFIG, claim_ids: [CL-901]}
+          - {need_id: RG-902, delivery_mode: EXCLUDED, claim_ids: []}
+        assumptions: ["The Trust accepts the Halden integration as out of scope for the first release."]
+        scores: [{factor_id: EF-01, score: 2, reason: "Meets the retention need; the missing integration holds the score at 2."}]
+      - name: "Configured retention, Halden through a file exchange"
+        summary: "Configure retention, and meet the Halden need another way: a nightly file exchange the Trust's team runs."
+        baseline: false
+        approach:
+          - {need_id: RG-901, delivery_mode: CONFIG, claim_ids: [CL-901]}
+          - {need_id: RG-902, delivery_mode: ALTERNATIVE, claim_ids: []}
+        assumptions: ["The Trust's team can run a nightly export from Halden."]
+        scores: [{factor_id: EF-01, score: 3, reason: "Meets retention and offers a way to share Halden data, which depends on the Trust."}]

@@ -74,6 +74,15 @@ assess:
   model_role: assess
   tools: []
 
+# Iteration 3 (ADR-041): one call proposes and scores the options; code weights and ranks them.
+options:
+  kind: function
+  input: OptionsTask
+  output: OptionsResult
+  prompt: options@0.1.0
+  model_role: reason
+  tools: []
+
 draft:
   kind: function
   input: DraftTask

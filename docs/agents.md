@@ -16,6 +16,7 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
 | `decide` | agent | `DecideTask` | `DecideResult` | `decide@0.1.0` | reason | `search_capabilities`, `search_rfp`, `read_section`, `ask_research` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
 | `assess` | function | `AssessmentTask` | `AssessmentResult` | `assess@0.1.0` | assess | None | None |
+| `options` | function | `OptionsTask` | `OptionsResult` | `options@0.1.0` | reason | None | None |
 | `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | None |
 | `consolidate` | function | `ClusterTask` | `ConsolidationResult` | `consolidate@0.1.0` | reason | None | None |
 
@@ -34,6 +35,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | `draft` | 0.2.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract` | 0.4.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract_oneshot` | 0.4.0 | extract | plain instruction | `ExtractResult` | gemini: thinking medium; ollama: think False | never |
+| `options` | 0.1.0 | reason | Distinct options compared before scoring, in one call; the baseline first | `OptionsResult` | gemini: thinking medium; ollama: think False | never |
 | `risk` | 0.2.0 | reason | Multi-Perspective pre-mortem in one call | `RiskRegister` | gemini: thinking low; ollama: think False | 2026-11-04 |
 | `triage` | 0.1.0 | extract | plain rules and a zone table, positive directives | `TriageResult` | gemini: thinking low; ollama: think False | 2026-11-04 |
 

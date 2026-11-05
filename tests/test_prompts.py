@@ -263,3 +263,34 @@ def test_a_prompts_reasoning_effort_overrides_the_roles_and_gemini_settings_stay
     assert Decoding(reasoning_effort="high").model_dump(exclude_none=True) == {
         "reasoning_effort": "high"
     }
+
+
+def test_the_options_example_has_a_baseline_first_and_keeps_its_gap_and_price_out() -> None:
+    """Iteration 3, step 6: the example settles under code's rules exactly as written."""
+    from bidwright.graph.options import settle
+    from bidwright.schemas import EvidenceAssessment, OptionsResult, OptionsTask
+
+    example = yaml.safe_load((PROMPTS_DIR / "examples" / "mini_rfp.yaml").read_text("utf-8"))
+    task = OptionsTask.model_validate(example["options"]["task"])
+    shown = OptionsResult.model_validate(example["options"]["result"])
+    assert [o.baseline for o in shown.options] == [True, False]
+    out_of_scope = {f.factor_id for f in task.factors if f.status == "OUT_OF_SCOPE"}
+    assert all(s.factor_id not in out_of_scope for o in shown.options for s in o.scores)
+    gaps = {g.need_id for g in task.gaps}
+    assert all(
+        a.delivery_mode in ("EXCLUDED", "PARTNER", "ALTERNATIVE") and not a.claim_ids
+        for o in shown.options
+        for a in o.approach
+        if a.need_id in gaps
+    )
+    assessed = [
+        EvidenceAssessment(claim_id=c.claim_id, disposition=c.disposition, called=False)
+        for n in task.needs
+        for c in n.claims
+        if c.disposition is not None
+    ]
+    settled = settle(shown, task, assessed)
+    assert settled.notes == [] and all(o.needs_proof == [] for o in settled.options)
+    options = load_prompt("options")
+    assert "Configured retention, Halden left out" in options.system
+    assert "repair_format" in options.tasks
