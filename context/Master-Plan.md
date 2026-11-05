@@ -1297,7 +1297,7 @@ Compliance status defaults to `UNVERIFIED` and stays separate from delivery mode
 
 | Service | Image | Job | Profile | From |
 |---|---|---|---|---|
-| `app` | Built here, multi-stage with `uv`, non-root | The `bidwright` CLI through `docker compose run`, and Streamlit on `:8501` from Iteration 3 (CH-94) | Default | 0a |
+| `app` | Built here, multi-stage with `uv`, non-root | The `bidwright` CLI through `docker compose run`, and Streamlit on `:8501` from Iteration 3 (CH-94), in its own `ui` service if D-11 accepts ADR-050 | Default | 0a |
 | `phoenix` | `arizephoenix/phoenix`, pinned | Traces and experiments on `:6006` | Default | 0a |
 | `eval` | Same image as `app` | `bidwright-eval`: scores frozen runs. The only service that sees gold. | `eval` | 0a |
 | `test` | Same image | Replay tests with no keys and no network, the same command CI runs | `test` | 0a |
@@ -1311,7 +1311,7 @@ Compliance status defaults to `UNVERIFIED` and stays separate from delivery mode
 | `config/`, `prompts/`, `skills/`, `knowledge_base/` | Read-only | Read-only | Read-only |
 | `outputs/` | Read-write | Read-only | Temporary copy |
 | `evals/corpus/`, `evals/gold/` | **Never** | Read-only | Never |
-| `evals/results/` | Never; read-only from Iteration 3, for the UI, if D-11 accepts ADR-050 | Read-write | Never |
+| `evals/results/` | Never; from Iteration 3 a separate `ui` service reads it, if D-11 accepts ADR-050 | Read-write | Never |
 | `tests/cassettes/` | Never | Never | Read-only |
 | Named volumes for SQLite state | Read-write | Own volume | Temporary |
 
