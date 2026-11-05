@@ -32,6 +32,12 @@ tags: [bidwright, decisions, governance]
 
 **Recommendation.** A. It only tightens a privacy control; no current setup breaks, since outside Docker the defaults are `localhost` and inside the container the image sets the flag; a misconfiguration becomes a clear refusal instead of a silent leak; and it costs about an hour, with an ADR beside ADR-026. Reasoned step by step with the sequential-thinking tool on 2026-11-04. The owner deferred it the same day to after the delivery, since every run so far is synthetic; until it is built, `docs/architecture.md` lists the gap as technical debt.
 
+### D-07: The Iteration 2 design doc's decisions, due at its Stage 9 review
+
+**Context.** `docs/designs/iteration-2.md` proposes six ADRs: ADR-031, stop and resume through LangGraph's drain, with a per-run journal, a ledger written as calls finish and a lock that tells a killed run from a running one; ADR-032, five gateway rules and six pinned NotebookLM tools; ADR-033, the research pack schema; ADR-034, the `ask_research` match threshold; ADR-035, the approval-file format; ADR-036, research in the run, behind a `ResearchProvider` interface. It proposes two process changes: gold v3, with the evaluation factors and the hero's research seeds, reviewed and hashed before the first pack (CH-88); and Node with the sequential-thinking package moving to Iteration 3 with `reflect` (CH-89). It proposes five departures from the Master-Plan, each with its reason in the doc's section 3: `check_research` done by code; no `ExecutionPolicy` class; no `ArtifactRegistry` before Iteration 4; the `ContextManager`'s card and skill slots with their consumers; plain-rule prompts for `brief` and `discover` instead of CARE. One point is left open: where the return of the `extract` examples goes (ADR-030), at the start of Iteration 3's extraction ladder or at the delivery.
+
+**Recommendation.** Accept the ADRs, the process changes and the departures at the Stage 9 review, with what that review changes. For the open point, the start of Iteration 3's extraction ladder: the ladder measures extraction under the keep-or-drop rule anyway, so the examples, and the second pass with them, are measured there instead of waiting for a delivery date that is not set. The design's fixes were reasoned step by step with the sequential-thinking tool on 2026-11-04.
+
 ### Decisions closed in later design docs
 
 | Iteration | Decisions its design doc closes |
