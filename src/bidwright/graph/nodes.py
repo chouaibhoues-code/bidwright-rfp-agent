@@ -14,7 +14,7 @@ import dataclasses
 import json
 import re
 import threading
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -23,6 +23,7 @@ from pydantic import BaseModel
 
 from bidwright.config import AgentLimits
 from bidwright.harness.budget import RunBudget
+from bidwright.harness.context import ContextManager, estimate_tokens, prompt_tokens
 from bidwright.harness.gateway import ToolGateway
 from bidwright.harness.view import TextView
 from bidwright.ingest import display_text
@@ -165,18 +166,62 @@ class RunContext:
         *,
         node: str,
         input_hash: str,
+        on_repair: Callable[[Sequence[Message]], None] | None = None,
     ) -> tuple[BaseModel | None, list[Message]]:
-        """One call, and one format repair if the answer breaks the schema."""
+        """One call, and one format repair if the answer breaks the schema. `on_repair`
+        sees the conversation the repair call will send, before it is sent, so the call's
+        context manifest is written first."""
         first = self.call(prompt, messages, schema, node=node, input_hash=input_hash)
         history = [*messages, first.as_message()]
         if first.parsed is not None:
             return first.parsed, history
         repair = prompt.task_text("repair_format", error=_short(first.parse_error))
         history.append(Message("user", repair))
+        if on_repair is not None:
+            on_repair(history)
         second = self.call(
             prompt, history, schema, node=node, input_hash=sha256_of([input_hash, repair])
         )
         return second.parsed, [*history, second.as_message()]
+
+
+@dataclass(frozen=True)
+class CallManifests:
+    """The context manifests of `approach`, `risk` and `draft` (Iteration 2, step 14): one per
+    model call, repairs included, in `context/<node>-<call_id>.json`, written before the call.
+    A manifest names the records the call was given in `included_record_ids`, and the
+    passages its tool results returned in `included_src_ids`. Its evidence is the task's data
+    and every turn after the rendered prompt: answers, tool results and repair messages."""
+
+    manager: ContextManager
+    budget_tokens: int
+
+    def record(
+        self,
+        prompt: Prompt,
+        node: str,
+        call_id: str,
+        records: Sequence[str],
+        data: str,
+        turns: Sequence[Message] = (),
+        src_ids: Sequence[str] = (),
+    ) -> None:
+        per_token = self.manager.limits.chars_per_token
+        chars = len(data) + sum(_message_chars(m) for m in turns)
+        self.manager.record_manifest(
+            node,
+            call_id,
+            records,
+            src_ids,
+            prompt_tokens(prompt, per_token),
+            estimate_tokens(chars, per_token),
+            self.budget_tokens,
+        )
+
+
+def _message_chars(message: Message) -> int:
+    calls = sum(len(json.dumps(c.arguments)) + len(c.name) for c in message.tool_calls)
+    return len(message.content) + calls
 
 
 def _short(error: str | None, limit: int = 400) -> str:
@@ -651,15 +696,34 @@ class ApproachOutcome:
     failure: str | None = None  # set when the node gave up, and the run ends DEGRADED
 
 
-def approach(ctx: RunContext, requirements: Sequence[Requirement]) -> ApproachOutcome:
-    """The first `blueprint`: approach items mapped to requirement ids."""
+def approach(
+    ctx: RunContext,
+    requirements: Sequence[Requirement],
+    manifests: CallManifests | None = None,
+) -> ApproachOutcome:
+    """The first `blueprint`: approach items mapped to requirement ids. Its call is `A01`, and
+    a repair `A01-repair`."""
     prompt = ctx.prompts["approach"]
     chosen = predictions(requirements)
     by_id = {r.id: r for r in chosen}
     view = ApproachInput(requirements=requirement_views(chosen))
-    rendered = prompt.render(view.model_dump_json(), run_id=ctx.run_id)
+    data = view.model_dump_json()
+    rendered = prompt.render(data, run_id=ctx.run_id)
+    records = [r.id for r in chosen]
+
+    def record(call_id: str, history: Sequence[Message] = ()) -> None:
+        if manifests is not None:
+            turns = history[len(rendered.messages) :]
+            manifests.record(prompt, "approach", call_id, records, data, turns)
+
+    record("A01")
     parsed, _ = ctx.structured(
-        prompt, rendered.messages, ApproachResult, node="approach", input_hash=rendered.input_hash
+        prompt,
+        rendered.messages,
+        ApproachResult,
+        node="approach",
+        input_hash=rendered.input_hash,
+        on_repair=lambda history: record("A01-repair", history),
     )
     if not isinstance(parsed, ApproachResult):
         # The requirements are complete and verified by now: keep them, and let the summary
@@ -710,8 +774,11 @@ def risk(
     approach_items: Sequence[ApproachItem],
     gateway: ToolGateway,
     limits: AgentLimits,
+    manifests: CallManifests | None = None,
 ) -> RiskOutcome:
-    """A tool loop of at most `max_turns` turns, then a final structured call with no tools."""
+    """A tool loop of at most `max_turns` turns, then a final structured call with no tools.
+    Its calls are `R01` onward, one per turn, then `R-final`, a format repair `R-final-repair`
+    and the retry after generic risks `R-final-generic`."""
     prompt = ctx.prompts["risk"]
     chosen = predictions(requirements)
     view = RiskInput(
@@ -722,15 +789,25 @@ def risk(
         ],
         hazards=[r.id for r in chosen if r.hazard],
     )
-    rendered = prompt.render(view.model_dump_json(), run_id=ctx.run_id)
+    data = view.model_dump_json()
+    rendered = prompt.render(data, run_id=ctx.run_id)
     messages = list(rendered.messages)
     specs = [tool.spec for tool in gateway.specs()]
     seen: set[str] = set()
+    records = [r.id for r in chosen] + [a.id for a in approach_items]
+    found: list[str] = []  # the passages search results returned, in order
+
+    def record(call_id: str, history: Sequence[Message]) -> None:
+        if manifests is not None:
+            turns = history[len(rendered.messages) :]
+            manifests.record(prompt, "risk", call_id, records, data, turns, found)
+
     transcript: list[Any] = []
     stop_reason, turns = "turn_cap", 0
     max_turns = limits.max_turns or 4
     for turn in range(1, max_turns + 1):
         turns = turn
+        record(f"R{turn:02d}", messages)
         completion = ctx.call(
             prompt,
             messages,
@@ -753,6 +830,8 @@ def risk(
                 result = gateway.call(request)
                 set_attribute(span, "bidwright.tool_status", result.status)
             transcript.append([call.name, call.arguments, result.model_dump()])
+            if call.name == "search_rfp":
+                found += [k for k in _progress_keys(call.name, result) if k not in found]
             for key in _progress_keys(call.name, result):
                 if key not in seen:
                     seen.add(key)
@@ -768,13 +847,22 @@ def risk(
             break
     final = [*messages, Message("user", prompt.task_text("final_task"))]
     base = sha256_of([rendered.input_hash, transcript, "final"])
-    parsed, history = ctx.structured(prompt, final, RiskRegister, node="risk", input_hash=base)
+    record("R-final", final)
+    parsed, history = ctx.structured(
+        prompt,
+        final,
+        RiskRegister,
+        node="risk",
+        input_hash=base,
+        on_repair=lambda sent: record("R-final-repair", sent),
+    )
     if not isinstance(parsed, RiskRegister):
         return RiskOutcome([], [], [], stop_reason, turns, failure=MALFORMED_TWICE)
     accepted, rejected = _screen(parsed.risks, ctx.passages)
     if rejected:
         reasons = json.dumps([[entry["event"], entry["reason"]] for entry in rejected])
         retry = [*history, Message("user", prompt.task_text("repair_generic", rejected=reasons))]
+        record("R-final-generic", retry)
         second = ctx.call(
             prompt, retry, RiskRegister, node="risk", input_hash=sha256_of([base, reasons])
         )
@@ -843,13 +931,34 @@ SECTION_TITLES = {
 }
 
 
-def draft(ctx: RunContext, section_id: str, records: list[dict[str, Any]]) -> ProposalSection:
-    """One short section from its records only. A failure marks the section FAILED."""
+def draft(
+    ctx: RunContext,
+    section_id: str,
+    records: list[dict[str, Any]],
+    manifests: CallManifests | None = None,
+    call_id: str = "S01",
+) -> ProposalSection:
+    """One short section from its records only. A failure marks the section FAILED. Its call
+    is `call_id`, `S01` to `S03` by section, and a repair `<call_id>-repair`."""
     prompt = ctx.prompts["draft"]
     task = DraftTask.model_validate({"section_id": section_id, "records": records})
-    rendered = prompt.render(task.model_dump_json(), run_id=ctx.run_id, section_id=section_id)
+    data = task.model_dump_json()
+    rendered = prompt.render(data, run_id=ctx.run_id, section_id=section_id)
+    ids = [str(r["id"]) for r in records if "id" in r]
+
+    def record(name: str, history: Sequence[Message] = ()) -> None:
+        if manifests is not None:
+            turns = history[len(rendered.messages) :]
+            manifests.record(prompt, "draft", name, ids, data, turns)
+
+    record(call_id)
     parsed, _ = ctx.structured(
-        prompt, rendered.messages, DraftResult, node="draft", input_hash=rendered.input_hash
+        prompt,
+        rendered.messages,
+        DraftResult,
+        node="draft",
+        input_hash=rendered.input_hash,
+        on_repair=lambda history: record(f"{call_id}-repair", history),
     )
     if not isinstance(parsed, DraftResult):
         return ProposalSection(

@@ -1,7 +1,9 @@
 """`ContextManager`: packs keep every passage once and in order, stay within their budget
 unless a passage is too large to share one, keep neighbors out of their members, carry the
-first terms by occurrence, and write one manifest per call."""
+first terms by occurrence, and write one manifest per call; `approach`, `risk` and `draft`
+write one per model call too, repairs included (Iteration 2, step 14)."""
 
+import json
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -10,6 +12,15 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from bidwright.config import ContextLimits, load_config
+from bidwright.graph.build import execute
+from bidwright.graph.nodes import (
+    CallManifests,
+    approach,
+    draft,
+    predictions,
+    risk,
+    section_records,
+)
 from bidwright.harness.context import (
     ContextManager,
     ContextOverflow,
@@ -28,7 +39,18 @@ from bidwright.schemas import (
     Passage,
     SectionView,
 )
-from tests.node_fakes import dev_ingest
+from tests.node_fakes import (
+    DEV_RFP,
+    RISK_LIMITS,
+    RuleBackend,
+    ScriptBackend,
+    context,
+    dev_ingest,
+    dev_requirements,
+    gateway,
+    text,
+    tools,
+)
 
 FIXED = LayerTokens(rules=50, examples=20, task=10)
 FILLER = ["the", "supplier", "shall", "keep", "records", "notice", "within", "days", "service"]
@@ -329,9 +351,132 @@ def test_bad_inputs_are_refused(tmp_path: Path) -> None:
     manager = ContextManager(tmp_path, _limits(), passages)
     common = {"fixed_tokens": FIXED, "budget_tokens": 1000, "batch_size": 5, "neighbors": 1}
     with pytest.raises(ValueError, match="no call ids"):
-        manager.pack("draft", passages, **common)
+        manager.pack("render", passages, **common)
     with pytest.raises(ValueError, match="twice"):
         manager.pack("extract", [passages[0], passages[0]], **common)
     stranger = _passage(99, "not in this run", 0)
     with pytest.raises(ValueError, match="not in this run"):
         manager.pack("extract", [stranger], **common)
+
+
+# --- approach, risk and draft (Iteration 2, step 14) ------------------------------------------
+
+
+def _recorder(run_dir: Path, node: str) -> CallManifests:
+    config = load_config()
+    manager = ContextManager(run_dir, config.limits.context, dev_ingest().passages)
+    return CallManifests(manager, config.limits.context.budgets[node])
+
+
+def _manifest(run_dir: Path, node: str, call_id: str) -> ContextManifest:
+    path = run_dir / "context" / f"{node}-{call_id}.json"
+    return ContextManifest.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def _call_ids(run_dir: Path, node: str) -> list[str]:
+    return sorted(p.stem.removeprefix(f"{node}-") for p in (run_dir / "context").glob(f"{node}-*"))
+
+
+def test_approach_records_its_call_and_its_repair(tmp_path: Path) -> None:
+    result = {
+        "items": [{"text": "Use the portal.", "requirement_ids": ["REQ-0001"], "basis": "Stated."}],
+        "unmapped_requirement_ids": [],
+        "open_questions": [],
+    }
+    backend = ScriptBackend(["{}", text(result)])
+    outcome = approach(context(backend), dev_requirements(), _recorder(tmp_path, "approach"))
+    assert outcome.failure is None and len(backend.requests) == 2
+    assert _call_ids(tmp_path, "approach") == ["A01", "A01-repair"]
+    first, repair = (_manifest(tmp_path, "approach", c) for c in ("A01", "A01-repair"))
+    chosen = [r.id for r in predictions(dev_requirements())]
+    assert first.included_record_ids == repair.included_record_ids == chosen
+    assert first.budget_tokens == 16000 and first.included_src_ids == []
+    assert repair.tokens_by_layer.evidence > first.tokens_by_layer.evidence, "the answer and repair"
+
+
+def test_risk_records_each_turn_then_its_final_calls(tmp_path: Path) -> None:
+    generic = {
+        "condition": "Things may change.",
+        "event": "Something goes wrong.",
+        "effect": "Delay.",
+        "owner_role": "Bid manager",
+        "trigger": "Any change.",
+        "responses": ["Watch closely."],
+        "residual_exposure": "Some delay remains possible.",
+        "evidence_src_ids": [],
+    }
+    backend = ScriptBackend(
+        [
+            tools(("search_rfp", {"query": "go-live migration"})),
+            "Done.",
+            text({"risks": [generic], "open_questions": []}),
+            text({"risks": [], "open_questions": []}),
+        ]
+    )
+    tool_gateway = gateway(tmp_path)
+    risk(
+        context(backend),
+        dev_requirements(),
+        [],
+        tool_gateway,
+        RISK_LIMITS,
+        _recorder(tmp_path, "risk"),
+    )
+    assert len(backend.requests) == 4
+    assert _call_ids(tmp_path, "risk") == ["R-final", "R-final-generic", "R01", "R02"]
+    [(_, searched)] = tool_gateway.calls
+    found = [hit["src_id"] for hit in searched.data]
+    assert found, "the search returned passages"
+    first, second, final, retry = (
+        _manifest(tmp_path, "risk", c) for c in ("R01", "R02", "R-final", "R-final-generic")
+    )
+    assert first.included_src_ids == [] and second.included_src_ids == found
+    assert final.included_src_ids == retry.included_src_ids == found
+    chosen = [r.id for r in predictions(dev_requirements())]
+    assert all(m.included_record_ids == chosen for m in (first, second, final, retry))
+    assert second.tokens_by_layer.evidence > first.tokens_by_layer.evidence, "the tool result"
+
+
+def test_draft_records_its_section_call_and_its_repair(tmp_path: Path) -> None:
+    records = section_records("understanding", dev_requirements(), [], [], [])
+    reply = {"title": "Understanding", "text": "The College needs a portal.", "cited_ids": []}
+    backend = ScriptBackend(["[]", text(reply)])
+    section = draft(
+        context(backend), "understanding", records, _recorder(tmp_path, "draft"), call_id="S02"
+    )
+    assert section.status == "CURRENT"
+    assert _call_ids(tmp_path, "draft") == ["S02", "S02-repair"]
+    manifest = _manifest(tmp_path, "draft", "S02")
+    assert manifest.included_record_ids == [r["id"] for r in records]
+    assert manifest.budget_tokens == 10000
+
+
+def test_every_model_call_of_a_run_has_a_context_manifest(tmp_path: Path) -> None:
+    """A whole run on the rule backend: each node's manifests match its ledger entries one
+    for one, and the three new nodes' manifests name their inputs."""
+    result = execute(
+        docling_mode="replay",
+        source=DEV_RFP,
+        profile="free",
+        outputs=tmp_path,
+        backends={"gemini": RuleBackend()},
+        run_id="manifests",
+        research="off",
+    )
+    assert result.status == "COMPLETED", result.reason
+    run_dir = result.run_dir
+    ledger = [
+        json.loads(line)
+        for line in (run_dir / "ledger.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    calls: dict[str, int] = {}
+    for entry in ledger:
+        calls[entry["node"]] = calls.get(entry["node"], 0) + 1
+    for node in ("approach", "risk", "draft"):
+        assert len(_call_ids(run_dir, node)) == calls[node], node
+    assert _call_ids(run_dir, "approach") == ["A01"]
+    assert _call_ids(run_dir, "draft") == ["S01", "S02", "S03"]
+    items = json.loads((run_dir / "approach.json").read_text(encoding="utf-8"))["items"]
+    assert _manifest(run_dir, "draft", "S02").included_record_ids == [a["id"] for a in items]
+    final = _manifest(run_dir, "risk", "R-final")
+    assert final.included_record_ids[-len(items) :] == [a["id"] for a in items]

@@ -65,6 +65,7 @@ from bidwright.graph.discover import Discovery, ResearchPending, ResearchStopped
 from bidwright.graph.nodes import (
     MALFORMED_AFTER_REPAIR,
     BatchOutcome,
+    CallManifests,
     RunContext,
     approach,
     assign_requirements,
@@ -691,8 +692,13 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
 
     # --- approach, risk, draft and render -------------------------------------------------------
 
+    def manifests(state: RunState, node: str) -> CallManifests:
+        """Where `approach`, `risk` and `draft` record a manifest for each model call."""
+        manager = ContextManager(rt.run_dir, config.limits.context, passages(state))
+        return CallManifests(manager, config.limits.context.budgets[node])
+
     def approach_node(state: RunState) -> dict[str, Any]:
-        outcome = approach(ctx, requirements_of(state))
+        outcome = approach(ctx, requirements_of(state), manifests(state, "approach"))
         data = {
             "items": [a.model_dump(mode="json") for a in outcome.items],
             "unmapped": outcome.unmapped,
@@ -723,6 +729,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             [ApproachItem.model_validate(a) for a in state["approach"]["items"]],
             gateway,
             limits,
+            manifests(state, "risk"),
         )
         rows = [r.model_dump(mode="json") for r in outcome.risks]
         _jsonl(rt.run_dir / "risks.jsonl", rows)
@@ -760,9 +767,10 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             for q in state["approach"]["questions"] + state["risk"]["questions"]
         ]
         sections = []
-        for section_id in SECTIONS:
+        recorder = manifests(state, "draft")
+        for number, section_id in enumerate(SECTIONS, start=1):
             records = section_records(section_id, requirements, items, risks, questions)
-            section = draft(ctx, section_id, records)
+            section = draft(ctx, section_id, records, recorder, call_id=f"S{number:02d}")
             path = rt.run_dir / "sections" / f"{section_id}.md"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(

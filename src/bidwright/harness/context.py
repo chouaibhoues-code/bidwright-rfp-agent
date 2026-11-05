@@ -19,8 +19,12 @@ Three paths pack the model calls of Iteration 1, and each writes one manifest pe
   RFP profile, into `brief` calls, `F01` onward, by the same budget rule; a section larger than
   the budget goes alone. A manifest's `included_record_ids` names the requirements it holds.
 - `record_manifest` (Iteration 2) writes the manifest of a call whose evidence is records or
-  excerpts rather than packed passages, `discover`'s calls `D01` onward, naming them in
-  `included_record_ids`.
+  excerpts rather than packed passages, naming them in `included_record_ids`: `discover`'s
+  calls `D01` onward; `approach`'s `A01`; `risk`'s `R01` onward, one per turn, with the
+  passages its searches returned in `included_src_ids`, then `R-final`; and `draft`'s `S01`
+  to `S03` by section (step 14). A repair call adds `-repair` to its call's id, and `risk`'s
+  retry after generic risks is `R-final-generic`, so every model call has a manifest. Call
+  ids name manifest files only and never enter a rendered prompt.
 
 Tokens are estimated as characters divided by `chars_per_token`, rounded up. A manifest's
 `tokens_by_layer` takes `rules` (the system text less its examples), `examples` and `task` from
@@ -61,7 +65,15 @@ from bidwright.schemas import (
     ZoneRecord,
 )
 
-CALL_PREFIX = {"extract": "B", "triage": "T", "brief": "F", "discover": "D"}
+CALL_PREFIX = {
+    "extract": "B",
+    "triage": "T",
+    "brief": "F",
+    "discover": "D",
+    "approach": "A",
+    "risk": "R",
+    "draft": "S",
+}
 BRIEF_ZONES = ("EVALUATION", "INSTRUCTION")  # packed in this order
 CONTEXT_DIR = "context"
 _PACK_KEYS = len(json.dumps({"passages": [], "context": [], "terms": []}, separators=(",", ":")))
@@ -488,7 +500,9 @@ class ContextManager:
         budget_tokens: int,
     ) -> ContextManifest:
         """The manifest of one call whose evidence is records or excerpts: `discover`'s, whose
-        `record_ids` are the excerpt ids the call was given."""
+        `record_ids` are the excerpt ids the call was given, and `approach`'s, `risk`'s and
+        `draft`'s, whose `record_ids` are the requirement, approach, risk and question ids of
+        their input."""
         _prefix(node)
         _check_budget(budget_tokens)
         return self._manifest(
