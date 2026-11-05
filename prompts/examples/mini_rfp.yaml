@@ -371,3 +371,42 @@ decide:
       reason: "The knowledge base shows a generic REST API, which does not show an integration with the Halden system."
       claims: []
       gap: "No evidence of an integration with the Halden patient record system."
+# assess (Iteration 3): one claim per disposition, each with its cited records and the buyer's
+# need. Ids are the examples' own.
+assess:
+  - task:
+      claim_kind: capability
+      claim_text: "Signed consent forms are kept for ten years under a retention period set for their document type."
+      evidence:
+        - {id: CAP-901, kind: capability, name: "Document retention", text: "Retention periods are set for each document type and enforced automatically. Tags: own."}
+        - {id: CS-901, kind: case_study, name: "A county council, local government", text: "A county council, local government, 2023. Ten-year retention of planning records, enforced since 2023."}
+      need_text: "Keep signed consent forms for ten years."
+    result: {reason: "CAP-901 states retention periods set per document type and enforced, and CS-901 shows a ten-year period in use.", disposition: SUPPORTED, supporting_ids: [CAP-901, CS-901], missing: ""}
+  - task:
+      claim_kind: capability
+      claim_text: "Residents follow their consent requests on a portal tested to WCAG 2.2 AA, in English and Welsh."
+      evidence:
+        - {id: CAP-902, kind: capability, name: "Resident portal", text: "A web portal where residents follow their requests, tested against WCAG 2.2 at level AA. Tags: own."}
+      need_text: "Offer the portal in English and Welsh."
+    result: {reason: "CAP-902 states the portal and its WCAG 2.2 AA testing, but no record mentions Welsh.", disposition: PARTIALLY_SUPPORTED, supporting_ids: [CAP-902], missing: "A Welsh version of the portal."}
+  - task:
+      claim_kind: capability
+      claim_text: "The service integrates with the Trust's Halden patient record system."
+      evidence:
+        - {id: CAP-906, kind: capability, name: "REST API integration", text: "A documented REST API for exchanging data with other systems. Tags: own."}
+      need_text: "Integrate with the Halden patient record system."
+    result: {reason: "CAP-906 states a generic REST API; no record names the Halden system or an integration with it.", disposition: UNVERIFIED, supporting_ids: [], missing: "Any integration with the Halden system."}
+  - task:
+      claim_kind: delivery
+      claim_text: "All data is hosted in the United Kingdom."
+      evidence:
+        - {id: CAP-908, kind: capability, name: "Hosting", text: "Hosted in two data centers in Ireland, with replication between them. Tags: own."}
+      need_text: "Host all data in the United Kingdom."
+    result: {reason: "CAP-908 states hosting in Ireland, which contradicts hosting in the United Kingdom.", disposition: CONTRADICTED, supporting_ids: [], missing: "Hosting in the United Kingdom."}
+  - task:
+      claim_kind: certification
+      claim_text: "The supplier holds ISO 9001."
+      evidence:
+        - {id: CERT-903, kind: certification, name: "ISO 9001", text: "ISO 9001, held by the supplier, valid until 2028-01-31."}
+      need_text: "Keep signed consent forms for ten years."
+    result: {reason: "CERT-903 states ISO 9001, but quality certification does not address keeping consent forms for ten years.", disposition: NOT_APPLICABLE, supporting_ids: [], missing: ""}

@@ -15,6 +15,7 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
 | `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
 | `decide` | agent | `DecideTask` | `DecideResult` | `decide@0.1.0` | reason | `search_capabilities`, `search_rfp`, `read_section`, `ask_research` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
+| `assess` | function | `AssessmentTask` | `AssessmentResult` | `assess@0.1.0` | assess | None | None |
 | `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | None |
 | `consolidate` | function | `ClusterTask` | `ConsolidationResult` | `consolidate@0.1.0` | reason | None | None |
 
@@ -25,6 +26,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | Prompt | Version | Role | Pattern | Schema | Decoding | Last tested |
 |---|---|---|---|---|---|---|
 | `approach` | 0.2.0 | reason | Skeleton-of-Thought | `ApproachResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
+| `assess` | 0.1.0 | assess | Plain rules, five dispositions defined, the reason before the label | `AssessmentResult` | cerebras: reasoning_effort medium; groq: reasoning_effort medium; gemini: thinking low; ollama: think False | never |
 | `brief` | 0.2.0 | extract | plain rules and a factor table, positive directives | `BriefResult` | gemini: thinking low; ollama: think False | 2026-11-05 |
 | `consolidate` | 0.1.0 | reason | ordered steps in the task, positive directives | `ConsolidationResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `decide` | 0.1.0 | reason | Typed decision first, then claims, after a bounded tool loop | `DecideResult` | gemini: thinking low; ollama: think False | never |

@@ -40,6 +40,7 @@ PROMPT_IDS = (
     "risk",
     "draft",
     "decide",
+    "assess",
 )
 RISK_LIMITS = AgentLimits(max_turns=4, max_tool_calls=6, stop_on_no_progress=True)
 USAGE = Usage(tokens_in=500, tokens_out=100)
@@ -141,6 +142,15 @@ class RuleBackend:
             return Response(text=json.dumps(_consolidate(data)), usage=USAGE)
         if name == "DecideResult":
             return Response(text=json.dumps(_decide(request, data)), usage=USAGE)
+        if name == "AssessmentResult":  # the first cited record supports the claim
+            cited = [record["id"] for record in data.get("evidence", [])]
+            result = {
+                "reason": "The first record states it.",
+                "disposition": "SUPPORTED",
+                "supporting_ids": cited[:1],
+                "missing": "",
+            }
+            return Response(text=json.dumps(result), usage=USAGE)
         if name == "ApproachResult":
             items = [
                 {
@@ -266,6 +276,12 @@ def dev_ingest() -> IngestResult:
     return _INGESTED[0]
 
 
+def fake_backends(backend: object) -> dict[str, Any]:
+    """One fake under every remote provider a profile names, so the routed `assess` role
+    (ADR-045) is served by it on its primary route, as a run with every key set would be."""
+    return {"gemini": backend, "cerebras": backend, "groq": backend}
+
+
 def context(
     backend: ScriptBackend | RuleBackend | None,
     *,
@@ -277,7 +293,7 @@ def context(
     client = LLMClient(
         config,
         "free",
-        {"gemini": backend} if backend else {},
+        fake_backends(backend) if backend else {},
         mode=mode,  # type: ignore[arg-type]
         cassettes=cassettes,
         run_id="run-test",

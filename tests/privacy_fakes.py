@@ -76,6 +76,8 @@ class ScriptedModel:
             return {"summary": "", "items": [], "needs": [], "open_questions": []}
         if name == "ConsolidationResult":
             return {"topic": "Requirements of one section", "duplicates": [], "references": []}
+        if name == "AssessmentResult":
+            return {"reason": "Not stated.", "disposition": "UNVERIFIED", "supporting_ids": []}
         if name == "DecideResult":  # Iteration 3: a gap, which copies no document text
             return {"decision": "PROCEED_WITH_GAP", "reason": "No evidence.", "gap": "None."}
         if name == "ApproachResult":

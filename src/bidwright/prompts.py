@@ -213,6 +213,7 @@ def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
         "brief": _brief_examples,
         "discover": _discover_examples,
         "decide": _decide_examples,
+        "assess": _assess_examples,
     }
     if name not in renderers or name not in sets:
         raise ValueError(f"no example set {name!r} in {EXAMPLES_FILE}")
@@ -303,6 +304,29 @@ def _risk_examples(example: dict[str, Any]) -> str:
             f" {_dump(example['generic']['risk'])}",
         ]
     )
+
+
+def _assess_examples(examples: list[dict[str, Any]]) -> str:
+    """One claim per disposition, with its cited records, the need and the assessment.
+    Every supporting id is a cited record."""
+    blocks = []
+    for example in examples:
+        task = schemas.AssessmentTask.model_validate(example["task"])
+        result = schemas.AssessmentResult.model_validate(example["result"])
+        cited = {record.id for record in task.evidence}
+        if not set(result.supporting_ids) <= cited:
+            raise ValueError(f"example {task.claim_text[:40]!r}: a supporting id is not cited")
+        blocks.append(
+            "\n".join(
+                [
+                    "A claim, its records and the need:",
+                    f" {_dump(example['task'])}",
+                    "The assessment:",
+                    f" {_dump(example['result'])}",
+                ]
+            )
+        )
+    return "\n\n".join(blocks)
 
 
 def _decide_examples(examples: list[dict[str, Any]]) -> str:
