@@ -1143,9 +1143,7 @@ def execute(
         resume=resume,
         llm=llm,
     )
-    overrides = (
-        {"assess": route_config(config, profile, "assess", cast(Route, route))} if route else {}
-    )
+    overrides = {"assess": route_config(config, profile, "assess", route)} if route else {}
     same = route == "same"
     shadow_roles = (
         {"assess": str(config.models.role(profile, "assess").same_family_role)} if same else None
@@ -1221,6 +1219,7 @@ def execute(
         data_class=preflight.data_class,
         refused_destinations=refused,
         run_args=run_args,
+        assess_route=route,
     )
     budget = RunBudget(config.limits.run(tier, profile))
     control = control or RunControl()
@@ -1423,7 +1422,7 @@ def _assess_route(
     client: bool,
     resume: bool,
     llm: bool,
-) -> str | None:
+) -> Route | None:
     """The `assess` role's route for this run (ADR-045), or None when the profile does not
     route it. The route never changes within a run: a resume keeps its first part's."""
     role = config.models.profiles[profile].get("assess")
@@ -1432,13 +1431,14 @@ def _assess_route(
     if given is not None:
         if given not in ROUTES:
             raise Refused(f"assess_route takes one of {', '.join(ROUTES)}, not {given!r}")
-        target = route_config(config, profile, "assess", cast(Route, given))
+        route = cast(Route, given)
+        target = route_config(config, profile, "assess", route)
         if resume and mode == "live" and llm and target.provider not in backends:
             raise Refused(
                 f"this run's assess role is on route {given}, served by {target.provider},"
                 f" which has no backend; set its key in .env, as the run's first part had"
             )
-        return given
+        return route
     if mode == "replay":
         return "primary"
     if client:

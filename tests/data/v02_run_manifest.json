@@ -1,0 +1,110 @@
+{
+ "run_id": "20261105T120916Z-dev-rfp-db9eeb00-free",
+ "commit": "7c6fdb3",
+ "profile": "free",
+ "models": {
+  "extract": "gemini-3.5-flash-lite",
+  "reason": "gemini-3.5-flash-lite"
+ },
+ "models_used": {
+  "approach": [
+   "gemini-3.1-flash-lite"
+  ],
+  "brief": [
+   "gemini-3.1-flash-lite"
+  ],
+  "consolidate": [
+   "gemini-3.1-flash-lite"
+  ],
+  "draft": [
+   "gemini-3.1-flash-lite"
+  ],
+  "extract": [
+   "gemini-3.1-flash-lite"
+  ],
+  "risk": [
+   "gemini-3.1-flash-lite"
+  ],
+  "triage": [
+   "gemini-3.1-flash-lite"
+  ]
+ },
+ "prompt_hashes": {
+  "triage": "sha256:7e154ae7564a4bb42d66c6ae88c4f2a31d6cb8e78258bebccbb8ccf99eb7522c",
+  "brief": "sha256:58dc56bb634a8706e358fd941368d812f81bc5b9a08c9199e80c45cd488852ed",
+  "discover": "sha256:be5de32c200269a2e0850ded248160165bdd7a8cedf2275bb3cc737d95ee9197",
+  "extract": "sha256:11cde3336a38b0103cb12e65a6140e5264b1bf021a4c375aa4e5d5c3896f8da1",
+  "approach": "sha256:d95f06596240c28e2ee54fc87f60447acd442e9c691cce71d9a8c1e86060de12",
+  "risk": "sha256:10c255fbf785bdb25f990ff7e823e2d26d2287cd0aa9116f5ceda4f03959e699",
+  "draft": "sha256:e565f6bb6f35db882d19b334c2f7f42488d80d891249bd444ef0f5e784fafec0",
+  "consolidate": "sha256:0e4706513b48c033f21e2d0ed9b1429c9fbf763eb87ea46e7a061835d0c1dfab",
+  "extract_oneshot": "sha256:cda10111ce58648cd3a5794732a3b70183110facb99219eef74db68334e1a787"
+ },
+ "input_hashes": {
+  "dev_rfp.pdf": "sha256:db9eeb004e718077678cddd9976b53895f9d7d009044f6b59c8a8d75213d2bd3"
+ },
+ "started": "2026-11-05T12:09:16.708174Z",
+ "ended": "2026-11-05T12:10:10Z",
+ "status": "COMPLETED",
+ "status_reason": null,
+ "overrides": [],
+ "totals": {
+  "requests": 14,
+  "tokens_in": 35806,
+  "tokens_out": 7110,
+  "tokens_cached": 0,
+  "tokens_thinking": 10370,
+  "cost_usd": 0.0,
+  "shadow_cost_usd": 0.0544418,
+  "active_seconds": 53.984
+ },
+ "documents": [
+  {
+   "doc_id": "dev-rfp-db9eeb00",
+   "file": "dev_rfp.pdf",
+   "sha256": "db9eeb004e718077678cddd9976b53895f9d7d009044f6b59c8a8d75213d2bd3"
+  }
+ ],
+ "data_class": "synthetic",
+ "refused_destinations": [],
+ "pid": 34244,
+ "status_history": [
+  {
+   "at": "2026-11-05T12:09:16Z",
+   "status": "RUNNING",
+   "reason": "started"
+  },
+  {
+   "at": "2026-11-05T12:10:10Z",
+   "status": "COMPLETED",
+   "reason": null
+  }
+ ],
+ "run_args": {
+  "source": "inputs/dev/dev_rfp.pdf",
+  "profile": "free",
+  "outputs": "outputs",
+  "baseline": null,
+  "consent": null,
+  "limits": "dev",
+  "until": "render",
+  "batch_size": 40,
+  "second_pass": true,
+  "extract_prompt": "extract",
+  "research": "pack",
+  "repeat": 0,
+  "cache": false,
+  "docling_mode": "live",
+  "fallback": true,
+  "mode": "live",
+  "environment": "host:DESKTOP-FHH4DIS"
+ },
+ "research": {
+  "mode": "pack",
+  "pack_id": "higher-education-procurement",
+  "pack_sha256": "sha256:ac972a0099ad01a7940c9f29cfbc5a4456a22a35c16a96f750f0565224e48860",
+  "jobs": 0,
+  "questions": 0,
+  "notes": []
+ }
+}

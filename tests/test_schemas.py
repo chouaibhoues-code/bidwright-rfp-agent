@@ -660,3 +660,123 @@ def test_the_research_tool_arguments_forbid_extra_keys() -> None:
         StartResearchArgs.model_validate({"question": "q", "topics": []})
     with pytest.raises(ValidationError):
         AskResearchArgs.model_validate({"question": "q" * 301})
+
+
+def test_v02_records_still_validate_with_iteration_3s_fields() -> None:
+    """Every field Iteration 3 adds to a stored record has a default (step 2). The files are
+    copies of `samples/dev/run_manifest.json` and `solution_summary.json` as tagged at v0.2."""
+    data = json.loads(Path("tests/data/v02_run_manifest.json").read_text(encoding="utf-8"))
+    manifest = s.RunManifest.model_validate(data)
+    assert (manifest.bid_policy_sha256, manifest.seed, manifest.assess_route) == (None, None, None)
+    assert manifest.switches == {}
+    twin = json.loads(Path("tests/data/v02_solution_summary.json").read_text(encoding="utf-8"))
+    summary = s.SolutionSummary.model_validate(twin["summary"])
+    assert summary.option_id is None and summary.capability_counts == {}
+    assert summary.bid_signal is None
+
+
+def test_iteration_3_records_round_trip_and_check_their_ids() -> None:
+    claim = s.CapabilityClaim(
+        id="CL-004",
+        need_id="RG-003",
+        kind="capability",
+        text="Residents follow their case on a portal tested against WCAG 2.2 at level AA.",
+        evidence_ids=["CAP-002", "CS-001"],
+        src_ids=["SRC-0118"],
+    )
+    assert s.CapabilityClaim.model_validate_json(claim.model_dump_json()) == claim
+    for bad in (
+        {"id": "CL-4"},
+        {"need_id": "RQ-003"},
+        {"evidence_ids": ["X-001"]},
+        {"src_ids": []},
+    ):
+        with pytest.raises(ValidationError):
+            s.CapabilityClaim.model_validate({**claim.model_dump(), **bad})
+    with pytest.raises(ValidationError):
+        s.CapabilityClaim.model_validate({**claim.model_dump(), "text": "x" * 301})
+    assessment = s.EvidenceAssessment(
+        claim_id="CL-004",
+        disposition="SUPPORTED",
+        supporting_ids=["CAP-002"],
+        assessor=s.Assessor(provider="cerebras", model="gpt-oss-120b", prompt="assess@0.1.0"),
+    )
+    assert s.EvidenceAssessment.model_validate_json(assessment.model_dump_json()) == assessment
+    with pytest.raises(ValidationError, match="names its assessor"):
+        s.EvidenceAssessment(
+            claim_id="CL-004", disposition="UNVERIFIED", called=False, assessor=assessment.assessor
+        )
+    package = s.WorkPackage(code="2.1", name="Resident portal configuration")
+    assert s.WorkPackage.model_validate_json(package.model_dump_json()) == package
+    with pytest.raises(ValidationError):
+        s.WorkPackage(code="2.a", name="x")
+    with pytest.raises(ValidationError, match="exactly when it names a library"):
+        s.TechClaim(id="TC-01", text="Exports PDF/A.", library="pdfplumber", kind="NOT_CHECKABLE")
+    effort = s.EffortEstimate(low_days=15, high_days=30, basis="analogy")
+    assert (effort.maturity, effort.provisional) == ("CLASS_5", True)
+
+
+def test_a_gate_approval_carries_what_its_decision_needs() -> None:
+    reviewed = {"manifest": "sha256:" + "a" * 64, "options": "sha256:" + "b" * 64}
+    base = {
+        "run_id": "r",
+        "reviewed": reviewed,
+        "approver_role": "Solution lead",
+        "decided": datetime(2026, 11, 7, 10, 12, tzinfo=UTC),
+    }
+    s.GateApproval.model_validate({**base, "decision": "approve", "option_id": "OPT-1"})
+    s.GateApproval.model_validate(
+        {
+            **base,
+            "decision": "edit",
+            "edits": [{"field": "work_packages[2.1].effort.high_days", "value": 40}],
+        }
+    )
+    s.GateApproval.model_validate({**base, "decision": "reject", "reject_reason": "No fit."})
+    for bad in (
+        {"decision": "edit"},
+        {"decision": "reject"},
+        {"decision": "approve", "reject_reason": "x"},
+    ):
+        with pytest.raises(ValidationError):
+            s.GateApproval.model_validate({**base, **bad})
+
+
+def test_model_facing_iteration_3_models_parse_over_long_answers() -> None:
+    """Code cuts an over-long field per item (ADR-024), so the parse never fails on one."""
+    result = s.DecideResult.model_validate(
+        {
+            "decision": "RETRIEVE_EVIDENCE",
+            "reason": "r" * 900,
+            "claims": [{"text": "t" * 900, "evidence_ids": ["CAP-001"] * 9, "src_ids": []}] * 7,
+        }
+    )
+    assert len(result.claims) == 7 and len(result.reason) == 900
+    options = s.OptionsResult.model_validate(
+        {"options": [{"name": "n" * 500, "scores": [{"factor_id": "EF-01", "score": 9}]}] * 5}
+    )
+    assert options.options[0].scores[0].score == 9, "code clamps and notes it"
+    assert s.TechVerdict.model_validate({}).verdict == "INSUFFICIENT_DOCS"
+
+
+def test_read_section_takes_exactly_one_form() -> None:
+    from bidwright.tools import ReadSectionArgs, SlaArgs
+
+    ReadSectionArgs(src_id="SRC-0042")
+    ReadSectionArgs(doc_id="hero-1a2b3c4d", section_path="4 Service levels")
+    for bad in (
+        {},
+        {"src_id": "SRC-0042", "doc_id": "d", "section_path": "p"},
+        {"doc_id": "d"},
+        {"section_path": "p"},
+    ):
+        with pytest.raises(ValidationError):
+            ReadSectionArgs.model_validate(bad)
+    with pytest.raises(ValidationError):
+        SlaArgs(target_percent=120, period="month")
+    assert SlaArgs(target_percent=99.5, period="month").measured_minutes is None
+
+
+def test_the_new_question_origin_and_zone_source() -> None:
+    assert "decide" in get_args(s.QuestionOrigin)
+    assert "forced" in get_args(s.ZoneSource)

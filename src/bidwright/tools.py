@@ -15,7 +15,7 @@ from datetime import date, datetime, timedelta
 from typing import Annotated, Any, Literal, Protocol
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from bidwright.llm.schema import clean_schema
 from bidwright.llm.types import ToolSpec
@@ -61,6 +61,55 @@ class DateArgs(BaseModel):
     unit: Literal["days", "business_days", "weeks", "months"] = "days"
     tz: str | None = Field(default=None, description="An IANA time zone, such as Europe/London.")
     other_date: str | None = Field(default=None, description="The second date, for diff.")
+
+
+# Iteration 3's tools (docs/designs/iteration-3.md, section 5.1); step 3 builds them.
+
+
+class SearchCapabilitiesArgs(BaseModel):
+    """`search_capabilities`: the knowledge base's capabilities, case studies, certifications
+    and roles."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1, max_length=200, description="Plain search words.")
+    k: int = Field(default=5, ge=1, le=MAX_K, description="How many records to return, 1 to 8.")
+
+
+class ReadSectionArgs(BaseModel):
+    """`read_section`: one section, named by one of its passages, or by its document and
+    section path; exactly one of the two forms."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    src_id: str | None = Field(default=None, description="A passage id, such as SRC-0042.")
+    doc_id: str | None = Field(default=None, max_length=200, description="A document id.")
+    section_path: str | None = Field(
+        default=None, max_length=200, description="The section path, with doc_id."
+    )
+
+    @model_validator(mode="after")
+    def _one_form(self) -> "ReadSectionArgs":
+        by_passage = self.src_id is not None
+        by_path = self.doc_id is not None or self.section_path is not None
+        if by_passage == by_path or (
+            by_path and (self.doc_id is None or self.section_path is None)
+        ):
+            raise ValueError("name a passage, or a document with its section path, not both")
+        return self
+
+
+class SlaArgs(BaseModel):
+    """`sla_calc`: the downtime a service level allows in a period, or the level a measured
+    downtime gives."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    target_percent: float = Field(ge=90, le=100, description="The service level, 90 to 100.")
+    period: Literal["day", "week", "month", "quarter", "year"]
+    measured_minutes: float | None = Field(
+        default=None, ge=0, description="A measured downtime in minutes, for the level achieved."
+    )
 
 
 @dataclass(frozen=True)

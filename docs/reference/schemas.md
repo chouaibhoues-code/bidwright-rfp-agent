@@ -102,6 +102,10 @@ The assignment's output. Lists hold record ids; the JSON twin adds full records.
 | `counts` | dict[str, int] | no | {} |  |
 | `factors` | list[str (pattern ^EF-\d{2}$)] | no | [] |  |
 | `domain_items` | list[str (pattern ^DI-\d{3}$)] | no | [] |  |
+| `option_id` | str \| None | no | None |  |
+| `capability_counts` | dict[str, int] | no | {} |  |
+| `tech_counts` | dict[str, int] | no | {} |  |
+| `bid_signal` | str \| None | no | None |  |
 
 ## `ProposalSection`
 
@@ -203,6 +207,18 @@ The manifest's research block (Iteration 2): what `research.json` holds, in brie
 | `questions` | int (ge 0) | no | 0 |  |
 | `notes` | list[str] | no | [] |  |
 
+## `SeedRecord`
+
+The seed run a run started from (ADR-048), as its manifest records it.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `folder` | str | yes |  |  |
+| `sha256` | str (pattern ^sha256:[0-9a-f]{64}$) | yes |  |  |
+| `commit` | str | yes |  |  |
+| `seed_from` | one of 'research', 'risk' | yes |  |  |
+| `extraction` | dict[str, Any] | no | {} |  |
+
 ## `RunManifest`
 
 | Field | Type | Required | Default | Description |
@@ -227,6 +243,10 @@ The manifest's research block (Iteration 2): what `research.json` holds, in brie
 | `status_history` | list[StatusChange] | no | [] |  |
 | `run_args` | dict[str, Any] | no | {} |  |
 | `research` | ResearchSummary \| None | no | None |  |
+| `bid_policy_sha256` | str (pattern ^sha256:[0-9a-f]{64}$) \| None | no | None |  |
+| `seed` | SeedRecord \| None | no | None |  |
+| `assess_route` | one of 'primary', 'fallback', 'same' \| None | no | None |  |
+| `switches` | dict[str, Any] | no | {} |  |
 
 ## `PassageView`
 
@@ -612,7 +632,7 @@ The RFP's own words for each field, at most 200 characters, or `not_stated`.
 | `zone` | one of 'INSTRUCTION', 'EVALUATION', 'ELIGIBILITY', 'OBLIGATION', 'CONTRACT', 'BACKGROUND' | yes |  |  |
 | `confidence` | float (ge 0, le 1) | yes |  |  |
 | `reason` | str | yes |  |  |
-| `source` | one of 'model', 'keywords' | yes |  |  |
+| `source` | one of 'model', 'keywords', 'forced' | yes |  |  |
 
 ## `TriageRecord`
 
@@ -725,7 +745,7 @@ The stored form of `triage.json`.
 | `requirement_ids` | list[str (pattern ^REQ-\d{4}$)] | no | [] |  |
 | `src_ids` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
 | `lint_finding_ids` | list[str (pattern ^LF-\d{4}$)] | no | [] |  |
-| `origin` | one of 'consolidate', 'lint_template', 'brief' | yes |  |  |
+| `origin` | one of 'consolidate', 'lint_template', 'brief', 'decide' | yes |  |  |
 
 ## `LayerTokens`
 
@@ -1098,3 +1118,733 @@ The stored form of `control/budget.json`.
 | `tokens` | int (ge 0) | yes |  |  |
 | `active_seconds` | float (ge 0) | yes |  |  |
 | `raise_percent` | int (ge 0) | no | 0 |  |
+
+## `NeedRequirement`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str | yes |  |  |
+| `statement` | str | yes |  |  |
+| `modality` | one of 'shall', 'must', 'will', 'should', 'may', 'none' | yes |  |  |
+| `quote` | str | yes |  |  |
+
+## `NeedView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need_id` | str | yes |  |  |
+| `origin` | one of 'RFP', 'DOMAIN' | yes |  |  |
+| `topic` | str | no | '' |  |
+| `text` | str | no | '' |  |
+| `requirements` | list[NeedRequirement] | no | [] |  |
+| `excerpts` | list[ExcerptView] | no | [] |  |
+| `discrepancy_ids` | list[str] | no | [] |  |
+| `question_ids` | list[str] | no | [] |  |
+
+## `DecideTask`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need` | NeedView | yes |  |  |
+
+## `EvidenceView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str | yes |  |  |
+| `kind` | one of 'capability', 'case_study', 'certification', 'role' | yes |  |  |
+| `name` | str | yes |  |  |
+| `text` | str | yes |  |  |
+
+## `DecideFixedTask`
+
+SO1-F's one call: the need with the evidence code retrieved for it.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need` | NeedView | yes |  |  |
+| `evidence` | list[EvidenceView] | no | [] |  |
+| `passages` | list[PassageView] | no | [] |  |
+
+## `ClaimProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `kind` | one of 'capability', 'certification', 'delivery', 'technology', 'figure', 'role' | no | 'capability' |  |
+| `text` | str | no | '' |  |
+| `evidence_ids` | list[str] | no | [] |  |
+| `src_ids` | list[str] | no | [] |  |
+
+## `DecideResult`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `decision` | one of 'RETRIEVE_EVIDENCE', 'PROCEED_WITH_GAP', 'REQUEST_CLARIFICATION', 'ABSTAIN' | no | 'ABSTAIN' |  |
+| `reason` | str | no | '' |  |
+| `claims` | list[ClaimProposal] | no | [] |  |
+| `gap` | str \| None | no | None |  |
+| `question` | str \| None | no | None |  |
+
+## `CapabilityClaim`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^CL-\d{3}$) | yes |  |  |
+| `need_id` | str (pattern ^(RG\|DN)-\d{3}$) | yes |  |  |
+| `kind` | one of 'capability', 'certification', 'delivery', 'technology', 'figure', 'role' | yes |  |  |
+| `text` | str (min length 1, max length 300) | yes |  |  |
+| `evidence_ids` | list[str (pattern ^(CAP\|CS\|CERT\|ROLE)-\d{3}$)] (max length 3) | no | [] |  |
+| `src_ids` | list[str (pattern ^SRC-\d{4}$)] (min length 1, max length 3) | yes |  |  |
+
+## `NeedDecision`
+
+One line of `decisions.jsonl`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need_id` | str (pattern ^(RG\|DN)-\d{3}$) | yes |  |  |
+| `origin` | one of 'RFP', 'DOMAIN' | yes |  |  |
+| `decision` | one of 'RETRIEVE_EVIDENCE', 'PROCEED_WITH_GAP', 'REQUEST_CLARIFICATION', 'ABSTAIN' | yes |  |  |
+| `reason` | str (max length 300) | no | '' |  |
+| `claim_ids` | list[str (pattern ^CL-\d{3}$)] (max length 3) | no | [] |  |
+| `gap` | str \| None | no | None |  |
+| `question` | ClarificationQuestion \| None | no | None |  |
+| `turns` | int (ge 0) | no | 0 |  |
+| `tool_calls` | int (ge 0) | no | 0 |  |
+| `stop_reason` | str | no | '' |  |
+| `notes` | list[str] | no | [] |  |
+
+## `AssessmentTask`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `claim_kind` | one of 'capability', 'certification', 'delivery', 'technology', 'figure', 'role' | yes |  |  |
+| `claim_text` | str | yes |  |  |
+| `evidence` | list[EvidenceView] | no | [] |  |
+| `need_text` | str | no | '' |  |
+
+## `AssessmentResult`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `reason` | str | no | '' |  |
+| `disposition` | one of 'SUPPORTED', 'PARTIALLY_SUPPORTED', 'UNVERIFIED', 'CONTRADICTED', 'NOT_APPLICABLE' | no | 'UNVERIFIED' |  |
+| `supporting_ids` | list[str] | no | [] |  |
+| `missing` | str | no | '' |  |
+
+## `Assessor`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `provider` | str | yes |  |  |
+| `model` | str | yes |  |  |
+| `base_url` | str \| None | no | None |  |
+| `prompt` | str | yes |  |  |
+
+## `EvidenceAssessment`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `claim_id` | str (pattern ^CL-\d{3}$) | yes |  |  |
+| `disposition` | one of 'SUPPORTED', 'PARTIALLY_SUPPORTED', 'UNVERIFIED', 'CONTRADICTED', 'NOT_APPLICABLE' | yes |  |  |
+| `reason` | str (max length 600) | no | '' |  |
+| `supporting_ids` | list[str (pattern ^(CAP\|CS\|CERT\|ROLE)-\d{3}$)] | no | [] |  |
+| `missing` | str (max length 300) | no | '' |  |
+| `partner_only` | bool | no | False |  |
+| `called` | bool | no | True |  |
+| `assessor` | Assessor \| None | no | None |  |
+| `same_family` | bool | no | False |  |
+
+## `CapabilityRow`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need_id` | str (pattern ^(RG\|DN)-\d{3}$) | yes |  |  |
+| `origin` | one of 'RFP', 'DOMAIN' | yes |  |  |
+| `text` | str (max length 300) | yes |  |  |
+| `decision` | one of 'RETRIEVE_EVIDENCE', 'PROCEED_WITH_GAP', 'REQUEST_CLARIFICATION', 'ABSTAIN' \| None | no | None |  |
+| `status` | one of 'COVERED', 'PARTIAL', 'PARTNER', 'GAP' | yes |  |  |
+| `claim_ids` | list[str (pattern ^CL-\d{3}$)] | no | [] |  |
+| `reason` | str | no | '' |  |
+
+## `CapabilityMap`
+
+The stored form of `capability_map.json`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `rows` | list[CapabilityRow] | no | [] |  |
+| `counts` | dict[str, int] | no | {} |  |
+
+## `FactorView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `factor_id` | str | yes |  |  |
+| `name` | str | yes |  |  |
+| `weight` | str | yes |  |  |
+| `scoring` | str | yes |  |  |
+| `status` | one of 'IN_SCOPE', 'OUT_OF_SCOPE' | yes |  |  |
+
+## `ClaimView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `claim_id` | str | yes |  |  |
+| `text` | str | yes |  |  |
+| `disposition` | one of 'SUPPORTED', 'PARTIALLY_SUPPORTED', 'UNVERIFIED', 'CONTRADICTED', 'NOT_APPLICABLE' \| None | no | None |  |
+
+## `MapRowView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need_id` | str | yes |  |  |
+| `origin` | one of 'RFP', 'DOMAIN' | yes |  |  |
+| `text` | str | yes |  |  |
+| `status` | one of 'COVERED', 'PARTIAL', 'PARTNER', 'GAP' | yes |  |  |
+| `claims` | list[ClaimView] | no | [] |  |
+
+## `DomainItemView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str | yes |  |  |
+| `kind` | one of 'pattern', 'standard', 'pitfall' | yes |  |  |
+| `statement` | str | yes |  |  |
+
+## `GapView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need_id` | str | yes |  |  |
+| `gap` | str | yes |  |  |
+
+## `OptionsTask`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `factors` | list[FactorView] | no | [] |  |
+| `needs` | list[MapRowView] | no | [] |  |
+| `domain_items` | list[DomainItemView] | no | [] |  |
+| `gaps` | list[GapView] | no | [] |  |
+
+## `FactorScore`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `factor_id` | str | no | '' |  |
+| `score` | int | no | 0 |  |
+| `reason` | str | no | '' |  |
+
+## `NeedApproach`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need_id` | str | no | '' |  |
+| `delivery_mode` | one of 'OOTB', 'CONFIG', 'CUSTOM', 'PARTNER', 'ALTERNATIVE', 'EXCLUDED' | no | 'EXCLUDED' |  |
+| `claim_ids` | list[str] | no | [] |  |
+
+## `OptionProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `name` | str | no | '' |  |
+| `summary` | str | no | '' |  |
+| `baseline` | bool | no | False |  |
+| `approach` | list[NeedApproach] | no | [] |  |
+| `assumptions` | list[str] | no | [] |  |
+| `scores` | list[FactorScore] | no | [] |  |
+
+## `OptionsResult`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `options` | list[OptionProposal] | no | [] |  |
+
+## `OptionView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `option_id` | str | yes |  |  |
+| `name` | str | yes |  |  |
+| `summary` | str | yes |  |  |
+| `approach` | list[NeedApproach] | no | [] |  |
+| `assumptions` | list[str] | no | [] |  |
+
+## `StoredScore`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `factor_id` | str (pattern ^EF-\d{2}$) | yes |  |  |
+| `score` | int (ge 0, le 4) | yes |  |  |
+| `reason` | str (max length 300) | no | '' |  |
+
+## `StoredApproach`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need_id` | str (pattern ^(RG\|DN)-\d{3}$) | yes |  |  |
+| `delivery_mode` | one of 'OOTB', 'CONFIG', 'CUSTOM', 'PARTNER', 'ALTERNATIVE', 'EXCLUDED' | yes |  |  |
+| `claim_ids` | list[str (pattern ^CL-\d{3}$)] | no | [] |  |
+
+## `SolutionOption`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^OPT-\d$) | yes |  |  |
+| `name` | str (min length 1, max length 80) | yes |  |  |
+| `summary` | str (max length 600) | no | '' |  |
+| `baseline` | bool | no | False |  |
+| `approach` | list[StoredApproach] | no | [] |  |
+| `assumptions` | list[str] | no | [] |  |
+| `scores` | list[StoredScore] | no | [] |  |
+| `needs_proof` | list[str (pattern ^CL-\d{3}$)] | no | [] |  |
+| `failed_gates` | list[str (pattern ^EF-\d{2}$)] | no | [] |  |
+| `total` | float (ge 0, le 4) | no | 0.0 |  |
+| `rank` | int (ge 0) | no | 0 |  |
+
+## `SolutionOptions`
+
+The stored form of `options.json`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `options` | list[SolutionOption] | no | [] |  |
+| `weighting` | one of 'stated', 'equal' | no | 'equal' |  |
+| `hypothetical` | bool | no | True |  |
+| `notes` | list[str] | no | [] |  |
+
+## `FactProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `text` | str | no | '' |  |
+| `src_ids` | list[str] | no | [] |  |
+| `requirement_ids` | list[str] | no | [] |  |
+| `claim_ids` | list[str] | no | [] |  |
+| `domain_item_ids` | list[str] | no | [] |  |
+
+## `WorkstreamProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `name` | str | no | '' |  |
+| `objective` | str | no | '' |  |
+
+## `WbsNodeProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `code` | str | no | '' |  |
+| `name` | str | no | '' |  |
+| `deliverable` | str | no | '' |  |
+| `requirement_ids` | list[str] | no | [] |  |
+| `need_ids` | list[str] | no | [] |  |
+| `claim_ids` | list[str] | no | [] |  |
+
+## `TechClaimProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `text` | str | no | '' |  |
+| `library` | str \| None | no | None |  |
+| `version` | str \| None | no | None |  |
+| `wbs_code` | str | no | '' |  |
+
+## `BriefItemView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str | yes |  |  |
+| `text` | str | yes |  |  |
+
+## `RoleView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str | yes |  |  |
+| `title` | str | yes |  |  |
+| `summary` | str | yes |  |  |
+
+## `EffortProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `low_days` | float | no | 0 |  |
+| `high_days` | float | no | 0 |  |
+| `basis` | one of 'analogy', 'parametric', 'expert_judgment', 'bottom_up' | no | 'expert_judgment' |  |
+| `basis_text` | str | no | '' |  |
+| `role_ids` | list[str] | no | [] |  |
+| `uncertainty` | str | no | '' |  |
+
+## `VerificationProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `requirement_id` | str | no | '' |  |
+| `method` | one of 'INSPECTION', 'DEMONSTRATION', 'ANALYSIS', 'TEST' | no | 'INSPECTION' |  |
+
+## `PackageDetail`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `code` | str | no | '' |  |
+| `scope` | str | no | '' |  |
+| `exclusions` | str | no | '' |  |
+| `acceptance` | str | no | '' |  |
+| `effort` | EffortProposal | no | EffortProposal(low_days=0, high_days=0, basis='expert_judgment', basis_text='', role_ids=[], uncertainty='') |  |
+| `verification` | list[VerificationProposal] | no | [] |  |
+| `predecessors` | list[str] | no | [] |  |
+
+## `PdcaProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `workstream` | str | no | '' |  |
+| `plan` | str | no | '' |  |
+| `do` | str | no | '' |  |
+| `check` | str | no | '' |  |
+| `act` | str | no | '' |  |
+
+## `BenefitProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `hypothesis` | str | no | '' |  |
+| `measure` | str | no | '' |  |
+| `need_id` | str | no | '' |  |
+
+## `WinThemeProposal`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `feature` | str | no | '' |  |
+| `metric` | str | no | '' |  |
+| `benefit` | str | no | '' |  |
+| `proof_claim_id` | str \| None | no | None |  |
+
+## `BlueprintPlanTask`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `option` | OptionView | yes |  |  |
+| `needs` | list[NeedView] | no | [] |  |
+| `claims` | list[ClaimView] | no | [] |  |
+| `scope_in` | list[BriefItemView] | no | [] |  |
+| `scope_out` | list[BriefItemView] | no | [] |  |
+| `constraints` | list[BriefItemView] | no | [] |  |
+| `never` | list[BriefItemView] | no | [] |  |
+
+## `BlueprintPlan`
+
+P01's answer, and P03's.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `current_state` | list[FactProposal] | no | [] |  |
+| `target_state` | list[FactProposal] | no | [] |  |
+| `workstreams` | list[WorkstreamProposal] | no | [] |  |
+| `wbs` | list[WbsNodeProposal] | no | [] |  |
+| `assumptions` | list[FactProposal] | no | [] |  |
+| `ground_rules` | list[FactProposal] | no | [] |  |
+| `tech_claims` | list[TechClaimProposal] | no | [] |  |
+
+## `BlueprintDetailTask`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `plan` | BlueprintPlan | yes |  |  |
+| `claims` | list[ClaimView] | no | [] |  |
+| `roles` | list[RoleView] | no | [] |  |
+
+## `BlueprintDetail`
+
+P02's answer.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `packages` | list[PackageDetail] | no | [] |  |
+| `pdca` | list[PdcaProposal] | no | [] |  |
+| `benefits` | list[BenefitProposal] | no | [] |  |
+| `win_themes` | list[WinThemeProposal] | no | [] |  |
+
+## `InvalidatedView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `text` | str | yes |  |  |
+| `library` | str \| None | no | None |  |
+| `reason` | str | no | '' |  |
+| `quote` | str | no | '' |  |
+
+## `RevisionTask`
+
+P03's request: the settled plan and its `INVALIDATED` technology claims.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `plan` | BlueprintPlan | yes |  |  |
+| `invalidated` | list[InvalidatedView] | no | [] |  |
+
+## `Fact`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `text` | str (min length 1, max length 300) | yes |  |  |
+| `evidence_class` | one of 'RFP_SOURCE', 'CAPABILITY_EVIDENCE', 'DOMAIN_METHOD', 'PROJECT_NORMATIVE', 'EVALUATION_REFERENCE', 'EXTERNAL_RESEARCH', 'ASSUMPTION' | yes |  |  |
+| `source_ids` | list[str] | no | [] |  |
+| `needs_proof` | bool | no | False |  |
+
+## `EffortEstimate`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `low_days` | float (ge 0) | yes |  |  |
+| `high_days` | float (ge 0) | yes |  |  |
+| `basis` | one of 'analogy', 'parametric', 'expert_judgment', 'bottom_up' | yes |  |  |
+| `basis_text` | str | no | '' |  |
+| `role_ids` | list[str (pattern ^ROLE-\d{3}$)] | no | [] |  |
+| `uncertainty` | str | no | '' |  |
+| `maturity` | one of 'CLASS_5' | no | 'CLASS_5' |  |
+| `provisional` | one of True | no | True |  |
+
+## `Verification`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `requirement_id` | str (pattern ^REQ-\d{4}$) | yes |  |  |
+| `method` | one of 'INSPECTION', 'DEMONSTRATION', 'ANALYSIS', 'TEST' | yes |  |  |
+
+## `WorkPackage`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `code` | str (pattern ^\d+(\.\d+)*$) | yes |  |  |
+| `name` | str (min length 1) | yes |  |  |
+| `deliverable` | str | no | '' |  |
+| `requirement_ids` | list[str (pattern ^REQ-\d{4}$)] | no | [] |  |
+| `need_ids` | list[str (pattern ^(RG\|DN)-\d{3}$)] | no | [] |  |
+| `claim_ids` | list[str (pattern ^CL-\d{3}$)] | no | [] |  |
+| `scope` | str | no | '' |  |
+| `exclusions` | str | no | '' |  |
+| `acceptance` | str | no | '' |  |
+| `effort` | EffortEstimate \| None | no | None |  |
+| `verification` | list[Verification] | no | [] |  |
+| `predecessors` | list[str (pattern ^\d+(\.\d+)*$)] | no | [] |  |
+| `evidence_class` | one of 'RFP_SOURCE', 'CAPABILITY_EVIDENCE', 'DOMAIN_METHOD', 'PROJECT_NORMATIVE', 'EVALUATION_REFERENCE', 'EXTERNAL_RESEARCH', 'ASSUMPTION' | no | 'ASSUMPTION' |  |
+| `needs_proof` | bool | no | False |  |
+| `untraced` | bool | no | False |  |
+
+## `WbsNode`
+
+A node of the breakdown that is not a work package.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `code` | str (pattern ^\d+(\.\d+)*$) | yes |  |  |
+| `name` | str (min length 1) | yes |  |  |
+| `deliverable` | str | no | '' |  |
+
+## `Workstream`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `code` | str (pattern ^\d+(\.\d+)*$) | yes |  |  |
+| `name` | str (min length 1) | yes |  |  |
+| `objective` | str | no | '' |  |
+
+## `TechClaim`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^TC-\d{2}$) | yes |  |  |
+| `text` | str (min length 1) | yes |  |  |
+| `library` | str \| None | no | None |  |
+| `version` | str \| None | no | None |  |
+| `wbs_code` | str (pattern ^\d+(\.\d+)*$) \| None | no | None |  |
+| `kind` | one of 'LIBRARY', 'NOT_CHECKABLE' | yes |  |  |
+
+## `Benefit`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `hypothesis` | str (min length 1) | yes |  |  |
+| `measure` | str | no | '' |  |
+| `need_id` | str (pattern ^(RG\|DN)-\d{3}$) \| None | no | None |  |
+
+## `WinTheme`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `feature` | str (min length 1) | yes |  |  |
+| `metric` | str | no | '' |  |
+| `benefit` | str | no | '' |  |
+| `proof_claim_id` | str (pattern ^CL-\d{3}$) \| None | no | None |  |
+| `proof` | one of 'NO_PROOF' \| str (pattern ^CL-\d{3}$) | no | 'NO_PROOF' |  |
+
+## `Pdca`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `workstream` | str | yes |  |  |
+| `plan` | str | no | '' |  |
+| `do` | str | no | '' |  |
+| `check` | str | no | '' |  |
+| `act` | str | no | '' |  |
+
+## `ManifestGap`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `requirement_id` | str (pattern ^REQ-\d{4}$) | yes |  |  |
+| `need_id` | str (pattern ^(RG\|DN)-\d{3}$) \| None | no | None |  |
+| `status` | one of 'COVERED', 'PARTIAL', 'PARTNER', 'GAP' \| None | no | None |  |
+
+## `ManifestCheck`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `name` | str | yes |  |  |
+| `passed` | bool | yes |  |  |
+| `detail` | str | no | '' |  |
+
+## `SolutionManifest`
+
+The stored form of `manifest.json`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `option_id` | str (pattern ^OPT-\d$) \| None | no | None |  |
+| `revision` | int (ge 0, le 1) | no | 0 |  |
+| `current_state` | list[Fact] | no | [] |  |
+| `target_state` | list[Fact] | no | [] |  |
+| `workstreams` | list[Workstream] | no | [] |  |
+| `wbs` | list[WbsNode] | no | [] |  |
+| `work_packages` | list[WorkPackage] | no | [] |  |
+| `assumptions` | list[Fact] | no | [] |  |
+| `ground_rules` | list[Fact] | no | [] |  |
+| `tech_claims` | list[TechClaim] | no | [] |  |
+| `benefits` | list[Benefit] | no | [] |  |
+| `win_themes` | list[WinTheme] | no | [] |  |
+| `pdca` | list[Pdca] | no | [] |  |
+| `gaps` | list[ManifestGap] | no | [] |  |
+| `checks` | list[ManifestCheck] | no | [] |  |
+| `failed` | bool | no | False |  |
+| `notes` | list[str] | no | [] |  |
+
+## `DateFact`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `requirement_id` | str | yes |  |  |
+| `date` | str | yes |  |  |
+| `days_from_start` | int | yes |  |  |
+| `weekday` | str | yes |  |  |
+
+## `RiskFixedInput`
+
+The input of `risk_oneshot.md`: RK0's holds no dates or passages, RK1-F's code's date arithmetic and retrieved passages.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `requirements` | list[RequirementView] | yes |  |  |
+| `approach` | list[ApproachItemView] | yes |  |  |
+| `hazards` | list[str] | no | [] |  |
+| `dates` | list[DateFact] | no | [] |  |
+| `passages` | list[PassageView] | no | [] |  |
+
+## `TechVerdictTask`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `claim_text` | str | yes |  |  |
+| `library` | str \| None | no | None |  |
+| `version` | str \| None | no | None |  |
+| `documentation` | str | no | '' |  |
+
+## `TechVerdict`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `reason` | str | no | '' |  |
+| `verdict` | one of 'VALIDATED', 'INVALIDATED', 'INSUFFICIENT_DOCS' | no | 'INSUFFICIENT_DOCS' |  |
+| `quote` | str | no | '' |  |
+
+## `TechDoc`
+
+One line of `tech_docs.jsonl`: the documentation one technology claim was judged on.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `claim_id` | str (pattern ^TC-\d{2}$) | yes |  |  |
+| `library` | str | yes |  |  |
+| `library_id` | str | yes |  |  |
+| `query` | str | yes |  |  |
+| `text` | str | yes |  |  |
+| `retrieved` | datetime | yes |  |  |
+
+## `TechValidation`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `claim_id` | str (pattern ^TC-\d{2}$) | yes |  |  |
+| `library` | str \| None | no | None |  |
+| `version` | str \| None | no | None |  |
+| `verdict` | one of 'VALIDATED', 'INVALIDATED', 'INSUFFICIENT_DOCS', 'UNVALIDATED', 'SKIPPED_CAP', 'NOT_CHECKABLE' | yes |  |  |
+| `quote` | str | no | '' |  |
+| `source` | str \| None | no | None |  |
+| `reason` | str | no | '' |  |
+| `revision` | int (ge 0, le 1) | no | 0 |  |
+
+## `GateEdit`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `field` | str (min length 1) | yes |  |  |
+| `value` | Any | yes |  |  |
+
+## `ReviewedHashes`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `manifest` | str (pattern ^sha256:[0-9a-f]{64}$) | yes |  |  |
+| `options` | str (pattern ^sha256:[0-9a-f]{64}$) | yes |  |  |
+
+## `GateApproval`
+
+The stored form of `review/solution_gate.approval.yaml`, in ADR-035's format.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `gate` | one of 'solution_gate' | no | 'solution_gate' |  |
+| `run_id` | str | yes |  |  |
+| `reviewed` | ReviewedHashes | yes |  |  |
+| `decision` | one of 'approve', 'edit', 'reject' | yes |  |  |
+| `option_id` | str (pattern ^OPT-\d$) \| None | no | None |  |
+| `approver_role` | str (min length 1) | yes |  |  |
+| `decided` | datetime | yes |  |  |
+| `edits` | list[GateEdit] | no | [] |  |
+| `override_reason` | str \| None | no | None |  |
+| `reject_reason` | str \| None | no | None |  |
+| `auto_selected` | bool | no | False |  |
+| `edited_sha256` | str (pattern ^sha256:[0-9a-f]{64}$) \| None | no | None |  |
+
+## `BidTrigger`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (min length 1) | yes |  |  |
+| `when` | str (min length 1) | yes |  |  |
+| `record_ids` | list[str] | no | [] |  |
+
+## `BidSignal`
+
+The stored form of `bid_signal.json`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `signal` | one of 'GO', 'CONDITIONAL_GO', 'NO_GO', 'UNDETERMINED' | yes |  |  |
+| `triggers` | list[BidTrigger] | no | [] |  |
+| `covered_share` | float \| None (ge 0, le 1) | no | None |  |
+| `policy_sha256` | str (pattern ^sha256:[0-9a-f]{64}$) \| None | no | None |  |
+| `missing_inputs` | list[str] | no | [] |  |
