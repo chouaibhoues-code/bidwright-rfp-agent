@@ -593,9 +593,11 @@ def test_extract_item_schema_puts_the_quote_before_the_labels() -> None:
 # --- Iteration 2 ---------------------------------------------------------------------------
 
 
-def test_a_v01_manifest_from_the_samples_still_validates() -> None:
-    """Every field Iteration 2 adds to a stored record has a default."""
-    data = json.loads(Path("samples/dev/run_manifest.json").read_text(encoding="utf-8"))
+def test_a_v01_manifest_still_validates() -> None:
+    """Every field Iteration 2 adds to a stored record has a default. The manifest is a copy of
+    `samples/dev/run_manifest.json` as tagged at v0.1: the samples are refreshed at each tag,
+    and the image leaves them out."""
+    data = json.loads(Path("tests/data/v01_run_manifest.json").read_text(encoding="utf-8"))
     manifest = s.RunManifest.model_validate(data)
     assert manifest.pid is None and manifest.status_history == [] and manifest.run_args == {}
     assert manifest.research is None

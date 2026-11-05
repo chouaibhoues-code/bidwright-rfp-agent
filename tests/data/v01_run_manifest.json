@@ -1,0 +1,65 @@
+{
+ "run_id": "20261104T211354Z-dev-rfp-db9eeb00-paid",
+ "commit": "e826afa",
+ "profile": "paid",
+ "models": {
+  "extract": "gemini-3.5-flash-lite",
+  "reason": "gemini-3.5-flash-lite"
+ },
+ "models_used": {
+  "approach": [
+   "gemini-3.5-flash-lite"
+  ],
+  "consolidate": [
+   "gemini-3.5-flash-lite"
+  ],
+  "draft": [
+   "gemini-3.5-flash-lite"
+  ],
+  "extract": [
+   "gemini-3.5-flash-lite"
+  ],
+  "risk": [
+   "gemini-3.5-flash-lite"
+  ],
+  "triage": [
+   "gemini-3.5-flash-lite"
+  ]
+ },
+ "prompt_hashes": {
+  "triage": "sha256:7e154ae7564a4bb42d66c6ae88c4f2a31d6cb8e78258bebccbb8ccf99eb7522c",
+  "extract": "sha256:11cde3336a38b0103cb12e65a6140e5264b1bf021a4c375aa4e5d5c3896f8da1",
+  "approach": "sha256:d95f06596240c28e2ee54fc87f60447acd442e9c691cce71d9a8c1e86060de12",
+  "risk": "sha256:10c255fbf785bdb25f990ff7e823e2d26d2287cd0aa9116f5ceda4f03959e699",
+  "draft": "sha256:e565f6bb6f35db882d19b334c2f7f42488d80d891249bd444ef0f5e784fafec0",
+  "consolidate": "sha256:0e4706513b48c033f21e2d0ed9b1429c9fbf763eb87ea46e7a061835d0c1dfab",
+  "extract_oneshot": "sha256:cda10111ce58648cd3a5794732a3b70183110facb99219eef74db68334e1a787"
+ },
+ "input_hashes": {
+  "dev_rfp.pdf": "sha256:db9eeb004e718077678cddd9976b53895f9d7d009044f6b59c8a8d75213d2bd3"
+ },
+ "started": "2026-11-04T21:13:54.529888Z",
+ "ended": "2026-11-04T21:15:03.521785Z",
+ "status": "COMPLETED",
+ "status_reason": null,
+ "overrides": [],
+ "totals": {
+  "requests": 13,
+  "tokens_in": 33211,
+  "tokens_out": 7678,
+  "tokens_cached": 0,
+  "tokens_thinking": 17902,
+  "cost_usd": 0.0739133,
+  "shadow_cost_usd": 0.0739133,
+  "active_seconds": 68.797
+ },
+ "documents": [
+  {
+   "doc_id": "dev-rfp-db9eeb00",
+   "file": "dev_rfp.pdf",
+   "sha256": "db9eeb004e718077678cddd9976b53895f9d7d009044f6b59c8a8d75213d2bd3"
+  }
+ ],
+ "data_class": "synthetic",
+ "refused_destinations": []
+}
