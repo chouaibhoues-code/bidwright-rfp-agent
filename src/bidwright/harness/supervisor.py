@@ -130,12 +130,13 @@ else:
         fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
 
 
-def lock_held(run_dir: Path, wait_s: float = LOCK_WAIT_S) -> bool:
-    """Whether a live process holds the run's lock, as `bidwright purge` asks."""
+def lock_held(run_dir: Path, wait_s: float | None = None) -> bool:
+    """Whether a live process holds the run's lock, as `bidwright purge` asks. The wait is
+    `LOCK_WAIT_S` unless given."""
     lock = RunLock(run_dir / CONTROL / LOCK)
     if not lock.path.exists():
         return False
-    if lock.acquire(wait_s):
+    if lock.acquire(LOCK_WAIT_S if wait_s is None else wait_s):
         lock.release()
         return False
     return True
