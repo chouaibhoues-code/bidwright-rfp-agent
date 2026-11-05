@@ -75,7 +75,7 @@ DataClass = Literal["synthetic", "client"]
 # The zones `triage` assigns per section, in the order the keyword fallback tries them
 # (ADR-018). `config/zones.yaml` lists the same names, and a test keeps the two equal.
 Zone = Literal["INSTRUCTION", "EVALUATION", "ELIGIBILITY", "OBLIGATION", "CONTRACT", "BACKGROUND"]
-ZoneSource = Literal["model", "keywords"]
+ZoneSource = Literal["model", "keywords", "forced"]  # forced: triage off (ADR-048)
 DocFormat = Literal["pdf", "docx", "xlsx"]
 DocRole = Literal["main", "annex", "addendum", "form"]
 Parser = Literal["docling", "pdfplumber"]
@@ -134,7 +134,7 @@ ContractCategory = Literal[
 ]
 DiscrepancyKind = Literal["CONFLICT", "INCONSISTENT_VALUE", "SUPERSEDED"]
 DiscrepancyState = Literal["conditional", "established"]
-QuestionOrigin = Literal["consolidate", "lint_template", "brief"]
+QuestionOrigin = Literal["consolidate", "lint_template", "brief", "decide"]
 FactorStatus = Literal["IN_SCOPE", "OUT_OF_SCOPE"]
 ResearchModeName = Literal["off", "pack", "live"]
 DomainKind = Literal["pattern", "standard", "pitfall"]
@@ -287,6 +287,11 @@ class SolutionSummary(Record):
     counts: dict[str, int] = Field(default_factory=dict)
     factors: list[FactorId] = Field(default_factory=list)  # Iteration 2: the brief's factors
     domain_items: list[DomainItemId] = Field(default_factory=list)  # the research appendix
+    # Iteration 3: the solution block, after the approach part.
+    option_id: str | None = None
+    capability_counts: dict[str, int] = Field(default_factory=dict)
+    tech_counts: dict[str, int] = Field(default_factory=dict)
+    bid_signal: str | None = None
 
 
 class ProposalSection(Record):
@@ -378,6 +383,16 @@ class ResearchSummary(Record):
     notes: list[str] = Field(default_factory=list)
 
 
+class SeedRecord(Record):
+    """The seed run a run started from (ADR-048), as its manifest records it."""
+
+    folder: str
+    sha256: Sha256
+    commit: str
+    seed_from: Literal["research", "risk"]
+    extraction: dict[str, Any] = Field(default_factory=dict)
+
+
 class RunManifest(Record):
     run_id: str
     commit: str
@@ -401,6 +416,12 @@ class RunManifest(Record):
     status_history: list[StatusChange] = Field(default_factory=list)
     run_args: dict[str, Any] = Field(default_factory=dict)
     research: ResearchSummary | None = None
+    # Iteration 3: the bid policy's hash, the seed run, the assess role's route (ADR-045) and
+    # the run's ablation switches (ADR-048).
+    bid_policy_sha256: Sha256 | None = None
+    seed: SeedRecord | None = None
+    assess_route: Literal["primary", "fallback", "same"] | None = None
+    switches: dict[str, Any] = Field(default_factory=dict)
 
 
 # --- Model-facing requests and responses ----------------------------------------------
@@ -1187,3 +1208,673 @@ class BudgetSnapshot(Record):
     tokens: int = Field(ge=0)
     active_seconds: float = Field(ge=0)
     raise_percent: int = Field(default=0, ge=0)
+
+
+# --- Iteration 3: the solution path (docs/designs/iteration-3.md, section 5.1) -----------------
+#
+# Model-facing models carry types only, every list defaulting to empty, and code enforces each
+# limit per item (ADR-024): an over-long text is cut at a word boundary, and list items beyond a
+# cap are dropped, each with a note. Stored records carry the limits as constraints.
+
+NeedOrigin = Literal["RFP", "DOMAIN"]
+Decision = Literal["RETRIEVE_EVIDENCE", "PROCEED_WITH_GAP", "REQUEST_CLARIFICATION", "ABSTAIN"]
+ClaimKind = Literal["capability", "certification", "delivery", "technology", "figure", "role"]
+EvidenceKind = Literal["capability", "case_study", "certification", "role"]
+AssessmentDisposition = Literal[
+    "SUPPORTED", "PARTIALLY_SUPPORTED", "UNVERIFIED", "CONTRADICTED", "NOT_APPLICABLE"
+]
+CoverageStatus = Literal["COVERED", "PARTIAL", "PARTNER", "GAP"]
+DeliveryMode = Literal["OOTB", "CONFIG", "CUSTOM", "PARTNER", "ALTERNATIVE", "EXCLUDED"]
+Weighting = Literal["stated", "equal"]
+EffortBasis = Literal["analogy", "parametric", "expert_judgment", "bottom_up"]
+VerificationMethod = Literal["INSPECTION", "DEMONSTRATION", "ANALYSIS", "TEST"]
+MaturityClass = Literal["CLASS_5"]
+TechClaimKind = Literal["LIBRARY", "NOT_CHECKABLE"]
+TechVerdictLabel = Literal["VALIDATED", "INVALIDATED", "INSUFFICIENT_DOCS"]
+TechValidationVerdict = Literal[
+    "VALIDATED", "INVALIDATED", "INSUFFICIENT_DOCS", "UNVALIDATED", "SKIPPED_CAP", "NOT_CHECKABLE"
+]
+GateDecision = Literal["approve", "edit", "reject"]
+BidSignalLabel = Literal["GO", "CONDITIONAL_GO", "NO_GO", "UNDETERMINED"]
+AssessRoute = Literal["primary", "fallback", "same"]
+
+NeedId = Annotated[str, Field(pattern=r"^(RG|DN)-\d{3}$")]
+ClaimId = Annotated[str, Field(pattern=r"^CL-\d{3}$")]
+KbId = Annotated[str, Field(pattern=r"^(CAP|CS|CERT|ROLE)-\d{3}$")]
+RoleId = Annotated[str, Field(pattern=r"^ROLE-\d{3}$")]
+OptionId = Annotated[str, Field(pattern=r"^OPT-\d$")]
+TechClaimId = Annotated[str, Field(pattern=r"^TC-\d{2}$")]
+WbsCode = Annotated[str, Field(pattern=r"^\d+(\.\d+)*$")]
+
+CLAIM_TEXT_MAX_CHARS = 300
+DECIDE_REASON_MAX_CHARS = 300
+ASSESS_REASON_MAX_CHARS = 600
+MISSING_MAX_CHARS = 300
+OPTION_NAME_MAX_CHARS = 80
+OPTION_SUMMARY_MAX_CHARS = 600
+SCORE_REASON_MAX_CHARS = 300
+FACT_TEXT_MAX_CHARS = 300
+ROW_TEXT_MAX_CHARS = 300
+CLAIMS_PER_NEED = 3
+
+
+# Needs and decisions
+
+
+class NeedRequirement(Facing):
+    id: str
+    statement: str
+    modality: Modality
+    quote: str
+
+
+class NeedView(Facing):
+    need_id: str
+    origin: NeedOrigin
+    topic: str = ""
+    text: str = ""  # a domain need's text; empty for an RFP need
+    requirements: list[NeedRequirement] = Field(default_factory=list)
+    excerpts: list[ExcerptView] = Field(default_factory=list)
+    discrepancy_ids: list[str] = Field(default_factory=list)
+    question_ids: list[str] = Field(default_factory=list)
+
+
+class DecideTask(Facing):
+    need: NeedView
+
+
+class EvidenceView(Facing):
+    id: str
+    kind: EvidenceKind
+    name: str
+    text: str
+
+
+class DecideFixedTask(Facing):
+    """SO1-F's one call: the need with the evidence code retrieved for it."""
+
+    need: NeedView
+    evidence: list[EvidenceView] = Field(default_factory=list)
+    passages: list[PassageView] = Field(default_factory=list)
+
+
+class ClaimProposal(Facing):
+    kind: ClaimKind = "capability"
+    text: str = ""
+    evidence_ids: list[str] = Field(default_factory=list)
+    src_ids: list[str] = Field(default_factory=list)
+
+
+class DecideResult(Facing):
+    decision: Decision = "ABSTAIN"
+    reason: str = ""
+    claims: list[ClaimProposal] = Field(default_factory=list)
+    gap: str | None = None
+    question: str | None = None
+
+
+class CapabilityClaim(Record):
+    id: ClaimId
+    need_id: NeedId
+    kind: ClaimKind
+    text: str = Field(min_length=1, max_length=CLAIM_TEXT_MAX_CHARS)
+    evidence_ids: list[KbId] = Field(default_factory=list, max_length=3)
+    src_ids: list[SrcId] = Field(min_length=1, max_length=3)
+
+
+class NeedDecision(Record):
+    """One line of `decisions.jsonl`."""
+
+    need_id: NeedId
+    origin: NeedOrigin
+    decision: Decision
+    reason: str = Field(default="", max_length=DECIDE_REASON_MAX_CHARS)
+    claim_ids: list[ClaimId] = Field(default_factory=list, max_length=CLAIMS_PER_NEED)
+    gap: str | None = None
+    question: ClarificationQuestion | None = None
+    turns: int = Field(default=0, ge=0)
+    tool_calls: int = Field(default=0, ge=0)
+    stop_reason: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
+# Assessments and the map
+
+
+class AssessmentTask(Facing):
+    claim_kind: ClaimKind
+    claim_text: str
+    evidence: list[EvidenceView] = Field(default_factory=list)
+    need_text: str = ""
+
+
+class AssessmentResult(Facing):
+    reason: str = ""
+    disposition: AssessmentDisposition = "UNVERIFIED"
+    supporting_ids: list[str] = Field(default_factory=list)
+    missing: str = ""
+
+
+class Assessor(Record):
+    provider: str
+    model: str
+    base_url: str | None = None
+    prompt: str
+
+
+class EvidenceAssessment(Record):
+    claim_id: ClaimId
+    disposition: AssessmentDisposition
+    reason: str = Field(default="", max_length=ASSESS_REASON_MAX_CHARS)
+    supporting_ids: list[KbId] = Field(default_factory=list)
+    missing: str = Field(default="", max_length=MISSING_MAX_CHARS)
+    partner_only: bool = False
+    called: bool = True
+    assessor: Assessor | None = None
+    same_family: bool = False
+
+    @model_validator(mode="after")
+    def _a_call_names_its_assessor(self) -> "EvidenceAssessment":
+        if self.called != (self.assessor is not None):
+            raise ValueError("an assessment names its assessor exactly when a model was called")
+        return self
+
+
+class CapabilityRow(Record):
+    need_id: NeedId
+    origin: NeedOrigin
+    text: str = Field(max_length=ROW_TEXT_MAX_CHARS)
+    decision: Decision | None = None  # None for a need the need cap left undecided
+    status: CoverageStatus
+    claim_ids: list[ClaimId] = Field(default_factory=list)
+    reason: str = ""
+
+
+class CapabilityMap(Record):
+    """The stored form of `capability_map.json`."""
+
+    rows: list[CapabilityRow] = Field(default_factory=list)
+    counts: dict[str, int] = Field(default_factory=dict)
+
+
+# Options
+
+
+class FactorView(Facing):
+    factor_id: str
+    name: str
+    weight: str
+    scoring: str
+    status: FactorStatus
+
+
+class ClaimView(Facing):
+    claim_id: str
+    text: str
+    disposition: AssessmentDisposition | None = None  # None before `assess`
+
+
+class MapRowView(Facing):
+    need_id: str
+    origin: NeedOrigin
+    text: str
+    status: CoverageStatus
+    claims: list[ClaimView] = Field(default_factory=list)
+
+
+class DomainItemView(Facing):
+    id: str
+    kind: DomainKind
+    statement: str
+
+
+class GapView(Facing):
+    need_id: str
+    gap: str
+
+
+class OptionsTask(Facing):
+    factors: list[FactorView] = Field(default_factory=list)
+    needs: list[MapRowView] = Field(default_factory=list)
+    domain_items: list[DomainItemView] = Field(default_factory=list)
+    gaps: list[GapView] = Field(default_factory=list)
+
+
+class FactorScore(Facing):
+    factor_id: str = ""
+    score: int = 0
+    reason: str = ""
+
+
+class NeedApproach(Facing):
+    need_id: str = ""
+    delivery_mode: DeliveryMode = "EXCLUDED"
+    claim_ids: list[str] = Field(default_factory=list)
+
+
+class OptionProposal(Facing):
+    name: str = ""
+    summary: str = ""
+    baseline: bool = False
+    approach: list[NeedApproach] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+    scores: list[FactorScore] = Field(default_factory=list)
+
+
+class OptionsResult(Facing):
+    options: list[OptionProposal] = Field(default_factory=list)
+
+
+class OptionView(Facing):
+    option_id: str
+    name: str
+    summary: str
+    approach: list[NeedApproach] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+
+
+class StoredScore(Record):
+    factor_id: FactorId
+    score: int = Field(ge=0, le=4)
+    reason: str = Field(default="", max_length=SCORE_REASON_MAX_CHARS)
+
+
+class StoredApproach(Record):
+    need_id: NeedId
+    delivery_mode: DeliveryMode
+    claim_ids: list[ClaimId] = Field(default_factory=list)
+
+
+class SolutionOption(Record):
+    id: OptionId
+    name: str = Field(min_length=1, max_length=OPTION_NAME_MAX_CHARS)
+    summary: str = Field(default="", max_length=OPTION_SUMMARY_MAX_CHARS)
+    baseline: bool = False
+    approach: list[StoredApproach] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+    scores: list[StoredScore] = Field(default_factory=list)
+    needs_proof: list[ClaimId] = Field(default_factory=list)
+    failed_gates: list[FactorId] = Field(default_factory=list)
+    total: float = Field(default=0.0, ge=0, le=4)
+    rank: int = Field(default=0, ge=0)
+
+
+class SolutionOptions(Record):
+    """The stored form of `options.json`."""
+
+    options: list[SolutionOption] = Field(default_factory=list)
+    weighting: Weighting = "equal"
+    hypothetical: bool = True
+    notes: list[str] = Field(default_factory=list)
+
+
+# The manifest
+
+
+class FactProposal(Facing):
+    text: str = ""
+    src_ids: list[str] = Field(default_factory=list)
+    requirement_ids: list[str] = Field(default_factory=list)
+    claim_ids: list[str] = Field(default_factory=list)
+    domain_item_ids: list[str] = Field(default_factory=list)
+
+
+class WorkstreamProposal(Facing):
+    name: str = ""
+    objective: str = ""
+
+
+class WbsNodeProposal(Facing):
+    code: str = ""
+    name: str = ""
+    deliverable: str = ""
+    requirement_ids: list[str] = Field(default_factory=list)
+    need_ids: list[str] = Field(default_factory=list)
+    claim_ids: list[str] = Field(default_factory=list)
+
+
+class TechClaimProposal(Facing):
+    text: str = ""
+    library: str | None = None
+    version: str | None = None
+    wbs_code: str = ""
+
+
+class BriefItemView(Facing):
+    id: str
+    text: str
+
+
+class RoleView(Facing):
+    id: str
+    title: str
+    summary: str
+
+
+class EffortProposal(Facing):
+    low_days: float = 0
+    high_days: float = 0
+    basis: EffortBasis = "expert_judgment"
+    basis_text: str = ""
+    role_ids: list[str] = Field(default_factory=list)
+    uncertainty: str = ""
+
+
+class VerificationProposal(Facing):
+    requirement_id: str = ""
+    method: VerificationMethod = "INSPECTION"
+
+
+class PackageDetail(Facing):
+    code: str = ""
+    scope: str = ""
+    exclusions: str = ""
+    acceptance: str = ""
+    effort: EffortProposal = Field(default_factory=EffortProposal)
+    verification: list[VerificationProposal] = Field(default_factory=list)
+    predecessors: list[str] = Field(default_factory=list)
+
+
+class PdcaProposal(Facing):
+    workstream: str = ""
+    plan: str = ""
+    do: str = ""
+    check: str = ""
+    act: str = ""
+
+
+class BenefitProposal(Facing):
+    hypothesis: str = ""
+    measure: str = ""
+    need_id: str = ""
+
+
+class WinThemeProposal(Facing):
+    feature: str = ""
+    metric: str = ""
+    benefit: str = ""
+    proof_claim_id: str | None = None
+
+
+class BlueprintPlanTask(Facing):
+    option: OptionView
+    needs: list[NeedView] = Field(default_factory=list)
+    claims: list[ClaimView] = Field(default_factory=list)
+    scope_in: list[BriefItemView] = Field(default_factory=list)
+    scope_out: list[BriefItemView] = Field(default_factory=list)
+    constraints: list[BriefItemView] = Field(default_factory=list)
+    never: list[BriefItemView] = Field(default_factory=list)
+
+
+class BlueprintPlan(Facing):
+    """P01's answer, and P03's."""
+
+    current_state: list[FactProposal] = Field(default_factory=list)
+    target_state: list[FactProposal] = Field(default_factory=list)
+    workstreams: list[WorkstreamProposal] = Field(default_factory=list)
+    wbs: list[WbsNodeProposal] = Field(default_factory=list)
+    assumptions: list[FactProposal] = Field(default_factory=list)
+    ground_rules: list[FactProposal] = Field(default_factory=list)
+    tech_claims: list[TechClaimProposal] = Field(default_factory=list)
+
+
+class BlueprintDetailTask(Facing):
+    plan: BlueprintPlan
+    claims: list[ClaimView] = Field(default_factory=list)
+    roles: list[RoleView] = Field(default_factory=list)
+
+
+class BlueprintDetail(Facing):
+    """P02's answer."""
+
+    packages: list[PackageDetail] = Field(default_factory=list)
+    pdca: list[PdcaProposal] = Field(default_factory=list)
+    benefits: list[BenefitProposal] = Field(default_factory=list)
+    win_themes: list[WinThemeProposal] = Field(default_factory=list)
+
+
+class InvalidatedView(Facing):
+    text: str
+    library: str | None = None
+    reason: str = ""
+    quote: str = ""
+
+
+class RevisionTask(Facing):
+    """P03's request: the settled plan and its `INVALIDATED` technology claims."""
+
+    plan: BlueprintPlan
+    invalidated: list[InvalidatedView] = Field(default_factory=list)
+
+
+class Fact(Record):
+    text: str = Field(min_length=1, max_length=FACT_TEXT_MAX_CHARS)
+    evidence_class: EvidenceClass
+    source_ids: list[str] = Field(default_factory=list)
+    needs_proof: bool = False
+
+
+class EffortEstimate(Record):
+    low_days: float = Field(ge=0)
+    high_days: float = Field(ge=0)
+    basis: EffortBasis
+    basis_text: str = ""
+    role_ids: list[RoleId] = Field(default_factory=list)
+    uncertainty: str = ""
+    maturity: MaturityClass = "CLASS_5"
+    provisional: Literal[True] = True
+
+
+class Verification(Record):
+    requirement_id: ReqId
+    method: VerificationMethod
+
+
+class WorkPackage(Record):
+    code: WbsCode
+    name: str = Field(min_length=1)
+    deliverable: str = ""
+    requirement_ids: list[ReqId] = Field(default_factory=list)
+    need_ids: list[NeedId] = Field(default_factory=list)
+    claim_ids: list[ClaimId] = Field(default_factory=list)
+    scope: str = ""
+    exclusions: str = ""
+    acceptance: str = ""
+    effort: EffortEstimate | None = None
+    verification: list[Verification] = Field(default_factory=list)
+    predecessors: list[WbsCode] = Field(default_factory=list)
+    evidence_class: EvidenceClass = "ASSUMPTION"
+    needs_proof: bool = False
+    untraced: bool = False
+
+
+class WbsNode(Record):
+    """A node of the breakdown that is not a work package."""
+
+    code: WbsCode
+    name: str = Field(min_length=1)
+    deliverable: str = ""
+
+
+class Workstream(Record):
+    code: WbsCode  # the top-level node it is
+    name: str = Field(min_length=1)
+    objective: str = ""
+
+
+class TechClaim(Record):
+    id: TechClaimId
+    text: str = Field(min_length=1)
+    library: str | None = None
+    version: str | None = None
+    wbs_code: WbsCode | None = None
+    kind: TechClaimKind
+
+    @model_validator(mode="after")
+    def _a_library_makes_it_checkable(self) -> "TechClaim":
+        if (self.library is not None) != (self.kind == "LIBRARY"):
+            raise ValueError("a technology claim is LIBRARY exactly when it names a library")
+        return self
+
+
+class Benefit(Record):
+    hypothesis: str = Field(min_length=1)
+    measure: str = ""
+    need_id: NeedId | None = None
+
+
+class WinTheme(Record):
+    feature: str = Field(min_length=1)
+    metric: str = ""
+    benefit: str = ""
+    proof_claim_id: ClaimId | None = None
+    proof: Literal["NO_PROOF"] | ClaimId = "NO_PROOF"
+
+
+class Pdca(Record):
+    workstream: str
+    plan: str = ""
+    do: str = ""
+    check: str = ""
+    act: str = ""
+
+
+class ManifestGap(Record):
+    requirement_id: ReqId
+    need_id: NeedId | None = None
+    status: CoverageStatus | None = None
+
+
+class ManifestCheck(Record):
+    name: str
+    passed: bool
+    detail: str = ""
+
+
+class SolutionManifest(Record):
+    """The stored form of `manifest.json`."""
+
+    option_id: OptionId | None = None
+    revision: int = Field(default=0, ge=0, le=1)
+    current_state: list[Fact] = Field(default_factory=list)
+    target_state: list[Fact] = Field(default_factory=list)
+    workstreams: list[Workstream] = Field(default_factory=list)
+    wbs: list[WbsNode] = Field(default_factory=list)
+    work_packages: list[WorkPackage] = Field(default_factory=list)
+    assumptions: list[Fact] = Field(default_factory=list)
+    ground_rules: list[Fact] = Field(default_factory=list)
+    tech_claims: list[TechClaim] = Field(default_factory=list)
+    benefits: list[Benefit] = Field(default_factory=list)
+    win_themes: list[WinTheme] = Field(default_factory=list)
+    pdca: list[Pdca] = Field(default_factory=list)
+    gaps: list[ManifestGap] = Field(default_factory=list)
+    checks: list[ManifestCheck] = Field(default_factory=list)
+    failed: bool = False
+    notes: list[str] = Field(default_factory=list)
+
+
+# Risk baselines
+
+
+class DateFact(Facing):
+    requirement_id: str
+    date: str
+    days_from_start: int
+    weekday: str
+
+
+class RiskFixedInput(RiskInput):
+    """The input of `risk_oneshot.md`: RK0's holds no dates or passages, RK1-F's code's
+    date arithmetic and retrieved passages."""
+
+    dates: list[DateFact] = Field(default_factory=list)
+    passages: list[PassageView] = Field(default_factory=list)
+
+
+# techcheck, the gate and the signal
+
+
+class TechVerdictTask(Facing):
+    claim_text: str
+    library: str | None = None
+    version: str | None = None
+    documentation: str = ""
+
+
+class TechVerdict(Facing):
+    reason: str = ""
+    verdict: TechVerdictLabel = "INSUFFICIENT_DOCS"
+    quote: str = ""
+
+
+class TechDoc(Record):
+    """One line of `tech_docs.jsonl`: the documentation one technology claim was judged on."""
+
+    claim_id: TechClaimId
+    library: str
+    library_id: str
+    query: str
+    text: str
+    retrieved: datetime
+
+
+class TechValidation(Record):
+    claim_id: TechClaimId
+    library: str | None = None
+    version: str | None = None
+    verdict: TechValidationVerdict
+    quote: str = ""
+    source: str | None = None  # the Context7 library id, or the library pack's id and version
+    reason: str = ""
+    revision: int = Field(default=0, ge=0, le=1)
+
+
+class GateEdit(Record):
+    field: str = Field(min_length=1)
+    value: Any
+
+
+class ReviewedHashes(Record):
+    manifest: Sha256
+    options: Sha256
+
+
+class GateApproval(Record):
+    """The stored form of `review/solution_gate.approval.yaml`, in ADR-035's format."""
+
+    gate: Literal["solution_gate"] = "solution_gate"
+    run_id: str
+    reviewed: ReviewedHashes
+    decision: GateDecision
+    option_id: OptionId | None = None
+    approver_role: str = Field(min_length=1)
+    decided: datetime
+    edits: list[GateEdit] = Field(default_factory=list)
+    override_reason: str | None = None
+    reject_reason: str | None = None
+    auto_selected: bool = False
+    edited_sha256: Sha256 | None = None
+
+    @model_validator(mode="after")
+    def _the_decision_matches_its_fields(self) -> "GateApproval":
+        if (self.decision == "edit") != bool(self.edits):
+            raise ValueError("an edit decision carries edits, and only an edit decision does")
+        if (self.decision == "reject") != (self.reject_reason is not None):
+            raise ValueError("a reject decision carries its reason, and only a reject does")
+        return self
+
+
+class BidTrigger(Record):
+    id: str = Field(min_length=1)
+    when: str = Field(min_length=1)
+    record_ids: list[str] = Field(default_factory=list)
+
+
+class BidSignal(Record):
+    """The stored form of `bid_signal.json`."""
+
+    signal: BidSignalLabel
+    triggers: list[BidTrigger] = Field(default_factory=list)
+    covered_share: float | None = Field(default=None, ge=0, le=1)
+    policy_sha256: Sha256 | None = None
+    missing_inputs: list[str] = Field(default_factory=list)

@@ -1,11 +1,12 @@
 """The Ops page (`WP-3.6`, `CH-94`): ledger requests, four-layer tokens, cost, shadow cost and
 latency by node and by model; evaluation scores from `evals/results/runs/<run>/` when present;
-and OTLP span replay into Phoenix.
+`keep_or_drop` ablation ladder reports from `evals/results/<matrix>/report.json`; matrix totals
+summed from `outputs/matrices/<matrix>/*/ledger.jsonl`; and OTLP span replay into Phoenix.
 """
 
 import streamlit as st
 
-from app.data import select_run_data
+from app.data import load_ladder_reports, load_matrix_totals, select_run_data
 from bidwright.obs.replay import replay_spans
 from bidwright.preflight import Refused
 
@@ -69,6 +70,34 @@ def render_ops_page() -> None:
             st.code(data.scores.scorecard_text, language=None)
     else:
         st.text("No scores recorded for this run.")
+
+    st.header("Ablation ladders (keep_or_drop)")
+    ladder_reports = load_ladder_reports()
+    if ladder_reports:
+        for report in ladder_reports:
+            st.subheader(f"Ladder: {report.matrix}")
+            st.table([row.as_dict() for row in report.rows])
+            for row in report.rows:
+                st.text(
+                    f"{report.matrix} {row.rung} (vs {row.comparator}): "
+                    f"verdict={row.verdict}, interval={row.interval}, "
+                    f"medians={row.medians}, cost_per_avoided_miss={row.cost_per_avoided_miss}"
+                )
+    else:
+        st.text("No keep_or_drop ladder reports found under evals/results/.")
+
+    st.header("Matrix totals")
+    matrix_totals = load_matrix_totals()
+    if matrix_totals:
+        st.table([row.as_dict("matrix") for row in matrix_totals])
+        for row in matrix_totals:
+            st.text(
+                f"Matrix {row.group}: requests={row.requests}, "
+                f"tokens_in={row.tokens_in}, tokens_out={row.tokens_out}, "
+                f"cost_usd={row.cost_usd:g}"
+            )
+    else:
+        st.text("No matrix ledgers found under outputs/matrices/.")
 
     st.header("Phoenix span replay")
     st.text(

@@ -16,7 +16,14 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.data import RunData, list_runs, load_run_data, outputs_dir
+from app.data import (
+    RunData,
+    list_runs,
+    load_ladder_reports,
+    load_matrix_totals,
+    load_run_data,
+    outputs_dir,
+)
 from bidwright import cli
 from bidwright.obs.replay import replay_spans
 from bidwright.preflight import Refused
@@ -26,7 +33,7 @@ ALLOWED_HOSTS = frozenset({"127.0.0.1:8001", "localhost:8001"})
 
 app = FastAPI(
     title="Bidwright API (UNREVIEWED_DRAFT)",
-    version="0.2.0",
+    version="0.3.0",
     description=STATUS_LINE,
 )
 
@@ -131,6 +138,20 @@ def get_run(run_id: str) -> dict[str, Any]:
             "scorecard_text": data.scores.scorecard_text,
         },
         "has_spans": data.has_spans,
+        "capability_map": (
+            data.capability_map.model_dump(mode="json") if data.capability_map else None
+        ),
+        "options": data.options.model_dump(mode="json") if data.options else None,
+        "solution_manifest": (
+            data.solution_manifest.model_dump(mode="json") if data.solution_manifest else None
+        ),
+        "tech_validations": [tv.model_dump(mode="json") for tv in data.tech_validations],
+        "gate_text": data.gate_text,
+        "gate_approval": (
+            data.gate_approval.model_dump(mode="json") if data.gate_approval else None
+        ),
+        "bid_signal": data.bid_signal.model_dump(mode="json") if data.bid_signal else None,
+        "bid_memo_text": data.bid_memo_text,
     }
 
 
@@ -195,6 +216,31 @@ def get_run_scores(run_id: str) -> dict[str, Any]:
         "status_line": STATUS_LINE,
         "scores": data.scores.scores,
         "scorecard_text": data.scores.scorecard_text,
+    }
+
+
+@app.get("/ops/ladders")
+def get_ops_ladders() -> dict[str, Any]:
+    reports = load_ladder_reports()
+    return {
+        "status_line": STATUS_LINE,
+        "ladders": [
+            {
+                "matrix": r.matrix,
+                "gold": r.gold,
+                "rows": [row.as_dict() for row in r.rows],
+            }
+            for r in reports
+        ],
+    }
+
+
+@app.get("/ops/matrices")
+def get_ops_matrices() -> dict[str, Any]:
+    totals = load_matrix_totals()
+    return {
+        "status_line": STATUS_LINE,
+        "matrices": [asdict(row) for row in totals],
     }
 
 

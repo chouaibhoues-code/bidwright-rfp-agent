@@ -170,6 +170,53 @@ def test_demo_endpoint_invokes_cli_demo_and_returns_latest_run(
     assert body["status_line"] == STATUS_LINE
 
 
+def test_ops_ladders_and_matrices_endpoints_include_status_line(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    matrix_run = outputs_root / "matrices" / "ex-ladder" / "run-ex0"
+    shutil.copytree(DEV_SAMPLE, matrix_run)
+
+    results_root = tmp_path / "results"
+    ladder_dir = results_root / "ex-ladder"
+    ladder_dir.mkdir(parents=True)
+    (ladder_dir / "report.json").write_text(
+        json.dumps(
+            {
+                "matrix": "ex-ladder",
+                "gold": "hero v4",
+                "rungs": {"EX0": {"missed_mandatory_count": {"median": 4.0}}},
+                "decisions": [
+                    {
+                        "rung": "EX1",
+                        "control": "EX0",
+                        "metric": "missed_mandatory_count",
+                        "kind": "keep_or_drop",
+                        "verdict": "keep",
+                        "interval": [0.5, 2.5],
+                        "cost_per_avoided_miss": 0.04,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(outputs_root))
+    monkeypatch.setenv("BIDWRIGHT_RESULTS", str(results_root))
+
+    ladders = client.get("/ops/ladders")
+    assert ladders.status_code == 200
+    assert ladders.json()["status_line"] == STATUS_LINE
+    assert len(ladders.json()["ladders"]) == 1
+
+    matrices = client.get("/ops/matrices")
+    assert matrices.status_code == 200
+    assert matrices.json()["status_line"] == STATUS_LINE
+    assert matrices.json()["matrices"][0]["group"] == "ex-ladder"
+
+
 def test_api_module_writes_no_file_directly() -> None:
     api_path = HOME / "app" / "api.py"
     tree = ast.parse(api_path.read_text(encoding="utf-8"))
