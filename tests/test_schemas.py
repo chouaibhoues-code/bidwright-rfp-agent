@@ -664,7 +664,8 @@ def test_the_research_tool_arguments_forbid_extra_keys() -> None:
 
 def test_v02_records_still_validate_with_iteration_3s_fields() -> None:
     """Every field Iteration 3 adds to a stored record has a default (step 2). The files are
-    copies of `samples/dev/run_manifest.json` and `solution_summary.json` as tagged at v0.2."""
+    copies of `samples/dev/run_manifest.json`, and of the `summary` part of
+    `solution_summary.json`, which holds ids only, as tagged at v0.2."""
     data = json.loads(Path("tests/data/v02_run_manifest.json").read_text(encoding="utf-8"))
     manifest = s.RunManifest.model_validate(data)
     assert (manifest.bid_policy_sha256, manifest.seed, manifest.assess_route) == (None, None, None)
