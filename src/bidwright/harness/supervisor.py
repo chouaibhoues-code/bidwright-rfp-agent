@@ -8,7 +8,8 @@ lock when the process ends, however it ends, so a `RUNNING` manifest whose lock 
 to a killed run, which may be resumed. The process id is recorded for information only: on
 Windows, `os.kill` ends the process it tests, and ids are reused.
 
-A resume rereads the stored manifest under the lock and refuses a finished run, one that
+A resume rereads the stored manifest under the lock and refuses a finished run, one waiting at
+its solution gate unless `bidwright approve` resumes it (Iteration 3), one that
 predates `v0.2` (no `run_args`), one run in the client's `record` or `replay` mode, one started
 in another environment, a profile change other than `free` to `paid` after `QUOTA_PAUSED`,
 prompts whose hashes changed, since their journal keys would no longer match, and input files
@@ -152,10 +153,24 @@ def read_manifest(run_dir: Path) -> RunManifest:
     return RunManifest.model_validate_json(path.read_text(encoding="utf-8"))
 
 
-def refusal(stored: RunManifest, new: RunManifest, where: str) -> str | None:
-    """Why `new`, a resume, may not continue `stored`, or None."""
+def refusal(
+    stored: RunManifest, new: RunManifest, where: str, *, approving: bool = False
+) -> str | None:
+    """Why `new`, a resume, may not continue `stored`, or None. A run waiting at its solution
+    gate continues only with `bidwright approve` (`approving`), and `approve` only such a run
+    (Iteration 3, ADR-046)."""
     if stored.status in TERMINAL:
         return f"the run ended {stored.status}; a finished run is not resumed"
+    if stored.status == "WAITING_HUMAN" and not approving:
+        return (
+            "the run waits at its solution gate (review/solution_gate.md); continue it with"
+            f" bidwright approve {stored.run_id} --role ROLE"
+        )
+    if approving and stored.status != "WAITING_HUMAN":
+        return (
+            f"the run is {stored.status} and waits at no gate; bidwright approve has nothing to"
+            " decide"
+        )
     if not stored.run_args:
         return "this run predates v0.2; start it again"
     mode = stored.run_args.get("mode")
@@ -237,6 +252,7 @@ class RunSupervisor:
         raise_budget: int | None = None,
         watch_interval_s: float = 1.0,
         lock_wait_s: float | None = None,
+        approving: bool = False,
     ) -> None:
         self.run_dir = run_dir
         self.manifest = manifest
@@ -244,6 +260,7 @@ class RunSupervisor:
         self.budget = budget
         self.resume = resume
         self.raise_budget = raise_budget
+        self.approving = approving  # a resume by bidwright approve (Iteration 3)
         self.watch_interval_s = watch_interval_s
         self.lock_wait_s = LOCK_WAIT_S if lock_wait_s is None else lock_wait_s
         self.part = 0
@@ -276,7 +293,7 @@ class RunSupervisor:
         reason = "started"
         if self.resume:
             stored = read_manifest(self.run_dir)
-            refused = refusal(stored, self.manifest, environment())
+            refused = refusal(stored, self.manifest, environment(), approving=self.approving)
             if refused:
                 raise Refused(refused)
             self.part = sum(1 for change in stored.status_history if change.status == "RUNNING")

@@ -1,7 +1,9 @@
 """The command line: argument handling, refusals and the `.env` reader."""
 
+import argparse
 import json
 import os
+from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 
@@ -294,3 +296,123 @@ def test_a_raise_must_be_a_positive_percentage() -> None:
 def test_a_resume_carries_the_assess_route_its_first_part_recorded(tmp_path: Path) -> None:
     run_args = {"source": "inputs/dev/dev_rfp.pdf", "profile": "free", "assess_route": "fallback"}
     assert cli.resume_arguments(run_args, tmp_path / "run")["assess_route"] == "fallback"
+
+
+# --- Iteration 3, step 10: bidwright approve ---------------------------------------------------
+
+
+def _gate_folder(folder: Path, verdict: str = "VALIDATED") -> Path:
+    from bidwright.graph.blueprint import write_manifest
+    from bidwright.graph.options import write_options
+    from bidwright.schemas import (
+        EffortEstimate,
+        RunManifest,
+        SolutionManifest,
+        SolutionOption,
+        SolutionOptions,
+        TechValidation,
+        WorkPackage,
+    )
+
+    folder.mkdir(parents=True)
+    effort = EffortEstimate(low_days=5, high_days=10, basis="analogy", basis_text="Similar.")
+    write_manifest(
+        folder,
+        SolutionManifest(
+            option_id="OPT-1", work_packages=[WorkPackage(code="1.1", name="W", effort=effort)]
+        ),
+    )
+    write_options(
+        folder,
+        SolutionOptions(
+            options=[
+                SolutionOption(id="OPT-1", name="A", rank=1),
+                SolutionOption(id="OPT-2", name="B", rank=2),
+            ]
+        ),
+    )
+    row = TechValidation(claim_id="TC-01", library="pdfplumber", verdict=verdict)  # type: ignore[arg-type]
+    (folder / "tech_validations.jsonl").write_text(row.model_dump_json() + "\n", encoding="utf-8")
+    manifest = RunManifest(
+        run_id="run-gate",
+        commit="0" * 7,
+        profile="free",
+        models={},
+        started=datetime(2026, 11, 5, tzinfo=UTC),
+        status="WAITING_HUMAN",
+    )
+    (folder / "run_manifest.json").write_text(manifest.model_dump_json(), encoding="utf-8")
+    return folder
+
+
+def _approve_args(*flags: str) -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--role", default="Bid director")
+    for name in ("--option", "--edit", "--override", "--reject"):
+        parser.add_argument(name)
+    return parser.parse_args(list(flags))
+
+
+@pytest.mark.parametrize(
+    ("flags", "decision"),
+    [((), "approve"), (("--option", "OPT-2"), "approve"), (("--reject", "No."), "reject")],
+)
+def test_approval_from_args_gives_the_decision_for_each_flag_set(
+    tmp_path: Path, flags: tuple[str, ...], decision: str
+) -> None:
+    folder = _gate_folder(tmp_path / "run")
+    approval = cli.approval_from_args(_approve_args(*flags), folder)
+    assert approval.decision == decision and approval.run_id == "run-gate"
+    assert approval.reviewed.manifest.startswith("sha256:")
+
+
+@pytest.mark.parametrize(
+    ("flags", "problem"),
+    [
+        (("--reject", "No.", "--option", "OPT-2"), "--reject takes no other decision flag"),
+        (("--option", "OPT-2", "--edit", "edits.yaml"), "do not combine"),
+        (("--option", "OPT-9"), "no option OPT-9"),
+    ],
+)
+def test_approval_from_args_refuses_a_forbidden_combination(
+    tmp_path: Path, flags: tuple[str, ...], problem: str
+) -> None:
+    folder = _gate_folder(tmp_path / "run")
+    with pytest.raises(cli.ApprovalRefused, match=problem):
+        cli.approval_from_args(_approve_args(*flags), folder)
+
+
+def test_approval_from_args_reads_edits_and_refuses_an_unknown_field(tmp_path: Path) -> None:
+    import io
+
+    folder = _gate_folder(tmp_path / "run")
+    good = "- {field: 'work_packages[1.1].effort.high_days', value: 12}\n"
+    approval = cli.approval_from_args(_approve_args("--edit", "-"), folder, io.StringIO(good))
+    assert approval.decision == "edit"
+    assert [(e.field, e.value) for e in approval.edits] == [
+        ("work_packages[1.1].effort.high_days", 12)
+    ]
+    bad = tmp_path / "edits.yaml"
+    bad.write_text("- {field: 'work_packages[1.1].name', value: New}\n", encoding="utf-8")
+    with pytest.raises(cli.ApprovalRefused, match="is not a field an edit may change"):
+        cli.approval_from_args(_approve_args("--edit", str(bad)), folder)
+
+
+def test_approval_from_args_refuses_a_blocked_gate_without_an_override(tmp_path: Path) -> None:
+    folder = _gate_folder(tmp_path / "run", verdict="INVALIDATED")
+    with pytest.raises(cli.ApprovalRefused, match="blocked by TC-01"):
+        cli.approval_from_args(_approve_args(), folder)
+    passed = cli.approval_from_args(_approve_args("--override", "Fixed upstream."), folder)
+    assert passed.override_reason == "Fixed upstream."
+    assert cli.approval_from_args(_approve_args("--reject", "No."), folder).decision == "reject"
+
+
+def test_approve_refuses_a_run_that_waits_at_no_gate(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    folder = _gate_folder(tmp_path / "run")
+    data = json.loads((folder / "run_manifest.json").read_text(encoding="utf-8"))
+    data["status"] = "STOPPED"
+    (folder / "run_manifest.json").write_text(json.dumps(data), encoding="utf-8")
+    assert cli.main(["approve", str(folder), "--role", "Bid director"]) == 2
+    assert "does not wait at a gate" in capsys.readouterr().err

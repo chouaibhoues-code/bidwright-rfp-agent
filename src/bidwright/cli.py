@@ -10,6 +10,9 @@
                          runs live and writes LLM and Docling cassettes, on the host; --fill
                          keeps the recording's cassettes, records only the calls it lacks,
                          and removes the ones the run did not use
+    bidwright approve <run> --role TEXT [--option OPT-n] [--edit FILE|-] [--override REASON]
+                      [--reject REASON]
+                         decides the run's solution gate; the run resumes from it
     bidwright stop <run>  asks a running run to stop when its current step ends
     bidwright resume <run> [--raise-budget PERCENT] [--profile paid]
                          continues a stopped, paused or killed run from its last checkpoint
@@ -50,6 +53,7 @@ from bidwright.preflight import HOME, Refused
 
 if TYPE_CHECKING:
     from bidwright.graph.build import RunResult
+    from bidwright.schemas import GateApproval
 
 DEMO_SOURCE = HOME / "inputs" / "dev" / "dev_rfp.pdf"
 CONFIG_DIR = HOME / "config"  # where `research pin` writes the pins
@@ -208,6 +212,100 @@ def _resume(args: argparse.Namespace) -> int:
     return _report(result)
 
 
+class ApprovalRefused(Refused):
+    """`bidwright approve` flags that cannot make an approval."""
+
+
+def approval_from_args(
+    args: argparse.Namespace, run_dir: Path, stdin: Any = None
+) -> "GateApproval":
+    """The `GateApproval` the flags make (section 4.8): `reject` with `--reject`, which takes
+    no other flag; `edit` with `--edit`; else `approve`. `--option` does not combine with
+    `--edit`. Refused: an unknown field path, an edit file that is not a list of
+    `{field, value}`, an option `options.json` does not hold, and a blocked gate approved
+    without `--override`."""
+    import yaml
+
+    from bidwright.graph.blueprint import edit_path_problem
+    from bidwright.graph.gate import blocking, reviewed_hashes
+    from bidwright.harness.supervisor import read_manifest
+    from bidwright.schemas import GateApproval, GateEdit, SolutionOptions, TechValidation
+
+    if args.reject is not None and (args.option or args.edit or args.override):
+        raise ApprovalRefused("--reject takes no other decision flag")
+    if args.option and args.edit:
+        raise ApprovalRefused(
+            "--option and --edit do not combine: edits apply to the reviewed manifest"
+        )
+    for name in ("manifest.json", "options.json"):
+        if not (run_dir / name).is_file():
+            raise ApprovalRefused(f"{run_dir.name} holds no {name}, so there is no gate to decide")
+    edits: list[GateEdit] = []
+    if args.edit:
+        if args.edit == "-":
+            text = (stdin or sys.stdin).read()
+        else:
+            text = Path(args.edit).read_text(encoding="utf-8")
+        loaded = yaml.safe_load(text)
+        if not isinstance(loaded, list) or not loaded:
+            raise ApprovalRefused("an edit file is a YAML list of {field, value}")
+        for entry in loaded:
+            if not isinstance(entry, dict) or set(entry) != {"field", "value"}:
+                raise ApprovalRefused("each edit is one {field, value}")
+            problem = edit_path_problem(str(entry["field"]))
+            if problem is not None:
+                raise ApprovalRefused(problem)
+            edits.append(GateEdit(field=str(entry["field"]), value=entry["value"]))
+    options = SolutionOptions.model_validate_json(
+        (run_dir / "options.json").read_text(encoding="utf-8")
+    )
+    if args.option and args.option not in {o.id for o in options.options}:
+        raise ApprovalRefused(f"options.json holds no option {args.option}")
+    validations = run_dir / "tech_validations.jsonl"
+    rows = validations.read_text(encoding="utf-8").splitlines() if validations.is_file() else []
+    blocked = blocking([TechValidation.model_validate_json(r) for r in rows if r.strip()])
+    decision = "reject" if args.reject is not None else "edit" if edits else "approve"
+    if blocked and decision != "reject" and not args.override:
+        raise ApprovalRefused(
+            f"the gate is blocked by {', '.join(blocked)}, still INVALIDATED; approve it with"
+            " --override REASON, or reject it"
+        )
+    return GateApproval(
+        run_id=read_manifest(run_dir).run_id,
+        reviewed=reviewed_hashes(run_dir),
+        decision=decision,
+        option_id=args.option,
+        approver_role=args.role,
+        decided=datetime.now(UTC),
+        edits=edits,
+        override_reason=args.override,
+        reject_reason=args.reject,
+    )
+
+
+def _approve(args: argparse.Namespace) -> int:
+    from bidwright.harness.supervisor import read_manifest
+
+    run_dir = _run_folder(args.run)
+    try:
+        if read_manifest(run_dir).status != "WAITING_HUMAN":
+            raise ApprovalRefused(
+                f"the run {run_dir.name} does not wait at a gate; bidwright approve continues"
+                " only a run in WAITING_HUMAN"
+            )
+        approval = approval_from_args(args, run_dir)
+    except Refused as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    # Iteration 3's step 12 resumes the run with this approval, through execute.
+    print(
+        f"Refused: the approval is valid ({approval.decision}), and resuming a run from its"
+        " gate arrives with Iteration 3's step 12",
+        file=sys.stderr,
+    )
+    return 2
+
+
 def _percent(value: str) -> int:
     percent = int(value)
     if percent <= 0:
@@ -349,6 +447,15 @@ def main(argv: list[str] | None = None) -> int:
     record.add_argument("--outputs", type=Path, default=HOME / "outputs")
     stop = sub.add_parser("stop", help="ask a running run to stop when its current step ends")
     stop.add_argument("run", help="a run id under outputs/, or a run folder")
+    approve = sub.add_parser("approve", help="decide a run's solution gate")
+    approve.add_argument("run", help="a run id under outputs/, or a run folder")
+    approve.add_argument("--role", required=True, help="the approver's role, never a name")
+    approve.add_argument("--option", help="switch to another option, such as OPT-2")
+    approve.add_argument("--edit", help="a YAML list of {field, value}, or - for standard input")
+    approve.add_argument(
+        "--override", metavar="REASON", help="pass a blocked gate, with the reason"
+    )
+    approve.add_argument("--reject", metavar="REASON", help="reject the solution; the run ends")
     resume = sub.add_parser("resume", help="continue a run from its last checkpoint")
     resume.add_argument("run", help="a run id under outputs/, or a run folder")
     resume.add_argument(
@@ -440,6 +547,8 @@ def main(argv: list[str] | None = None) -> int:
         return _stop(args)
     if args.command == "resume":
         return _resume(args)
+    if args.command == "approve":
+        return _approve(args)
     if args.command == "research":
         if args.research_command == "pin":
             return _pin(args)

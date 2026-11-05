@@ -5,16 +5,17 @@
 ## `bidwright`
 
 ```text
-usage: bidwright [-h] {run,demo,record,stop,resume,purge,matrix,research} ...
+usage: bidwright [-h] {run,demo,record,stop,approve,resume,purge,matrix,research} ...
 
 Bidwright: RFP to proposal.
 
 positional arguments:
-  {run,demo,record,stop,resume,purge,matrix,research}
+  {run,demo,record,stop,approve,resume,purge,matrix,research}
     run                 run one RFP file or package folder live
     demo                replay the recorded development run, with no keys
     record              run live and record cassettes, on the host
     stop                ask a running run to stop when its current step ends
+    approve             decide a run's solution gate
     resume              continue a run from its last checkpoint
     purge               delete a run and its cache entries, or expired runs
     matrix              run a matrix of rungs and repeats
@@ -97,6 +98,25 @@ options:
   -h, --help  show this help message and exit
 ```
 
+## `bidwright approve`
+
+```text
+usage: bidwright approve [-h] --role ROLE [--option OPTION] [--edit EDIT] [--override REASON]
+                         [--reject REASON]
+                         run
+
+positional arguments:
+  run                a run id under outputs/, or a run folder
+
+options:
+  -h, --help         show this help message and exit
+  --role ROLE        the approver's role, never a name
+  --option OPTION    switch to another option, such as OPT-2
+  --edit EDIT        a YAML list of {field, value}, or - for standard input
+  --override REASON  pass a blocked gate, with the reason
+  --reject REASON    reject the solution; the run ends
+```
+
 ## `bidwright resume`
 
 ```text
@@ -147,6 +167,19 @@ options:
   -h, --help            show this help message and exit
   --server {notebooklm,context7}
                         the server
+```
+
+## `bidwright research libraries`
+
+```text
+usage: bidwright research libraries [-h] --library LIBRARIES --topic TOPICS [--run RUN]
+
+options:
+  -h, --help           show this help message and exit
+  --library LIBRARIES  a library's name
+  --topic TOPICS       general words to look up for each library, such as 'PDF/A export'; never
+                       RFP text
+  --run RUN            a live run whose tech_docs.jsonl the pack adds
 ```
 
 ## `bidwright research pack`

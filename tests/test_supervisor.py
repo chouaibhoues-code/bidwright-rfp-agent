@@ -335,3 +335,19 @@ def test_ctrl_c_stops_the_run_and_a_resume_completes_it(tmp_path: Path) -> None:
     assert (manifest.status, manifest.status_reason) == ("STOPPED", "interrupted by the operator")
     resumed = _run(tmp_path, resume=True)
     assert resumed.status == "COMPLETED", resumed.reason
+
+
+def test_a_run_waiting_at_its_gate_resumes_only_through_approve(tmp_path: Path) -> None:
+    """Iteration 3, step 10: WAITING_HUMAN leaves by bidwright approve, and approve continues
+    only a run that waits."""
+    run_dir = _run(tmp_path, control=_drained()).run_dir
+    _edit(run_dir, status="WAITING_HUMAN")
+    with pytest.raises(Refused, match="continue it with bidwright approve run --role ROLE"):
+        _run(tmp_path, resume=True)
+    stored, new = _manifest(run_dir), _manifest(run_dir)
+    assert supervisor.refusal(stored, new, environment(), approving=True) is None
+    _edit(run_dir, status="STOPPED")
+    stopped = _manifest(run_dir)
+    assert "waits at no gate" in (
+        supervisor.refusal(stopped, stopped, environment(), approving=True) or ""
+    )

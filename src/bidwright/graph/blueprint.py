@@ -22,7 +22,10 @@ provenance (an unknown id is dropped; a fact's class is its strongest source's, 
 work package citing a claim that is not supported is `ASSUMPTION` with `needs_proof`). A fact
 holding a currency amount, or a calendar date that no passage of the run holds, is dropped;
 in any other text the amount or date becomes "[removed]". `approach_view` is the manifest's
-view for `write_approach`, and `write_manifest` the one writer of `manifest.json`. Context
+view for `write_approach`, and `write_manifest` the one writer of `manifest.json`;
+`apply_edits` (step 10) applies the edits a person approves at `solution_gate`, on the
+fields `EDITABLE` lists, and refuses any other field, a value of the wrong type, an effort
+range turned upside down, an unknown predecessor or one that closes a cycle. Context
 manifests are `blueprint-P01.json`, `-P01-repair`, `-P01-closure`, `P02`, `P02-repair`, `P03`
 and its repairs, and `P02-revision`.
 """
@@ -66,6 +69,7 @@ from bidwright.schemas import (
     EvidenceClass,
     Fact,
     FactProposal,
+    GateEdit,
     InvalidatedView,
     ManifestCheck,
     ManifestGap,
@@ -805,6 +809,107 @@ def _checks(
         check("win_theme_proof", [t.feature for t in themes if t.proof == "NO_PROOF"]),
         check("no_prices_or_dates", b.removed),
     ]
+
+
+# --- edits at the gate (step 10) -------------------------------------------------------------
+
+EDITABLE = (
+    "work_packages[<code>].effort.low_days",
+    "work_packages[<code>].effort.high_days",
+    "work_packages[<code>].predecessors",
+    "work_packages[<code>].scope",
+    "work_packages[<code>].exclusions",
+    "work_packages[<code>].acceptance",
+    "assumptions[<n>].text",
+    "ground_rules[<n>].text",
+)
+_EDIT_PATH = re.compile(
+    r"^(?:work_packages\[(?P<code>\d+(?:\.\d+)*)\]\."
+    r"(?P<part>effort\.low_days|effort\.high_days|predecessors|scope|exclusions|acceptance)"
+    r"|(?P<facts>assumptions|ground_rules)\[(?P<n>[1-9]\d*)\]\.text)$"
+)
+
+
+class EditRefused(ValueError):
+    """An edit the gate cannot apply."""
+
+
+def edit_path_problem(path: str) -> str | None:
+    """Why a field path is not one an edit may change, or None."""
+    if _EDIT_PATH.match(path):
+        return None
+    return f"{path!r} is not a field an edit may change; the fields are {', '.join(EDITABLE)}"
+
+
+def apply_edits(
+    manifest: SolutionManifest, edits: Sequence["GateEdit"]
+) -> tuple[SolutionManifest, list[str]]:
+    """The manifest with the edits applied, and the work packages they changed, in order."""
+    edited = manifest.model_copy(deep=True)
+    packages = {p.code: p for p in edited.work_packages}
+    changed: list[str] = []
+    for edit in edits:
+        match = _EDIT_PATH.match(edit.field)
+        if match is None:
+            raise EditRefused(edit_path_problem(edit.field) or edit.field)
+        if match["facts"]:
+            facts = edited.assumptions if match["facts"] == "assumptions" else edited.ground_rules
+            n = int(match["n"])
+            if n > len(facts) or not isinstance(edit.value, str) or not edit.value.strip():
+                raise EditRefused(f"{edit.field}: no such fact, or an empty text")
+            facts[n - 1].text = cut(" ".join(edit.value.split()), FACT_TEXT_MAX_CHARS)
+        else:
+            package = packages.get(match["code"])
+            if package is None:
+                raise EditRefused(f"{edit.field}: no work package {match['code']}")
+            _edit_package(package, match["part"], edit.value, set(packages), edit.field)
+            if package.code not in changed:
+                changed.append(package.code)
+        edited.notes.append(f"edited at the gate: {edit.field}")
+    for package in edited.work_packages:
+        effort = package.effort
+        if effort is not None and effort.low_days > effort.high_days:
+            raise EditRefused(f"{package.code}: low_days would be above high_days")
+    if _cycle(edited.work_packages):
+        raise EditRefused("the edited predecessors close a cycle")
+    return edited, changed
+
+
+def _edit_package(
+    package: WorkPackage, part: str, value: object, codes: set[str], path: str
+) -> None:
+    if part.startswith("effort."):
+        if package.effort is None:
+            raise EditRefused(f"{path}: {package.code} has no effort to edit")
+        if isinstance(value, bool) or not isinstance(value, int | float) or value < 0:
+            raise EditRefused(f"{path}: a number of days, 0 or more")
+        setattr(package.effort, part.split(".", 1)[1], float(value))
+    elif part == "predecessors":
+        if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+            raise EditRefused(f"{path}: a list of work package codes")
+        unknown = [v for v in value if v not in codes or v == package.code]
+        if unknown:
+            raise EditRefused(f"{path}: not other work packages: {', '.join(unknown)}")
+        package.predecessors = list(dict.fromkeys(value))
+    else:
+        if not isinstance(value, str):
+            raise EditRefused(f"{path}: a text")
+        setattr(package, part, " ".join(value.split()))
+
+
+def _cycle(packages: Sequence[WorkPackage]) -> bool:
+    graph = {p.code: p.predecessors for p in packages}
+    state: dict[str, str] = {}
+
+    def visit(code: str) -> bool:
+        state[code] = "open"
+        for before in graph.get(code, []):
+            if state.get(before) == "open" or (before not in state and visit(before)):
+                return True
+        state[code] = "done"
+        return False
+
+    return any(code not in state and visit(code) for code in graph)
 
 
 # --- the view and the file ------------------------------------------------------------------
