@@ -47,6 +47,22 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | `search_rfp` | Search the RFP's passages by words, such as 'go-live migration deadline'. A requirement id such as REQ-0003 returns the passages that requirement quotes. Returns up to k passages, best first, each with its SRC id, section path and text. | `query`; `k` (optional) |
 | `date_calc` | Date arithmetic. add or subtract an amount of days, business_days, weeks or months; diff counts days or business days from date to other_date; weekday names the day. With tz, times are read and returned in that IANA time zone. | `date`; `op`; `amount` (optional); `unit` (optional); `tz` (optional); `other_date` (optional) |
 
+## Gateway rules
+
+`ToolGateway` applies the rules a call triggers in this order, outside the model. The first rule a call breaks decides its outcome, and the tool never runs; a call counts against the agent's cap only when it passes every rule (ADR-032).
+
+| Rule | Trigger | Check | Outcome |
+|---|---|---|---|
+| allowlist | Every call | The tool is registered and listed for the agent in `config/agents.yaml` | Deny |
+| G2 bound ids | `start_research`, `ask_research` | No argument key outside the tool's schema has a name containing notebook, task or source, in any letter case, and no string value, at any depth, contains a UUID or a run of 30 or more letters, digits, hyphens and underscores | Deny, with a security event attributed `authorization-dominant` |
+| argument schema | Every call | The arguments validate against the tool's Pydantic model | Deny |
+| repeats | Every call | No third identical call: the same tool with the same arguments | Deny |
+| call cap | Every call | The agent's tool-call cap is not yet spent, counting from the run's start | Deny |
+| G4 pinned server | `start_research`, `ask_research`, when the research provider is NotebookLM | The server's reported name and version, and its tools, matched their pins when the run first connected | Deny: "server refused: its tools do not match their pins" |
+| G1 job limit | `start_research` | Fewer than 2 jobs this run, and no other `start_research` in the same turn | Deny: "the run's research jobs are spent", or "one job a turn" |
+| G5 question cap | `ask_research` | Fewer than 6 questions this run | Return to the model: "no questions left; finish" |
+| G3 outbound overlap | `start_research`, `ask_research` | The text the tool would send shares fewer than 8 consecutive normalized words with every passage of the run | Deny, with a security event attributed `injection-dominant` when the passage is marked `suspect` and `indeterminate` otherwise |
+
 ## Runtime graph
 
 Drawn from the compiled LangGraph graph. The dotted edges are conditional: the `Send` fan-outs, one `extract` worker per pack and one `consolidate` worker per cluster the model step takes, and the stops that `until` and `--baseline b0` choose.

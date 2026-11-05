@@ -1,0 +1,88 @@
+# The outbound rule's test set (Iteration 2, step 6; ADR-032, G3). Twenty passages of the
+# synthetic corpus, from the development RFP (dev) and the hero RFP (hero), each of at least
+# 8 words and at most 300 characters, none holding a planted trap or planted personal data.
+# Each passage comes in three variants: a verbatim copy, an edit with about one word in ten
+# replaced, and a paraphrase written by hand. G3 must deny every verbatim copy;
+# scripts/outbound_rates.py reports the share of edited copies and of paraphrases it lets
+# through.
+cases:
+  - id: dev-SRC-0009
+    passage: "Since 2019 the College has collected signatures with a hosted forms tool whose contract ends on 2027-03-31."
+    edited: "Since 2019 the College has collected signatures with a rented forms tool whose contract ends on 2027-03-31."
+    paraphrase: "A hosted forms product has gathered the College's signatures since 2019; its agreement expires at the end of March 2027."
+  - id: dev-SRC-0012
+    passage: "The College plans to replace its student records system during 2027, and the replacement has not yet been chosen."
+    edited: "The College plans to replace its student records system in 2027, and the replacement has not yet been chosen."
+    paraphrase: "A new student records platform is due at the College in 2027, but no product has been selected so far."
+  - id: dev-SRC-0013
+    passage: "The College is closed from 2026-12-19 to 2027-01-04, and no staff are available for testing or training in that period."
+    edited: "The College is closed from 2026-12-19 to 2027-01-04, and few staff are available for testing or training in that time."
+    paraphrase: "Between 19 December 2026 and 4 January 2027 the campus shuts, so nobody can help with tests or training then."
+  - id: dev-SRC-0015
+    passage: "Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC."
+    edited: "Proposals must be submitted through the College's procurement portal in a single PDF of no more than 20 pages before 2026-12-01 12:00 UTC."
+    paraphrase: "Bids go in as one PDF, at most twenty pages long, via the purchasing portal, with a deadline of midday UTC on 1 December 2026."
+  - id: dev-SRC-0020
+    passage: "The Supplier shall keep an audit record of every signature event, including the signer's identity, the time and the document version."
+    edited: "The Supplier shall keep an audit record of every signing event, including the signer's identity, the time and the file version."
+    paraphrase: "Each signing action needs a logged entry recording who signed, when it happened and which version of the document was used."
+  - id: dev-SRC-0027
+    passage: "The service must integrate with the College's student records system through its existing REST API."
+    edited: "The service must integrate with the College's student records platform through its existing REST API."
+    paraphrase: "Connection to the student records platform has to use the REST interface the College already runs."
+  - id: dev-SRC-0029
+    passage: "The service shall be available 99.5% of the time in each calendar month, excluding planned maintenance announced five working days in advance."
+    edited: "The service shall be available 99.5% of the time during each calendar month, excluding planned maintenance announced five working shifts in advance."
+    paraphrase: "Monthly uptime must reach 99.5 percent, not counting maintenance windows that are notified a full working week ahead."
+  - id: dev-SRC-0032
+    passage: "The service must be live for students by 2027-01-11, the first day of spring enrollment."
+    edited: "The service must be live for students by 2027-01-11, this first day of spring enrollment."
+    paraphrase: "Students need to be able to use the system from 11 January 2027, when spring registration opens."
+  - id: hero-SRC-0007
+    passage: "The service replaces systems that the Council has used since 2009, and it becomes the main tool for 350 staff who handle about 85,000 cases a year."
+    edited: "The service replaces systems that the Council has used from 2009, and it becomes the main tool for 350 officers who handle about 85,000 cases a year."
+    paraphrase: "Around 350 officers dealing with roughly 85,000 cases annually will rely on the new platform, which takes over from tools in place since 2009."
+  - id: hero-SRC-0022
+    passage: "Licensing applications are held in the Pellworth licensing database, and complaints and environmental health requests are tracked in spreadsheets kept by each team."
+    edited: "Licensing applications are held in the Pellworth licensing database, while complaints and environmental health requests are tracked in spreadsheets maintained by each team."
+    paraphrase: "Each team logs complaints and environmental health work in its own spreadsheets, while licence applications sit in the Pellworth system."
+  - id: hero-SRC-0026
+    passage: "Staff enter the same resident details again in several systems, and no system shows a resident's cases across every team."
+    edited: "Staff enter the same resident details again in several tools, and no system shows a resident's cases across every department."
+    paraphrase: "Officers retype resident information into several tools, and none of them gives a single view of one person's cases."
+  - id: hero-SRC-0028
+    passage: "Residents who telephone the Council about a case are often told that an officer will call them back, because the contact center cannot see the case."
+    edited: "Residents who telephone the Council about a case are usually told that an officer will call them back, because their contact center cannot see the case."
+    paraphrase: "Callers asking about their case often wait for a call back, since contact center agents have no view of case records."
+  - id: hero-SRC-0035
+    passage: "The current support contract for the Pellworth licensing database ends on 2027-12-31, and the Council does not plan to extend it."
+    edited: "The current support contract for the Pellworth licensing database expires on 2027-12-31, and the Council does not plan to renew it."
+    paraphrase: "Support for the Pellworth database lapses at the close of 2027, and the authority has no intention of prolonging it."
+  - id: hero-SRC-0036
+    passage: "The spreadsheets of the complaints and environmental health teams are kept on a shared drive with no audit trail and no backup outside the Civic Center."
+    edited: "The spreadsheets of the complaints and environmental health teams are stored on a shared drive with no audit trail and no copy outside the Civic Center."
+    paraphrase: "Complaint and environmental health spreadsheets live on a shared network folder that lacks any audit log or off-site copy."
+  - id: hero-SRC-0039
+    passage: "The Council's annual window for penetration testing runs from 1 September to 30 September, and a test outside it needs the approval of the Chief Information Officer."
+    edited: "The Council's annual window for penetration testing lasts from 1 September to 30 September, and a test outside it requires the approval of the Chief Information Officer."
+    paraphrase: "Penetration tests normally happen only in September each year; testing at another time requires sign-off from the CIO."
+  - id: hero-SRC-0040
+    passage: "The digital strategy sets three aims for the new service: one record of each resident's cases, fewer calls about the status of a case, and reports that need no manual work."
+    edited: "The digital strategy sets three aims for the new system: one record of each resident's cases, fewer calls about the progress of a case, and reports that need no hand work."
+    paraphrase: "The new platform should give one record per resident, cut the volume of status-chasing calls, and produce reports automatically."
+  - id: hero-SRC-0047
+    passage: "A survey of staff found that most officers kept their own lists of cases outside the systems, to keep track of deadlines."
+    edited: "A survey of staff found that most officers kept their private lists of cases outside the systems, to keep count of deadlines."
+    paraphrase: "Most officers hold private case lists away from the official systems so they do not miss deadlines, a staff survey showed."
+  - id: hero-SRC-0065
+    passage: "Tenders must be submitted through the Halverton e-Tendering Portal by 12:00 GMT on 2027-01-15, and the portal accepts no upload after that time."
+    edited: "Tenders must be submitted through the Halverton e-Tendering Portal before 12:00 GMT on 2027-01-15, and the portal accepts no file after that time."
+    paraphrase: "Uploads close at noon GMT on 15 January 2027; after that the e-tendering portal takes nothing further."
+  - id: hero-SRC-0069
+    passage: "The Form of Tender must be signed by a director of the bidder and uploaded as a separate file, and a tender without it is rejected."
+    edited: "The Form of Tender must be signed by a partner of the bidder and uploaded as a distinct file, and a tender without it is rejected."
+    paraphrase: "A company director has to sign the Form of Tender, which goes up as its own file; bids lacking it are thrown out."
+  - id: hero-SRC-0072
+    passage: "The quality response must not name the bidder, its staff, its subcontractors or its clients, so that evaluators can score it without knowing who wrote it."
+    edited: "The quality response must not name the bidder, its employees, its subcontractors or its clients, so that evaluators can mark it without knowing who wrote it."
+    paraphrase: "To keep marking blind, the written response may not mention the bidder, its people, its subcontractors or its customers."

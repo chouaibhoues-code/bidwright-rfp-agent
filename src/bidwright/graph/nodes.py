@@ -60,6 +60,10 @@ from bidwright.schemas import (
     ToolRequest,
     ToolResult,
 )
+
+# Re-exported, unchanged, from their new home (Iteration 2): clusters.py reads them here.
+from bidwright.text import STOPWORDS as STOPWORDS
+from bidwright.text import content_stems as content_stems
 from bidwright.verify import QuoteCheck, check_quote, missing_values, shown_text
 
 PREDICTIONS = ("BINDING", "OPTIONAL")
@@ -79,12 +83,6 @@ PROBABILITY = re.compile(
     r"(probability|likelihood|chance)\W{0,3}(of\W+)?(is\W+)?\d"
     r"|\d+(\.\d+)?\s*%\s*(probability|likelihood|chance)",
     re.IGNORECASE,
-)
-STOPWORDS = frozenset(
-    """that this with from have will shall must should which their there these those would
-    could about into than then them they been being were what when where also each only other
-    such some more most very over under after before until while within without because upon
-    between during against through every""".split()
 )
 
 
@@ -806,12 +804,6 @@ def _progress_keys(tool: str, result: ToolResult) -> list[str]:
     if tool == "date_calc" and isinstance(result.data, dict):
         return [f"date:{json.dumps(result.data.get('result'))}"]
     return []
-
-
-def content_stems(text: str) -> set[str]:
-    """Words of 4 or more letters outside the stopword list, cut to their first 6 letters."""
-    words = {w.lower() for w in re.findall(r"[A-Za-z]{4,}", text)} - STOPWORDS
-    return {w[:6] for w in words}
 
 
 def _screen(

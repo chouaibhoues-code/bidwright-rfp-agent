@@ -73,7 +73,7 @@ from bidwright.guard import GuardResult, PolicyBlocked, run_guard
 from bidwright.harness.budget import BudgetExceeded, RunBudget
 from bidwright.harness.context import CONTEXT_DIR, ContextManager, prompt_tokens
 from bidwright.harness.egress import check_run
-from bidwright.harness.gateway import ToolGateway
+from bidwright.harness.gateway import ToolGateway, ToolLog
 from bidwright.harness.recovery import DEAD_LETTERS, CircuitBreaker, DeadLetters
 from bidwright.harness.supervisor import STOP_REASON, RunSupervisor, environment, read_manifest
 from bidwright.harness.view import TextView
@@ -169,6 +169,7 @@ class Runtime:
     paths: list[Path] | None = None  # the input documents, in name order
     data_class: str | None = None  # the run entry's; None in replay, where each file is classed
     dead_letters: DeadLetters | None = None  # the run's dead_letter.jsonl (Iteration 2)
+    tool_log: ToolLog | None = None  # the run's tool_calls.jsonl, every gateway's calls
 
 
 @dataclass(frozen=True)
@@ -614,6 +615,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             allowed=config.agents.agents["risk"].tools,
             tools=[search_tool(index, sources), date_tool()],
             max_tool_calls=limits.max_tool_calls or 6,
+            log=rt.tool_log,
         )
         outcome = risk(
             ctx,
@@ -638,14 +640,6 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             }
             for request, result in gateway.calls
         ]
-        # Every tool request with its full result, so a trace can be checked from the folder.
-        _jsonl(
-            rt.run_dir / "tool_calls.jsonl",
-            [
-                {**call, "reason": result.reason, "data": result.data}
-                for call, (_, result) in zip(calls, gateway.calls, strict=True)
-            ],
-        )
         data = {
             "risks": rows,
             "questions": [q.model_dump(mode="json") for q in outcome.questions],
@@ -1056,6 +1050,10 @@ def execute(
         )
         if not resume:
             (run_dir / DEAD_LETTERS).unlink(missing_ok=True)
+        # Every tool request with its full result, so a trace can be checked from the folder.
+        tool_log = ToolLog(run_dir / "tool_calls.jsonl", part=supervisor.part)
+        if not resume:
+            tool_log.create()
         dead_letters = DeadLetters(
             run_dir,
             on_add=lambda letter: events.record(
@@ -1108,6 +1106,7 @@ def execute(
             docling_cassettes=docling_cassettes or DOCLING_CASSETTES,
             data_class=preflight.data_class if mode != "replay" else None,
             dead_letters=dead_letters,
+            tool_log=tool_log,
         )
         # Until the graph returns, the run has not finished: any exit this function does not
         # name below is recorded as a fault, never as COMPLETED.

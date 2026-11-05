@@ -40,7 +40,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 
 Controls on every run, in code:
 
-- Every tool call passes `ToolGateway`: the agent's allowlist, the argument schema, no third identical call, and the agent's call cap.
+- Every tool call passes `ToolGateway`'s rules, in this order: allowlist, G2 bound ids, argument schema, repeats, call cap, G4 pinned server, G1 job limit, G5 question cap, G3 outbound overlap (`docs/agents.md`).
 - Every model response must parse into its Pydantic schema, and code checks every quote against the RFP before a requirement is accepted.
 - Per-run limits on requests, tokens and active time, checked before every provider attempt (`config/limits.yaml`).
 - Mode `DRAFT_ONLY`: nothing is submitted, and every output is `UNREVIEWED_DRAFT` until a person signs it off.

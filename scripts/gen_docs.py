@@ -139,6 +139,8 @@ def agents_md() -> str:
             )
             lines.append(f"| `{spec.name}` | {_cell(spec.description)} | {args} |")
 
+        lines += _rules_table()
+
         cassettes = CassetteStore(Path(tmp) / "c")
         client = LLMClient(config, "free", {}, mode="replay", cassettes=cassettes, run_id="docs")
         ctx = RunContext(
@@ -308,9 +310,40 @@ TOOL_ACCESS = {
     "date_calc": "Computes dates; reads and writes nothing",
 }
 
+
+def _rules_table() -> list[str]:
+    """The gateway's rules, from their classes, in the order the gateway applies them."""
+    from bidwright.harness.rules import OUTCOMES, RULES
+
+    lines = [
+        "",
+        "## Gateway rules",
+        "",
+        "`ToolGateway` applies the rules a call triggers in this order, outside the model. The"
+        " first rule a call breaks decides its outcome, and the tool never runs; a call counts"
+        " against the agent's cap only when it passes every rule (ADR-032).",
+        "",
+        "| Rule | Trigger | Check | Outcome |",
+        "|---|---|---|---|",
+    ]
+    for rule in RULES:
+        lines.append(
+            f"| {rule.name} | {_cell(rule.trigger)} | {_cell(rule.description)}"
+            f" | {_cell(OUTCOMES[rule.outcome] + rule.note)} |"
+        )
+    return lines
+
+
+def _gateway_control() -> str:
+    from bidwright.harness.rules import RULES
+
+    names = ", ".join(rule.name for rule in RULES)
+    return (
+        f"Every tool call passes `ToolGateway`'s rules, in this order: {names} (`docs/agents.md`)."
+    )
+
+
 CONTROLS = [
-    "Every tool call passes `ToolGateway`: the agent's allowlist, the argument schema, no third"
-    " identical call, and the agent's call cap.",
     "Every model response must parse into its Pydantic schema, and code checks every quote"
     " against the RFP before a requirement is accepted.",
     "Per-run limits on requests, tokens and active time, checked before every provider attempt"
@@ -386,7 +419,7 @@ def ai_bom_md() -> str:
         )
         lines.append(f"| `{name}` | {agent.kind} | {tools} | {_cell(limits)} |")
     lines += ["", "Controls on every run, in code:", ""]
-    lines += [f"- {control}" for control in CONTROLS]
+    lines += [f"- {control}" for control in [_gateway_control(), *CONTROLS]]
 
     lines += ["", "## Tools", "", "| Tool | Access | Called by |", "|---|---|---|"]
     for tool, access in TOOL_ACCESS.items():
