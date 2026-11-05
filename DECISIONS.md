@@ -13,7 +13,7 @@ Model and prompt ADRs also give the evaluation evidence and the model's expected
 
 ## ADRs
 
-ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring.
+ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07).
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -47,6 +47,13 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 028 | The `extract` prompt drops its examples, and the second pass is on | accepted |
 | 029 | On the free tier, Google's daily 429 decides, not the local count | accepted |
 | 030 | The matcher credits a quote of a table cell's row | accepted |
+| 031 | Stop and resume through LangGraph's drain, with a journal, a ledger written as calls finish, and a run lock | accepted |
+| 032 | The gateway's rules, and six pinned NotebookLM tools | accepted |
+| 033 | The research pack schema | accepted |
+| 034 | `ask_research`'s match threshold, over a scan of the research pack | accepted |
+| 035 | The approval file beside a gate's review file | accepted |
+| 036 | Research in the run: `brief`, then `discover`, behind a research provider | accepted |
+| 037 | Three planned components wait for their consumers | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -357,7 +364,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-013: Research runs as agent tools behind a provider interface
 
-**Status:** accepted, 2026-11-02. Built from Iteration 2.
+**Status:** accepted, 2026-11-02. Built from Iteration 2, under ADR-031 to ADR-037, whose Confirmation lines name the tests as built.
 
 **Context.** A solution needs domain knowledge the RFP does not state. Deep research is slow and needs a personal login, which reviewers and CI do not have, and web content is untrusted.
 
@@ -756,6 +763,155 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** A table row holds two obligation cells, so that a quote of the whole row no longer stands for one clause; the rule then needs each cell's own span.
 
 **Provenance.** The release step's held-out scoring and the owner's choice of option B, 2026-11-04; CH-33 and CH-56 in `context/Master-Plan.md`.
+
+### ADR-031: Stop and resume through LangGraph's drain, with a journal, a ledger written as calls finish, and a run lock
+
+**Status:** accepted, 2026-11-04, by the owner (D-07), after the Iteration 2 design's Stage 9 review.
+
+**Context.** At `v0.1` a run could not be stopped on request, and a killed run lost its ledger, which was written only at the end, and its budget counts. The response cache serves matrix runs, so a resumed single run would pay again for every call it had answered, and writing single runs into that shared cache would hand their answers to a later matrix as samples. Testing a process id to tell a killed run from a live one is unsafe: on Windows `os.kill` ends the process it tests, and ids are reused. LangGraph 1.2 can drain a run between super-steps and resume it from its checkpoint (C7-06, checked again on 2026-11-04).
+
+**Decision.**
+- `bidwright stop` writes `control/stop.request`; the supervisor's watcher calls `RunControl.request_drain`, and the run ends `STOPPED` after its current super-step. Nodes make no stop checks, except `discover_wait`, which waits inside one step and reads the drain between polls.
+- Every answer from a live model goes to the run's own journal, `outputs/<run>/journal/`, with its native turn, so Gemini's thought signatures survive a resume. A resume looks a call up under every model of its role before any attempt. The shared cache keeps its `v0.1` rules.
+- `ledger.jsonl` grows as calls finish, and a resume repairs a truncated last line before appending. The budget's counts, raises included, are saved each second. Journal entries, the budget file and `research.json` are written atomically.
+- `bidwright resume` reads the manifest's `run_args` and calls `execute`, whose supervisor takes the run lock (`msvcrt.locking` or `fcntl.flock`, retried for 5 seconds) and refuses a terminal run, a replayed or recorded run, changed prompt hashes, a run from another environment (the host against the container), and `--profile paid` unless the run paused on `free`. Before invoking, `execute` reads the checkpointed state and rebuilds the passages, the text view's binding, the passage index and the input documents, so every node, the `Send` workers included, sees them.
+- The graph runs with `durability="sync"`. `STOPPED`, `QUOTA_PAUSED`, `BUDGET_EXCEEDED` and `WAITING_RESEARCH` are resumable; a fault stays terminal.
+
+**Consequences.** A resumed run pays once for each answered call; a call answered just before a kill and asked again counts twice in `requests` and once in cost. A run started in a container is resumed only after its container has exited, since the Windows bind mount may not honor locks. Rows of the tool log and the events log carry the resume count, so a re-run row is told apart.
+
+**Options.** Checking a process id, unsafe on Windows; the shared cache as the journal, which would feed matrices; a heartbeat file beside the lock, a second liveness signal with its own false states; stop checks in every node.
+
+**Confirmation.** `test_stop_drains_between_nodes_and_resume_completes`, `test_resume_after_a_kill_spends_nothing_twice`, `test_a_running_run_cannot_be_resumed`, and the resumes entering inside the `consolidate` fan-out and at `render`, in `tests/test_resume.py` and `tests/test_supervisor.py`.
+
+**Reverse if.** A LangGraph version changes the drain's semantics, or a resume is ever shown to pay again for an answered call.
+
+**Provenance.** `docs/designs/iteration-2.md`, sections 4.2 and 4.3; C7-06 in `docs/verification_log.md`; the Stage 9 review's two rounds, 2026-11-04.
+
+### ADR-032: The gateway's rules, and six pinned NotebookLM tools
+
+**Status:** accepted, 2026-11-04, by the owner (D-07).
+
+**Context.** The `v0.0` gateway checks an allowlist, argument schemas, repeats and a call cap. Research tools add new ways to misuse a call: naming another notebook, starting too many jobs, sending RFP text out, or a server whose tools change underneath a pinned design. The NotebookLM server registers 53 tools, deletion and sharing among them.
+
+**Decision.**
+- Every call meets, in order: the allowlist, G2 (bound ids), the argument schema, repeats, the call cap, G4 (pinned server), G1 (2 jobs a run, one a turn), G5 (6 questions a run) and G3 (no 8 consecutive normalized words shared with a passage of the run). A denial returns `DENIED`; G5 returns `EMPTY`, so the model can finish. G2 and G3 record security events with an attribution class.
+- The four checks of `v0.0` keep their reason strings, since recorded cassette keys depend on them. Each rule is a class that also writes its row of `docs/agents.md`.
+- Six tools are allowed: `notebook_create`, `research_start`, `research_status`, `research_import`, `notebook_get` and `notebook_query`. `config/mcp_pins.yaml` pins the server's name and version as `initialize` reports them, the declared package (`notebooklm-mcp-cli` 0.15.8) and each tool's hash; a mismatch refuses the server. `bidwright research pin` also checks that each tool still takes every parameter Bidwright sends.
+
+**Consequences.** A server update is a deliberate act: pin again, recheck the result shapes, and the diff shows in Git. The outcome "pause for a human" is defined for Iteration 3's gate and unused until then.
+
+**Options.** An allowlist alone, which checks neither arguments nor run state; prompt instructions, which a model can ignore.
+
+**Confirmation.** `test_fi09_each_rule_gives_its_outcome`, `test_outbound_rule_denies_every_copied_passage` and `test_fi11_changed_description_refuses_the_server`.
+
+**Reverse if.** Over a release cycle the rules catch nothing that the allowlist alone would miss (CH-26's condition).
+
+**Provenance.** `docs/designs/iteration-2.md`, section 6.2; the NotebookLM server's checks in `docs/verification_log.md`, 2026-11-04.
+
+### ADR-033: The research pack schema
+
+**Status:** accepted, 2026-11-04, by the owner (D-07).
+
+**Context.** Research mode `pack` must reproduce research with no login, so CI and reviewers can run it, and a pack is untrusted web content that a person or a later change could alter.
+
+**Decision.**
+- `research_packs/<domain>/` holds `pack.yaml` (its domain, title, version, keywords, topics, each file's hash and the counts), `summary.md`, `sources.jsonl` (each source's URL, title, host and authority tier), `excerpts.jsonl` (verbatim slices of NotebookLM's cited text, at most 300 characters), `domain_brief.json` and `answers.jsonl`.
+- A source's URL comes from the job's own listing, matched by title; a source with no URL, the job's report included, never enters a pack.
+- `load_pack` refuses a pack with a changed or missing file, and screens every excerpt and answer each time it loads.
+- `bidwright research pack` builds a pack from a finished live run or an existing notebook, and refuses one that the brief topics of a named run would not select. Raw reports stay private.
+
+**Consequences.** A pack is a small, hashed, committed file set; changing one is a reviewed commit.
+
+**Options.** Committing raw reports, which exposes full source text and is large; no packs, which makes research depend on a login.
+
+**Confirmation.** The tampered-file refusal and the FI-10 tests in `tests/test_pack.py`; `tests/test_builder.py`.
+
+**Reverse if.** A licensed research source with its own reproducible store replaces NotebookLM.
+
+**Provenance.** `docs/designs/iteration-2.md`, sections 4.4 and 6.3; ADR-013.
+
+### ADR-034: `ask_research`'s match threshold, over a scan of the research pack
+
+**Status:** accepted, 2026-11-04, by the owner (D-07). It departs from the Master-Plan's "local FTS5 search" for packs.
+
+**Context.** In research mode `pack`, `ask_research` must answer only what the pack holds, and say so when it holds nothing, instead of inventing.
+
+**Decision.**
+- The question's content stems are `content_stems(question)`. An excerpt or a recorded answer matches when it holds at least `max(2, ceil(0.5 × n))` of the question's `n` stems; a recorded answer is matched on its own question's stems, and a question with fewer than 2 stems matches nothing.
+- The matching answer that holds the most stems fills `answer`, with its excerpts first, then the other matching excerpts, at most 8. Nothing matching returns `EMPTY` with `NOT_IN_PACK`.
+- The pack is scanned linearly instead of indexed with FTS5: the rule is on content stems, which an FTS5 stemmer could contradict, a pack holds a few hundred excerpts at most, and no search expression is built from model text.
+
+**Consequences.** One stemming rule decides a match, and every match is explainable from the stems.
+
+**Options.** An FTS5 index with BM25 ranking before the rule, two stemmers in one decision; a similarity threshold on embeddings, which needs a model and is harder to explain.
+
+**Confirmation.** `test_ask_research_returns_not_in_pack`, and the two-answer test in `tests/test_pack.py`.
+
+**Reverse if.** Iteration 3's `decide` meets packs large enough for ranking to matter.
+
+**Provenance.** `docs/designs/iteration-2.md`, sections 3 and 6.1.
+
+### ADR-035: The approval file beside a gate's review file
+
+**Status:** accepted, 2026-11-04, by the owner (D-07). Built with Iteration 3's first gate.
+
+**Context.** Iteration 3's `solution_gate` needs a person's decision that a resumed run can read and that becomes void if the artifacts under review change.
+
+**Decision.** `review/<gate>.approval.yaml` sits beside `review/<gate>.md` and holds the gate, the run id, the hash of the artifacts under review, the decision (`approve`, `edit` or `reject`), the approver, the time and the edits by record id. A changed hash voids the file.
+
+**Consequences.** The CLI gate of Iteration 3 has a defined format before it is built.
+
+**Options.** A decision in the run manifest, which would give the manifest a second writer; a command-line flag, which leaves no reviewable record.
+
+**Confirmation.** Iteration 3's gate tests.
+
+**Reverse if.** Iteration 6's review interface needs a richer record.
+
+**Provenance.** `docs/designs/iteration-2.md`, section 6.3.
+
+### ADR-036: Research in the run: `brief`, then `discover`, behind a research provider
+
+**Status:** accepted, 2026-11-04, by the owner (D-07). It departs from the Master-Plan in two places: `check_research` is code, not a model tool, and the two new prompts use plain rules, not CARE.
+
+**Context.** Iteration 3's options and blueprint need the RFP's evaluation factors and the patterns, standards and pitfalls of its domain. The factors must be copied exactly; research must never carry RFP text out; and a client run must not reach a remote research server.
+
+**Decision.**
+- `brief` follows `consolidate`. Code keeps a factor only when its name and weight occur as whole words in one cited passage, sets every status (price, cost, fee or charge is `OUT_OF_SCOPE`), records a weight conflict as a `FactorDiscrepancy` with a clarification question, and drops a topic over 7 words or one sharing 4 or more consecutive words with a passage.
+- `discover` follows `brief`, behind a `ResearchProvider` interface: in research mode `pack` it loads the selected pack with no model call; in `live` it starts one deep job in a fresh notebook, waits in code, asks at most 6 stand-alone questions, each in a fresh conversation, and extracts a `DomainBrief`. `check_research` is code, because waiting needs no judgment and a polling tool would put job ids in the model's hands. A failure falls back to the matching pack, `DEGRADED`.
+- Research mode `pack` is the default; a domain with no pack is not degraded. The `notebooklm` destination is remote in the egress register, so a client run gets research mode `pack` only.
+- `brief.md` and `discover.md` use plain rules with positive directives, following DR-16 as `triage.md` and `extract.md` do.
+- The summary lists the evaluation factors after the hazards, and an appendix of domain research, marked external and unverified, when the domain brief has items.
+
+**Consequences.** Nothing reads the domain research until Iteration 3. Live research depends on the owner's login and the server's version; CI never needs either.
+
+**Options.** No brief, which leaves Iteration 3 to read factors from raw passages; research by a web-search API, which gives no deep research or follow-up questions; a model-driven polling tool.
+
+**Confirmation.** `test_brief_copies_factors_and_weights_exactly`, `test_discover_fallback`, `test_a_crash_after_discover_start_resumes_without_a_second_job`, and `test_the_development_replay_matches_every_factor_seed`.
+
+**Reverse if.** SO4 shows no gain from research (ADR-013), or the factor line misses seeds on live runs after prompt and code fixes.
+
+**Provenance.** `docs/designs/iteration-2.md`, sections 3, 4.1 and 4.4; ADR-013; DR-16.
+
+### ADR-037: Three planned components wait for their consumers
+
+**Status:** accepted, 2026-11-04, by the owner (D-07). It departs from the Master-Plan's control-plane list.
+
+**Context.** The Master-Plan lists an `ExecutionPolicy` class and an `ArtifactRegistry` for Iteration 2, and slots for method cards and skills in the `ContextManager`. ADR-025 holds that configuration declares only what code enforces.
+
+**Decision.**
+- No `ExecutionPolicy` class: `config.py` validates `config/agents.yaml` at startup, the nodes read their tools and limits from it, and `ToolGateway` enforces them. The file's header now says so.
+- The `ArtifactRegistry` arrives with its first consumer, Iteration 4's `repair`, which needs versioned artifacts and rollback; until then each file has one writer and a run only adds files.
+- The `ContextManager`'s card and skill slots arrive with cards in Iteration 3 and skills in Iteration 4.
+
+**Consequences.** Iteration 2 builds no code whose only job is to forward values.
+
+**Options.** Building the three now, as thin layers with no behavior.
+
+**Confirmation.** `test_only_the_agent_declares_limits` and `test_a_field_that_nothing_enforces_cannot_be_declared` in `tests/test_config.py`; the `docs-generated` CI job.
+
+**Reverse if.** A second reader of `config/agents.yaml` needs per-run policy computed in one place, or Iteration 3 or 4 begins.
+
+**Provenance.** `docs/designs/iteration-2.md`, section 3; ADR-025.
 
 ## Failure modes hit
 

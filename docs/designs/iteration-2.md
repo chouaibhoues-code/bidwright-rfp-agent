@@ -1,6 +1,6 @@
 # Iteration 2 design: research the domain
 
-**Status:** a draft for the Stage 9 review, written 2026-11-04 and revised the same day after the review's first round (53 issues) and its one re-audit (29 issues), both resolved in `private/egm/iteration-2-stage9/`. It proposes ADR-031 to ADR-036, two process changes and six departures from the Master-Plan, for the owner to accept or change (D-07 in [`context/Decision-Form.md`](../../context/Decision-Form.md)). It builds on ADR-022 (the request budget), ADR-023 (the run entry), ADR-024 (acceptance checks), ADR-025 (agent configuration), ADR-026 (client documents), ADR-029 (the free tier's daily quota) and ADR-030 (the matcher), and on the checks of 2026-11-04 in [`docs/verification_log.md`](../verification_log.md): C7-06 again, C7-16, the NotebookLM server and its result shapes, and S-11.
+**Status:** accepted for the build on 2026-11-04 (D-07 in [`context/Decision-Form.md`](../../context/Decision-Form.md)), after the Stage 9 review's first round (53 issues) and its one re-audit (29 issues), both resolved the same day. Its decisions are ADR-031 to ADR-037 in [`DECISIONS.md`](../../DECISIONS.md) (ADR-037 records three of the six departures, and ADR-034 and ADR-036 the other three) and CH-88 to CH-90 in the Master-Plan's change log; the examples' return goes to the start of Iteration 3's extraction ladder (CH-90). It builds on ADR-022 (the request budget), ADR-023 (the run entry), ADR-024 (acceptance checks), ADR-025 (agent configuration), ADR-026 (client documents), ADR-029 (the free tier's daily quota) and ADR-030 (the matcher), and on the checks of 2026-11-04 in [`docs/verification_log.md`](../verification_log.md): C7-06 again, C7-16, the NotebookLM server and its result shapes, and S-11.
 
 ## 1. Purpose
 
@@ -34,18 +34,18 @@ Q-04 asks the owner's L1, L4 and L5 research notebooks (the prompt, graph and ne
 
 | Open decision | Closed by | In short |
 |---|---|---|
-| Stop and resume | ADR-031, proposed | `bidwright stop` drains the run through LangGraph. Every answer from a live model goes to the run's own journal, with its native turn, and every ledger entry to `ledger.jsonl` as its call finishes; the budget's counts are saved each second; an operating-system lock tells a killed run from a running one. A resume reads the checkpointed state and the journal, so it never pays twice for an answered call |
-| Gateway rules beyond Iteration 0a | ADR-032, proposed | Five rules beside the four checks of `v0.0`: bound ids, pinned servers, the job limit, the question cap and the outbound overlap rule, each a trigger, a check and an outcome; six NotebookLM tools on the allowlist, each pinned |
-| The research pack schema | ADR-033, proposed | `research_packs/<domain>/` holds a manifest of hashes, the sources with their URLs and authority tiers, excerpts of at most 300 characters, the `DomainBrief` and the recorded answers; a changed file refuses the pack |
-| The `ask_research` match threshold | ADR-034, proposed | An excerpt or a recorded answer matches when it holds at least half of the question's content stems, and at least 2, as `content_stems` cuts them; otherwise the answer is `NOT_IN_PACK` |
-| The approval-file format | ADR-035, proposed | `review/<gate>.approval.yaml` beside `review/<gate>.md`, holding the hash of what is approved; decided now, built with Iteration 3's first gate |
-| Research in the run | ADR-036, proposed | `brief`, then `discover`, after `consolidate`, behind a `ResearchProvider` interface; the modes `off`, `pack` (the default) and `live`; code polls a job, never the model; a run whose domain has no research pack is not `DEGRADED`; a client run may use research mode `pack` but not `live` |
+| Stop and resume | ADR-031, accepted | `bidwright stop` drains the run through LangGraph. Every answer from a live model goes to the run's own journal, with its native turn, and every ledger entry to `ledger.jsonl` as its call finishes; the budget's counts are saved each second; an operating-system lock tells a killed run from a running one. A resume reads the checkpointed state and the journal, so it never pays twice for an answered call |
+| Gateway rules beyond Iteration 0a | ADR-032, accepted | Five rules beside the four checks of `v0.0`: bound ids, pinned servers, the job limit, the question cap and the outbound overlap rule, each a trigger, a check and an outcome; six NotebookLM tools on the allowlist, each pinned |
+| The research pack schema | ADR-033, accepted | `research_packs/<domain>/` holds a manifest of hashes, the sources with their URLs and authority tiers, excerpts of at most 300 characters, the `DomainBrief` and the recorded answers; a changed file refuses the pack |
+| The `ask_research` match threshold | ADR-034, accepted | An excerpt or a recorded answer matches when it holds at least half of the question's content stems, and at least 2, as `content_stems` cuts them; otherwise the answer is `NOT_IN_PACK` |
+| The approval-file format | ADR-035, accepted | `review/<gate>.approval.yaml` beside `review/<gate>.md`, holding the hash of what is approved; decided now, built with Iteration 3's first gate |
+| Research in the run | ADR-036, accepted | `brief`, then `discover`, after `consolidate`, behind a `ResearchProvider` interface; the modes `off`, `pack` (the default) and `live`; code polls a job, never the model; a run whose domain has no research pack is not `DEGRADED`; a client run may use research mode `pack` but not `live` |
 
 **Process changes, for the change log (CH-88 and CH-89):**
 - Gold v3 adds the evaluation factors of the hero package and the development PDF, and the hero's research seeds, written from sources read directly before any research pack exists; the owner reviews and hashes it before step 13 builds the first pack. The rule is the Master-Plan's (section 10.9, research seeds); this change places it in the build order.
 - Node, the pinned sequential-thinking package, `package-lock.json` and `npm audit` join the image in Iteration 3 with `reflect`, their only consumer, instead of in this iteration, and C7-17's recheck at version lock moves with them. The MCP client speaks stdio from this iteration, tested against a small Python server.
 
-**Departures from the Master-Plan, each with its reason, for the owner to accept or refuse:**
+**Departures from the Master-Plan, each with its reason, accepted by the owner (D-07; ADR-034, ADR-036 and ADR-037):**
 - **`check_research` is code, not a model tool.** The plan lists it among `discover`'s tools. Waiting for a job needs no judgment, and a polling tool would cost model turns and put job ids in the model's hands, which rule G2 exists to prevent; `discover_wait` polls instead.
 - **No `ExecutionPolicy` class (`policy.py`).** `config.py` already validates `config/agents.yaml` at startup, and the nodes read their tools and limits from it; a class would only forward the same values, against ADR-025. The header of `config/agents.yaml`, which still names `ExecutionPolicy` as an enforcer, is corrected.
 - **No `ArtifactRegistry` (`artifacts.py`) yet.** Each file keeps one writer and a run only adds files; versioned artifacts arrive with their first consumer, Iteration 4's `repair`.
@@ -53,7 +53,7 @@ Q-04 asks the owner's L1, L4 and L5 research notebooks (the prompt, graph and ne
 - **`brief.md` and `discover.md` use plain rules with positive directives,** as `triage.md` and `extract.md` have since DR-16 (Iteration 1, section 2), not the CARE pattern the plan's prompt table names.
 - **`ask_research` scans a research pack instead of searching an FTS5 index.** The plan names a local FTS5 search. ADR-034 defines a match on content stems, so an FTS5 index would only pre-filter with a second stemmer that can disagree with the rule; a linear scan over at most a few hundred excerpts needs no index; and no search expression is ever built from model text. The goal, a local search that answers `NOT_IN_PACK` when nothing passes, is kept. Reverse if Iteration 3's `decide` meets packs large enough for ranking to matter.
 
-**An open point the owner decides:** ADR-030 schedules the return of the `extract` examples, and a measurement of the second pass with them, as the first change after the delivery. With the delivery deferred, the owner decides where the return goes: the start of Iteration 3's extraction ladder, or the delivery. This document recommends the ladder, which measures extraction under the keep-or-drop rule anyway (D-07).
+**The open point, decided:** ADR-030 schedules the return of the `extract` examples, and a measurement of the second pass with them, as the first change after the delivery. With the delivery deferred, the owner chose the start of Iteration 3's extraction ladder, which measures extraction under the keep-or-drop rule anyway (D-07, CH-90).
 
 ## 4. The run at `v0.2`
 
@@ -654,11 +654,11 @@ Fifteen steps, in build order. Each leaves the repository buildable with the ful
 
 ## 8. Owner inputs and open points
 
-- **Before the build:** D-07 on this document's ADRs, process changes and departures, now that the Stage 9 review has run its two rounds.
+- **Before the build:** D-07, decided on 2026-11-04: the ADRs, the process changes and the departures accepted.
 - **Step 8:** the owner reviews the gold v3 seeds, about 30 minutes, and runs `hash-gold`; Claude then writes the hero baseline again and commits it with the hashes.
 - **Step 13:** the owner signs in to NotebookLM (`nlm login`), keeps the server package at 0.15.8 (0.16.0 was available at the check of 2026-11-04), starts it on the host, and lets the one live research job run; a deep job takes minutes, about 5 by the server's own description, and step 13 records the wait.
 - **Step 15:** the owner runs the drift report, enters the iteration's hours in `TIMELOG.md` or records an exception, and approves the tag.
-- **Open, for the owner:** where the return of the `extract` examples goes, the start of Iteration 3's extraction ladder or the delivery; this document recommends the ladder (ADR-030, D-07).
+- **Decided:** the `extract` examples return at the start of Iteration 3's extraction ladder (CH-90).
 - **Unchanged:** D-06, which would let Compose service names count as local only inside Bidwright's container, stays deferred. The `notebooklm` destination is remote in the register whatever its host, so D-06 does not apply to it.
 
 ## 9. Risks for this iteration

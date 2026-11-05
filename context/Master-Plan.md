@@ -344,7 +344,7 @@ Each iteration's gate. Entry must hold before work starts; Items are its package
 - Result: every check passed, with no exception; section 9.3 gives the evidence.
 
 **Iteration 2, `v0.2`.**
-- Entry: `v0.1`; Stage 9 passed on its design doc; the NotebookLM login for `live`.
+- Entry: `v0.1`; Stage 9 passed on its design doc (2026-11-04, a first round and its re-audit, D-07); the NotebookLM login for `live`.
 - Items: WP-2.1 to 2.4.
 - Exit and Verify: `bidwright stop` halts a run between nodes, and `bidwright resume` completes it without re-spending cached calls, including after a killed run; FI-01, FI-02, FI-09, FI-10 and FI-11 pass offline with clean controls; a call that breaks a gateway rule gets that rule's outcome; `pack` mode runs with no login, and `ask_research` returns `NOT_IN_PACK` for an unanswerable question; `live` completes one real job; no logged query contains RFP text, every copied passage in the test set is denied, and the paraphrase pass rate is reported; notebook ids come from code, and a crash in `discover` resumes without a second job; the brief copies factors and weights exactly and marks the price factor `OUT_OF_SCOPE`.
 
@@ -503,6 +503,9 @@ Every accepted change since the first agreed design, one line each. The Kind col
 | CH-85 | S-10 (the `extract` prompt with and without its examples) and S-13 (a second pass over `OBLIGATION` zones) move from Iteration 1 to the Iteration 3 extraction ladder: S-13 as its EX4 rung, S-10 beside EX1's prompt contract. Until then the prompt keeps its examples and the second pass stays off, the configuration S-03 measured. The owner's held-out list is still frozen before that tuning. | S-03 showed every miss lost at `extract`, on the same trap clauses at every pack size, so the work that counts is the extraction ladder that must reach QS-2's 2 of 45 at the Iteration 3 exit; neither spike is an Iteration 1 exit check, and deferring them saves about 220 requests. The owner's decision, 2026-11-04. | A `v0.1` result turns out to depend on either answer | Process |
 | CH-86 | S-10 and S-13 run in Iteration 1 after all, reversing CH-85, on the free key until its quota runs out and then on `paid`, with the same models. | The owner wrote the held-out list the same day, which removed the reason to wait, and chose to answer both questions before `v0.1`; the list was rendered and its DOCX committed before either spike started (f32ab6b). The owner's decision, 2026-11-04. | None: owner decision only | Process |
 | CH-87 | The matcher credits a verified quote that lies inside a table cell's row and reaches the clause, as it credits a list item's lead-in; every run of the `v0.1` era is scored again, with the old figures beside the new; the reconfiguration the corrected S-10 calls for, the examples' return, waits until after the delivery | Captured table-row obligations scored as misses: all 3 of the held-out RFP's, 5 of the hero's 8, and S-10's decision. The shipped configuration stays the one the held-out RFP measured. The owner's choice of option B, 2026-11-04. | A table row holds two obligation cells | ADR-030 |
+| CH-88 | Gold v3 adds the evaluation factors of the hero package and the development PDF, and the hero's research seeds, written from sources read directly; the owner reviews and hashes it before the first research pack is built (Iteration 2, step 8 before step 13) | Seeds written after the research would reflect what it found, so SO4 would overstate the gain; the rule is section 10.9's, and this places it in the build order. D-07, 2026-11-04. | None: an ordering line | Process |
+| CH-89 | Node, the pinned sequential-thinking package, `package-lock.json` and `npm audit` join the image in Iteration 3 with `reflect`, their only consumer, instead of in Iteration 2; C7-17's recheck at version lock moves with them | Nothing in Iteration 2 uses them, and the MCP client's stdio path is tested against a small Python server. D-07, 2026-11-04. | An Iteration 2 node needs a stdio server | Process |
+| CH-90 | The `extract` examples return, with the second pass measured on the prompt that has them, at the start of Iteration 3's extraction ladder instead of after the delivery; the ADR superseding ADR-028's first decision is written then | The delivery is deferred, and the ladder measures extraction under the keep-or-drop rule anyway. The owner accepted the recommendation, D-07, 2026-11-04. | The delivery is set before Iteration 3 starts | Process |
 
 ## 9. Close-out notes
 
@@ -759,7 +762,7 @@ Settled now: `PARTNER` is checked before `COVERED` in the capability map, and th
 | `draft` | 0a: three short sections | 4: full sections from storyboards |
 | `render` | 0a: summary, short proposal, run manifest, ledger | 4: the full pack |
 | `ToolGateway` | 0a: allowlist, argument schema, repeat calls, budget | 2: full rules and the run state machine |
-| `ContextManager` | 1: whole-passage packing, splits and manifests | 2: full, with slots for cards (switched on from Iteration 3, per family, only if S-12 passes) and skills (written in 4) |
+| `ContextManager` | 1: whole-passage packing, splits and manifests | 2: a context manifest for every call; the slots for cards (switched on from Iteration 3, per family, only if S-12 passes) and skills (written in 4) arrive with them (ADR-037) |
 | Other nodes | Arrive in the iteration that lists them | Same |
 
 Research mode in force: `off` in Iterations 0a and 1. From Iteration 2, `pack` is the default and `live` is optional.
@@ -845,8 +848,8 @@ Bidwright researches, as `harness-bootstrap` does. It is an MCP client, and `Too
 
 | Tool | Backed by | Used by | Bootstrap step |
 |---|---|---|---|
-| `start_research`, `check_research` | NotebookLM `research_start`, `research_status`, `research_import`. Code creates the notebook with `notebook_create` and binds its id, so the model never supplies one. | `discover` | Step 4 |
-| `ask_research` | NotebookLM `notebook_query` on the imported sources in `live` mode, or local FTS5 search over the pack's sources in `pack` mode | `discover`, `decide` | Added: grounded follow-up questions |
+| `start_research` | NotebookLM `research_start`. Code creates the notebook with `notebook_create` and binds its id, so the model never supplies one; code polls `research_status` and imports with `research_import`, so no model tool checks a job (ADR-036). | `discover` | Step 4 |
+| `ask_research` | NotebookLM `notebook_query` on the imported sources in `live` mode, or a local scan of the research pack's excerpts in `pack` mode (ADR-034) | `discover`, `decide` | Added: grounded follow-up questions |
 | `resolve_library`, `query_docs` | Context7, called by code | `techcheck` | Step 8 |
 
 **Domain inventory.** The inventory comes from the report itself. When a report arrives, `discover`'s last call extracts the domain's needs from the report text into a schema, each need with its source ids. Those needs stay separate from supplier capability: the capability map compares them, and the requirement groups, against the KB.
@@ -898,7 +901,7 @@ Gemini Flash and gpt-oss already reason natively, so an always-on think tool is 
 | `extract` | Function, `Send` per batch | Give every candidate in the batch a disposition, and emit typed records with quotes | `ExtractBatch` to `ExtractResult` | extract | None | 1 call, 1 targeted repair | 0a |
 | `consolidate` | Function | Resolve one cluster into a `RequirementGroup`: references, precedence, duplicates, discrepancies, questions | `ClusterTask` to `ConsolidationResult` | reason | None | 1 call per cluster | 1 |
 | `brief` | Function | Build the brief from verified records: buyer needs, factors and weights, scoring method, scope, boundaries, research topics | `BriefInput` to `OpportunityBrief` | extract | None | 1 call, 1 repair | 2 |
-| `discover` | **Agent** | Research the RFP's domain, then extract patterns, standards, pitfalls and the domain inventory from the report, with sources | `DiscoveryTask` to `DomainBrief` | reason | `start_research`, `check_research`, `ask_research` | 2 jobs, 6 questions, 1 extraction call | 2 |
+| `discover` | **Agent** | Research the RFP's domain, then extract patterns, standards, pitfalls and the domain inventory from the report, with sources | `DiscoveryTask` to `DomainBrief` | reason | `start_research`, `ask_research` | 2 jobs, 6 questions, 1 extraction call | 2 |
 | `decide` | **Agent** | For one requirement group or domain need, choose a `ToolDecision`, gather evidence, draft claims | `RequirementGroup` to `CapabilityClaim` records | reason | `search_capabilities`, `search_rfp`, `read_section`, `ask_research` | 4 turns, 6 tool calls, stops when a turn adds no new evidence | 3 |
 | `assess` | Function | Judge one material claim or drafted sentence. Sees the claim and its cited spans only, never the author's reasoning. | `AssessmentTask` to `EvidenceAssessment` | assess, different family | None | 1 call. No evidence skips the LLM. | 3 |
 | `options` | Function | Propose 2-3 solutions, including the simplest baseline, and score each against the RFP's own factors | `OptionsInput` to `SolutionOptions` | reason | None | 1 call, 1 repair | 3 |
@@ -910,7 +913,7 @@ Gemini Flash and gpt-oss already reason natively, so an always-on think tool is 
 | `redteam` | **Agent** | Score each section as the buyer's evaluators would, with findings and fixes. Advises only. | `RedTeamTask` to `RedTeamFindings` | critic, different family | `search_rfp`, `read_section` | 4 turns per section | 4 |
 | `repair` | Function | Fix one failed entity: a targeted fix for an isolated failure, a regenerated section for several | `RepairTask` to `RepairPatch` | reason | None | 2 cycles, then a human | 4 |
 
-Definitions live in one declarative file. `ExecutionPolicy` and `ToolGateway` enforce it, and `docs/agents.md` is generated from it:
+Definitions live in one declarative file. `config.py` validates it, the nodes read it and `ToolGateway` enforces it (ADR-037), and `docs/agents.md` is generated from it:
 
 ```yaml
 # config/agents.yaml
@@ -938,7 +941,7 @@ Every prompt shares one skeleton in XML-style tags on every provider, because Go
 | `extract` | Plain rules with a decision table, quote before label. CARE framing is added only if S-10 shows a gain. | Rules-heavy, and every id must get a disposition. A decision table with worked examples raised extraction F1 from 0.008 to 0.227 in one Gap study, and plain language beat technical language by up to 21 points in L1. | 3 positive, 3 negative: background, `may`, unchecked box | Missed mandatory, F1, quote locatability |
 | `extract_oneshot`, `solution_oneshot`, `risk_oneshot`, `proposal_oneshot` | Plain instruction | The one-shot baselines EX0, SO0, RK0 and PR0 | Same as the node each replaces | Same as the node each replaces |
 | `consolidate` | Least-to-Most | One cluster, resolved step by step | 2 | Discrepancy recall, exceptions kept |
-| `brief` | CARE | Copy factors and weights exactly, and use `not_stated` when absent | 1 | Factor and weight accuracy |
+| `brief` | Plain rules and a factor table, positive directives (DR-16, ADR-036) | Copy factors and weights exactly, and use `not_stated` when absent | 1 | Factor and weight accuracy |
 | `discover` | M18 research envelope | Bounded objective, scope, authority tier and exclusions, seeking disconfirming evidence by default | 1 | Domain seeds found, source tier mix |
 | `decide` | Typed decision loop with Self-Checking | Must state assumptions, and may abstain | 2 contrasting decisions | `ToolDecision` accuracy |
 | `assess` | CARE | The disposition definitions decide everything | 1 per disposition | False accept and false reject |
@@ -1189,14 +1192,14 @@ The core arrives in Iteration 2. Iteration 0a has the minimal `ToolGateway`, the
 
 **Components**
 - `RunSupervisor`: drives the state machine and writes the status and reason into the run manifest.
-- `ExecutionPolicy`: loads `config/agents.yaml` and fixes each agent's tools, cards, skills, turn limits and context budget for the run.
+- `ExecutionPolicy`: not built as a class (ADR-037). `config.py` loads and validates `config/agents.yaml`, and each node reads its agent's tools, turn limits and context budget from it; cards and skills join with their consumers.
 - `ContextManager`: builds the `ContextPack` for every call and logs its manifest.
 - `ToolGateway`: a `ToolDecision` becomes a `ToolRequest`, then authorization, execution, a `ToolResult` and a validated state commit. RFP and KB text can never upgrade authorization. Rules take the form trigger, check and outcome: deny, return to the model, or pause for a human. The first set covers allowlists, argument schemas, repeat calls, budgets, research job limits, bound notebook ids, and RFP text in outbound queries.
 - `BudgetController`: tokens, requests, active time and cost, with limits by profile and RFP from `config/limits.yaml`. The clock runs only in `RUNNING`. Production and E90 budgets never mix.
 - `RecoveryController`: full-jitter backoff with 3 retries, separate budgets for provider retries and semantic repair, a circuit breaker at 5 failures with a 30-minute cooldown, a dead-letter file for failed batches, and failover within the family rule in section 10.8.
 - Stop control: `bidwright stop <run>` halts between nodes and keeps the last accepted state. Fault injection tests it.
 - `CheckpointStore`: the SQLite checkpointer, with one resume per checkpoint because of the fork issue in C7-06.
-- `EventRecorder` and `ArtifactRegistry`: versioned artifacts, run manifest and audit events. Security events carry a causal attribution class.
+- `EventRecorder`: the run's audit events in `events.jsonl`. Security events carry a causal attribution class. The `ArtifactRegistry`, for versioned artifacts, arrives with Iteration 4's `repair` (ADR-037).
 - Mode is `DRAFT_ONLY`: nothing submits externally, and no agent approves anything binding.
 
 ### 10.6 Output contract
@@ -1263,7 +1266,7 @@ Compliance status defaults to `UNVERIFIED` and stays separate from delivery mode
 | Named volumes for SQLite state | Read-write | Own volume | Temporary |
 
 - Gold tests carry the `gold` marker. The `test` service runs `pytest -m "not gold"`, and gold tests run in `eval` and in the host CI job. `.dockerignore` keeps gold, corpus specs, results, labels, `private/`, `outputs/` and `.env` out of the image.
-- From Iteration 2, the image includes Node and the pinned sequential-thinking package, launched over stdio. No Docker socket is mounted.
+- From Iteration 3 (CH-89), the image includes Node and the pinned sequential-thinking package, launched over stdio. No Docker socket is mounted.
 - `compose.gpu.yaml` adds NVIDIA passthrough. Everything still runs on CPU for reviewers.
 - `docker compose watch` syncs `src/`, `prompts/` and `config/` into a long-running `app` session for the interview's live change.
 - SQLite state lives on named volumes, because locking is unsafe on Windows bind mounts. Artifacts go to `./outputs`.
@@ -1286,14 +1289,14 @@ Python 3.12 inside the image. Versions are locked at implementation (V-08), and 
 | PDF safety | `pikepdf` for content-stream operators, `pdfplumber` for size, color and position | The sources' signals map to these. CMap remapping waits for S-06, stated openly. |
 | Parsing | `pdfplumber` and a regex sentence splitter in 0a; `docling-serve` 1.38 from Iteration 1, with heading hierarchy on and OCR off for digital PDFs | MIT license, table structure, provenance, and a small app image |
 | Retrieval | SQLite FTS5 BM25 | Lexical search is defensible here and strong on tables. Dense plus RRF is measured in Iteration 7. |
-| MCP | `mcp` Python SDK `Client` over streamable HTTP, and over stdio for the sequential-thinking server: a pinned npm package, with Node in the image from Iteration 2 | NotebookLM, Context7 and the gated `reflect` tool, all wrapped by `ToolGateway` |
+| MCP | `mcp` Python SDK `Client` over streamable HTTP, and over stdio for the sequential-thinking server: a pinned npm package, with Node in the image from Iteration 3 (CH-89) | NotebookLM, Context7 and the gated `reflect` tool, all wrapped by `ToolGateway` |
 | Tracing | Phoenix 21, OpenInference span kinds (`AGENT`, `LLM`, `TOOL`, `CHAIN`, `RETRIEVER`, `GUARDRAIL`, `EVALUATOR`), and a thin `gen_ai.*` mirror | One container against six for Langfuse. `gen_ai.*` is still at Development status. Langfuse's edge is its MIT license. |
 | Evaluation | A harness of the project's own, on `pytest`, `hypothesis` for invariants, `numpy` for bootstrap intervals, results pushed to Phoenix experiments | Domain metrics are code, and generic judged metrics do not fit span-level scoring |
 | Corpus | `reportlab` for PDFs, `python-docx` and `openpyxl` for DOCX and XLSX | Renders every spec, including hidden-text traps |
 | Documents | `python-docx`, `openpyxl`, `python-pptx` | Proposal, matrix and deck |
 | CLI | `argparse` | No extra dependency |
 | UI | CLI gates first; `streamlit` 1.66 Run, Review and Ops pages in Iteration 6 | Gates work without a UI |
-| Quality | `ruff`, `pyright`, `pytest`, `gitleaks`, `pip-audit`, `npm audit` from Iteration 2, GitHub Actions | CI builds the image, runs replay tests, scans secrets and dependencies, and checks the documentation |
+| Quality | `ruff`, `pyright`, `pytest`, `gitleaks`, `pip-audit`, `npm audit` from Iteration 3 (CH-89), GitHub Actions | CI builds the image, runs replay tests, scans secrets and dependencies, and checks the documentation |
 
 #### Model strategy
 
@@ -1718,7 +1721,7 @@ The iteration in brackets is when each part is created; `docs/architecture.md` d
 EY_Challenge/
   README.md  ASSUMPTIONS.md  DECISIONS.md  TIMELOG.md  AGENTS.md  CLAUDE.md        [0a]
   Dockerfile  compose.yaml  .dockerignore  .gitattributes  .gitignore  .env.example [0a]; compose.gpu.yaml [6]
-  pyproject.toml  uv.lock  .github/workflows/ci.yml                                 [0a]; package.json  package-lock.json [2]
+  pyproject.toml  uv.lock  .github/workflows/ci.yml                                 [0a]; package.json  package-lock.json [3]
   context/           Master-Plan, Decision-Form, Project-Backlog, Research-Register [0b]
   inputs/            rendered corpus RFP files, never gold                          [0a]
   outputs/           run artifacts, gitignored                                      [0a]
@@ -1732,9 +1735,9 @@ EY_Challenge/
     schemas.py  ingest.py  verify.py  retrieval.py  tools.py  prompts.py  render.py  baselines.py  cli.py  [0a]
     guard.py  lint.py  matrix.py                                                    [1]
     llm/       client.py  genai.py  openai_compat.py  ollama.py  replay.py  simulator.py  schema.py  types.py [0a]; limits.py  cache.py [1]
-    harness/   gateway.py  budget.py (minimal) [0a]; context.py [1]; supervisor.py  policy.py  recovery.py  artifacts.py, full budget.py [2]; reflect.py [3]
+    harness/   gateway.py  budget.py (minimal) [0a]; context.py [1]; supervisor.py  rules.py  recovery.py, full budget.py [2]; reflect.py [3]; artifacts.py [4]
     graph/     state.py  nodes.py  build.py                                         [0a]
-    research/  provider.py  mcp_client.py  nlm.py  context7.py  pack.py  pins.py   [2]
+    research/  provider.py  mcp_client.py  nlm.py  pack.py  pins.py  trust.py  builder.py  audit.py   [2]; context7.py [3]
     proposal/  outline.py  checks.py  drift.py  pack.py                             [4]
     obs/       tracing.py  ledger.py                                                [0a]
   evals/
