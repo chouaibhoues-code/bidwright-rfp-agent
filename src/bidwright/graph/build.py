@@ -36,7 +36,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.errors import EmptyInputError, GraphDrained
@@ -90,7 +90,7 @@ from bidwright.harness.view import TextView
 from bidwright.ingest import doc_id_for, ingest_package
 from bidwright.lint import run_lint, write_lint
 from bidwright.llm.cache import response_cache, run_journal
-from bidwright.llm.client import LLMClient, Mode
+from bidwright.llm.client import ROUTES, LLMClient, Mode, Route, choose_route, route_config
 from bidwright.llm.limits import Limiter, tier_for
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Backend, CircuitOpen, LLMError, QuotaExhausted
@@ -201,6 +201,9 @@ class Runtime:
     research: ResearchConfig | None = None  # the research configuration
     research_mode: ResearchModeName = "off"
     discovery: Discovery | None = None  # built once the passages are known
+    # The `assess` role's route, set once a run (ADR-045): primary, fallback or same; None on a
+    # profile with no routed `assess`.
+    assess_route: str | None = None
 
 
 @dataclass(frozen=True)
@@ -209,6 +212,7 @@ class RunResult:
     run_dir: Path
     status: RunStatus
     reason: str | None
+    assess_route: str | None = None  # the route `bidwright record` writes to the recording
 
 
 def _jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -1068,6 +1072,7 @@ def execute(
     control: RunControl | None = None,
     config: Config | None = None,
     watch_interval_s: float = 1.0,
+    assess_route: str | None = None,
 ) -> RunResult:
     """Run one RFP file or package end to end, or resume a run. A failed run still leaves its
     manifest and ledger.
@@ -1091,7 +1096,12 @@ def execute(
     `raise_budget` added to its limits; `bidwright resume` passes the arguments the manifest's
     `run_args` recorded. `control` drains the run between super-steps, which is how
     `bidwright stop` stops it; each part gets a fresh one. `config`, used instead of
-    `load_config()`, and `watch_interval_s`, the stop watcher's interval, are for tests."""
+    `load_config()`, and `watch_interval_s`, the stop watcher's interval, are for tests.
+
+    `assess_route` is the `assess` role's route (ADR-045). A live or recording run sets it from
+    the backends present when it is None; a replay takes the recording's, `primary` when the
+    recording names none; a resume takes the first part's, refused when that route's provider
+    has no backend; and a client run takes `same` before its egress check."""
     if until not in UNTIL:
         raise Refused(f"--until takes one of {', '.join(UNTIL)}")
     if raise_budget is not None and not resume:
@@ -1122,8 +1132,28 @@ def execute(
         docling=docling if docling_mode in ("live", "record") else None,
         models=chosen is None or chosen.llm,
     )
-    used = {role.provider for role in config.models.profiles[profile].values()}
     llm = chosen is None or chosen.llm
+    route = _assess_route(
+        config,
+        profile,
+        backends or {},
+        given=assess_route,
+        mode=mode,
+        client=preflight.data_class == "client",
+        resume=resume,
+        llm=llm,
+    )
+    overrides = (
+        {"assess": route_config(config, profile, "assess", cast(Route, route))} if route else {}
+    )
+    same = route == "same"
+    shadow_roles = (
+        {"assess": str(config.models.role(profile, "assess").same_family_role)} if same else None
+    )
+    roles = {
+        name: overrides.get(name, role) for name, role in config.models.profiles[profile].items()
+    }
+    used = {role.provider for role in roles.values()}
     run_backends = (
         {p: b for p, b in (backends or {}).items() if p in used} if mode != "replay" and llm else {}
     )
@@ -1171,6 +1201,7 @@ def execute(
         "docling_mode": docling_mode,
         "fallback": fallback,
         "mode": mode,
+        "assess_route": route,
         "environment": environment(),
     }
     hashes = {
@@ -1180,7 +1211,7 @@ def execute(
         run_id=run_id,
         commit=current_commit(),
         profile=profile,
-        models={role: rc.model for role, rc in config.models.profiles[profile].items()},
+        models={role: rc.model for role, rc in roles.items()},
         prompt_hashes={name: prompt.hash for name, prompt in prompts.items()},
         input_hashes=hashes,
         started=started,
@@ -1247,6 +1278,8 @@ def execute(
             breaker=breaker,
             fallback=fallback,
             fill=fill,
+            role_overrides=overrides,
+            shadow_roles=shadow_roles,
         )
         if provider is None and research_mode == "live":
             provider = notebooklm_provider(config, breaker)
@@ -1288,6 +1321,7 @@ def execute(
             provider=provider,
             research=config.research,
             research_mode=research_mode,
+            assess_route=route,
         )
         # Until the graph returns, the run has not finished: any exit this function does not
         # name below is recorded as a fault, never as COMPLETED.
@@ -1350,7 +1384,7 @@ def execute(
                     totals_of(entries, budget.active_seconds),
                     models_used(entries),
                 )
-    return RunResult(run_id, run_dir, status, reason)
+    return RunResult(run_id, run_dir, status, reason, route)
 
 
 def _relative(path: Path) -> str:
@@ -1377,6 +1411,39 @@ def _rebuild(graph: Any, thread: dict[str, Any], rt: Runtime) -> None:
         if index.exists():
             rt.index = PassageIndex(index)
     rt.paths = package_documents(rt.source) if rt.source.is_dir() else [rt.source]
+
+
+def _assess_route(
+    config: Config,
+    profile: str,
+    backends: dict[str, Backend],
+    *,
+    given: str | None,
+    mode: Mode,
+    client: bool,
+    resume: bool,
+    llm: bool,
+) -> str | None:
+    """The `assess` role's route for this run (ADR-045), or None when the profile does not
+    route it. The route never changes within a run: a resume keeps its first part's."""
+    role = config.models.profiles[profile].get("assess")
+    if role is None or role.same_family_role is None:
+        return None
+    if given is not None:
+        if given not in ROUTES:
+            raise Refused(f"assess_route takes one of {', '.join(ROUTES)}, not {given!r}")
+        target = route_config(config, profile, "assess", cast(Route, given))
+        if resume and mode == "live" and llm and target.provider not in backends:
+            raise Refused(
+                f"this run's assess role is on route {given}, served by {target.provider},"
+                f" which has no backend; set its key in .env, as the run's first part had"
+            )
+        return given
+    if mode == "replay":
+        return "primary"
+    if client:
+        return "same"
+    return choose_route(role, backends)
 
 
 def _invoke(graph: Any, thread: dict[str, Any], control: RunControl, resume: bool) -> Any:

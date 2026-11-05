@@ -17,6 +17,13 @@ raises `QuotaExhausted`, which moves the call to its fallback model, whose limit
 separately; when both are spent, the run ends `QUOTA_PAUSED`. With `daily: observe`, the count
 is kept but never stops a call: the provider's own daily 429, which the adapter turns into the
 same `QuotaExhausted`, decides (ADR-029). The per-minute limits always apply.
+
+Iteration 3 (ADR-045) adds two things. A row may set `tpd`, the tokens a day: `record_usage`,
+which the client calls after each answer, adds the input, output and thinking tokens the
+provider reported to the day's count file, and `acquire` stops a call once the day's tokens
+reach `tpd` less the reserve, with `daily: enforce`. And a provider whose limits have one tier
+only, such as Cerebras's trial, is counted under that tier on every profile, since one account
+holds one quota whatever the profile.
 """
 
 import json
@@ -52,6 +59,13 @@ def model_key(provider: str, tier: str, model: str) -> str:
 def daily_allowance(quota: ModelQuota) -> int:
     """The requests a day may spend: the daily limit less the reserve kept free."""
     return math.floor(quota.rpd * (1 - quota.reserve) + _EXPIRED)
+
+
+def daily_token_allowance(quota: ModelQuota) -> int | None:
+    """The tokens a day may spend, when the row sets `tpd`: the cap less the reserve."""
+    if quota.tpd is None:
+        return None
+    return math.floor(quota.tpd * (1 - quota.reserve) + _EXPIRED)
 
 
 def _wait(window: deque[tuple[float, int]], now: float, quota: ModelQuota, tokens: int) -> float:
@@ -103,12 +117,41 @@ class Limiter:
     def path(self, provider: str, model: str, day: date | None = None) -> Path:
         """The count file of one model on this tier, for `day` or today."""
         day = day or self.quota_day(provider)
-        name = f"{model_key(provider, self.tier, model)}-{day.isoformat()}.json"
+        tier = self.limits.quota_tier(provider, self.tier)
+        name = f"{model_key(provider, tier, model)}-{day.isoformat()}.json"
         return self.root / name.replace("/", "_").replace(":", "_")
 
     def count(self, provider: str, model: str) -> int:
         """The attempts counted today for one model on this tier."""
-        return _read(self.path(provider, model))
+        return int(_read(self.path(provider, model))["requests"])
+
+    def tokens(self, provider: str, model: str) -> int:
+        """The tokens counted today for one model on this tier."""
+        return int(_read(self.path(provider, model))["tokens"])
+
+    def record_usage(self, provider: str, model: str, tokens: int) -> None:
+        """Add an answer's reported tokens to today's count, for a row that sets `tpd`."""
+        quota = self.limits.quota_for(provider, self.tier, model)
+        if quota is None or quota.tpd is None or tokens <= 0:
+            return
+        with self._lock:
+            day = self.quota_day(provider)
+            path = self.path(provider, model, day)
+            body = _read(path)
+            total = body["tokens"] + tokens
+            _write(path, self._body(provider, model, day, body["requests"], total))
+
+    def _body(
+        self, provider: str, model: str, day: date, requests: int, tokens: int
+    ) -> dict[str, object]:
+        return {
+            "provider": provider,
+            "tier": self.limits.quota_tier(provider, self.tier),
+            "model": model,
+            "day": day.isoformat(),
+            "requests": requests,
+            "tokens": tokens,
+        }
 
     def acquire(self, provider: str, model: str, tokens: int) -> None:
         """Return once an attempt may go, counting it; on a row with `daily: enforce`, raise
@@ -122,35 +165,40 @@ class Limiter:
             with self._lock:
                 day = self.quota_day(provider)
                 path = self.path(provider, model, day)
-                spent = _read(path)
+                body = _read(path)
+                spent = int(body["requests"])
                 if quota.daily == "enforce" and spent >= allowed:
                     raise QuotaExhausted(
                         f"{provider} {self.tier} quota for {model} spent today: {spent} of"
                         f" {allowed} requests, with {quota.reserve:.0%} of {quota.rpd} in reserve"
                     )
+                used = int(body["tokens"])
+                token_allowance = daily_token_allowance(quota)
+                if quota.daily == "enforce" and token_allowance is not None:
+                    if used >= token_allowance:
+                        raise QuotaExhausted(
+                            f"{provider} {self.tier} quota for {model} spent today: {used} of"
+                            f" {token_allowance} tokens, with {quota.reserve:.0%} of"
+                            f" {quota.tpd} in reserve"
+                        )
                 window = self._windows.setdefault((provider, model), deque())
                 now = self._clock()
                 wait = _wait(window, now, quota, tokens)
                 if wait <= 0:
                     window.append((now, tokens))
-                    body = {
-                        "provider": provider,
-                        "tier": self.tier,
-                        "model": model,
-                        "day": day.isoformat(),
-                        "requests": spent + 1,
-                    }
-                    _write(path, body)
+                    _write(path, self._body(provider, model, day, spent + 1, used))
                     return
             self._sleep(wait)
 
 
-def _read(path: Path) -> int:
+def _read(path: Path) -> dict[str, int]:
+    """A day's counts; a file written before Iteration 3 holds no `tokens`, which reads 0."""
     if not path.exists():
-        return 0
+        return {"requests": 0, "tokens": 0}
     try:
-        return int(json.loads(path.read_text(encoding="utf-8"))["requests"])
-    except (ValueError, KeyError, TypeError) as exc:
+        body = json.loads(path.read_text(encoding="utf-8"))
+        return {"requests": int(body["requests"]), "tokens": int(body.get("tokens", 0))}
+    except (ValueError, KeyError, TypeError, AttributeError) as exc:
         raise ValueError(f"{path} is not a quota count file: {exc}") from exc
 
 
@@ -159,4 +207,11 @@ def _write(path: Path, body: dict[str, object]) -> None:
     write_atomic(path, json.dumps(body) + "\n")
 
 
-__all__ = ["QUOTA_DIR", "Limiter", "daily_allowance", "model_key", "tier_for"]
+__all__ = [
+    "QUOTA_DIR",
+    "Limiter",
+    "daily_allowance",
+    "daily_token_allowance",
+    "model_key",
+    "tier_for",
+]

@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from bidwright.config import load_config
 from bidwright.prompts import (
     PROMPTS_DIR,
+    Decoding,
     delimiter_tag,
     load_prompt,
     load_prompt_ref,
@@ -246,3 +247,19 @@ def test_the_clause_examples_cover_every_disposition_with_valid_values() -> None
         sources = [expect["quote"], clause["text"], clause.get("lead_in") or ""]
         assert missing_values(expect["statement"], sources) == [], clause["src_id"]
         assert {"zone", "cues"} <= set(clause), clause["src_id"]
+
+
+def test_a_prompts_reasoning_effort_overrides_the_roles_and_gemini_settings_stay_as_they_were() -> (
+    None
+):
+    from bidwright.config import RoleConfig
+    from bidwright.llm.client import _settings, _with_decoding
+
+    cerebras = RoleConfig(provider="cerebras", model="gpt-oss-120b", reasoning_effort="low")
+    block = {"cerebras": {"reasoning_effort": "medium"}, "gemini": {"thinking": "low"}}
+    assert _settings(_with_decoding(cerebras, block)) == {"reasoning_effort": "medium"}
+    gemini = RoleConfig(provider="gemini", model="gemini-3.5-flash-lite", thinking="medium")
+    assert _settings(_with_decoding(gemini, block)) == {"thinking": "low"}, "no new key"
+    assert Decoding(reasoning_effort="high").model_dump(exclude_none=True) == {
+        "reasoning_effort": "high"
+    }

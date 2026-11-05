@@ -222,7 +222,10 @@ def check_preconditions(
     tier = Preflight(overrides, documents[0].corpus, digest).tier
     if profile not in config.limits.runs.get(tier, {}):
         raise Refused(f"no run limits for {tier} on {profile}")
-    for role_name, role in roles.items() if models else []:
+    # A routed role (ADR-045) is served by its own provider, its fallback provider or the same
+    # family's role, which `execute` chooses from the backends present; it needs no key here.
+    plain = {name: role for name, role in roles.items() if role.same_family_role is None}
+    for role_name, role in plain.items() if models else []:
         if role.provider not in backends:
             hint = KEY_HINTS.get(profile, {}).get(
                 role.provider, f"configure a backend for {role.provider!r}"
@@ -232,7 +235,7 @@ def check_preconditions(
                 f" role: {hint}"
             )
     pulled: dict[str, set[str]] = {}
-    for role in roles.values() if models else []:
+    for role in plain.values() if models else []:
         backend = backends[role.provider]
         if not isinstance(backend, ModelLister):
             continue

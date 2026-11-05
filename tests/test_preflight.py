@@ -202,3 +202,17 @@ def test_a_replayed_run_asks_docling_nothing(tmp_path: Path) -> None:
     down = FakeDocling(up=False)
     _check(source=HERO, mode="replay", backends={}, docling=down)
     assert down.asked == 0
+
+
+def test_a_missing_cerebras_or_groq_key_refuses_no_run(tmp_path: Path) -> None:
+    """The assess role is routed (ADR-045): without its keys it takes the reason role's model."""
+    config = load_config()
+    preflight = check_preconditions(
+        source=DEV_RFP,
+        profile="free",
+        mode="live",
+        consent=None,
+        backends={"gemini": RuleBackend()},
+        config=config,
+    )
+    assert preflight.data_class == "synthetic"

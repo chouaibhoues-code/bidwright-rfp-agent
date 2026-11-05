@@ -169,6 +169,7 @@ def resume_arguments(run_args: Mapping[str, Any], run_dir: Path) -> dict[str, An
         "docling_mode",
         "fallback",
         "mode",
+        "assess_route",
     )
     return {
         "source": source if source.is_absolute() else HOME / source,
@@ -430,6 +431,7 @@ def main(argv: list[str] | None = None) -> int:
             cassettes=CassetteStore(store),
             until=recording.get("until", "render"),
             research=recording.get("research", "off"),
+            assess_route=recording.get("assess_route"),
         )
         return _report(result)
     cassettes = CassetteStore(CASSETTES / args.name) if args.command == "record" else None
@@ -485,6 +487,8 @@ def main(argv: list[str] | None = None) -> int:
             "second_pass": limits.second_pass,
             "run_id": result.run_id,
             "status": result.status,
+            # The assess role's route (ADR-045), which a replay takes from here.
+            "assess_route": result.assess_route,
         }
         (cassettes.root / RECORDING).write_text(
             json.dumps(recording, indent=1) + "\n", encoding="utf-8", newline="\n"

@@ -4,13 +4,19 @@ profiles:
     extract: {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: medium}
     # ADR-003: Flash allows 20 requests a day on the free tier; 3.5 Flash-Lite allows 500.
     reason:  {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: low}
+    # ADR-045: routed once a run, to Cerebras, else Groq, else the reason role's model, flagged
+    # SAME_FAMILY. A prompt's decoding block sets reasoning_effort for Cerebras and Groq.
+    assess:  {provider: cerebras, model: gpt-oss-120b, fallback_provider: {provider: groq, model: openai/gpt-oss-120b}, same_family_role: reason}
   paid:
     # CH-82: the free models under the paid key, whose terms do not use prompts for training,
     # with real cost in the ledger. For the hero run and the spikes when the free quota is spent.
     extract: {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: medium}
     reason:  {provider: gemini, model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite, thinking: low}
+    assess:  {provider: cerebras, model: gpt-oss-120b, fallback_provider: {provider: groq, model: openai/gpt-oss-120b}, same_family_role: reason}
   local:
     # ADR-004: thinking is off for every local role. On a 4 GB card both models run mostly on
     # CPU at this context, and thinking pushed every reason call past the 300 s call timeout.
     extract: {provider: ollama, model: "qwen3.5:4b", fallback: "qwen3.5:2b", num_ctx: 16384, think: false}
     reason:  {provider: ollama, model: "qwen3.5:4b", fallback: "qwen3.5:2b", num_ctx: 16384, think: false}
+    # Nothing leaves the laptop, so assess is the generator's family: flagged, not degraded.
+    assess:  {provider: ollama, model: "qwen3.5:4b", fallback: "qwen3.5:2b", num_ctx: 16384, think: false, same_family_role: reason, same_family: true}

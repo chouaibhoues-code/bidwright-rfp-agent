@@ -34,6 +34,13 @@ An optional circuit breaker (Iteration 2, `harness/recovery.py`) is checked befo
 attempt, before the budget's, under the model's provider, tier and name. A transient failure
 counts against it and an answer resets it. An open breaker raises `CircuitOpen`, with the retry
 reason `circuit`, which moves the call to its fallback model as a spent quota does.
+
+A routed role (Iteration 3, ADR-045), `assess`, serves one route a run: `primary`, its own
+provider; `fallback`, its `fallback_provider`; or `same`, the model of its `same_family_role`.
+`execute` sets the route once and passes the route's `RoleConfig` in `role_overrides`, which
+`complete` reads before `config/models.yaml`, and, on route `same`, prices the shadow cost at
+that role's shadow model through `shadow_roles`. After each answer, the client reports the
+tokens the provider counted to the limiter, which keeps a day's tokens for rows with `tpd`.
 """
 
 import os
@@ -72,10 +79,12 @@ from bidwright.schemas import LedgerEntry, RetryReason
 
 Mode = Literal["live", "record", "replay"]
 Decoding = Mapping[str, Mapping[str, object]]
+Route = Literal["primary", "fallback", "same"]
+ROUTES: tuple[str, ...] = ("primary", "fallback", "same")
 
 # The settings a prompt's decoding block may override, per provider. Model and provider stay
 # with config/models.yaml.
-_DECODING_KEYS = frozenset({"thinking", "think", "num_ctx"})
+_DECODING_KEYS = frozenset({"thinking", "think", "num_ctx", "reasoning_effort"})
 
 
 @dataclass(frozen=True)
@@ -128,6 +137,8 @@ class LLMClient:
         breaker: Breaker | None = None,
         fallback: bool = True,
         fill: bool = False,
+        role_overrides: Mapping[str, RoleConfig] | None = None,
+        shadow_roles: Mapping[str, str] | None = None,
         sleep: Callable[[float], None] = time.sleep,
         rng: Callable[[], float] = random.random,
         clock: Callable[[], float] = time.perf_counter,
@@ -150,6 +161,8 @@ class LLMClient:
         self.breaker = breaker
         self.fallback = fallback
         self.fill = fill
+        self.role_overrides = dict(role_overrides or {})
+        self.shadow_roles = dict(shadow_roles or {})
         self._sleep = sleep
         self._rng = rng
         self._clock = clock
@@ -170,7 +183,8 @@ class LLMClient:
         decoding: Decoding | None = None,
     ) -> Completion:
         """One call for `role`. `decoding` is a prompt's front-matter block, keyed by provider."""
-        role_config = _with_decoding(self.config.models.role(self.profile, role), decoding)
+        configured = self.role_overrides.get(role) or self.config.models.role(self.profile, role)
+        role_config = _with_decoding(configured, decoding)
         schema_json = provider_schema(schema) if schema is not None else None
         tool_specs = tuple(tools or ())
         tools_hash = (
@@ -349,6 +363,10 @@ class LLMClient:
             if self.breaker is not None:
                 self.breaker.success(circuit)
             break
+        if self.limiter is not None:
+            usage = response.usage
+            spent = usage.tokens_in + usage.tokens_out + usage.tokens_thinking
+            self.limiter.record_usage(role_config.provider, request.model, spent)
         if self.mode == "record":
             self._store().save(key, _meta(role_config, request), response)
         return response, latency_ms, False, backend
@@ -368,7 +386,8 @@ class LLMClient:
             return
         today = self._today()
         own_price = self.config.pricing.price(completion.model, today)
-        shadow_model = self.config.pricing.shadow_model.get(role, completion.model)
+        shadow_role = self.shadow_roles.get(role, role)
+        shadow_model = self.config.pricing.shadow_model.get(shadow_role, completion.model)
         shadow_price = self.config.pricing.price(shadow_model, today) or own_price
         paid = backend.paid if backend is not None else False
         usage = completion.usage
@@ -436,6 +455,7 @@ def _settings(role_config: RoleConfig) -> dict[str, object]:
         "thinking": role_config.thinking,
         "think": role_config.think,
         "num_ctx": role_config.num_ctx,
+        "reasoning_effort": role_config.reasoning_effort,
     }
     return {key: value for key, value in candidates.items() if value is not None}
 
@@ -491,6 +511,15 @@ def _cost(usage: Usage, price: TokenPrices | None) -> float:
     )
 
 
+# The OpenAI-compatible providers of Iteration 3: base URL and key variable. Both keys are
+# free accounts, Cerebras's a trial whose credits are not the paid budget (ADR-045), so their
+# calls cost 0 in the ledger and carry a shadow cost at the list price.
+OPENAI_COMPAT = {
+    "cerebras": ("https://api.cerebras.ai/v1", "CEREBRAS_API_KEY"),
+    "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY"),
+}
+
+
 def default_backends(*, paid: bool = False) -> dict[str, Backend]:
     """Live backends from the environment. Missing keys leave that provider out."""
     from bidwright.llm.ollama import OllamaBackend
@@ -502,7 +531,49 @@ def default_backends(*, paid: bool = False) -> dict[str, Backend]:
         from bidwright.llm.genai import GenaiBackend
 
         backends["gemini"] = GenaiBackend(api_key=key, paid=paid)
+    for provider, (base_url, variable) in OPENAI_COMPAT.items():
+        key = os.environ.get(variable, "")
+        if key:
+            from bidwright.llm.openai_compat import OpenAICompatBackend
+
+            backends[provider] = OpenAICompatBackend(provider, base_url, key, paid=False)
     return backends
 
 
-__all__ = ["Completion", "LLMClient", "default_backends"]
+def choose_route(role: RoleConfig, backends: Mapping[str, object]) -> Route:
+    """A routed role's route from the backends present: its provider, else its fallback
+    provider, else the same family's role."""
+    if role.provider in backends:
+        return "primary"
+    if role.fallback_provider is not None and role.fallback_provider.provider in backends:
+        return "fallback"
+    return "same"
+
+
+def route_config(config: Config, profile: str, name: str, route: Route) -> RoleConfig:
+    """The `RoleConfig` a routed role serves on a route."""
+    role = config.models.role(profile, name)
+    if route == "primary":
+        return role
+    if route == "fallback":
+        if role.fallback_provider is None:
+            raise ValueError(f"{profile}.{name} has no fallback_provider")
+        target = role.fallback_provider
+        return role.model_copy(
+            update={"provider": target.provider, "model": target.model, "fallback": None}
+        )
+    if role.same_family_role is None:
+        raise ValueError(f"{profile}.{name} is not a routed role")
+    return config.models.role(profile, role.same_family_role)
+
+
+__all__ = [
+    "OPENAI_COMPAT",
+    "ROUTES",
+    "Completion",
+    "LLMClient",
+    "Route",
+    "choose_route",
+    "default_backends",
+    "route_config",
+]

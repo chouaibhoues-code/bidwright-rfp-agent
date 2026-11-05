@@ -1,9 +1,13 @@
 """OpenAI-compatible providers (Cerebras and Groq from Iteration 3) through the `openai` SDK.
 
-The SDK's own retries are off: the client retries with its own backoff and budget.
+The SDK's own retries are off: the client retries with its own backoff and budget. A role's
+`reasoning_effort` goes to the provider as is. A 429 that names a daily limit raises
+`QuotaExhausted`, which a retry cannot help: Groq's `x-ratelimit-remaining-requests` counts
+requests a day, and both providers' error messages name the limit they hit (C7-02, C7-03).
 """
 
 import json
+import re
 from typing import Any
 
 import openai
@@ -12,6 +16,7 @@ from openai.types import CompletionUsage
 from bidwright.llm.types import (
     Message,
     ProviderError,
+    QuotaExhausted,
     RateLimited,
     Request,
     Response,
@@ -56,12 +61,18 @@ class OpenAICompatBackend:
             "messages": [_message(m) for m in request.messages],
             **kwargs,
         }
+        effort = request.settings.get("reasoning_effort")
+        if effort is not None:
+            params["reasoning_effort"] = effort
         try:
             completion = self._client.with_options(
                 timeout=request.timeout_s
             ).chat.completions.create(**params)
         except openai.RateLimitError as exc:
-            retry_after = exc.response.headers.get("retry-after") if exc.response else None
+            headers = exc.response.headers if exc.response is not None else {}
+            if _daily(self.provider, str(exc), headers):
+                raise QuotaExhausted(f"{self.provider} daily limit reached: {exc}") from exc
+            retry_after = headers.get("retry-after")
             raise RateLimited(str(exc), float(retry_after) if retry_after else None) from exc
         except openai.APITimeoutError as exc:  # a subclass of APIConnectionError, so first
             raise TransientError(str(exc), "timeout") from exc
@@ -82,6 +93,21 @@ class OpenAICompatBackend:
             if call.type == "function"
         )
         return Response(text=choice.content or "", tool_calls=calls, usage=_usage(completion.usage))
+
+
+# A message that names a limit counted over a day: "tokens per day (TPD)", "requests per day",
+# "daily". A per-minute limit names minutes, and is retried.
+_DAILY = re.compile(r"per[ _-]day|\bdaily\b|\bTPD\b|\bRPD\b", re.IGNORECASE)
+
+
+def _daily(provider: str, message: str, headers: Any) -> bool:
+    """Whether a 429 is a daily limit: its message names one, or, on Groq, whose
+    `x-ratelimit-remaining-requests` counts requests a day, none are left. Cerebras documents
+    no such header, so only its message counts."""
+    if _DAILY.search(message):
+        return True
+    remaining = headers.get("x-ratelimit-remaining-requests") if headers else None
+    return provider == "groq" and remaining is not None and str(remaining).strip() == "0"
 
 
 def _usage(usage: CompletionUsage | None) -> Usage:

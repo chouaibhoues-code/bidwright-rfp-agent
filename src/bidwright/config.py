@@ -23,6 +23,8 @@ CONFIG_DIR = Path(
 
 Provider = Literal["gemini", "cerebras", "groq", "ollama"]
 Thinking = Literal["minimal", "low", "medium", "high"]
+# gpt-oss on Cerebras and Groq takes `reasoning_effort` low, medium or high (C7-02).
+Effort = Literal["low", "medium", "high"]
 
 # The zone names of config/zones.yaml, in the order the keyword rule tries them (ADR-018),
 # from the `Zone` literal of schemas.py; a test keeps the file equal to it.
@@ -57,17 +59,53 @@ def _check_template(template: str | None, where: str) -> None:
 # --- models.yaml ----------------------------------------------------------------------------
 
 
+class ProviderModel(Strict):
+    """A model on another provider, which a routed role falls back to (ADR-045)."""
+
+    provider: Provider
+    model: str
+
+
 class RoleConfig(Strict):
+    """A role's model on one profile. A role with `same_family_role` is routed (ADR-045): its
+    route is set once at run start, to this provider, else `fallback_provider`, else the named
+    role's model, of the generator's family. `same_family` says that this provider is the
+    generator's family already, as on `local`, so assessments are flagged but the run is not
+    degraded. `fallback` is a second model on the same provider, as for every role."""
+
     provider: Provider
     model: str
     fallback: str | None = None
     thinking: Thinking | None = None
     num_ctx: int | None = None
     think: bool | None = None
+    reasoning_effort: Effort | None = None
+    fallback_provider: ProviderModel | None = None
+    same_family_role: str | None = None
+    same_family: bool = False
 
 
 class ModelsConfig(Strict):
     profiles: dict[str, dict[str, RoleConfig]]
+
+    @model_validator(mode="after")
+    def _routes_name_plain_roles(self) -> "ModelsConfig":
+        for profile, roles in self.profiles.items():
+            for name, role in roles.items():
+                target = role.same_family_role
+                if target is None:
+                    if role.fallback_provider is not None or role.same_family:
+                        raise ValueError(
+                            f"{profile}.{name}: fallback_provider and same_family belong to a"
+                            " routed role, which names its same_family_role"
+                        )
+                    continue
+                if target not in roles or roles[target].same_family_role is not None:
+                    raise ValueError(
+                        f"{profile}.{name}: same_family_role {target!r} must name an unrouted"
+                        " role of the same profile"
+                    )
+        return self
 
     def role(self, profile: str, role: str) -> RoleConfig:
         try:
@@ -105,6 +143,9 @@ class ModelQuota(Strict):
     tpm: int = Field(gt=0)
     rpd: int = Field(gt=0)
     reserve: float = Field(ge=0, lt=1)  # the share of the daily quota kept free
+    # Tokens a day (input, output and thinking, as each call reports them), when the provider
+    # sets a cap; enforced with `daily: enforce` as `rpd` is (ADR-045).
+    tpd: int | None = Field(default=None, gt=0)
     # `enforce`: the limiter stops at the daily limit less the reserve. `observe`: it only
     # counts, and the provider's own daily 429 stops the calls (ADR-029).
     daily: Literal["enforce", "observe"] = "enforce"
@@ -177,12 +218,20 @@ class LimitsConfig(Strict):
         except KeyError as exc:
             raise KeyError(f"no concurrency for profile {profile!r}") from exc
 
+    def quota_tier(self, provider: str, tier: str) -> str:
+        """The tier whose rows apply: the profile's, or a provider's only tier, which one
+        account's limits give on every profile, as Cerebras's trial does."""
+        tiers = self.providers.get(provider)
+        if tiers is None or tier in tiers.tiers or len(tiers.tiers) != 1:
+            return tier
+        return next(iter(tiers.tiers))
+
     def quota_for(self, provider: str, tier: str, model: str) -> ModelQuota | None:
         """The limiter's row for a model, or None when the provider or model has none."""
         tiers = self.providers.get(provider)
         if tiers is None:
             return None
-        return tiers.tiers.get(tier, {}).get(model)
+        return tiers.tiers.get(self.quota_tier(provider, tier), {}).get(model)
 
 
 # --- agents.yaml, thresholds.yaml, pricing.yaml ---------------------------------------------

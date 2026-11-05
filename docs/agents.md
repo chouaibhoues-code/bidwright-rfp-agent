@@ -39,10 +39,13 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 |---|---|---|---|---|---|
 | `free` | extract | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | thinking medium |
 | `free` | reason | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | thinking low |
+| `free` | assess | cerebras | `gpt-oss-120b` | groq `openai/gpt-oss-120b`, then the reason role's model, flagged SAME_FAMILY (ADR-045) |  |
 | `paid` | extract | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | thinking medium |
 | `paid` | reason | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | thinking low |
+| `paid` | assess | cerebras | `gpt-oss-120b` | groq `openai/gpt-oss-120b`, then the reason role's model, flagged SAME_FAMILY (ADR-045) |  |
 | `local` | extract | ollama | `qwen3.5:4b` | `qwen3.5:2b` | num_ctx 16384, think False |
 | `local` | reason | ollama | `qwen3.5:4b` | `qwen3.5:2b` | num_ctx 16384, think False |
+| `local` | assess | ollama | `qwen3.5:4b` | `qwen3.5:2b`, then the reason role's model (ADR-045) | num_ctx 16384, think False |
 
 ## Tools
 

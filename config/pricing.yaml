@@ -14,7 +14,17 @@ models:
   - {model: gemini-3.1-flash-lite, effective_from: null, effective_to: null, read_on: 2026-11-02,
      usd_per_mtok: {input: 0.25, output: 1.50, thinking: 1.50, cached_input: 0.025},
      source: "https://ai.google.dev/gemini-api/docs/pricing"}
-# The paid rate used to price free and local calls, so runs compare fairly.
+  # Iteration 3 (ADR-045): the assess role's model on Cerebras and on Groq, list prices read
+  # on 2026-11-05. Both accounts are free, so these price the shadow cost only.
+  - {model: gpt-oss-120b, effective_from: null, effective_to: null, read_on: 2026-11-05,
+     usd_per_mtok: {input: 0.35, output: 0.75, thinking: 0.75, cached_input: null},
+     source: "https://inference-docs.cerebras.ai/support/pricing"}
+  - {model: openai/gpt-oss-120b, effective_from: null, effective_to: null, read_on: 2026-11-05,
+     usd_per_mtok: {input: 0.15, output: 0.60, thinking: 0.60, cached_input: null},
+     source: "https://console.groq.com/docs/models"}
+# The paid rate used to price free and local calls, so runs compare fairly. A call on the
+# assess role's route `same` takes the reason role's shadow model.
 shadow_model:
   extract: gemini-3.5-flash-lite
   reason: gemini-3.5-flash-lite  # the model the free profile runs for reason (ADR-003)
+  assess: gpt-oss-120b

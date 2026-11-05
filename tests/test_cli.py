@@ -88,7 +88,7 @@ def test_record_passes_until_and_writes_it_to_the_recording(
 
     def fake_execute(**kwargs: object) -> RunResult:
         seen.update(kwargs)
-        return RunResult("run", tmp_path, "COMPLETED", None)
+        return RunResult("run", tmp_path, "COMPLETED", None, "fallback")
 
     monkeypatch.setattr("bidwright.graph.build.execute", fake_execute)
     monkeypatch.setattr(cli, "CASSETTES", tmp_path)
@@ -106,6 +106,7 @@ def test_record_passes_until_and_writes_it_to_the_recording(
         limits.second_pass,
     )
     assert cli.stale_recording(recording, limits.batch_size, limits.second_pass) is None
+    assert recording["assess_route"] == "fallback", "the route a replay takes (ADR-045)"
 
 
 def _cassette(store: CassetteStore, name: str) -> str:
@@ -288,3 +289,8 @@ def test_a_raise_must_be_a_positive_percentage() -> None:
         cli.main(["resume", "run", "--raise-budget", "0"])
     with pytest.raises(SystemExit):
         cli.main(["resume", "run", "--profile", "local"])
+
+
+def test_a_resume_carries_the_assess_route_its_first_part_recorded(tmp_path: Path) -> None:
+    run_args = {"source": "inputs/dev/dev_rfp.pdf", "profile": "free", "assess_route": "fallback"}
+    assert cli.resume_arguments(run_args, tmp_path / "run")["assess_route"] == "fallback"

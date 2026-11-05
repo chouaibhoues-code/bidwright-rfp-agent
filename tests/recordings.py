@@ -37,5 +37,6 @@ def replay(
         until=recording.get("until", "render"),
         research=research or recording.get("research", "off"),
         run_id=f"replay-{name}",
+        assess_route=recording.get("assess_route"),
     )
     return result, recording

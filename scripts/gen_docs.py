@@ -112,10 +112,8 @@ def agents_md() -> str:
     ]
     for profile, roles in models.items():
         for role, spec in roles.items():
-            settings = ", ".join(
-                f"{k} {v}" for k, v in spec.items() if k not in {"provider", "model", "fallback"}
-            )
-            fallback = f"`{spec['fallback']}`" if spec.get("fallback") else "None"
+            settings = ", ".join(f"{k} {v}" for k, v in spec.items() if k not in ROUTE_KEYS)
+            fallback = fallback_cell(spec)
             lines.append(
                 f"| `{profile}` | {role} | {spec['provider']} | `{spec['model']}` | {fallback}"
                 f" | {_cell(settings)} |"
@@ -322,6 +320,25 @@ PROFILE_HOSTING = {
 }
 
 
+# The keys of a role that name its models rather than set them; the fallback cell shows them.
+ROUTE_KEYS = frozenset(
+    {"provider", "model", "fallback", "fallback_provider", "same_family_role", "same_family"}
+)
+
+
+def fallback_cell(spec: dict[str, Any]) -> str:
+    """A role's fallbacks in order: a second model on its provider, then, for a routed role
+    (ADR-045), its fallback provider's model and the same family's role."""
+    parts = [f"`{spec['fallback']}`"] if spec.get("fallback") else []
+    other = spec.get("fallback_provider")
+    if other:
+        parts.append(f"{other['provider']} `{other['model']}`")
+    if spec.get("same_family_role"):
+        flag = ", flagged SAME_FAMILY" if not spec.get("same_family") else ""
+        parts.append(f"the {spec['same_family_role']} role's model{flag} (ADR-045)")
+    return ", then ".join(parts) or "None"
+
+
 def hosting_note(profile: str, provider: str) -> str:
     return PROFILE_HOSTING.get(
         (profile, provider), PROVIDER_HOSTING.get(provider, "See `config/models.yaml`")
@@ -437,7 +454,7 @@ def ai_bom_md() -> str:
     ]
     for profile, roles in config.models.profiles.items():
         for role, rc in roles.items():
-            fallback = f"`{rc.fallback}`" if rc.fallback else "None"
+            fallback = fallback_cell(rc.model_dump())
             hosting = hosting_note(profile, rc.provider)
             lines.append(
                 f"| `{profile}` | {role} | {rc.provider} | `{rc.model}` | {fallback}"

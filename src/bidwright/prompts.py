@@ -26,7 +26,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from bidwright import schemas
-from bidwright.config import Provider, Thinking
+from bidwright.config import Effort, Provider, Thinking
 from bidwright.llm.schema import sha256_of
 from bidwright.llm.types import Message
 
@@ -53,6 +53,7 @@ class Decoding(_Strict):
     thinking: Thinking | None = None
     think: bool | None = None
     num_ctx: int | None = Field(default=None, gt=0)
+    reasoning_effort: Effort | None = None  # Cerebras and Groq (ADR-045)
 
 
 class FrontMatter(_Strict):

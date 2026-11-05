@@ -39,7 +39,7 @@ def test_an_unlisted_host_is_refused() -> None:
     with pytest.raises(EgressRefused, match="evil.example.com"):
         check("gemini", "evil.example.com", "synthetic", register=REGISTER)
     with pytest.raises(EgressRefused, match="not a destination"):
-        check("cerebras", "api.cerebras.ai", "synthetic", register=REGISTER)
+        check("openrouter", "openrouter.ai", "synthetic", register=REGISTER)
     with pytest.raises(EgressRefused, match="docling"):
         check_run({}, None, "https://docling.example.com", "synthetic", register=REGISTER)
     remote_ollama = OllamaBackend("http://gpu-box.example.net:11434")
@@ -144,3 +144,43 @@ def test_a_backend_the_profile_does_not_use_is_neither_checked_nor_kept(
         run_id="client-local",
     )
     assert result.status == "COMPLETED", result.reason
+
+
+def test_a_client_run_with_consent_takes_route_same_and_names_no_remote_assess_provider(
+    client_document: Path, tmp_path: Path
+) -> None:
+    """With a Cerebras or Groq key set, a client run's egress check would refuse the run if
+    its assess role kept a remote provider: the route is set to `same` before the check."""
+    from bidwright.llm.openai_compat import OpenAICompatBackend
+
+    result = execute(
+        docling_mode="replay",
+        source=client_document,
+        profile="free",
+        outputs=tmp_path / "out",
+        backends={
+            "gemini": RuleBackend(),
+            "cerebras": OpenAICompatBackend("cerebras", "https://api.cerebras.ai/v1", "unused"),
+            "groq": OpenAICompatBackend("groq", "https://api.groq.com/openai/v1", "unused"),
+        },
+        consent=CONSENT,
+        until="verify",
+        run_id="client-route",
+    )
+    assert result.status == "COMPLETED", result.reason
+    manifest = RunManifest.model_validate_json(
+        (result.run_dir / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest.run_args["assess_route"] == "same"
+    assert manifest.models["assess"] == load_config().models.role("free", "reason").model
+
+
+def test_cerebras_groq_and_context7_are_remote_destinations() -> None:
+    for name, host in (
+        ("cerebras", "https://api.cerebras.ai/v1"),
+        ("groq", "https://api.groq.com/openai/v1"),
+        ("context7", "https://mcp.context7.com/mcp"),
+    ):
+        check(name, host, "synthetic", register=REGISTER)
+        with pytest.raises(EgressRefused, match="local destinations only"):
+            check(name, host, "client", register=REGISTER, consent=True)

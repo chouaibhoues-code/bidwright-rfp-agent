@@ -61,7 +61,10 @@ def test_the_manifest_lists_the_models_that_answered(tmp_path: Path) -> None:
     manifest = RunManifest.model_validate_json(
         (result.run_dir / "run_manifest.json").read_text(encoding="utf-8")
     )
-    assert manifest.models == {role: "gemini-3.5-flash-lite" for role in ("extract", "reason")}
+    # With only a Gemini backend, the assess role takes route `same`, the reason role's model.
+    assert manifest.models == {
+        role: "gemini-3.5-flash-lite" for role in ("extract", "reason", "assess")
+    }
     assert manifest.models_used == models_used(ledger)
     assert manifest.models_used["triage"] == ["gemini-3.1-flash-lite"]
     assert manifest.models_used["extract"] == ["gemini-3.5-flash-lite"]

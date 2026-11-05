@@ -6,7 +6,9 @@ from types import SimpleNamespace
 from typing import Any
 
 import httpx
+import httpx2
 import ollama
+import openai
 import pytest
 from google.genai import errors as genai_errors
 from google.genai import types
@@ -15,7 +17,7 @@ from openai.types.completion_usage import CompletionTokensDetails, PromptTokensD
 
 from bidwright.llm.genai import GenaiBackend, _content, _response, _translate
 from bidwright.llm.ollama import TRUNCATION_MARGIN, OllamaBackend
-from bidwright.llm.openai_compat import _usage
+from bidwright.llm.openai_compat import OpenAICompatBackend, _usage
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import (
     Message,
@@ -233,3 +235,77 @@ def test_ollama_answers_a_prompt_that_fits(monkeypatch: pytest.MonkeyPatch) -> N
 def test_ollama_models_reports_an_unreachable_host() -> None:
     with pytest.raises(ProviderError, match="did not answer"):
         OllamaBackend("http://127.0.0.1:9").models()
+
+
+class _Completions:
+    """Stands in for the SDK's `chat.completions`: records the call, or raises `error`."""
+
+    def __init__(self, error: Exception | None = None) -> None:
+        self.error = error
+        self.params: dict[str, Any] = {}
+
+    def create(self, **params: Any) -> Any:
+        self.params = params
+        if self.error is not None:
+            raise self.error
+        message = SimpleNamespace(content='{"ok": true}', tool_calls=None)
+        usage = CompletionUsage(prompt_tokens=10, completion_tokens=5, total_tokens=15)
+        return SimpleNamespace(choices=[SimpleNamespace(message=message)], usage=usage)
+
+
+def _compat(provider: str, completions: _Completions) -> OpenAICompatBackend:
+    backend = OpenAICompatBackend(provider, "https://api.example.invalid/v1", "unused")
+    sdk = SimpleNamespace(chat=SimpleNamespace(completions=completions))
+    backend._client = SimpleNamespace(with_options=lambda **_: sdk)  # type: ignore[assignment]
+    return backend
+
+
+def _rate_limited(message: str, headers: dict[str, str]) -> openai.RateLimitError:
+    # The SDK carries its own copy of httpx, under the name httpx2.
+    request = httpx2.Request("POST", "https://api.example.invalid/v1/chat/completions")
+    response = httpx2.Response(429, request=request, headers=headers)
+    return openai.RateLimitError(message, response=response, body=None)
+
+
+def _compat_request(settings: dict[str, object]) -> Request:
+    return Request(
+        model="gpt-oss-120b",
+        messages=(Message("user", "x"),),
+        schema=None,
+        schema_name=None,
+        tools=(),
+        settings=settings,
+        timeout_s=30,
+    )
+
+
+def test_openai_compat_sends_reasoning_effort_when_the_role_sets_it() -> None:
+    completions = _Completions()
+    _compat("cerebras", completions).call(_compat_request({"reasoning_effort": "medium"}))
+    assert completions.params["reasoning_effort"] == "medium"
+    _compat("cerebras", completions).call(_compat_request({}))
+    assert "reasoning_effort" not in completions.params
+
+
+@pytest.mark.parametrize(
+    ("provider", "message", "headers"),
+    [
+        ("groq", "Rate limit reached on tokens per day (TPD): Limit 200000", {}),
+        ("cerebras", "Daily token limit exceeded", {}),
+        ("groq", "Rate limit reached on requests", {"x-ratelimit-remaining-requests": "0"}),
+    ],
+)
+def test_openai_compat_a_daily_429_is_a_spent_quota(
+    provider: str, message: str, headers: dict[str, str]
+) -> None:
+    completions = _Completions(_rate_limited(message, headers))
+    with pytest.raises(QuotaExhausted, match="daily limit reached"):
+        _compat(provider, completions).call(_compat_request({}))
+
+
+def test_openai_compat_a_per_minute_429_is_retried_after_its_delay() -> None:
+    headers = {"retry-after": "2", "x-ratelimit-remaining-requests": "0"}
+    error = _rate_limited("Rate limit reached on tokens per minute (TPM)", headers)
+    with pytest.raises(RateLimited) as caught:
+        _compat("cerebras", _Completions(error)).call(_compat_request({}))
+    assert caught.value.retry_after_s == 2.0, "Cerebras documents no requests-a-day header"

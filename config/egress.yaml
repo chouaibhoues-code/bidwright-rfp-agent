@@ -7,6 +7,10 @@
 # this machine but forwards every query it receives to Google (ADR-036).
 destinations:
   gemini:  {hosts: [generativelanguage.googleapis.com], local: false, receives: prompts}
+  # Iteration 3 (ADR-045, ADR-044): assess's providers, and Context7 for techcheck's queries.
+  cerebras: {hosts: [api.cerebras.ai], local: false, receives: prompts}
+  groq:    {hosts: [api.groq.com], local: false, receives: prompts}
+  context7: {hosts: [mcp.context7.com], local: false, receives: queries}
   ollama:  {hosts: [localhost, "127.0.0.1", ollama, host.docker.internal], local: true, receives: prompts}
   phoenix: {hosts: [localhost, "127.0.0.1", phoenix], local: true, receives: spans}
   docling: {hosts: [localhost, "127.0.0.1", docling], local: true, receives: documents}

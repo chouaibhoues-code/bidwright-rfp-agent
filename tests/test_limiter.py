@@ -123,6 +123,7 @@ def test_the_count_survives_a_new_limiter_on_the_same_day(tmp_path: Path) -> Non
         "model": PRIMARY,
         "day": "2026-11-04",
         "requests": 3,
+        "tokens": 0,  # kept for rows with a tpd (ADR-045)
     }
     late = datetime(2026, 11, 5, 7, 59, tzinfo=UTC)  # 23:59 on Nov 4 in Los Angeles
     same_day, _ = _limiter(tmp_path, _limits(), at=late)
@@ -191,3 +192,67 @@ def test_the_default_folder_is_under_home_outputs(monkeypatch: pytest.MonkeyPatc
     monkeypatch.undo()  # drop the test-wide isolation of conftest.py, to read the real default
     assert bidwright.llm.limits.QUOTA_DIR == HOME / "outputs" / ".quota"
     assert Limiter(load_config().limits, "free").root == bidwright.llm.limits.QUOTA_DIR
+
+
+CEREBRAS_MODEL = "gpt-oss-120b"
+
+
+def _trial(tpd: int = 10_000, reserve: float = 0.0) -> LimitsConfig:
+    """One Cerebras row under a single tier, as the trial account's limits give it."""
+    quota = ModelQuota(rpm=5, tpm=30_000, rpd=7200, tpd=tpd, reserve=reserve)
+    providers = {
+        "cerebras": ProviderLimits(quota_day_tz="UTC", tiers={"trial": {CEREBRAS_MODEL: quota}})
+    }
+    return load_config().limits.model_copy(update={"providers": providers})
+
+
+def test_a_tpd_cap_stops_a_call_once_the_days_tokens_are_spent(tmp_path: Path) -> None:
+    limiter, _ = _limiter(tmp_path, _trial(tpd=10_000))
+    limiter.acquire("cerebras", CEREBRAS_MODEL, 100)
+    limiter.record_usage("cerebras", CEREBRAS_MODEL, 9_999)
+    limiter.acquire("cerebras", CEREBRAS_MODEL, 100)
+    limiter.record_usage("cerebras", CEREBRAS_MODEL, 1)
+    assert limiter.tokens("cerebras", CEREBRAS_MODEL) == 10_000
+    again, _ = _limiter(tmp_path, _trial(tpd=10_000))  # a new process reads the same count
+    with pytest.raises(QuotaExhausted, match="10000 of 10000 tokens"):
+        again.acquire("cerebras", CEREBRAS_MODEL, 100)
+    assert again.count("cerebras", CEREBRAS_MODEL) == 2
+
+
+def test_a_provider_with_one_tier_counts_once_on_every_profile(tmp_path: Path) -> None:
+    free, _ = _limiter(tmp_path, _trial(), tier="free")
+    paid, _ = _limiter(tmp_path, _trial(), tier="paid")
+    assert free.path("cerebras", CEREBRAS_MODEL) == paid.path("cerebras", CEREBRAS_MODEL)
+    assert "cerebras-trial-gpt-oss-120b" in free.path("cerebras", CEREBRAS_MODEL).name
+    free.acquire("cerebras", CEREBRAS_MODEL, 10)
+    paid.acquire("cerebras", CEREBRAS_MODEL, 10)
+    assert paid.count("cerebras", CEREBRAS_MODEL) == 2
+
+
+def test_a_count_file_from_before_iteration_3_reads_zero_tokens(tmp_path: Path) -> None:
+    limiter, _ = _limiter(tmp_path, _trial())
+    path = limiter.path("cerebras", CEREBRAS_MODEL)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"requests": 3}), encoding="utf-8")
+    assert (
+        limiter.count("cerebras", CEREBRAS_MODEL),
+        limiter.tokens("cerebras", CEREBRAS_MODEL),
+    ) == (3, 0)
+
+
+def test_a_row_without_tpd_keeps_no_tokens(tmp_path: Path) -> None:
+    limiter, _ = _limiter(tmp_path, _limits())
+    limiter.acquire("gemini", PRIMARY, 100)
+    limiter.record_usage("gemini", PRIMARY, 5_000)
+    assert limiter.tokens("gemini", PRIMARY) == 0
+
+
+def test_the_client_reports_each_answers_tokens_to_the_limiter(tmp_path: Path) -> None:
+    limiter, _ = _limiter(tmp_path, _trial(tpd=1_000_000))
+    config = load_config()
+    config = config.model_copy(update={"limits": _trial(tpd=1_000_000)})
+    client = LLMClient(
+        config, "free", {"cerebras": FakeBackend(provider="cerebras")}, limiter=limiter
+    )
+    client.complete("assess", MESSAGES, ExtractResult, **CALL)
+    assert limiter.tokens("cerebras", CEREBRAS_MODEL) == 1200, "1,000 in and 200 out"

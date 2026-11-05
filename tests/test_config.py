@@ -18,6 +18,7 @@ from bidwright.config import (
     CuesConfig,
     HttpServer,
     LintConfig,
+    ModelsConfig,
     ResearchConfig,
     TiersConfig,
     load_config,
@@ -261,3 +262,38 @@ def test_a_server_entry_is_http_or_stdio() -> None:
     assert parsed.servers["fake"].transport == "stdio"
     with pytest.raises(ValidationError):
         ResearchConfig.model_validate(_research(servers={"fake": {"transport": "sse"}}))
+
+
+def test_assess_is_routed_on_every_profile_and_local_is_its_own_family(config: Config) -> None:
+    for profile in ("free", "paid"):
+        assess = config.models.role(profile, "assess")
+        assert (assess.provider, assess.model, assess.same_family_role) == (
+            "cerebras",
+            "gpt-oss-120b",
+            "reason",
+        )
+        assert assess.fallback_provider is not None
+        assert assess.fallback_provider.provider == "groq"
+        assert not assess.same_family
+    local = config.models.role("local", "assess")
+    assert local.same_family and local.same_family_role == "reason"
+
+
+def test_a_routed_role_names_an_unrouted_role_of_its_profile(config: Config) -> None:
+    profiles = config.models.model_dump()["profiles"]
+    profiles["free"]["assess"]["same_family_role"] = "nobody"
+    with pytest.raises(ValidationError, match="must name an unrouted role"):
+        ModelsConfig.model_validate({"profiles": profiles})
+    profiles = config.models.model_dump()["profiles"]
+    profiles["free"]["reason"]["same_family"] = True
+    with pytest.raises(ValidationError, match="belong to a routed role"):
+        ModelsConfig.model_validate({"profiles": profiles})
+
+
+def test_the_cerebras_trial_row_applies_on_every_profile(config: Config) -> None:
+    limits = config.limits
+    free = limits.quota_for("cerebras", "free", "gpt-oss-120b")
+    assert free is not None and free == limits.quota_for("cerebras", "paid", "gpt-oss-120b")
+    assert (free.rpm, free.tpm, free.tpd) == (5, 30_000, 1_000_000)
+    assert limits.quota_tier("cerebras", "paid") == "trial"
+    assert limits.quota_tier("gemini", "paid") == "paid", "a provider with two tiers keeps both"

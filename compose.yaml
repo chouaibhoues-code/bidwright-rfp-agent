@@ -18,6 +18,10 @@ services:
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env for live runs}
       GEMINI_PAID_API_KEY: ${GEMINI_PAID_API_KEY:-}
+      # The assess role's providers (ADR-045); without either key, assess takes the reason
+      # role's model and the run is flagged SAME_FAMILY.
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
       PHOENIX_ENDPOINT: http://phoenix:6006
       PHOENIX_API_KEY: ${PHOENIX_API_KEY:-}
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
