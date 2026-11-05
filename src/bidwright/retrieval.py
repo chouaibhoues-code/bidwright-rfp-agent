@@ -39,9 +39,11 @@ STOPWORDS = frozenset(
     they them their we us our you your he she his her which who whom whose what when where
     how there here also any all each every some such""".split()
 )
+# The tokenizer, shared with the knowledge-base index (`kb.py`, Iteration 3).
+TOKENIZER = "porter unicode61 remove_diacritics 2"
 _SCHEMA = (
     "CREATE VIRTUAL TABLE passages USING fts5("
-    "src_id UNINDEXED, section_path, text, tokenize = 'porter unicode61 remove_diacritics 2')"
+    f"src_id UNINDEXED, section_path, text, tokenize = '{TOKENIZER}')"
 )
 # Column weights for bm25(): src_id is unindexed, a section-path hit counts half a text hit.
 _RANK = "bm25(passages, 0.0, 0.5, 1.0)"

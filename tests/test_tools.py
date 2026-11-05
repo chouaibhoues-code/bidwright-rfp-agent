@@ -6,16 +6,23 @@ from typing import Any
 import pytest
 import yaml
 
+from bidwright.harness.gateway import ToolGateway
 from bidwright.ingest import ingest_pdf
 from bidwright.retrieval import PassageIndex, match_expression
+from bidwright.schemas import Passage, ToolRequest
 from bidwright.tools import (
     NO_HOLIDAYS,
     DateArgs,
+    ReadSectionArgs,
     SearchArgs,
+    SlaArgs,
     date_calc,
     date_tool,
     requirement_ids,
     search_tool,
+    section_tool,
+    sla_calc,
+    sla_tool,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -100,3 +107,78 @@ def test_tool_specs_expose_only_required_fields_as_required() -> None:
     assert schema["required"] == ["date", "op"]
     assert "title" not in schema and "title" not in schema["properties"]["op"]
     assert search_tool.__name__ == "search_tool"
+
+
+SLA_CASES: list[dict[str, Any]] = yaml.safe_load(
+    (ROOT / "tests" / "data" / "sla_cases.yaml").read_text(encoding="utf-8")
+)["cases"]
+
+
+@pytest.fixture(scope="module")
+def dev_passages() -> list[Passage]:
+    return list(ingest_pdf(ROOT / "inputs" / "dev" / "dev_rfp.pdf").passages)
+
+
+def test_sla_has_twelve_cases() -> None:
+    assert len(SLA_CASES) == 12
+
+
+@pytest.mark.parametrize("case", SLA_CASES, ids=lambda c: f"{c['target']}-{c['period']}")
+def test_sla_calc(case: dict[str, Any]) -> None:
+    result = sla_calc(
+        SlaArgs(
+            target_percent=case["target"],
+            period=case["period"],
+            measured_minutes=case.get("measured"),
+        )
+    )
+    if case.get("failed"):
+        assert result.status == "FAILED" and "longer than a month" in str(result.reason)
+        return
+    assert result.status == "OK" and isinstance(result.data, dict)
+    assert "counts as" in result.data["explanation"], "the period's length is named"
+    if "measured" in case:
+        assert result.data["result"] == pytest.approx(case["achieved"])
+        assert result.data["met"] is case["met"]
+    else:
+        assert result.data["result"] == pytest.approx(case["allowed"])
+
+
+def test_a_percentage_outside_90_to_100_is_denied_by_the_argument_check() -> None:
+    gateway = ToolGateway.for_agent("risk", ["sla_calc"], [sla_tool()], 6)
+    request = ToolRequest(
+        tool="sla_calc", args={"target_percent": 120, "period": "month"}, agent="risk", turn=1
+    )
+    result = gateway.call(request)
+    assert result.status == "DENIED"
+
+
+def test_read_section_by_passage_and_by_path_returns_the_same_passages(
+    dev_passages: list[Passage],
+) -> None:
+    tool = section_tool(dev_passages)
+    anchor = next(p for p in dev_passages if p.section_path.startswith("3"))
+    by_passage = tool.run(ReadSectionArgs(src_id=anchor.id))
+    by_path = tool.run(ReadSectionArgs(doc_id=anchor.doc_id, section_path=anchor.section_path))
+    assert by_passage.status == "OK" and by_passage == by_path
+    assert isinstance(by_passage.data, list) and 1 <= len(by_passage.data) <= 8
+    assert all(row["section_path"] == anchor.section_path for row in by_passage.data)
+    assert tool.run(ReadSectionArgs(src_id="SRC-9999")).status == "EMPTY"
+
+
+def test_read_section_returns_at_most_eight_passages() -> None:
+    passages = [
+        Passage(
+            id=f"SRC-{n:04d}",
+            doc_id="d",
+            section_path="4 Big",
+            kind="sentence",
+            text=f"Line {n}.",
+            start=n * 10,
+            end=n * 10 + 8,
+        )
+        for n in range(1, 13)
+    ]
+    result = section_tool(passages).run(ReadSectionArgs(src_id="SRC-0012"))
+    assert isinstance(result.data, list)
+    assert [row["src_id"] for row in result.data] == [f"SRC-{n:04d}" for n in range(1, 9)]

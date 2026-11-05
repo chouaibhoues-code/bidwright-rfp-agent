@@ -1,0 +1,16 @@
+# sla_calc's cases (Iteration 3, step 3): a month counts 30 days, a quarter 91 and a year 365.
+# `allowed` is the downtime in minutes the target allows; with `measured`, `achieved` is the
+# percentage and `met` whether it reaches the target; `failed` expects a FAILED result.
+cases:
+  - {target: 99.5, period: month, allowed: 216}
+  - {target: 99.9, period: month, allowed: 43.2}
+  - {target: 99.9, period: year, allowed: 525.6}
+  - {target: 99.99, period: year, allowed: 52.56}
+  - {target: 99, period: day, allowed: 14.4}
+  - {target: 99.5, period: week, allowed: 50.4}
+  - {target: 99.9, period: quarter, allowed: 131.04}
+  - {target: 100, period: month, allowed: 0}
+  - {target: 90, period: day, allowed: 144}
+  - {target: 99.9, period: month, measured: 43.2, achieved: 99.9, met: true}
+  - {target: 99.5, period: month, measured: 300, achieved: 99.3056, met: false}
+  - {target: 99.5, period: month, measured: 50000, failed: true}

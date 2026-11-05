@@ -1,5 +1,6 @@
-"""The agent tools, `search_rfp` and `date_calc` (0a) and `ask_research` (Iteration 2), with
-their argument schemas; `start_research`'s argument schema too, whose tool `discover` builds.
+"""The agent tools, `search_rfp` and `date_calc` (0a), `ask_research` (Iteration 2), and
+`search_capabilities`, `read_section` and `sla_calc` (Iteration 3), with their argument
+schemas; `start_research`'s argument schema too, whose tool `discover` builds.
 
 Each tool validates its arguments with a Pydantic model, and its JSON Schema, offered to the
 model, is generated from that same model. A tool returns a typed `ToolResult` with status
@@ -12,15 +13,20 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Annotated, Any, Literal, Protocol
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Protocol
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from bidwright.ingest import display_text
 from bidwright.llm.schema import clean_schema
 from bidwright.llm.types import ToolSpec
 from bidwright.retrieval import MAX_K, PassageIndex
-from bidwright.schemas import AskResult, ToolResult
+from bidwright.schemas import AskResult, Passage, ToolResult
+
+if TYPE_CHECKING:
+    from bidwright.harness.view import TextView
+    from bidwright.kb import KnowledgeIndex
 
 NO_HOLIDAYS = "Business days skip Saturdays and Sundays only; public holidays are not considered."
 
@@ -357,4 +363,128 @@ def start_tool(run: Callable[[StartResearchArgs], ToolResult]) -> Tool:
         ),
         args_model=StartResearchArgs,
         run=run,
+    )
+
+
+# --- search_capabilities, read_section and sla_calc (Iteration 3, step 3) -------------------
+
+
+def capabilities_tool(index: "KnowledgeIndex") -> Tool:
+    """`search_capabilities` over the run's knowledge-base index (`kb.sqlite`)."""
+
+    def run(args: SearchCapabilitiesArgs) -> ToolResult:
+        hits = index.search(args.query, args.k)
+        if not hits:
+            return ToolResult(
+                status="EMPTY", data=[], reason="no knowledge-base record matched the query"
+            )
+        data = [
+            {"id": h.id, "kind": h.kind, "name": h.name, "text": h.text, "score": h.score}
+            for h in hits
+        ]
+        return ToolResult(status="OK", data=data)
+
+    return Tool(
+        name="search_capabilities",
+        description=(
+            "Search the supplier's knowledge base by words, such as 'resident portal"
+            " accessibility'. Returns up to k records, best first: capabilities, case studies,"
+            " certifications and roles, each with its id, kind, name and text."
+        ),
+        args_model=SearchCapabilitiesArgs,
+        run=run,
+    )
+
+
+SECTION_PASSAGES = 8  # read_section's cap, the evidence cap
+
+
+def section_tool(passages: Sequence[Passage], view: "TextView | None" = None) -> Tool:
+    """`read_section`: the first passages of one section, in document order, as the run's text
+    view shows them (D-05). The section is named by one of its passages, or by its document id
+    and section path."""
+    by_id = {p.id: p for p in passages}
+
+    def run(args: ReadSectionArgs) -> ToolResult:
+        if args.src_id is not None:
+            anchor = by_id.get(args.src_id)
+            if anchor is None:
+                return ToolResult(status="EMPTY", data=[], reason=f"no passage {args.src_id}")
+            doc_id, path = anchor.doc_id, anchor.section_path
+        else:
+            doc_id, path = str(args.doc_id), str(args.section_path)
+        members = sorted(
+            (p for p in passages if p.doc_id == doc_id and p.section_path == path),
+            key=lambda p: p.start,
+        )[:SECTION_PASSAGES]
+        if not members:
+            return ToolResult(
+                status="EMPTY", data=[], reason=f"no section {path!r} in document {doc_id}"
+            )
+        data = [
+            {
+                "src_id": p.id,
+                "section_path": p.section_path,
+                "text": view.text(p) if view is not None else display_text(p.text),
+            }
+            for p in members
+        ]
+        return ToolResult(status="OK", data=data)
+
+    return Tool(
+        name="read_section",
+        description=(
+            "Read one section of the RFP, named by one of its passages (src_id), or by its"
+            f" document id and section path. Returns its first {SECTION_PASSAGES} passages in"
+            " order, each with its SRC id, section path and text."
+        ),
+        args_model=ReadSectionArgs,
+        run=run,
+    )
+
+
+# A period's length in days, as sla_calc counts it; its explanation names it.
+PERIOD_DAYS = {"day": 1, "week": 7, "month": 30, "quarter": 91, "year": 365}
+
+
+def sla_tool() -> Tool:
+    return Tool(
+        name="sla_calc",
+        description=(
+            "Service-level arithmetic. Gives the downtime in minutes that target_percent allows"
+            " in a period (day, week, month, quarter or year); with measured_minutes, gives the"
+            " percentage achieved and whether it meets the target."
+        ),
+        args_model=SlaArgs,
+        run=sla_calc,
+    )
+
+
+def sla_calc(args: SlaArgs) -> ToolResult:
+    days = PERIOD_DAYS[args.period]
+    minutes = days * 24 * 60
+    length = f"A {args.period} counts as {days} days, {minutes:,} minutes."
+    allowed = round(minutes * (1 - args.target_percent / 100), 4)
+    if args.measured_minutes is None:
+        return _ok(
+            allowed,
+            f"{length} {args.target_percent:g}% allows {allowed:g} minutes of downtime in it.",
+        )
+    if args.measured_minutes > minutes:
+        return _failed(f"{args.measured_minutes:g} minutes is longer than a {args.period}")
+    achieved = round(100 * (1 - args.measured_minutes / minutes), 4)
+    met = achieved >= args.target_percent
+    verdict = "meets" if met else "misses"
+    return ToolResult(
+        status="OK",
+        data={
+            "result": achieved,
+            "met": met,
+            "allowed_minutes": allowed,
+            "explanation": (
+                f"{length} {args.measured_minutes:g} minutes of downtime gives {achieved:g}%,"
+                f" which {verdict} the target of {args.target_percent:g}%"
+                f" ({allowed:g} minutes allowed)."
+            ),
+        },
     )

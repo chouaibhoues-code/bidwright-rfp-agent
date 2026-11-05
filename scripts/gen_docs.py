@@ -354,6 +354,11 @@ TOOL_ACCESS = {
     "start_research": "Sends one query, built from the research envelope, to NotebookLM"
     " as a deep research job on a notebook code created; `discover` writes the job to"
     " `research.json`",
+    "search_capabilities": "Reads the run's own index of the supplier's knowledge base;"
+    " writes nothing",
+    "read_section": "Reads one section of the run's passages, as its text view shows them;"
+    " writes nothing",
+    "sla_calc": "Computes service-level downtime and percentages; reads and writes nothing",
 }
 
 

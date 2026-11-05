@@ -24,7 +24,15 @@ from bidwright.config import (
     load_config,
 )
 
-KNOWN_TOOLS = {"search_rfp", "date_calc", "ask_research", "start_research"}
+KNOWN_TOOLS = {
+    "search_rfp",
+    "date_calc",
+    "ask_research",
+    "start_research",
+    "search_capabilities",
+    "read_section",
+    "sla_calc",
+}
 
 
 @pytest.fixture(scope="module")

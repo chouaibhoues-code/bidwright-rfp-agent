@@ -4,14 +4,24 @@ Four YAML files under `knowledge_base/capabilities/`, read with `yaml.safe_load`
 models. Ids are unique within the base, and every reference from a capability's evidence or a
 case study's or role's capabilities resolves. In Iteration 1 only the tests read the base;
 `decide` is its first reader, in Iteration 3.
+
+`KnowledgeIndex` (Iteration 3, step 3) is an FTS5 index over every record, built once a run as
+`kb.sqlite` in the run folder, with the tokenizer and query escaping of `search_rfp`'s index
+(`retrieval.py`). A record's name is a capability's name, a case study's client and sector, a
+certification's name and a role's title; its text is a capability's summary, a case study's
+summary, a certification's name, holder and expiry, and a role's summary.
 """
 
+import sqlite3
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Annotated, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from bidwright.retrieval import MAX_K, TOKENIZER, match_expression
 
 KB_DIR = Path(__file__).resolve().parents[2] / "knowledge_base" / "capabilities"
 
@@ -108,3 +118,69 @@ def load_kb(root: Path = KB_DIR) -> KnowledgeBase:
             "roles": _read(root / "roles.yaml", "roles"),
         }
     )
+
+
+# --- the index search_capabilities reads (Iteration 3, step 3) ---------------------------------
+
+RecordKind = Literal["capability", "case_study", "certification", "role"]
+INDEX_FILE = "kb.sqlite"
+_SCHEMA = (
+    "CREATE VIRTUAL TABLE records USING fts5("
+    f"id UNINDEXED, kind UNINDEXED, name, text, tokenize = '{TOKENIZER}')"
+)
+# Column weights for bm25(): id and kind are unindexed; a name hit counts as a text hit.
+_RANK = "bm25(records, 0.0, 0.0, 1.0, 1.0)"
+
+
+@dataclass(frozen=True)
+class KbHit:
+    id: str
+    kind: RecordKind
+    name: str
+    text: str
+    score: float
+
+
+def record_view(
+    record: Capability | CaseStudy | Certification | Role,
+) -> tuple[RecordKind, str, str]:
+    """A record's kind, name and text, as the index and the assessor see them."""
+    if isinstance(record, Capability):
+        return "capability", record.name, record.summary
+    if isinstance(record, CaseStudy):
+        return "case_study", f"{record.client}, {record.sector}", record.summary
+    if isinstance(record, Certification):
+        held = f"{record.name}, held by {record.holder}, valid until {record.valid_until}"
+        return "certification", record.name, held
+    return "role", record.title, record.summary
+
+
+class KnowledgeIndex:
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+    @classmethod
+    def build(cls, kb: KnowledgeBase, path: Path) -> "KnowledgeIndex":
+        """A fresh index of every record of the knowledge base."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.unlink(missing_ok=True)
+        rows = [(record.id, *record_view(record)) for record in kb.records()]
+        with sqlite3.connect(path) as db:
+            db.execute(_SCHEMA)
+            db.executemany("INSERT INTO records (id, kind, name, text) VALUES (?, ?, ?, ?)", rows)
+        return cls(path)
+
+    def search(self, query: str, k: int = 5) -> list[KbHit]:
+        expression = match_expression(query)
+        if not expression:
+            return []
+        db = sqlite3.connect(self.path)
+        try:
+            rows = db.execute(
+                f"SELECT id, kind, name, text, {_RANK} FROM records"  # noqa: S608
+                f" WHERE records MATCH ? ORDER BY {_RANK}, id LIMIT ?",
+                (expression, max(1, min(k, MAX_K))),
+            ).fetchall()
+        finally:
+            db.close()
+        return [KbHit(i, kind, name, text, round(-rank, 4)) for i, kind, name, text, rank in rows]

@@ -61,6 +61,9 @@ Controls on every run, in code:
 | `date_calc` | Computes dates; reads and writes nothing | `risk` |
 | `ask_research` | Reads the selected research pack, or sends one question to the NotebookLM notebook code bound; `discover` records each answer in `research.json` | `discover` |
 | `start_research` | Sends one query, built from the research envelope, to NotebookLM as a deep research job on a notebook code created; `discover` writes the job to `research.json` | `discover` |
+| `search_capabilities` | Reads the run's own index of the supplier's knowledge base; writes nothing | No agent |
+| `read_section` | Reads one section of the run's passages, as its text view shows them; writes nothing | No agent |
+| `sla_calc` | Computes service-level downtime and percentages; reads and writes nothing | No agent |
 
 ## Services
 

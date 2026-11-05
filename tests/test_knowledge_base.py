@@ -8,7 +8,8 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from bidwright.kb import KB_DIR, load_kb
+from bidwright.kb import INDEX_FILE, KB_DIR, KnowledgeIndex, load_kb
+from bidwright.tools import SearchCapabilitiesArgs, capabilities_tool
 from evals.render.spec import CORPUS_DIR, GapSeed, load_spec
 
 
@@ -71,3 +72,34 @@ def test_no_gap_seed_term_occurs_in_the_knowledge_base() -> None:
     for seed in seeds:
         for term in seed.absent_terms:
             assert not any(term.lower() in text for text in texts), (seed.id, term)
+
+
+@pytest.fixture(scope="module")
+def kb_index(tmp_path_factory: pytest.TempPathFactory) -> KnowledgeIndex:
+    return KnowledgeIndex.build(load_kb(), tmp_path_factory.mktemp("run") / INDEX_FILE)
+
+
+def test_a_query_for_the_resident_portal_finds_cap_002_first(kb_index: KnowledgeIndex) -> None:
+    hits = kb_index.search("resident portal")
+    assert hits and hits[0].id == "CAP-002" and hits[0].kind == "capability"
+    result = capabilities_tool(kb_index).run(SearchCapabilitiesArgs(query="resident portal"))
+    assert result.status == "OK" and isinstance(result.data, list)
+    assert set(result.data[0]) == {"id", "kind", "name", "text", "score"}
+
+
+def test_a_gap_finds_no_record_that_names_it(kb_index: KnowledgeIndex) -> None:
+    """GS-02, a British Sign Language interpreter, is a gap: the base holds nothing on it."""
+    hits = kb_index.search("British Sign Language interpreter")
+    assert not any("sign language" in hit.text.lower() for hit in hits)
+
+
+def test_each_record_kind_is_indexed_with_its_name_and_text(kb_index: KnowledgeIndex) -> None:
+    case = kb_index.search("CS-001 " + load_kb().case_studies[0].client, 8)
+    assert any(hit.kind == "case_study" and ", " in hit.name for hit in case)
+    certificate = kb_index.search("ISO 27001")
+    assert certificate and certificate[0].kind == "certification"
+    assert "valid until" in certificate[0].text
+    role = kb_index.search("data migration manager")
+    assert any(hit.id == "ROLE-002" for hit in role)
+    empty = capabilities_tool(kb_index).run(SearchCapabilitiesArgs(query="the and of"))
+    assert empty.status == "EMPTY"
