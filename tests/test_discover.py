@@ -23,6 +23,7 @@ from bidwright.graph.discover import (
     Discovery,
     ResearchPending,
     ResearchStopped,
+    settle_brief,
 )
 from bidwright.harness.budget import RunBudget
 from bidwright.harness.context import ContextManager
@@ -38,6 +39,7 @@ from bidwright.research.nlm import SENT, NotebookLMProvider
 from bidwright.research.pins import pinned
 from bidwright.research.provider import ResearchProvider
 from bidwright.schemas import (
+    DiscoveryExtract,
     DomainBrief,
     JobStatus,
     PackAnswer,
@@ -78,7 +80,7 @@ EXTRACTION = text(
         "items": [
             {
                 "kind": "standard",
-                "statement": "Online forms meet WCAG 2.2 at level AA.",
+                "statement": "Online forms meet the testable success criteria of WCAG 2.2.",
                 "excerpt_ids": ["PX-0001"],
             }
         ],
@@ -482,7 +484,7 @@ def test_an_item_on_tier_4_excerpts_only_is_dropped(tmp_path: Path) -> None:
             "items": [
                 {
                     "kind": "standard",
-                    "statement": "Forms meet WCAG 2.2.",
+                    "statement": "Forms meet the success criteria of WCAG 2.2.",
                     "excerpt_ids": ["PX-0001"],
                 },
                 {
@@ -517,6 +519,45 @@ def test_an_item_on_tier_4_excerpts_only_is_dropped(tmp_path: Path) -> None:
         "need 'Forms that work on old phones' dropped: its excerpts all come from tier-4 sources"
         in notes
     )
+
+
+def test_an_item_that_shares_no_word_with_its_excerpts_is_dropped() -> None:
+    """The defect of the hero pack's first build: items written from the report cited excerpts
+    on another subject. The rule `risk` applies to a generic risk drops them, in a live
+    extraction and each time a pack loads."""
+    source = PackSource(
+        id="PS-001",
+        provider_source_id="a",
+        url=WCAG_URL,
+        title=WCAG,
+        host="www.w3.org",
+        tier=1,
+        retrieved=date(2026, 11, 5),
+    )
+    excerpt = PackExcerpt(id="PX-0001", source_id="PS-001", text="Success criteria are testable.")
+    proposal = DiscoveryExtract.model_validate(
+        {
+            "summary": "Forms and logs.",
+            "items": [
+                {"kind": "pattern", "statement": "Keep audit logs.", "excerpt_ids": ["PX-0001"]},
+                {
+                    "kind": "standard",
+                    "statement": "Forms meet testable success criteria.",
+                    "excerpt_ids": ["PX-0001"],
+                },
+            ],
+            "needs": [{"need": "Immutable records", "excerpt_ids": ["PX-0001"]}],
+            "open_questions": [],
+        }
+    )
+    for mode in ("live", "pack"):
+        brief, notes = settle_brief(proposal, [excerpt], [source], mode=mode, tier_rule=False)
+        assert [i.statement for i in brief.items] == ["Forms meet testable success criteria."]
+        assert brief.needs == []
+        assert (
+            "pattern 'Keep audit logs.' dropped: it shares no word with the excerpts it cites"
+            in (notes)
+        )
 
 
 def test_an_extraction_that_keeps_nothing_is_a_research_failure(tmp_path: Path) -> None:

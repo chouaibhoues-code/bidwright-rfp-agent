@@ -50,7 +50,8 @@ Inbound trust (`research/trust.py`): every excerpt and answer is screened as it 
 every report paragraph before a model sees it; a suspect report paragraph is removed, with a
 security event and a note. In the extraction, an id that is unknown or quarantined is dropped,
 the first 3 of the rest kept, and an item or a need whose excerpts all come from tier-4 sources
-is dropped; each drop and cut is noted. Reports stay in memory only, and a resumed node polls
+is dropped, and so is one that shares no content word with the excerpts it cites; each drop
+and cut is noted. Reports stay in memory only, and a resumed node polls
 its finished jobs once to get them back.
 
 This module is the only writer of `research.json` and `domain_brief.json`; `research.json` is
@@ -112,6 +113,7 @@ from bidwright.schemas import (
     ToolRequest,
     ToolResult,
 )
+from bidwright.text import content_stems
 from bidwright.tools import NO_SOURCED_ANSWER, StartResearchArgs, Tool, ask_tool, start_tool
 
 NODE = "discover"  # the agent, its prompt and its call ids
@@ -215,12 +217,16 @@ def _excerpt_tiers(
 def _supported(
     cited: Sequence[str],
     tiers: dict[str, int],
+    texts: dict[str, str],
+    statement: str,
     what: str,
     notes: list[str],
     tier_rule: bool,
 ) -> list[str] | None:
     """The first 3 clean ids an item cites, or None when it rests on none, or, under the tier
-    rule, on tier 4 only."""
+    rule, on tier 4 only, or when the statement shares no content word with the excerpts it
+    cites, the rule `risk` applies to a generic risk: an item the excerpts do not state at
+    all, such as one written from a report, never shows those sources as its own."""
     refused = [i for i in dict.fromkeys(cited) if i not in tiers]
     if refused:
         notes.append(f"{what} cited unknown or quarantined excerpts: {', '.join(refused)}")
@@ -230,6 +236,9 @@ def _supported(
         return None
     if tier_rule and all(tiers[i] == 4 for i in kept):
         notes.append(f"{what} dropped: its excerpts all come from tier-4 sources")
+        return None
+    if not content_stems(statement) & content_stems(" ".join(texts[i] for i in kept)):
+        notes.append(f"{what} dropped: it shares no word with the excerpts it cites")
         return None
     return kept
 
@@ -254,14 +263,19 @@ def settle_brief(
     """The extraction as a `DomainBrief`, by the rules above, and the notes that name each
     drop and cut. A research pack's recorded brief goes through them again each time it loads,
     without the tier rule, which its live extraction applied: a pack loses only what now cites a
-    quarantined or unknown excerpt."""
+    quarantined or unknown excerpt, or what shares no word with its excerpts."""
     tiers = _excerpt_tiers(excerpts, sources)
+    texts = {e.id: e.text for e in excerpts if e.id in tiers}
     notes: list[str] = []
     items: list[DomainItem] = []
     for item in proposal.items:
         what = f"{item.kind} {' '.join(item.statement.split())[:40]!r}"
         statement = _cut(item.statement, DOMAIN_STATEMENT_MAX_CHARS, what, notes)
-        kept = _supported(item.excerpt_ids, tiers, what, notes, tier_rule) if statement else None
+        kept = (
+            _supported(item.excerpt_ids, tiers, texts, statement, what, notes, tier_rule)
+            if statement
+            else None
+        )
         if kept:
             items.append(
                 DomainItem(
@@ -275,7 +289,11 @@ def settle_brief(
     for need in proposal.needs:
         what = f"need {' '.join(need.need.split())[:40]!r}"
         text = _cut(need.need, DOMAIN_NEED_MAX_CHARS, what, notes)
-        kept = _supported(need.excerpt_ids, tiers, what, notes, tier_rule) if text else None
+        kept = (
+            _supported(need.excerpt_ids, tiers, texts, text, what, notes, tier_rule)
+            if text
+            else None
+        )
         if kept:
             needs.append(DomainNeed(id=f"DN-{len(needs) + 1:03d}", need=text, excerpt_ids=kept))
     questions = [" ".join(q.split()) for q in proposal.open_questions if q.strip()]

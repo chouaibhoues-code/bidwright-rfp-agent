@@ -1,13 +1,13 @@
 domain_id: local-government-case-management
 title: "Digital case-management services for local government"
-version: 1
+version: 2
 created: 2026-11-05
 keywords: ["case management", "local government", "council", "casework", "municipal"]
 topics: ["digital case management in local government", "public procurement of case-management services", "standards for public sector case-management services", "causes of failure in council digital transformation"]
 files:
-  summary.md: "sha256:fd26e973f5952514e19daecef1217de0731ca7e15fb559216d5f272dace30a8e"
-  sources.jsonl: "sha256:fd42acb346302ada69c675b740596e6fe1938da3fab1bc9227edc48e5eb2f43e"
-  excerpts.jsonl: "sha256:257c5de7b0e015a86982da1afe03924c7a0fed9f68c9b2f2416249c8a738fcf5"
-  domain_brief.json: "sha256:64080e5a231a4ef8a6f003f9132bef9a41529e26886a1444eb50bf7466e05f5a"
-  answers.jsonl: "sha256:6680f577a6b0cfde9f999e75b83c7014a2e6da5e30126451ee3b4bf5ab4dcef0"
-counts: {sources: 15, excerpts: 98, items: 4, needs: 3, answers: 4}
+  summary.md: "sha256:f507856eaf0003659e90fe6527e2a951bc276b58040d6ada954a4f3685ca16cc"
+  sources.jsonl: "sha256:eca22af7560a8d2ce73af752b7156f6211b3b850b3e3f9e91a458f05227c3d07"
+  excerpts.jsonl: "sha256:77c4cfa0d42c424e8a7a79151245b5ebab8c54bba4519e3c64d2f162347ee028"
+  domain_brief.json: "sha256:e6f6f6abeeb91eefdddbb0e6b4dcdc71ee43b81283fabe74378ca0f0cc4057ce"
+  answers.jsonl: "sha256:21d835e64069f8e0d1312c51ee45f029a28b5454793565d56ae7123b2b39fe7f"
+counts: {sources: 13, excerpts: 81, items: 3, needs: 3, answers: 4}

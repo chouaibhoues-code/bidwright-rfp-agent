@@ -1,77 +1,63 @@
 {
  "domain_id": "local-government-case-management",
  "mode": "pack",
- "summary": "Public-sector case management procurement is governed by the Procurement Act 2023, shifting from MEAT to a Most Advantageous Tender (MAT) approach that emphasizes whole-life value, risk mitigation, and demonstrable social benefit. Successful delivery requires aligning software workflows with statutory requirements using no-code, API-first architectures rather than legacy-heavy customization. Projects frequently fail due to flawed data migration, poor governance, and the adaptation trap, where custom code bloat prevents upgrades and inflates costs. Bidders must provide transparent TCO, measurable social value, and robust, compliant integration plans.",
+ "summary": "Digital case management transformation in local government requires navigating complex operational risk profiles and statutory compliance. Successful projects prioritize the adoption of standard software processes over heavy customization, which is a primary driver of transformation failure. Bids must demonstrate robust technical and operational integrity, specifically regarding data migration and financial control. The implementation must include automated, non-alterable audit trails and segregation of duties. Procurement evaluation has shifted toward the Most Advantageous Tender (MAT) framework, necessitating clear, measurable, and reportable commitments to Social Value. Organizations must balance these procurement imperatives with rigorous testing regimes, such as parallel running, to ensure service continuity.",
  "items": [
   {
    "id": "DI-001",
-   "kind": "pattern",
-   "statement": "Embed immutable, automated audit logging for all user access and field-level edits to ensure forensic traceability.",
+   "kind": "pitfall",
+   "statement": "Implementing systems without built-in, granular audit trails and segregation of duties prevents effective monitoring and exposes councils to fraud and financial errors.",
    "excerpt_ids": [
-    "PX-0007",
-    "PX-0009"
+    "PX-0010"
    ]
   },
   {
    "id": "DI-002",
-   "kind": "standard",
-   "statement": "Adhere to the Procurement Act 2023 and PPN 026 guidelines for evaluating Most Advantageous Tender (MAT) and delivering measurable social value.",
+   "kind": "pitfall",
+   "statement": "Executing data migration without parallel testing or 'dummy runs' causes significant transaction posting errors and loss of reporting continuity.",
    "excerpt_ids": [
-    "PX-0001",
-    "PX-0006"
+    "PX-0013"
    ]
   },
   {
    "id": "DI-003",
    "kind": "standard",
-   "statement": "Comply with WCAG 2.2 AA standards for all caseworker and resident interfaces to ensure digital accessibility and meet equality duties.",
+   "statement": "Social Value delivery must be measured using a combination of deliverable targets and reported numeric values to ensure KPI accountability throughout the contract lifecycle.",
    "excerpt_ids": [
-    "PX-0006",
-    "PX-0013"
-   ]
-  },
-  {
-   "id": "DI-004",
-   "kind": "pitfall",
-   "statement": "Aggressive, unverified data migration that leads to corrupted records, transaction errors, and the need for massive manual remediation.",
-   "excerpt_ids": [
-    "PX-0007",
-    "PX-0008"
+    "PX-0032"
    ]
   }
  ],
  "needs": [
   {
    "id": "DN-001",
-   "need": "Transparent Total Cost of Ownership (TCO) models covering licensing, integration, training, and upgrades over 5–10 years.",
+   "need": "Automated, non-alterable audit logs and segregation of duties at the point of financial entry.",
    "excerpt_ids": [
-    "PX-0006",
-    "PX-0012"
+    "PX-0010"
    ]
   },
   {
    "id": "DN-002",
-   "need": "Concrete, time-bound social value commitments that are demonstrably additional to the core service contract.",
+   "need": "Parallel system testing protocols during data migration to validate transactional integrity.",
    "excerpt_ids": [
-    "PX-0014",
-    "PX-0016"
+    "PX-0013"
    ]
   },
   {
    "id": "DN-003",
-   "need": "Comprehensive business change and governance strategy to accompany technical implementation and prevent project management failure.",
+   "need": "Standardized performance methodologies and reporting thresholds for Social Value KPIs.",
    "excerpt_ids": [
-    "PX-0008",
-    "PX-0014"
+    "PX-0034",
+    "PX-0036"
    ]
   }
  ],
  "open_questions": [
-  "What are the specific NCSC security or Crown Commercial Service data residency requirements for local authority cloud case management?",
-  "How do authorities balance the rigidity of vanilla software with unique, statutory local government case handling requirements?",
-  "What are the most effective ways to validate additionality in social value proposals during the bid evaluation phase?",
-  "How can authorities better manage legacy browser or infrastructure dependencies when rolling out modern, web-native case management systems?",
-  "What metrics best define system resilience in public procurement to prevent the failures seen in recent ERP implementations?"
+  "What specific technical standards define compliant API integration between case-management engines and legacy financial ledgers?",
+  "How should bidders translate the statutory 'have regard to maximising public benefit' duty into specific, actionable contract commitments?",
+  "What are the recommended procedures for executing 'ex-ante' evaluations of algorithmic fairness prior to deploying automated decisioning systems?",
+  "How can councils best balance the necessity of 'out-of-the-box' software adoption with unique, statutory workflow requirements?",
+  "What are the industry-standard RPO and RTO thresholds for cloud-native, SaaS-based local government case-management platforms?"
  ],
  "evidence_class": "EXTERNAL_RESEARCH"
 }

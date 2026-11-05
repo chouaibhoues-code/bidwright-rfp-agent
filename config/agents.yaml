@@ -25,7 +25,7 @@ discover:
   kind: agent
   input: DiscoveryTask
   output: DiscoveryExtract
-  prompt: discover@0.3.0
+  prompt: discover@0.4.0
   model_role: reason
   tools: [ask_research, start_research]
   limits: {max_turns: 4, max_tool_calls: 8, stop_on_no_progress: true}

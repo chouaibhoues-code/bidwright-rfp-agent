@@ -300,7 +300,7 @@ def _hand_run(folder: Path) -> Path:
     items: list[tuple[DomainKind, str, str]] = [
         ("pattern", "Label every field.", "PX-0001"),
         ("pitfall", "Tanks overflow.", "PX-0002"),
-        ("pattern", "Buyers ask for labels.", "PX-0004"),
+        ("pattern", "Buyers ask that the service label fields.", "PX-0004"),
     ]
     brief = DomainBrief(
         mode="live",
@@ -364,7 +364,7 @@ def test_a_pack_leaves_out_a_flagged_source_with_the_answers_citing_it(tmp_path:
     ]
     assert [i.statement for i in pack.domain_brief.items] == [
         "Label every field.",
-        "Buyers ask for labels.",
+        "Buyers ask that the service label fields.",
     ]
     for path in built.path.iterdir():
         assert not restricted.flags(path.read_text(encoding="utf-8")), path.name
@@ -387,7 +387,9 @@ def test_leave_out_keeps_a_published_tender_out_of_the_pack(tmp_path: Path) -> N
         "How are forms labelled?",
         "What do forms and tanks share?",
     ]
-    assert "Buyers ask for labels." not in [i.statement for i in pack.domain_brief.items]
+    assert "Buyers ask that the service label fields." not in [
+        i.statement for i in pack.domain_brief.items
+    ]
     for path in built.path.iterdir():
         content = path.read_text(encoding="utf-8")
         assert "bids.example.gov" not in content and "shall label" not in content, path.name

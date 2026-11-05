@@ -22,7 +22,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `approach` | 0.2.0 | reason | `sha256:d95f06596240` |
 | `brief` | 0.2.0 | extract | `sha256:58dc56bb634a` |
 | `consolidate` | 0.1.0 | reason | `sha256:0e4706513b48` |
-| `discover` | 0.3.0 | reason | `sha256:8de3cab55670` |
+| `discover` | 0.4.0 | reason | `sha256:be5de32c2002` |
 | `draft` | 0.2.0 | reason | `sha256:e565f6bb6f35` |
 | `extract` | 0.4.0 | extract | `sha256:11cde3336a38` |
 | `extract_oneshot` | 0.4.0 | extract | `sha256:cda10111ce58` |
