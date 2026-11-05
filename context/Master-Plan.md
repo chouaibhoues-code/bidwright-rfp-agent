@@ -13,7 +13,7 @@ tags: [bidwright, project-management, plan, roadmap]
 > [!summary] Status on 2026-11-05
 > - Released: `v0.0`, Iteration 0a, the walking skeleton; `v0.0.1`, Iteration 0b, documents and review; `v0.1`, Iteration 1, on 2026-11-04, with the matcher's correction after the tag (ADR-030).
 > - Released: `v0.2`, Iteration 2, on 2026-11-05, approved by the owner with D-08 and D-09 decided; its close-out notes are in section 9.4.
-> - Next: Iteration 3. Its design doc, `docs/designs/iteration-3.md`, is written for its Stage 9 review (D-10); D-03, the Cerebras key, is due at the build's start.
+> - Next: Iteration 3. Its design doc, `docs/designs/iteration-3.md`, is written for its Stage 9 review (D-10); the Cerebras key is in place (D-03).
 > - At each tag the owner chooses to continue, release or stop (section 2.8).
 
 This file owns the scope, the work-package register, the assignment trace, the gates, the risks, the change log, the close-out notes and the full vision with its unbuilt scope. Other facts have one owner each: the current architecture is in `docs/architecture.md`, decisions in `DECISIONS.md`, assumptions in `ASSUMPTIONS.md`, hours in `TIMELOG.md`, research in [[Research-Register]], open decisions in [[Decision-Form]], and deferred work in [[Project-Backlog]].

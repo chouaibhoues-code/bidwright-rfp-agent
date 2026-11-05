@@ -15,12 +15,6 @@ tags: [bidwright, decisions, governance]
 
 ## Open
 
-### D-03: When to create the Cerebras key, due at the Iteration 3 entry
-
-**Context.** The Cerebras trial's credits expire 30 days after they are granted, and the key needs a payment method.
-
-**Recommendation.** Create the key at the start of Iteration 3, so the trial covers the iteration that first uses it.
-
 ### D-06: Container-only host names in the egress register, due before the first run on client documents
 
 **Context.** The egress register (ADR-026) decides whether a destination is local from its host name. `localhost` and `127.0.0.1` mean this machine everywhere. `ollama`, `phoenix` and `docling` exist only on the Compose network, and `host.docker.internal` means the machine running Docker only from inside a container. Outside Docker the operating system resolves these names through the hosts file and DNS, so on an office or client network a search suffix can turn `docling` into another computer. Bidwright reads `.env` outside Docker too: a Compose address copied there, such as `DOCLING_URL=http://docling:5001`, would let a client run send whole documents, or prompts to Ollama, to that computer while the register calls it local. Phoenix receives only hashes and counts.
@@ -34,10 +28,10 @@ tags: [bidwright, decisions, governance]
 
 ### D-10: The Iteration 3 design doc's decisions, due at its Stage 9 review
 
-**Context.** [`docs/designs/iteration-3.md`](../docs/designs/iteration-3.md) closes the four open decisions of Iteration 3 and proposes the solution path, `techcheck`'s recorded answers, `assess`'s contract, the gate, `reflect`, the ablation's machinery and the examples' return. It departs from the Master-Plan twice and adds three process changes.
+**Context.** [`docs/designs/iteration-3.md`](../docs/designs/iteration-3.md) closes the four open decisions of Iteration 3 and proposes the solution path, `techcheck`'s recorded answers, `assess`'s contract, the gate, `reflect`, the ablation's machinery and the examples' return. It departs from the Master-Plan twice and adds two process changes.
 
 **Options.**
-- **A.** Accept ADR-039 to ADR-049, the two departures (the RK rungs read a frozen full run; `decide` asks only the run's own research) and CH-92 to CH-94 (gold v4, the owner's spot-check of 10 assessments, the Cerebras key at the build's start), as the review leaves them.
+- **A.** Accept ADR-039 to ADR-049, the two departures (the RK rungs read a frozen full run; `decide` asks only the run's own research) and CH-92 and CH-93 (gold v4, and the owner's spot-check of 10 assessments), as the review leaves them.
 - **B.** Accept them, and stop the iteration after Phase A, with a working solution path and no ablation, moving the measurements to a later iteration; this shortens the iteration but leaves the Iteration 3 gate's ablation and statistical checks unmet.
 - **C.** Change or decline named parts.
 
@@ -61,7 +55,7 @@ Not decisions, but work only the owner can do.
 | Iteration 0b | The first Goldfish architecture review is triaged (2026-11-03, ADR-022 to ADR-025). Start the drift report at the tag, `/egm:egm-drift-report docs`, limited to `architecture.md`, `agents.md` and `security.md`, and triage it with Claude |
 | Iteration 1 | Review gold v2, about 1 hour; write the held-out list, about 1 hour; confirm the 555-01XX fiction block before step 4; read the paid-tier limits in AI Studio (V-03) before step 9; confirm CrackedPDFs access and license (V-02) before step 19; the NotebookLM login for the step-1 research launches; decide D-01 at the exit. The Stage 9 review was triaged on 2026-11-03; gold v2 was reviewed and hashed, V-02 confirmed, D-01 decided, the held-out list written and its gold hashed, and the paid limits read (V-03) on 2026-11-04. |
 | Iteration 2 | The NotebookLM login for `live` research (done 2026-11-05); triage Stage 9 (done); decide D-08 and D-09 (done 2026-11-05); run the drift report at the tag (done, triaged and applied 2026-11-05); approve the tag `v0.2` (done 2026-11-05, with the iteration's hours still to enter in `TIMELOG.md`) |
-| Iteration 3 | Triage Stage 9 and decide D-10; the Cerebras key at the build's start (D-03); review and hash gold v4; approve one manifest at the gate and spot-check 10 assessments; triage the second architecture review |
+| Iteration 3 | Triage Stage 9 and decide D-10; the Cerebras key (done 2026-11-05, D-03); review and hash gold v4; approve one manifest at the gate and spot-check 10 assessments; triage the second architecture review |
 | Iteration 4 | Review the two skills and one drafted section; triage Stage 9 |
 | Iteration 5 | 40 judge-calibration labels and 10 accept or reject decisions, about 45 minutes |
 | Release | Write a one-page brief; read the code against the defense notes; rehearse the live changes; record the demo; choose the tag to release |
@@ -85,3 +79,4 @@ Not decisions, but work only the owner can do.
 | The matcher's table-row defect, found in the release step's held-out scoring | Option B: correct the matcher, score every run of the `v0.1` era again with the old figures beside the new, and keep the shipped configuration, which the held-out RFP measured; the examples, which the corrected S-10 favors, return after the delivery. Declined: reconfiguring now (A), and disclosure without a fix (C). | ADR-030, CH-87 | 2026-11-04 |
 | D-08: published tenders in live research | Option A: the research provider leaves out a cited source whose title or URL reads like a published solicitation before any excerpt is made, and withholds the text of an answer that cited one. Declined: ending the run `DEGRADED` as well (B), and no filter (C). | ADR-038, CH-91 | 2026-11-05 |
 | D-09: authority tiers for audit and parliamentary hosts | Option C: the tiers stay as the design set them, so `nao.org.uk`, `parliament.uk`, `audit.scot` and `audit.wales` stay at tier 4, and the hero pack stays at version 2. Declined: tier 1 with a rebuilt pack (A), and tier 2 (B). | No change; ADR-033 and `config/research.yaml` stand | 2026-11-05 |
+| D-03: when to create the Cerebras key | The owner created it before the Iteration 3 design's Stage 9 review; its trial credits run 30 days from their grant | `.env`; the Iteration 3 design, step 1 | 2026-11-05 |
