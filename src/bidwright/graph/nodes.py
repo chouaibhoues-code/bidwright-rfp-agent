@@ -89,6 +89,7 @@ STOPWORDS = frozenset(
 
 
 MALFORMED_TWICE = "malformed output twice"
+MALFORMED_AFTER_REPAIR = "malformed output after repair"  # a whole pack rejected
 
 
 @dataclass
@@ -241,9 +242,7 @@ def extract_batch(
             input_hash=sha256_of([rendered.input_hash, repair]),
         )
         if not isinstance(second.parsed, ExtractResult):
-            outcome.rejected.append(
-                _rejection(pack.call_id, ids, "", "malformed output after repair")
-            )
+            outcome.rejected.append(_rejection(pack.call_id, ids, "", MALFORMED_AFTER_REPAIR))
             return outcome
         settle(outcome, second.parsed.items, ctx.passages, ids, final=True, view=ctx.view)
         _account(outcome, second.parsed.no_obligation_src_ids, ids)

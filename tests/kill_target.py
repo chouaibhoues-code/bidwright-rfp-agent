@@ -5,8 +5,8 @@
 It runs the development PDF live, with Docling replayed and one `Send` worker at a time, under
 `ScriptedRun`. When the backend reaches its scripted blocking call, it writes `<marker>` and
 waits for good, and the test kills the process there, as an operator's kill would. `<state>`
-holds the quota and cache folders, which the fixtures of `tests/conftest.py` do not reach in a
-subprocess.
+holds the quota, breaker and cache folders, which the fixtures of `tests/conftest.py` do not
+reach in a subprocess.
 """
 
 import json
@@ -14,6 +14,7 @@ import sys
 import threading
 from pathlib import Path
 
+import bidwright.harness.recovery
 import bidwright.llm.cache
 import bidwright.llm.limits
 from bidwright.config import Config, load_config
@@ -100,6 +101,7 @@ def _omit_one(response: Response) -> Response:
 def main(argv: list[str]) -> int:
     outputs, state, script, marker = Path(argv[0]), Path(argv[1]), argv[2], Path(argv[3])
     bidwright.llm.limits.QUOTA_DIR = state / ".quota"
+    bidwright.harness.recovery.BREAKER_DIR = state / ".quota" / "breaker"
     bidwright.llm.cache.CACHE_DIR = state / ".cache"
     from bidwright.graph.build import execute
 

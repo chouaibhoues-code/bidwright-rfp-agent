@@ -55,6 +55,7 @@ from bidwright.graph.consolidate import (
     write_consolidation,
 )
 from bidwright.graph.nodes import (
+    MALFORMED_AFTER_REPAIR,
     BatchOutcome,
     RunContext,
     approach,
@@ -70,9 +71,10 @@ from bidwright.graph.state import BatchState, ClusterState, RunState
 from bidwright.graph.triage import triage
 from bidwright.guard import GuardResult, PolicyBlocked, run_guard
 from bidwright.harness.budget import BudgetExceeded, RunBudget
-from bidwright.harness.context import ContextManager, prompt_tokens
+from bidwright.harness.context import CONTEXT_DIR, ContextManager, prompt_tokens
 from bidwright.harness.egress import check_run
 from bidwright.harness.gateway import ToolGateway
+from bidwright.harness.recovery import DEAD_LETTERS, CircuitBreaker, DeadLetters
 from bidwright.harness.supervisor import STOP_REASON, RunSupervisor, environment, read_manifest
 from bidwright.harness.view import TextView
 from bidwright.ingest import doc_id_for, ingest_package
@@ -81,7 +83,7 @@ from bidwright.llm.cache import response_cache, run_journal
 from bidwright.llm.client import LLMClient, Mode
 from bidwright.llm.limits import Limiter, tier_for
 from bidwright.llm.replay import CassetteStore
-from bidwright.llm.types import Backend, LLMError, QuotaExhausted
+from bidwright.llm.types import Backend, CircuitOpen, LLMError, QuotaExhausted
 from bidwright.obs.ledger import LedgerFile, models_used, totals_of
 from bidwright.obs.tracing import Tracing, maybe_span, set_attribute, trace_endpoint
 from bidwright.parsers.docling_client import CASSETTES as DOCLING_CASSETTES
@@ -166,6 +168,7 @@ class Runtime:
     guard: GuardResult | None = None
     paths: list[Path] | None = None  # the input documents, in name order
     data_class: str | None = None  # the run entry's; None in replay, where each file is classed
+    dead_letters: DeadLetters | None = None  # the run's dead_letter.jsonl (Iteration 2)
 
 
 @dataclass(frozen=True)
@@ -392,6 +395,16 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         outcome = extract_batch(
             ctx, pack, rt.extract_prompt, second_pass=rt.second_pass, round=state["round"]
         )
+        if rt.dead_letters is not None and any(
+            r["reason"] == MALFORMED_AFTER_REPAIR for r in outcome.rejected
+        ):
+            rt.dead_letters.add(
+                "extract",
+                pack.call_id,
+                MALFORMED_AFTER_REPAIR,
+                attempts=2,
+                manifest=f"{CONTEXT_DIR}/extract-{pack.call_id}.json",
+            )
         return {"outcomes": [_outcome_dict(outcome)]}
 
     # --- verify and coverage --------------------------------------------------------------------
@@ -540,9 +553,10 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             list(ctx.passages.values()),
             requirement_sources={r.id: r.src_ids for r in requirements},
         )
+        task = ClusterTask.model_validate(state["task"])
         draft = consolidate_cluster(
             ctx,
-            ClusterTask.model_validate(state["task"]),
+            task,
             Cluster(**state["cluster"]),
             manager,
             by_id,
@@ -550,6 +564,14 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             [LintFinding.model_validate(f) for f in state["lint"]],
             config,
         )
+        if draft.fell_back and rt.dead_letters is not None:
+            rt.dead_letters.add(
+                "consolidate",
+                task.cluster_id,
+                "malformed output twice; a code group stands in",
+                attempts=2,
+                manifest=f"{CONTEXT_DIR}/consolidate-{task.cluster_id}.json",
+            )
         return {"groups": [_draft_dict(draft)]}
 
     def consolidate_join(state: RunState) -> dict[str, Any]:
@@ -797,11 +819,7 @@ def _degraded(state: dict[str, Any]) -> str | None:
         if left:
             reasons.append(left)
     else:
-        failed = [
-            r
-            for r in state.get("rejected", [])
-            if r.get("reason") == "malformed output after repair"
-        ]
+        failed = [r for r in state.get("rejected", []) if r.get("reason") == MALFORMED_AFTER_REPAIR]
         if failed:
             reasons.append(f"{len(failed)} extraction batch(es) failed")
     if state.get("triage_fallback"):
@@ -1032,6 +1050,18 @@ def execute(
                 supervisor.events.record("recovery", None, detail)
         else:
             ledger_file.create()
+        events = supervisor.events
+        breaker = CircuitBreaker(
+            config.limits.breaker, on_change=lambda detail: events.record("recovery", None, detail)
+        )
+        if not resume:
+            (run_dir / DEAD_LETTERS).unlink(missing_ok=True)
+        dead_letters = DeadLetters(
+            run_dir,
+            on_add=lambda letter: events.record(
+                "recovery", letter.node, f"{letter.id}: {letter.call_id}, {letter.reason}"
+            ),
+        )
         client = LLMClient(
             config,
             profile,
@@ -1043,6 +1073,7 @@ def execute(
             cache=response_cache() if cache and mode == "live" else None,
             journal=run_journal(run_dir) if mode == "live" else None,
             journal_read=resume,
+            breaker=breaker,
             fallback=fallback,
         )
         tracing = Tracing(
@@ -1076,6 +1107,7 @@ def execute(
             docling_mode=docling_mode,
             docling_cassettes=docling_cassettes or DOCLING_CASSETTES,
             data_class=preflight.data_class if mode != "replay" else None,
+            dead_letters=dead_letters,
         )
         # Until the graph returns, the run has not finished: any exit this function does not
         # name below is recorded as a fault, never as COMPLETED.
@@ -1109,6 +1141,8 @@ def execute(
             status, reason = "BUDGET_EXCEEDED", str(exc)
         except QuotaExhausted as exc:
             status, reason = "QUOTA_PAUSED", f"{exc}; rerun after the quota resets"
+        except CircuitOpen as exc:
+            status, reason = "QUOTA_PAUSED", str(exc)
         except (LLMError, RenderBlocked, DoclingError) as exc:
             status, reason = "UNRECOVERABLE_FAULT", f"{type(exc).__name__}: {exc}"
         except KeyboardInterrupt:

@@ -24,6 +24,11 @@ every answer that parses is saved to it, a cache hit included, whatever the cach
 With `journal_read`, which a resume turns on, a call is looked up in the journal under every
 model of its role, primary first, before any attempt, so a call the fallback answered is not
 paid again; a hit is reported as replayed, at no cost and with no budget attempt.
+
+An optional circuit breaker (Iteration 2, `harness/recovery.py`) is checked before each
+attempt, before the budget's, under the model's provider, tier and name. A transient failure
+counts against it and an answer resets it. An open breaker raises `CircuitOpen`, with the retry
+reason `circuit`, which moves the call to its fallback model as a spent quota does.
 """
 
 import os
@@ -37,12 +42,14 @@ from typing import Literal
 from pydantic import BaseModel, ValidationError
 
 from bidwright.config import Config, RoleConfig, TokenPrices
-from bidwright.llm.limits import Limiter
+from bidwright.llm.limits import Limiter, model_key, tier_for
 from bidwright.llm.replay import CassetteStore, cache_key
 from bidwright.llm.schema import provider_schema, sha256_of
 from bidwright.llm.types import (
     Backend,
+    Breaker,
     CassetteMissing,
+    CircuitOpen,
     LLMError,
     Message,
     ProviderError,
@@ -113,6 +120,7 @@ class LLMClient:
         cache: CassetteStore | None = None,
         journal: CassetteStore | None = None,
         journal_read: bool = False,
+        breaker: Breaker | None = None,
         fallback: bool = True,
         sleep: Callable[[float], None] = time.sleep,
         rng: Callable[[], float] = random.random,
@@ -133,6 +141,7 @@ class LLMClient:
         self.cache = cache
         self.journal = journal
         self.journal_read = journal_read
+        self.breaker = breaker
         self.fallback = fallback
         self._sleep = sleep
         self._rng = rng
@@ -206,12 +215,14 @@ class LLMClient:
                 response, latency_ms, replayed, backend = self._obtain(
                     role_config, request, key, attempts
                 )
-            except (UnrecoverableFault, CassetteMissing, QuotaExhausted) as exc:
+            except (UnrecoverableFault, CassetteMissing, QuotaExhausted, CircuitOpen) as exc:
                 # A replayed run that fell back has its cassette under the fallback model, and
                 # a spent daily quota moves straight to the fallback, with no backoff; its
-                # refused attempt still counts.
+                # refused attempt still counts. An open breaker moves it the same way.
                 if isinstance(exc, QuotaExhausted):
                     attempts.reasons.append("quota")
+                elif isinstance(exc, CircuitOpen):
+                    attempts.reasons.append("circuit")
                 last_error = exc
                 continue
             # Every failed attempt left its reason, including the ones before an answer the
@@ -234,7 +245,7 @@ class LLMClient:
                 self._keep(key, role_config, request, response, from_cache=replayed)
             self._report(role, node, agent, completion, backend, prompt_hash, input_hash, repeat)
             return completion
-        if isinstance(last_error, CassetteMissing | QuotaExhausted):
+        if isinstance(last_error, CassetteMissing | QuotaExhausted | CircuitOpen):
             raise last_error
         raise UnrecoverableFault(f"{role} failed on every model: {last_error}")
 
@@ -289,8 +300,11 @@ class LLMClient:
             raise ProviderError(f"no backend configured for provider {role_config.provider!r}")
         call = self.config.limits.call
         tokens = _estimated_tokens(request, self.config.limits.context.chars_per_token)
+        circuit = model_key(role_config.provider, tier_for(self.profile), request.model)
         retries = 0
         while True:
+            if self.breaker is not None:
+                self.breaker.check(circuit, request.model)
             if self.before_attempt is not None:
                 self.before_attempt()
             attempts.made += 1
@@ -300,6 +314,8 @@ class LLMClient:
             try:
                 response = backend.call(request)
             except TransientError as exc:
+                if self.breaker is not None:
+                    self.breaker.failure(circuit)
                 attempts.reasons.append(exc.reason)
                 if retries >= call.retries:
                     raise UnrecoverableFault(f"{request.model}: {exc}") from exc
@@ -312,6 +328,8 @@ class LLMClient:
                 self._sleep(wait)
                 continue
             latency_ms = int((self._clock() - started) * 1000)
+            if self.breaker is not None:
+                self.breaker.success(circuit)
             break
         if self.mode == "record":
             self._store().save(key, _meta(role_config, request), response)

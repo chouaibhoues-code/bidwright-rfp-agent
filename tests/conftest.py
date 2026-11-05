@@ -1,11 +1,13 @@
-"""Test-wide isolation. The limiter's daily counts and the response cache live under
-`HOME / "outputs"` on a real machine, whatever a run's `--outputs` says, so every test gets
-its own empty folders for them: a test run never spends, or reads, the developer's counts."""
+"""Test-wide isolation. The limiter's daily counts, the circuit breaker's state and the
+response cache live under `HOME / "outputs"` on a real machine, whatever a run's `--outputs`
+says, so every test gets its own empty folders for them: a test run never spends, or reads, the
+developer's counts."""
 
 from pathlib import Path
 
 import pytest
 
+import bidwright.harness.recovery
 import bidwright.llm.cache
 import bidwright.llm.limits
 
@@ -17,6 +19,7 @@ def _isolated_quota_and_cache(
     root = tmp_path_factory.mktemp("home-outputs")
     quota, cache = root / ".quota", root / ".cache"
     monkeypatch.setattr(bidwright.llm.limits, "QUOTA_DIR", quota)
+    monkeypatch.setattr(bidwright.harness.recovery, "BREAKER_DIR", quota / "breaker")
     monkeypatch.setattr(bidwright.llm.cache, "CACHE_DIR", cache)
     return quota, cache
 

@@ -44,6 +44,11 @@ def tier_for(profile: str) -> str:
     return "paid" if profile == "paid" else "free"
 
 
+def model_key(provider: str, tier: str, model: str) -> str:
+    """A model on a provider and tier, as its quota counts and its circuit breaker name it."""
+    return f"{provider}-{tier}-{model}"
+
+
 def daily_allowance(quota: ModelQuota) -> int:
     """The requests a day may spend: the daily limit less the reserve kept free."""
     return math.floor(quota.rpd * (1 - quota.reserve) + _EXPIRED)
@@ -98,7 +103,7 @@ class Limiter:
     def path(self, provider: str, model: str, day: date | None = None) -> Path:
         """The count file of one model on this tier, for `day` or today."""
         day = day or self.quota_day(provider)
-        name = f"{provider}-{self.tier}-{model}-{day.isoformat()}.json"
+        name = f"{model_key(provider, self.tier, model)}-{day.isoformat()}.json"
         return self.root / name.replace("/", "_").replace(":", "_")
 
     def count(self, provider: str, model: str) -> int:
@@ -154,4 +159,4 @@ def _write(path: Path, body: dict[str, object]) -> None:
     write_atomic(path, json.dumps(body) + "\n")
 
 
-__all__ = ["QUOTA_DIR", "Limiter", "daily_allowance", "tier_for"]
+__all__ = ["QUOTA_DIR", "Limiter", "daily_allowance", "model_key", "tier_for"]

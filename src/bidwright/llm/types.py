@@ -1,6 +1,7 @@
 """Provider-neutral request, response and error types for the LLM client."""
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, Literal, Protocol
 
 Role = Literal["system", "user", "assistant", "tool"]
@@ -123,3 +124,26 @@ class CassetteMissing(LLMError):
 
 class UnrecoverableFault(LLMError):
     """Retries and the fallback are exhausted."""
+
+
+class CircuitOpen(LLMError):
+    """A circuit breaker is open on the model (Iteration 2): no attempt is made until it
+    closes. Like a spent quota, it moves the call to the fallback model; with none, the run
+    pauses in `QUOTA_PAUSED` until `until`."""
+
+    def __init__(self, name: str, until: datetime) -> None:
+        super().__init__(f"circuit open on {name} until {until:%Y-%m-%dT%H:%M:%SZ}")
+        self.name = name
+        self.until = until
+
+
+class Breaker(Protocol):
+    """What the client needs of a circuit breaker (`harness/recovery.py`), per key. `check`
+    raises `CircuitOpen` while the breaker is open; `failure` counts a transient failure;
+    `success` resets the count."""
+
+    def check(self, key: str, name: str) -> None: ...
+
+    def failure(self, key: str) -> None: ...
+
+    def success(self, key: str) -> None: ...
