@@ -30,8 +30,11 @@ options:
 ```text
 usage: bidwright run [-h] [--profile {free,local,paid}] [--baseline {b0,ex0}]
                      [--allow-non-corpus CONSENT] [--cache] [--second-pass | --no-second-pass]
-                     [--until {verify,coverage,consolidate,brief,render}]
-                     [--research {off,pack,live}] [--outputs OUTPUTS]
+                     [--until {verify,coverage,consolidate,brief,capability_map,solution_gate,render}]
+                     [--research {off,pack,live}] [--auto-select] [--bid-policy FILE]
+                     [--solution {oneshot,fixed,decide,assess,manifest}]
+                     [--risk-mode {oneshot,fixed,agent}] [--reflect | --no-reflect]
+                     [--outputs OUTPUTS]
                      file
 
 positional arguments:
@@ -45,10 +48,20 @@ options:
   --cache               answer repeated calls from the cache
   --second-pass, --no-second-pass
                         re-read OBLIGATION zones (S-13); config/limits.yaml sets the default
-  --until {verify,coverage,consolidate,brief,render}
+  --until {verify,coverage,consolidate,brief,capability_map,solution_gate,render}
                         the last node to run
   --research {off,pack,live}
                         config/research.yaml sets the default
+  --auto-select         approve the top-ranked option at the gate, for evaluation; never a blocked
+                        gate
+  --bid-policy FILE     a bid policy, for the bid signal
+  --solution {oneshot,fixed,decide,assess,manifest}
+                        config/limits.yaml's switches set the default
+  --risk-mode {oneshot,fixed,agent}
+                        config/limits.yaml's switches set the default
+  --reflect, --no-reflect
+                        offer the gated reflect tool; config/limits.yaml's switches set the
+                        default
   --outputs OUTPUTS
 ```
 
@@ -66,8 +79,11 @@ options:
 
 ```text
 usage: bidwright record [-h] [--name NAME] [--profile {free,local,paid}]
-                        [--until {verify,coverage,consolidate,brief,render}]
-                        [--research {off,pack,live}] [--fill] [--outputs OUTPUTS]
+                        [--until {verify,coverage,consolidate,brief,capability_map,solution_gate,render}]
+                        [--research {off,pack,live}] [--fill] [--auto-select] [--bid-policy FILE]
+                        [--solution {oneshot,fixed,decide,assess,manifest}]
+                        [--risk-mode {oneshot,fixed,agent}] [--reflect | --no-reflect]
+                        [--outputs OUTPUTS]
                         file
 
 positional arguments:
@@ -77,12 +93,22 @@ options:
   -h, --help            show this help message and exit
   --name NAME
   --profile {free,local,paid}
-  --until {verify,coverage,consolidate,brief,render}
+  --until {verify,coverage,consolidate,brief,capability_map,solution_gate,render}
                         the last node to run
   --research {off,pack,live}
                         config/research.yaml sets the default
   --fill                keep the recording, record only the calls it lacks, and drop the unused
                         ones
+  --auto-select         approve the top-ranked option at the gate, for evaluation; never a blocked
+                        gate
+  --bid-policy FILE     a bid policy, for the bid signal
+  --solution {oneshot,fixed,decide,assess,manifest}
+                        config/limits.yaml's switches set the default
+  --risk-mode {oneshot,fixed,agent}
+                        config/limits.yaml's switches set the default
+  --reflect, --no-reflect
+                        offer the gated reflect tool; config/limits.yaml's switches set the
+                        default
   --outputs OUTPUTS
 ```
 

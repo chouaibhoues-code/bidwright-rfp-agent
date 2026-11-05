@@ -3,10 +3,16 @@
     bidwright run <file or folder> [--profile free|local|paid] [--baseline ex0|b0]
                   [--allow-non-corpus=i-accept-free-tier-terms] [--cache]
                   [--second-pass | --no-second-pass] [--until NODE]
-                  [--research off|pack|live] [--outputs DIR]
+                  [--research off|pack|live] [--auto-select] [--bid-policy FILE]
+                  [--solution PATH] [--risk-mode MODE] [--reflect | --no-reflect]
+                  [--outputs DIR]
+                         without --auto-select, a run that reaches the solution gate waits
+                         there in WAITING_HUMAN until bidwright approve decides it
     bidwright demo       replays a recorded development run; needs no keys
     bidwright record <file or folder> [--name demo] [--profile free|local|paid] [--until NODE]
-                         [--research off|pack|live] [--fill]
+                         [--research off|pack|live] [--fill] [--auto-select]
+                         [--bid-policy FILE] [--solution PATH] [--risk-mode MODE]
+                         [--reflect | --no-reflect]
                          runs live and writes LLM and Docling cassettes, on the host; --fill
                          keeps the recording's cassettes, records only the calls it lacks,
                          and removes the ones the run did not use
@@ -62,8 +68,18 @@ CASSETTES = HOME / "tests" / "cassettes"
 RECORDING = "recording.json"
 DEMO_RECORD = "inputs/dev/dev_rfp.pdf"
 PROFILES = ["free", "local", "paid"]
-UNTIL = ["verify", "coverage", "consolidate", "brief", "render"]
+UNTIL = ["verify", "coverage", "consolidate", "brief", "capability_map", "solution_gate", "render"]
 RESEARCH = ["off", "pack", "live"]  # config/research.yaml sets the default
+# The solution path's switches (section 4.11); config/limits.yaml's `switches` sets the default.
+SOLUTIONS = ["oneshot", "fixed", "decide", "assess", "manifest"]
+RISK_MODES = ["oneshot", "fixed", "agent"]
+# The recorded settings that change which calls a run makes without changing a cassette key,
+# and the solution paths that read each.
+SOLUTION_CAPS = {
+    "need_cap": ("fixed", "decide", "assess", "manifest"),
+    "claims_per_need": ("fixed", "decide", "assess", "manifest"),
+    "tech_claim_cap": ("manifest",),
+}
 
 
 def load_env(path: Path) -> None:
@@ -77,28 +93,57 @@ def load_env(path: Path) -> None:
 
 
 def _report(result: "RunResult") -> int:
+    """Print a run's outcome. A run waiting at its gate did what was asked, so it exits 0 and
+    names the review file and the command that decides it."""
     print(f"{result.status}: {result.run_dir}")
     if result.reason:
         print(f"  {result.reason}")
+    review = result.run_dir / "review" / "solution_gate.md"
+    if result.status == "WAITING_HUMAN" and review.exists():
+        print(f"  review: {review}")
+        print(f"  decide it with: bidwright approve {result.run_id} --role ROLE")
     summary = result.run_dir / "solution_summary.md"
     if summary.exists():
         print(f"  summary: {summary}")
-    return 0 if result.status in ("COMPLETED", "DEGRADED") else 1
+    return 0 if result.status in ("COMPLETED", "DEGRADED", "WAITING_HUMAN") else 1
 
 
-def stale_recording(
-    recording: Mapping[str, object], batch_size: int, second_pass: bool
-) -> str | None:
-    """Why a recording cannot replay under the current settings, or None. The pack size and
-    the second pass change which calls a run makes without changing any cassette key, so a
-    replay under other values would miss its cassettes."""
-    for key, now in (("batch_size", batch_size), ("second_pass", second_pass)):
+def stale_recording(recording: Mapping[str, object], limits: Any) -> str | None:
+    """Why a recording cannot replay under `config/limits.yaml`'s current settings, or None.
+    The pack size, the second pass and the solution path's caps change which calls a run makes
+    without changing any cassette key, so a replay under other values would miss its cassettes.
+    A cap is checked only when the recording's solution path reads it; a recording made before
+    Iteration 3 ran no solution path, `oneshot`."""
+    checks: list[tuple[str, object]] = [
+        ("batch_size", limits.batch_size),
+        ("second_pass", limits.second_pass),
+    ]
+    solution = recording.get("solution", "oneshot")
+    checks += [
+        (key, getattr(limits.solution, key))
+        for key, paths in SOLUTION_CAPS.items()
+        if solution in paths
+    ]
+    for key, now in checks:
         if recording.get(key) != now:
             return (
                 f"recorded with {key} {recording.get(key)!r}, and config/limits.yaml sets"
                 f" {now!r}; record again"
             )
     return None
+
+
+def _home_relative(path: Path) -> str:
+    """A resolved path as a recording stores it: relative to the repository when inside it."""
+    return path.relative_to(HOME).as_posix() if path.is_relative_to(HOME) else str(path)
+
+
+def _home_path(value: object) -> Path | None:
+    """A path a manifest or recording stored relative to the repository, made absolute."""
+    if value is None:
+        return None
+    path = Path(str(value))
+    return path if path.is_absolute() else HOME / path
 
 
 def _run_folder(name: str) -> Path:
@@ -160,8 +205,9 @@ def _stop(args: argparse.Namespace) -> int:
 
 def resume_arguments(run_args: Mapping[str, Any], run_dir: Path) -> dict[str, Any]:
     """The arguments of `execute` that a manifest's `run_args` recorded, for a resume of the
-    run in `run_dir`. The run's own folder names where it is, whatever `outputs` said."""
-    source = Path(str(run_args["source"]))
+    run in `run_dir`. The run's own folder names where it is, whatever `outputs` said. The
+    gate's mode, the bid policy and the solution switches carry over, so a resumed run takes
+    the route its first part took."""
     keys = (
         "baseline",
         "consent",
@@ -176,14 +222,21 @@ def resume_arguments(run_args: Mapping[str, Any], run_dir: Path) -> dict[str, An
         "fallback",
         "mode",
         "assess_route",
+        "gate",
+        "solution",
+        "risk_mode",
+        "reflect",
     )
-    return {
-        "source": source if source.is_absolute() else HOME / source,
+    arguments = {
+        "source": _home_path(run_args["source"]),
         "outputs": run_dir.parent,
         "run_id": run_dir.name,
         "limits": run_args.get("limits"),
         **{key: run_args[key] for key in keys if key in run_args},
     }
+    if run_args.get("bid_policy"):
+        arguments["bid_policy"] = _home_path(run_args["bid_policy"])
+    return arguments
 
 
 def _resume(args: argparse.Namespace) -> int:
@@ -284,26 +337,36 @@ def approval_from_args(
 
 
 def _approve(args: argparse.Namespace) -> int:
+    """Decide the run's gate, then resume the run from it through `execute`. A rejection ends
+    the run `POLICY_BLOCKED` with "GATE_REJECTED", which is the decision asked for, so it
+    exits 0."""
+    from bidwright.graph.build import execute
     from bidwright.harness.supervisor import read_manifest
+    from bidwright.llm.client import default_backends
 
     run_dir = _run_folder(args.run)
     try:
-        if read_manifest(run_dir).status != "WAITING_HUMAN":
+        manifest = read_manifest(run_dir)
+        if manifest.status != "WAITING_HUMAN":
             raise ApprovalRefused(
                 f"the run {run_dir.name} does not wait at a gate; bidwright approve continues"
                 " only a run in WAITING_HUMAN"
             )
         approval = approval_from_args(args, run_dir)
+        profile = str(manifest.run_args["profile"])
+        result = execute(
+            **resume_arguments(manifest.run_args, run_dir),
+            profile=profile,
+            backends=default_backends(paid=profile == "paid"),
+            resume=True,
+            approval=approval,
+        )
     except Refused as exc:
         print(f"Refused: {exc}", file=sys.stderr)
         return 2
-    # Iteration 3's step 12 resumes the run with this approval, through execute.
-    print(
-        f"Refused: the approval is valid ({approval.decision}), and resuming a run from its"
-        " gate arrives with Iteration 3's step 12",
-        file=sys.stderr,
-    )
-    return 2
+    code = _report(result)
+    rejected = approval.decision == "reject" and result.status == "POLICY_BLOCKED"
+    return 0 if rejected else code
 
 
 def _percent(value: str) -> int:
@@ -418,6 +481,40 @@ def _matrix(args: argparse.Namespace) -> int:
     return 0 if outcome.status == "COMPLETED" else 1
 
 
+def _solution_flags(command: argparse.ArgumentParser) -> None:
+    """The gate and solution flags that `run` and `record` share (sections 4.8 and 4.11)."""
+    command.add_argument(
+        "--auto-select",
+        action="store_true",
+        help="approve the top-ranked option at the gate, for evaluation; never a blocked gate",
+    )
+    command.add_argument(
+        "--bid-policy", type=Path, metavar="FILE", help="a bid policy, for the bid signal"
+    )
+    command.add_argument(
+        "--solution", choices=SOLUTIONS, help="config/limits.yaml's switches set the default"
+    )
+    command.add_argument(
+        "--risk-mode", choices=RISK_MODES, help="config/limits.yaml's switches set the default"
+    )
+    command.add_argument(
+        "--reflect",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="offer the gated reflect tool; config/limits.yaml's switches set the default",
+    )
+
+
+def _solution_arguments(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "gate": "auto" if args.auto_select else "wait",
+        "bid_policy": args.bid_policy,
+        "solution": args.solution,
+        "risk_mode": args.risk_mode,
+        "reflect": args.reflect,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="bidwright", description="Bidwright: RFP to proposal.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -435,6 +532,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     run.add_argument("--until", choices=UNTIL, default="render", help="the last node to run")
     run.add_argument("--research", choices=RESEARCH, help="config/research.yaml sets the default")
+    _solution_flags(run)
     run.add_argument("--outputs", type=Path, default=HOME / "outputs")
     demo = sub.add_parser("demo", help="replay the recorded development run, with no keys")
     demo.add_argument("--outputs", type=Path, default=HOME / "outputs")
@@ -451,6 +549,7 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="keep the recording, record only the calls it lacks, and drop the unused ones",
     )
+    _solution_flags(record)
     record.add_argument("--outputs", type=Path, default=HOME / "outputs")
     stop = sub.add_parser("stop", help="ask a running run to stop when its current step ends")
     stop.add_argument("run", help="a run id under outputs/, or a run folder")
@@ -577,20 +676,12 @@ def main(argv: list[str] | None = None) -> int:
         recording = json.loads((store / RECORDING).read_text(encoding="utf-8"))
         from bidwright.config import load_config
 
-        limits = load_config().limits
-        stale = stale_recording(recording, limits.batch_size, limits.second_pass)
+        stale = stale_recording(recording, load_config().limits)
         if stale:
             print(f"The demo cassettes are stale: {stale}, with: bidwright record {DEMO_RECORD}")
             return 1
         result = execute(
-            source=HOME / recording["source"],
-            profile=recording["profile"],
-            outputs=args.outputs,
-            mode="replay",
-            cassettes=CassetteStore(store),
-            until=recording.get("until", "render"),
-            research=recording.get("research", "off"),
-            assess_route=recording.get("assess_route"),
+            **replay_arguments(recording), outputs=args.outputs, cassettes=CassetteStore(store)
         )
         return _report(result)
     cassettes = CassetteStore(CASSETTES / args.name) if args.command == "record" else None
@@ -607,6 +698,7 @@ def main(argv: list[str] | None = None) -> int:
                 research=args.research,
                 fill=args.fill,
                 docling_mode="replay" if args.fill else None,
+                **_solution_arguments(args),
             )
         else:
             result = execute(
@@ -620,39 +712,70 @@ def main(argv: list[str] | None = None) -> int:
                 second_pass=args.second_pass,
                 cache=args.cache,
                 research=args.research,
+                **_solution_arguments(args),
             )
     except Refused as exc:
         print(f"Refused: {exc}", file=sys.stderr)
         return 2
     if cassettes is not None and result.status in ("COMPLETED", "DEGRADED"):
-        from bidwright.config import load_config
-
-        # `record` passes neither setting, so the run used the configured values; a replay
-        # checks them, since neither is part of a cassette key.
-        config = load_config()
-        limits = config.limits
-        source = args.file.resolve()
-        if args.fill:
-            gone = cassettes.prune(cassettes.used)
-            print(f"  filled: {len(cassettes.used)} cassettes kept, {len(gone)} unused removed")
-        recording = {
-            "profile": args.profile,
-            "source": source.relative_to(HOME).as_posix()
-            if source.is_relative_to(HOME)
-            else str(source),
-            "until": args.until,
-            "research": args.research or config.research.mode,
-            "batch_size": limits.batch_size,
-            "second_pass": limits.second_pass,
-            "run_id": result.run_id,
-            "status": result.status,
-            # The assess role's route (ADR-045), which a replay takes from here.
-            "assess_route": result.assess_route,
-        }
-        (cassettes.root / RECORDING).write_text(
-            json.dumps(recording, indent=1) + "\n", encoding="utf-8", newline="\n"
-        )
+        _write_recording(args, cassettes, result)
     return _report(result)
+
+
+def replay_arguments(recording: Mapping[str, Any]) -> dict[str, Any]:
+    """The arguments of `execute` that replay a recording as `record` ran it. A recording made
+    before Iteration 3 names no switch: it ran no solution path (`oneshot`), the risk agent
+    (`agent`) and no reflection, and it had no gate."""
+    return {
+        "source": _home_path(recording["source"]),
+        "profile": recording["profile"],
+        "mode": "replay",
+        "until": recording.get("until", "render"),
+        "research": recording.get("research", "off"),
+        "assess_route": recording.get("assess_route"),
+        "gate": recording.get("gate", "auto"),
+        "bid_policy": _home_path(recording.get("bid_policy")),
+        "solution": recording.get("solution", "oneshot"),
+        "risk_mode": recording.get("risk_mode", "agent"),
+        "reflect": recording.get("reflect", False),
+    }
+
+
+def _write_recording(args: argparse.Namespace, cassettes: Any, result: "RunResult") -> None:
+    """Write `recording.json`: what a replay must run with. A setting `record` does not pass
+    is `config/limits.yaml`'s, which the run used, as `execute` resolves it."""
+    from bidwright.config import load_config
+
+    config = load_config()
+    limits = config.limits
+    source = args.file.resolve()
+    if args.fill:
+        gone = cassettes.prune(cassettes.used)
+        print(f"  filled: {len(cassettes.used)} cassettes kept, {len(gone)} unused removed")
+    policy = args.bid_policy.resolve() if args.bid_policy else None
+    recording = {
+        "profile": args.profile,
+        "source": _home_relative(source),
+        "until": args.until,
+        "research": args.research or config.research.mode,
+        "batch_size": limits.batch_size,
+        "second_pass": limits.second_pass,
+        "need_cap": limits.solution.need_cap,
+        "claims_per_need": limits.solution.claims_per_need,
+        "tech_claim_cap": limits.solution.tech_claim_cap,
+        "gate": "auto" if args.auto_select else "wait",
+        "bid_policy": _home_relative(policy) if policy else None,
+        "solution": args.solution or limits.switches.solution,
+        "risk_mode": args.risk_mode or limits.switches.risk_mode,
+        "reflect": limits.switches.reflect if args.reflect is None else args.reflect,
+        "run_id": result.run_id,
+        "status": result.status,
+        # The assess role's route (ADR-045), which a replay takes from here.
+        "assess_route": result.assess_route,
+    }
+    (cassettes.root / RECORDING).write_text(
+        json.dumps(recording, indent=1) + "\n", encoding="utf-8", newline="\n"
+    )
 
 
 if __name__ == "__main__":

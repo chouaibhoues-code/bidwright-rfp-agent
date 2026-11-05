@@ -120,18 +120,36 @@ graph TD;
 	risk(risk)
 	draft(draft)
 	render(render)
+	decide_plan(decide_plan)
+	decide_join(decide_join)
+	assess_join(assess_join)
+	capability_map(capability_map)
+	options(options)
+	blueprint(blueprint)
+	techcheck(techcheck)
+	solution_gate(solution_gate)
 	extract(extract)
 	consolidate(consolidate)
+	decide(decide)
+	assess(assess)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> guard;
 	approach --> risk;
+	assess --> assess_join;
+	assess_join --> capability_map;
 	b0 --> verify;
+	blueprint -.-> approach;
+	blueprint -.-> techcheck;
 	brief -.-> __end__;
 	brief -.-> approach;
+	brief -.-> decide_plan;
 	brief -.-> discover_load;
 	brief -.-> discover_start;
 	candidates -.-> b0;
 	candidates -.-> triage;
+	capability_map -.-> __end__;
+	capability_map -.-> approach;
+	capability_map -.-> options;
 	consolidate --> consolidate_join;
 	consolidate_join -.-> __end__;
 	consolidate_join -.-> brief;
@@ -140,12 +158,20 @@ graph TD;
 	coverage -.-> __end__;
 	coverage -.-> extract;
 	coverage -.-> lint;
+	decide --> decide_join;
+	decide_join -.-> approach;
+	decide_join -.-> assess;
+	decide_join -.-> assess_join;
+	decide_plan -.-> decide;
+	decide_plan -.-> decide_join;
 	discover_ask -.-> discover_extract;
 	discover_ask -.-> discover_load;
 	discover_ask -.-> discover_wait;
 	discover_extract -.-> approach;
+	discover_extract -.-> decide_plan;
 	discover_extract -.-> discover_load;
-	discover_load --> approach;
+	discover_load -.-> approach;
+	discover_load -.-> decide_plan;
 	discover_start -.-> discover_load;
 	discover_start -.-> discover_wait;
 	discover_wait -.-> discover_ask;
@@ -155,8 +181,16 @@ graph TD;
 	guard --> ingest;
 	ingest --> candidates;
 	lint --> consolidate_plan;
+	options --> blueprint;
 	pack -.-> extract;
-	risk --> draft;
+	risk -.-> draft;
+	risk -.-> solution_gate;
+	solution_gate -.-> __end__;
+	solution_gate -.-> blueprint;
+	solution_gate -.-> draft;
+	solution_gate -.-> techcheck;
+	techcheck -.-> blueprint;
+	techcheck -.-> risk;
 	triage --> pack;
 	verify -.-> __end__;
 	verify -.-> coverage;

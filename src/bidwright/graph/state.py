@@ -48,6 +48,27 @@ class RunState(TypedDict):
     approach: dict[str, Any]
     risk: dict[str, Any]
     sections: list[dict[str, Any]]
+    # Iteration 3 (step 12): the solution path, in graph order. `decide_outcomes` and
+    # `assessed` collect the `Send` workers' results; the rest are the joins' settled records.
+    needs: dict[str, Any]  # the `NeedPlan`
+    decide_outcomes: Annotated[list[dict[str, Any]], operator.add]
+    decisions: list[dict[str, Any]]
+    claims: list[dict[str, Any]]
+    decide_questions: list[dict[str, Any]]
+    decide_degraded: str | None
+    assessed: Annotated[list[dict[str, Any]], operator.add]
+    assessments: list[dict[str, Any]]
+    assess_degraded: str | None
+    capability_map: dict[str, Any]
+    options: dict[str, Any]
+    options_degraded: str | None
+    manifest: dict[str, Any]
+    blueprint_plan: dict[str, Any] | None
+    blueprint_failed: str | None
+    tech_validations: list[dict[str, Any]]
+    techcheck: dict[str, Any]  # {"revision_due": bool}
+    gate: dict[str, Any]  # {"next", "option_id", "changed"}
+    bid_signal: dict[str, Any]
 
 
 class BatchState(TypedDict):
@@ -56,6 +77,21 @@ class BatchState(TypedDict):
     call_id: str
     round: int  # the coverage round, 0 for the first pass
     pack: dict[str, Any]
+
+
+class NeedState(TypedDict):
+    """What one `decide` worker receives through `Send`: one need (Iteration 3)."""
+
+    need: dict[str, Any]
+    passages: list[str]
+    records: list[str]
+
+
+class ClaimState(TypedDict):
+    """What one `assess` worker receives through `Send`: one claim and its need."""
+
+    claim: dict[str, Any]
+    need: dict[str, Any]
 
 
 class ClusterState(TypedDict):

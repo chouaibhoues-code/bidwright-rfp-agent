@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from bidwright.cli import stale_recording
+from bidwright.cli import replay_arguments, stale_recording
 from bidwright.config import load_config
 from bidwright.graph.build import RunResult, execute
 from bidwright.llm.replay import CassetteStore
@@ -24,19 +24,16 @@ def replay(
 ) -> tuple[RunResult, dict[str, Any]]:
     store = CASSETTES / name
     recording = json.loads((store / "recording.json").read_text(encoding="utf-8"))
-    limits = load_config().limits
-    stale = stale_recording(recording, limits.batch_size, limits.second_pass)
+    stale = stale_recording(recording, load_config().limits)
     assert stale is None, f"tests/cassettes/{name}: {stale}"
+    arguments = replay_arguments(recording)
+    if research is not None:
+        arguments["research"] = research
     result = execute(
+        **arguments,
         docling_mode="replay",
-        source=HOME / recording["source"],
-        profile=recording["profile"],
         outputs=outputs,
-        mode="replay",
         cassettes=CassetteStore(store),
-        until=recording.get("until", "render"),
-        research=research or recording.get("research", "off"),
         run_id=f"replay-{name}",
-        assess_route=recording.get("assess_route"),
     )
     return result, recording

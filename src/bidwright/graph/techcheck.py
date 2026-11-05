@@ -166,6 +166,8 @@ def _reachable(sources: Sources) -> str | None:
         sources.docs.connect()
     except (McpError, CircuitOpen) as exc:
         return f"Context7 is out of reach: {exc}"
+    if sources.gateway.context is not None:  # G4 reads the pin result of this connection
+        sources.gateway.context.pinned = bool(sources.docs.pinned)
     return None
 
 

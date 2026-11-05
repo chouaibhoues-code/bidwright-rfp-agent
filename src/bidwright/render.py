@@ -97,6 +97,10 @@ class RunRecords:
     quarantine: list[QuarantineRecord] = field(default_factory=list)
     brief: OpportunityBrief | None = None  # Iteration 2
     domain: DomainResearch | None = None
+    # Iteration 3: the solution block ({option_id, capability_counts, gaps, tech_counts,
+    # bid_signal}) and decide's clarification questions.
+    solution: dict[str, Any] | None = None
+    decide_questions: list[ClarificationQuestion] = field(default_factory=list)
 
 
 def validated[ModelT: BaseModel](model: type[ModelT], rows: Sequence[Any]) -> list[ModelT]:
@@ -138,6 +142,10 @@ def summary_of(records: RunRecords) -> SolutionSummary:
         counts=counts,
         factors=[f.id for f in records.brief.factors] if records.brief else [],
         domain_items=[i.id for i in records.domain.brief.items] if records.domain else [],
+        option_id=(records.solution or {}).get("option_id"),
+        capability_counts=dict((records.solution or {}).get("capability_counts") or {}),
+        tech_counts=dict((records.solution or {}).get("tech_counts") or {}),
+        bid_signal=(records.solution or {}).get("bid_signal"),
     )
 
 
@@ -190,6 +198,7 @@ def summary_markdown(records: RunRecords, summary: SolutionSummary) -> str:
         lines.append("No approach items.")
     if records.unmapped:
         lines.append(f"\nNot yet mapped to an approach item: {', '.join(records.unmapped)}.")
+    lines += solution_lines(records)
     lines += ["", "## 3. Risks", ""]
     for risk in records.risks:
         lines += [
@@ -206,12 +215,31 @@ def summary_markdown(records: RunRecords, summary: SolutionSummary) -> str:
     for question in records.questions:
         sources = f" ({', '.join(question.src_ids)})" if question.src_ids else ""
         lines.append(f"- {question.text}{sources}")
-    for question in asked:
+    for question in [*asked, *records.decide_questions]:
         lines.append(f"- **{question.id}** {question.text} ({', '.join(question.src_ids)})")
-    if not records.questions and not asked:
+    if not records.questions and not asked and not records.decide_questions:
         lines.append("None.")
     lines += appendix_lines(records)
     return "\n".join(lines) + "\n"
+
+
+def solution_lines(records: RunRecords) -> list[str]:
+    """The summary's solution block, after the approach part (Iteration 3)."""
+    block = records.solution
+    if not block:
+        return []
+    counts = block.get("capability_counts") or {}
+    tech = block.get("tech_counts") or {}
+    gaps = block.get("gaps") or []
+    lines = ["", "### The chosen solution", ""]
+    lines.append(f"Option: {block.get('option_id') or 'none chosen'}.")
+    shown = ", ".join(f"{n} {s}" for s, n in sorted(counts.items())) or "no need"
+    lines.append(f"Capability map: {shown}.")
+    lines.append(f"Gaps: {', '.join(gaps) or 'none'}.")
+    verdicts = ", ".join(f"{n} {v}" for v, n in sorted(tech.items())) or "none checked"
+    lines.append(f"Technology claims: {verdicts}.")
+    lines.append(f"Bid signal: {block.get('bid_signal') or 'not computed'}; a person decides.")
+    return lines
 
 
 def factor_lines(records: RunRecords) -> list[str]:
@@ -338,6 +366,10 @@ def clarifications_markdown(records: RunRecords) -> str:
     """`clarification_questions.md`: questions grouped by their group's topic."""
     by_id = {r.id: r for r in records.requirements}
     lines = [f"# Clarification questions: {records.title}", "", STATUS_LINE, ""]
+    if records.decide_questions:  # Iteration 3: the questions decide asked, need by need
+        lines += ["## From the solution path", ""]
+        lines += [f"- **{q.id}** {q.text}" for q in records.decide_questions]
+        lines.append("")
     for group in records.groups:
         asked = [q for q in records.clarifications if q.group_id == group.id]
         if not asked:

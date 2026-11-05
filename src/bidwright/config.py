@@ -201,6 +201,14 @@ class SolutionLimits(Strict):
     tech_claim_cap: int = Field(ge=1)
 
 
+class SwitchesConfig(Strict):
+    """The switches of section 4.11 of Iteration 3's design, with their defaults."""
+
+    solution: Literal["oneshot", "fixed", "decide", "assess", "manifest"] = "manifest"
+    risk_mode: Literal["oneshot", "fixed", "agent"] = "agent"
+    reflect: bool = False
+
+
 class LimitsConfig(Strict):
     runs: dict[str, dict[str, RunLimits]]
     call: CallLimits
@@ -215,6 +223,7 @@ class LimitsConfig(Strict):
     retention: RetentionConfig
     breaker: BreakerConfig
     solution: SolutionLimits
+    switches: SwitchesConfig = Field(default_factory=SwitchesConfig)
 
     def run(self, corpus: str, profile: str) -> RunLimits:
         try:

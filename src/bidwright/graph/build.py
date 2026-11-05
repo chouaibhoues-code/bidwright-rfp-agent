@@ -42,16 +42,23 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.errors import EmptyInputError, GraphDrained
 from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import RunControl
-from langgraph.types import Send
+from langgraph.types import Command, Send
 from openinference.semconv.trace import OpenInferenceSpanKindValues
 from opentelemetry import trace as otel_trace
 
 from bidwright.baselines import BASELINES, b0_outcome
 from bidwright.candidates import CompiledCues, cue_hits, defined_terms, write_candidates
 from bidwright.clusters import Cluster, build_clusters, precedence_passages
-from bidwright.config import Config, ResearchConfig, compile_patterns, load_config
+from bidwright.config import (
+    Config,
+    ResearchConfig,
+    compile_patterns,
+    load_bid_policy,
+    load_config,
+)
 from bidwright.coverage import degraded_reason, next_step, write_report
 from bidwright.fileio import repair_lines
+from bidwright.graph import solution as sol
 from bidwright.graph.brief import brief as write_brief
 from bidwright.graph.consolidate import (
     GroupDraft,
@@ -75,10 +82,11 @@ from bidwright.graph.nodes import (
     extract_batch,
     link_hazards,
     risk,
+    risk_baseline,
     section_records,
     write_approach,
 )
-from bidwright.graph.state import BatchState, ClusterState, RunState
+from bidwright.graph.state import BatchState, ClaimState, ClusterState, NeedState, RunState
 from bidwright.graph.triage import triage
 from bidwright.guard import GuardResult, PolicyBlocked, run_guard
 from bidwright.harness.budget import BudgetExceeded, RunBudget
@@ -86,9 +94,11 @@ from bidwright.harness.context import CONTEXT_DIR, ContextManager, prompt_tokens
 from bidwright.harness.egress import CONTEXT7_DESTINATION, RESEARCH_DESTINATION, check_run
 from bidwright.harness.gateway import ToolGateway, ToolLog
 from bidwright.harness.recovery import DEAD_LETTERS, CircuitBreaker, DeadLetters
+from bidwright.harness.reflect import reflect_for
 from bidwright.harness.supervisor import STOP_REASON, RunSupervisor, environment, read_manifest
 from bidwright.harness.view import TextView
 from bidwright.ingest import doc_id_for, ingest_package
+from bidwright.kb import load_kb
 from bidwright.lint import run_lint, write_lint
 from bidwright.llm.cache import response_cache, run_journal
 from bidwright.llm.client import ROUTES, LLMClient, Mode, Route, choose_route, route_config
@@ -157,7 +167,15 @@ from bidwright.tools import date_tool, search_tool
 from bidwright.verify import QuoteCheck
 
 SECTIONS = ("understanding", "approach", "risks_and_assumptions")
-UNTIL = ("verify", "coverage", "consolidate", "brief", "render")
+UNTIL = (
+    "verify",
+    "coverage",
+    "consolidate",
+    "brief",
+    "capability_map",
+    "solution_gate",
+    "render",
+)
 # The research nodes after `brief`, by research mode.
 AFTER_BRIEF = {"off": "approach", "pack": "discover_load", "live": "discover_start"}
 # A spent daily quota pauses a run; `bidwright resume` continues it (ADR-031).
@@ -209,6 +227,15 @@ class Runtime:
     # The `assess` role's route, set once a run (ADR-045): primary, fallback or same; None on a
     # profile with no routed `assess`.
     assess_route: str | None = None
+    # Iteration 3 (step 12): the profile, the knowledge base, the switches of section 4.11, the
+    # gate's mode and the loaded bid policy with its hash.
+    profile: str = "free"
+    kb: Any = None
+    solution: str = "manifest"
+    risk_mode: str = "agent"
+    reflect: bool = False
+    gate: str = "auto"
+    bid_policy: tuple[Any, str] | None = None
 
 
 @dataclass(frozen=True)
@@ -649,8 +676,15 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         record = outcome.brief.model_dump(mode="json")
         return {"brief": {"record": record, "degraded": outcome.degraded}}
 
+    def research_next(state: RunState) -> str:
+        """Where research leads: `v0.2`'s `approach` under `solution: oneshot`, else the
+        solution path (Iteration 3)."""
+        return "approach" if rt.solution == "oneshot" else "decide_plan"
+
     def after_brief(state: RunState) -> str:
-        return END if rt.until == "brief" else AFTER_BRIEF[rt.research_mode]
+        if rt.until == "brief":
+            return END
+        return research_next(state) if rt.research_mode == "off" else AFTER_BRIEF[rt.research_mode]
 
     def topics_of(state: RunState) -> list[str]:
         return list(((state.get("brief") or {}).get("record") or {}).get("topics", []))
@@ -698,7 +732,9 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
 
     def failed_or(following: str) -> Callable[[RunState], str]:
         def route(state: RunState) -> str:
-            return "discover_load" if state.get("research_failed") else following
+            if state.get("research_failed"):
+                return "discover_load"
+            return research_next(state) if following == "approach" else following
 
         return route
 
@@ -725,21 +761,31 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         limits = config.agents.agents["risk"].limits
         requirements = requirements_of(state)
         sources = {r.id: r.src_ids for r in requirements}
+        if rt.reflect:
+            limits = limits.model_copy(update={"reflect": True})
+        listed: list[Any] = [search_tool(index, sources), date_tool()]
+        if rt.reflect:
+            listed.append(reflect_for(config))
         gateway = ToolGateway.for_agent(
             "risk",
             allowed=config.agents.agents["risk"].tools,
-            tools=[search_tool(index, sources), date_tool()],
+            tools=listed,
             max_tool_calls=limits.max_tool_calls or 6,
             log=rt.tool_log,
+            reflect=rt.reflect,
         )
-        outcome = risk(
-            ctx,
-            requirements,
-            [ApproachItem.model_validate(a) for a in state["approach"]["items"]],
-            gateway,
-            limits,
-            manifests(state, "risk"),
-        )
+        items = [ApproachItem.model_validate(a) for a in state["approach"]["items"]]
+        if rt.risk_mode in ("oneshot", "fixed"):
+            outcome = risk_baseline(
+                ctx,
+                requirements,
+                items,
+                rt.risk_mode,
+                index=index,
+                manifests=manifests(state, "risk"),
+            )
+        else:
+            outcome = risk(ctx, requirements, items, gateway, limits, manifests(state, "risk"))
         rows = [r.model_dump(mode="json") for r in outcome.risks]
         _jsonl(rt.run_dir / "risks.jsonl", rows)
         span = otel_trace.get_current_span()
@@ -833,9 +879,23 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             quarantine=quarantine,
             brief=OpportunityBrief.model_validate(brief["record"]) if brief else None,
             domain=_domain_research(state.get("domain_brief")),
+            solution=sol.solution_block(dict(state)),
+            decide_questions=[
+                ClarificationQuestion.model_validate(q) for q in state.get("decide_questions", [])
+            ],
         )
         render(rt.run_dir, records)
         return {}
+
+    # --- the solution path (Iteration 3, step 12; graph/solution.py) ------------------------
+
+    def on(function: Callable[[Any, dict[str, Any]], dict[str, Any]]) -> NodeFunction:
+        def node(state: Any) -> dict[str, Any]:
+            if "need" not in state and "claim" not in state:  # a worker's state is its unit's
+                passages(state)
+            return function(rt, dict(state))
+
+        return node
 
     def traced(name: str, node: NodeFunction) -> NodeFunction:
         kind = (
@@ -877,6 +937,14 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         ("risk", risk_node),
         ("draft", draft_node),
         ("render", render_node),
+        ("decide_plan", on(sol.decide_plan)),
+        ("decide_join", on(sol.decide_join)),
+        ("assess_join", on(sol.assess_join)),
+        ("capability_map", on(sol.capability_map)),
+        ("options", on(sol.options)),
+        ("blueprint", on(sol.blueprint)),
+        ("techcheck", on(sol.run_techcheck)),
+        ("solution_gate", on(sol.gate)),
     ]
     for name, node in nodes:
         builder.add_node(name, traced(name, node))
@@ -884,6 +952,8 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
     builder.add_node(
         "consolidate", traced("consolidate", consolidate_node), input_schema=ClusterState
     )
+    builder.add_node("decide", traced("decide", on(sol.decide_worker)), input_schema=NeedState)
+    builder.add_node("assess", traced("assess", on(sol.assess_worker)), input_schema=ClaimState)
     builder.add_edge(START, "guard")
     builder.add_edge("guard", "ingest")
     builder.add_edge("ingest", "candidates")
@@ -900,7 +970,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
     )
     builder.add_edge("consolidate", "consolidate_join")
     builder.add_conditional_edges("consolidate_join", after_consolidate, ["brief", END])
-    builder.add_conditional_edges("brief", after_brief, [*AFTER_BRIEF.values(), END])
+    builder.add_conditional_edges("brief", after_brief, [*AFTER_BRIEF.values(), "decide_plan", END])
     builder.add_conditional_edges(
         "discover_start", failed_or("discover_wait"), ["discover_load", "discover_wait"]
     )
@@ -911,11 +981,36 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         "discover_ask", after_ask, ["discover_load", "discover_wait", "discover_extract"]
     )
     builder.add_conditional_edges(
-        "discover_extract", failed_or("approach"), ["discover_load", "approach"]
+        "discover_extract", failed_or("approach"), ["discover_load", "approach", "decide_plan"]
     )
-    builder.add_edge("discover_load", "approach")
-    for first, second in (("approach", "risk"), ("risk", "draft"), ("draft", "render")):
-        builder.add_edge(first, second)
+    builder.add_conditional_edges("discover_load", research_next, ["approach", "decide_plan"])
+
+    def route(function: Callable[[Any, dict[str, Any]], Any]) -> Callable[[Any], Any]:
+        return lambda state: function(rt, dict(state))
+
+    builder.add_conditional_edges("decide_plan", route(sol.decide_sends), ["decide", "decide_join"])
+    builder.add_edge("decide", "decide_join")
+    builder.add_conditional_edges(
+        "decide_join", route(sol.after_decide), ["assess", "assess_join", "approach"]
+    )
+    builder.add_edge("assess", "assess_join")
+    builder.add_edge("assess_join", "capability_map")
+    builder.add_conditional_edges(
+        "capability_map", route(sol.after_map), ["options", "approach", END]
+    )
+    builder.add_edge("options", "blueprint")
+    builder.add_conditional_edges(
+        "blueprint", route(sol.after_blueprint), ["techcheck", "approach"]
+    )
+    builder.add_conditional_edges("techcheck", route(sol.after_techcheck), ["blueprint", "risk"])
+    builder.add_edge("approach", "risk")
+    builder.add_conditional_edges("risk", route(sol.after_risk), ["solution_gate", "draft"])
+    builder.add_conditional_edges(
+        "solution_gate",
+        route(sol.after_gate),
+        ["draft", "blueprint", "techcheck", END],
+    )
+    builder.add_edge("draft", "render")
     builder.add_edge("render", END)
     return builder.compile(checkpointer=checkpointer)
 
@@ -967,6 +1062,7 @@ def _degraded(state: dict[str, Any]) -> str | None:
         shortfall = (state.get(step) or {}).get("degraded")
         if shortfall:
             reasons.append(shortfall)
+    reasons += sol.degraded_reasons(state)
     for node in ("approach", "risk"):
         failure = (state.get(node) or {}).get("failure")
         if failure:
@@ -1069,6 +1165,12 @@ def execute(
     config: Config | None = None,
     watch_interval_s: float = 1.0,
     assess_route: str | None = None,
+    gate: str = "auto",
+    approval: Any = None,
+    solution: str | None = None,
+    risk_mode: str | None = None,
+    reflect: bool | None = None,
+    bid_policy: Path | str | None = None,
 ) -> RunResult:
     """Run one RFP file or package end to end, or resume a run. A failed run still leaves its
     manifest and ledger.
@@ -1168,6 +1270,10 @@ def execute(
         consent=profile == "free" and consent == CONSENT,
         research=research_servers,
     )
+    switches = _switches(config, solution, risk_mode, reflect)
+    if gate not in ("wait", "auto"):
+        raise Refused(f"the gate takes wait or auto, not {gate!r}")
+    policy = load_bid_policy(Path(bid_policy)) if bid_policy else None
     started = datetime.now(UTC)
     suffix = f"-{baseline}" if baseline else ""
     if run_id is None:
@@ -1197,6 +1303,11 @@ def execute(
         "mode": mode,
         "assess_route": route,
         "environment": environment(),
+        "gate": gate,
+        "bid_policy": _relative(Path(bid_policy)) if bid_policy else None,
+        "solution": switches["solution"],
+        "risk_mode": switches["risk_mode"],
+        "reflect": switches["reflect"],
     }
     hashes = {
         document.path.name: f"sha256:{document.sha256}" for document in preflight.documents
@@ -1216,6 +1327,8 @@ def execute(
         refused_destinations=refused,
         run_args=run_args,
         assess_route=route,
+        bid_policy_sha256=policy[1] if policy else None,
+        switches=switches,
     )
     budget = RunBudget(config.limits.run(tier, profile))
     control = control or RunControl()
@@ -1227,6 +1340,7 @@ def execute(
         resume=resume,
         raise_budget=raise_budget,
         watch_interval_s=watch_interval_s,
+        approving=approval is not None,
     )
     with supervisor:
         ledger_file = LedgerFile(run_dir / "ledger.jsonl")
@@ -1266,7 +1380,13 @@ def execute(
             mode=mode,
             cassettes=cassettes,
             run_id=run_id,
-            limiter=Limiter(config.limits, tier_for(profile)) if mode != "replay" else None,
+            # Quotas pace real providers only: a backend with no host, as every test double, is
+            # local, as the egress check reads it, and waits for no quota window.
+            limiter=(
+                Limiter(config.limits, tier_for(profile))
+                if mode != "replay" and any(getattr(b, "host", None) for b in run_backends.values())
+                else None
+            ),
             cache=response_cache() if cache and mode == "live" else None,
             journal=run_journal(run_dir) if mode == "live" else None,
             journal_read=resume,
@@ -1318,6 +1438,13 @@ def execute(
             research=config.research,
             research_mode=research_mode,
             assess_route=route,
+            profile=profile,
+            kb=load_kb(),
+            solution=switches["solution"],
+            risk_mode=switches["risk_mode"],
+            reflect=switches["reflect"],
+            gate=gate,
+            bid_policy=policy,
         )
         # Until the graph returns, the run has not finished: any exit this function does not
         # name below is recorded as a fault, never as COMPLETED.
@@ -1337,10 +1464,18 @@ def execute(
                 }
                 if resume:
                     _rebuild(graph, thread, rt)
-                final = _invoke(graph, thread, control, resume)
-            reason = _degraded(final)
-            status = "DEGRADED" if reason else "COMPLETED"
-            if until != "render":
+                final = _invoke(graph, thread, control, resume, approval)
+            if "__interrupt__" in final:  # the solution gate asks for a decision (ADR-046)
+                status = "WAITING_HUMAN"
+                review = run_dir / "review" / "solution_gate.md"
+                reason = (
+                    f"waiting at the solution gate: review {review}, then run"
+                    f" bidwright approve {run_id} --role ROLE"
+                )
+            else:
+                reason = _degraded(final)
+                status = "DEGRADED" if reason else "COMPLETED"
+            if status != "WAITING_HUMAN" and until != "render":
                 stopped = f"stopped after {until} by request"
                 reason = f"{reason}; {stopped}" if reason else stopped
         except GraphDrained:
@@ -1381,6 +1516,23 @@ def execute(
                     models_used(entries),
                 )
     return RunResult(run_id, run_dir, status, reason, route)
+
+
+def _switches(
+    config: Config, solution: str | None, risk_mode: str | None, reflect: bool | None
+) -> dict[str, Any]:
+    """The run's switches (section 4.11): each argument, or `limits.yaml`'s default."""
+    defaults = config.limits.switches
+    chosen = {
+        "solution": solution or defaults.solution,
+        "risk_mode": risk_mode or defaults.risk_mode,
+        "reflect": defaults.reflect if reflect is None else reflect,
+    }
+    if chosen["solution"] not in sol.SOLUTIONS:
+        raise Refused(f"solution takes one of {', '.join(sol.SOLUTIONS)}")
+    if chosen["risk_mode"] not in sol.RISK_MODES:
+        raise Refused(f"risk_mode takes one of {', '.join(sol.RISK_MODES)}")
+    return chosen
 
 
 def _relative(path: Path) -> str:
@@ -1443,9 +1595,15 @@ def _assess_route(
     return choose_route(role, backends)
 
 
-def _invoke(graph: Any, thread: dict[str, Any], control: RunControl, resume: bool) -> Any:
+def _invoke(
+    graph: Any, thread: dict[str, Any], control: RunControl, resume: bool, approval: Any = None
+) -> Any:
     """Run the graph, each checkpoint written before the next super-step starts. A resume
-    continues from the last checkpoint; one killed before its first starts from the beginning."""
+    continues from the last checkpoint; one killed before its first starts from the beginning.
+    An approval resumes the gate that asked for it (`Command(resume=...)`, ADR-046)."""
+    if approval is not None:
+        value = approval.model_dump(mode="json") if hasattr(approval, "model_dump") else approval
+        return graph.invoke(Command(resume=value), thread, control=control, durability="sync")
     if resume:
         try:
             return graph.invoke(None, thread, control=control, durability="sync")

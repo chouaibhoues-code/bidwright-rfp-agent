@@ -4,8 +4,10 @@
 
 A matrix file (`config/matrices/*.yaml`) names an RFP, a profile (`free` or `paid`), the
 number of repeats, the last node each run executes (`until`), a cost cap and its rungs, each
-with flags for `execute`: `batch_size`, `extract_prompt`, `second_pass`, `baseline` and, from
-Iteration 2, `research` (`off` or `pack`); any other flag is refused. Every run gets its repeat
+with flags for `execute`: `batch_size`, `extract_prompt`, `second_pass`, `baseline`, from
+Iteration 2 `research` (`off` or `pack`), and from Iteration 3 the solution switches
+`solution`, `risk_mode` and `reflect`; any other flag is refused. Every run approves its gate
+automatically (`gate="auto"`), which never passes a blocked gate. Every run gets its repeat
 index, which is in every cassette and cache key, and the response cache is on, so a run started
 again answers the calls it already made from the cache. Runs go to
 `outputs/matrices/<matrix>/<matrix>-<rung>-r<repeat>/`.
@@ -46,7 +48,16 @@ from bidwright.config import load_config
 from bidwright.preflight import HOME
 from bidwright.schemas import RunManifest
 
-FLAGS = ("batch_size", "extract_prompt", "second_pass", "baseline", "research")
+FLAGS = (
+    "batch_size",
+    "extract_prompt",
+    "second_pass",
+    "baseline",
+    "research",
+    "solution",
+    "risk_mode",
+    "reflect",
+)
 # The research nodes that call a model, each under the `discover` agent's role.
 DISCOVER_NODES = ("discover_start", "discover_ask", "discover_extract")
 FINISHED = ("COMPLETED", "DEGRADED")
@@ -77,7 +88,15 @@ class MatrixFile(BaseModel):
     rfp: str
     profile: Literal["free", "paid"]
     repeats: int = Field(ge=1)
-    until: Literal["verify", "coverage", "consolidate", "brief", "render"] = "render"
+    until: Literal[
+        "verify",
+        "coverage",
+        "consolidate",
+        "brief",
+        "capability_map",
+        "solution_gate",
+        "render",
+    ] = "render"
     max_cost_usd: float = Field(ge=0)
     rungs: list[Rung] = Field(min_length=1)
 
@@ -183,6 +202,7 @@ class MatrixRefused(ValueError):
 def check_rungs(matrix: MatrixFile) -> None:
     """Refuse, before anything starts, a rung that `execute` would refuse at its first run."""
     from bidwright.graph.build import extract_prompt_ids, run_prompts
+    from bidwright.graph.solution import RISK_MODES, SOLUTIONS
 
     known = extract_prompt_ids(run_prompts(load_config()))
     for rung in matrix.rungs:
@@ -205,6 +225,16 @@ def check_rungs(matrix: MatrixFile) -> None:
             )
         if research is not None and research not in ("off", "pack"):
             raise MatrixRefused(f"rung {rung.name} sets research {research!r}; use off or pack")
+        for flag, known_values in (("solution", SOLUTIONS), ("risk_mode", RISK_MODES)):
+            value = rung.flags.get(flag)
+            if value is not None and value not in known_values:
+                raise MatrixRefused(
+                    f"rung {rung.name} sets {flag} {value!r}; use one of {', '.join(known_values)}"
+                )
+        if "reflect" in rung.flags and not isinstance(rung.flags["reflect"], bool):
+            raise MatrixRefused(
+                f"rung {rung.name} sets reflect to a value that is not true or false"
+            )
 
 
 def run_matrix(
@@ -272,6 +302,7 @@ def run_matrix(
                 cache=True,
                 backends=backends,
                 fallback=False,
+                gate="auto",
                 **rung.flags,
             )
             finished = _manifest(run_dir)

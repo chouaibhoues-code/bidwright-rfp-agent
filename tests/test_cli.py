@@ -16,6 +16,7 @@ from bidwright.llm.client import Mode
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Response
 from bidwright.preflight import Refused
+from bidwright.schemas import GateApproval
 from tests.node_fakes import DEV_RFP, USAGE, RuleBackend
 
 
@@ -107,8 +108,13 @@ def test_record_passes_until_and_writes_it_to_the_recording(
         limits.batch_size,
         limits.second_pass,
     )
-    assert cli.stale_recording(recording, limits.batch_size, limits.second_pass) is None
+    assert cli.stale_recording(recording, limits) is None
     assert recording["assess_route"] == "fallback", "the route a replay takes (ADR-045)"
+    assert (seen["gate"], recording["gate"]) == ("wait", "wait"), "no --auto-select"
+    assert recording["solution"] == limits.switches.solution
+    assert recording["risk_mode"] == limits.switches.risk_mode
+    assert recording["reflect"] == limits.switches.reflect
+    assert recording["need_cap"] == limits.solution.need_cap
 
 
 def _cassette(store: CassetteStore, name: str) -> str:
@@ -146,13 +152,39 @@ def test_record_passes_research_and_a_fill_removes_the_cassettes_the_run_did_not
     assert recording["research"] == "pack" and recording["until"] == "brief"
 
 
+def _limits(batch_size: int = 40, second_pass: bool = True, need_cap: int = 24) -> object:
+    limits = load_config().limits
+    solution = limits.solution.model_copy(update={"need_cap": need_cap})
+    return limits.model_copy(
+        update={"batch_size": batch_size, "second_pass": second_pass, "solution": solution}
+    )
+
+
 def test_a_stale_recording_names_the_setting_to_record_again() -> None:
     recording = {"batch_size": 40, "second_pass": True}
-    assert cli.stale_recording(recording, 40, True) is None
-    stale = cli.stale_recording(recording, 20, True)
+    assert cli.stale_recording(recording, _limits()) is None
+    stale = cli.stale_recording(recording, _limits(batch_size=20))
     assert stale is not None and "batch_size 40" in stale and "record again" in stale
-    stale = cli.stale_recording({"batch_size": 40}, 40, False)
+    stale = cli.stale_recording({"batch_size": 40}, _limits(second_pass=False))
     assert stale is not None and "second_pass None" in stale
+
+
+def test_a_recording_is_stale_on_a_solution_cap_only_where_its_path_reads_it() -> None:
+    """`oneshot`, the path of a recording made before Iteration 3, reads no cap; `decide`
+    reads the need cap, and only `manifest` the technology-claim cap."""
+    limits = load_config().limits
+    base = {
+        "batch_size": 40,
+        "second_pass": True,
+        "need_cap": 24,
+        "claims_per_need": limits.solution.claims_per_need,
+    }
+    assert cli.stale_recording(base, _limits(need_cap=9)) is None, "oneshot reads no cap"
+    stale = cli.stale_recording({**base, "solution": "decide"}, _limits(need_cap=9))
+    assert stale is not None and "need_cap 24" in stale
+    assert cli.stale_recording({**base, "solution": "decide"}, _limits()) is None
+    stale = cli.stale_recording({**base, "solution": "manifest"}, _limits())
+    assert stale is not None and "tech_claim_cap None" in stale
 
 
 def test_a_baseline_asked_for_the_second_pass_is_refused_before_a_run_folder_exists(
@@ -286,6 +318,59 @@ def test_resume_calls_the_run_entry_with_the_recorded_arguments(
     assert isinstance(backends, dict) and backends["gemini"].paid is True
 
 
+def test_run_waits_at_the_gate_unless_auto_select_and_passes_the_switches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_execute(**kwargs: object) -> RunResult:
+        seen.update(kwargs)
+        return RunResult("run", tmp_path, "COMPLETED", None)
+
+    monkeypatch.setattr("bidwright.graph.build.execute", fake_execute)
+    assert cli.main(["run", str(DEV_RFP), "--outputs", str(tmp_path)]) == 0
+    assert seen["gate"] == "wait"
+    assert (seen["solution"], seen["risk_mode"], seen["reflect"]) == (None, None, None)
+    policy = tmp_path / "policy.yaml"
+    arguments = ["run", str(DEV_RFP), "--auto-select", "--bid-policy", str(policy)]
+    arguments += ["--solution", "manifest", "--risk-mode", "fixed", "--reflect"]
+    assert cli.main(arguments) == 0
+    assert (seen["gate"], seen["bid_policy"]) == ("auto", policy)
+    assert (seen["solution"], seen["risk_mode"], seen["reflect"]) == ("manifest", "fixed", True)
+    with pytest.raises(SystemExit):
+        cli.main(["run", str(DEV_RFP), "--solution", "everything"])
+
+
+def test_a_run_waiting_at_its_gate_exits_0_and_names_the_approve_command(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    review = tmp_path / "review" / "solution_gate.md"
+    review.parent.mkdir()
+    review.write_text("# Gate\n", encoding="utf-8")
+    reason = "solution_gate: waiting for a decision"
+    assert cli._report(RunResult("run-9", tmp_path, "WAITING_HUMAN", reason)) == 0
+    out = capsys.readouterr().out
+    assert str(review) in out and "bidwright approve run-9 --role ROLE" in out
+    assert cli._report(RunResult("run-9", tmp_path, "STOPPED", None)) == 1
+
+
+def test_a_resume_carries_the_gate_the_bid_policy_and_the_switches(tmp_path: Path) -> None:
+    run_args = {
+        "source": "inputs/dev/dev_rfp.pdf",
+        "profile": "free",
+        "gate": "wait",
+        "bid_policy": "config/bid_policy.example.yaml",
+        "solution": "assess",
+        "risk_mode": "fixed",
+        "reflect": True,
+    }
+    arguments = cli.resume_arguments(run_args, tmp_path / "run")
+    assert (arguments["gate"], arguments["solution"]) == ("wait", "assess")
+    assert (arguments["risk_mode"], arguments["reflect"]) == ("fixed", True)
+    assert arguments["bid_policy"] == cli.HOME / "config" / "bid_policy.example.yaml"
+    assert "bid_policy" not in cli.resume_arguments({**run_args, "bid_policy": None}, tmp_path)
+
+
 def test_a_raise_must_be_a_positive_percentage() -> None:
     with pytest.raises(SystemExit):
         cli.main(["resume", "run", "--raise-budget", "0"])
@@ -301,7 +386,9 @@ def test_a_resume_carries_the_assess_route_its_first_part_recorded(tmp_path: Pat
 # --- Iteration 3, step 10: bidwright approve ---------------------------------------------------
 
 
-def _gate_folder(folder: Path, verdict: str = "VALIDATED") -> Path:
+def _gate_folder(
+    folder: Path, verdict: str = "VALIDATED", run_args: dict[str, object] | None = None
+) -> Path:
     from bidwright.graph.blueprint import write_manifest
     from bidwright.graph.options import write_options
     from bidwright.schemas import (
@@ -340,6 +427,7 @@ def _gate_folder(folder: Path, verdict: str = "VALIDATED") -> Path:
         models={},
         started=datetime(2026, 11, 5, tzinfo=UTC),
         status="WAITING_HUMAN",
+        run_args=run_args or {},
     )
     (folder / "run_manifest.json").write_text(manifest.model_dump_json(), encoding="utf-8")
     return folder
@@ -416,3 +504,47 @@ def test_approve_refuses_a_run_that_waits_at_no_gate(
     (folder / "run_manifest.json").write_text(json.dumps(data), encoding="utf-8")
     assert cli.main(["approve", str(folder), "--role", "Bid director"]) == 2
     assert "does not wait at a gate" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("flags", "status"), [((), "COMPLETED"), (("--reject", "No."), "POLICY_BLOCKED")]
+)
+def test_approve_resumes_the_run_from_its_gate_through_the_run_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, flags: tuple[str, ...], status: str
+) -> None:
+    """The approval and the recorded arguments go to `execute` as a resume; a rejection ends
+    the run POLICY_BLOCKED, which is the decision asked for, so the command exits 0."""
+    seen: dict[str, object] = {}
+    run_args = {
+        "source": "inputs/dev/dev_rfp.pdf",
+        "profile": "free",
+        "gate": "wait",
+        "solution": "manifest",
+        "risk_mode": "agent",
+        "reflect": False,
+    }
+    folder = _gate_folder(tmp_path / "run", run_args=run_args)
+
+    def fake_execute(**kwargs: object) -> RunResult:
+        seen.update(kwargs)
+        return RunResult("run-gate", folder, status, "GATE_REJECTED" if flags else None)  # type: ignore[arg-type]
+
+    monkeypatch.setattr("bidwright.graph.build.execute", fake_execute)
+    assert cli.main(["approve", str(folder), "--role", "Bid director", *flags]) == 0
+    approval = seen["approval"]
+    assert isinstance(approval, GateApproval)
+    assert approval.decision == ("reject" if flags else "approve")
+    assert (seen["resume"], seen["run_id"], seen["outputs"]) == (True, "run", tmp_path)
+    assert (seen["gate"], seen["solution"], seen["profile"]) == ("wait", "manifest", "free")
+
+
+def test_the_command_line_offers_the_values_the_run_entry_takes() -> None:
+    """`cli.py` keeps its own lists, so parsing never imports the graph; they match it."""
+    from bidwright.graph import build
+    from bidwright.graph import solution as sol
+    from bidwright.matrix import MatrixFile
+
+    assert cli.UNTIL == list(build.UNTIL)
+    assert (cli.SOLUTIONS, cli.RISK_MODES) == (list(sol.SOLUTIONS), list(sol.RISK_MODES))
+    until = MatrixFile.model_fields["until"].annotation
+    assert set(getattr(until, "__args__", ())) == set(build.UNTIL)

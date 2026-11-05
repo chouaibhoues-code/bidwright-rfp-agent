@@ -66,3 +66,6 @@ breaker: {failures: 5, cooldown_minutes: 30}
 # Iteration 3 (ADR-039): the needs decide takes a run, RFP needs first, and the claims each
 # need may draft. Needs past the cap are listed GAP and the run ends DEGRADED.
 solution: {need_cap: 24, claims_per_need: 3, tech_claim_cap: 15}
+# The switches of Iteration 3's section 4.11, for runs that name none. solution stays oneshot,
+# the v0.2 path, until step 12's recordings hold the solution path's calls; then manifest.
+switches: {solution: oneshot, risk_mode: agent, reflect: false}

@@ -139,6 +139,9 @@ def test_the_committed_matrix_files_load() -> None:
         ("{baseline: ex0, second_pass: true}", "ADR-028"),
         ("{research: live}", "the owner's NotebookLM account"),
         ("{research: lively}", "use off or pack"),
+        ("{solution: everything}", "sets solution 'everything'"),
+        ("{risk_mode: maybe}", "sets risk_mode 'maybe'"),
+        ("{reflect: sometimes}", "reflect to a value that is not true or false"),
     ],
 )
 def test_a_rung_that_execute_would_refuse_is_refused_before_anything_starts(
@@ -319,3 +322,26 @@ def test_the_research_nodes_are_checked_against_the_discover_role() -> None:
     assert fell_back(manifest)
     clean = manifest.model_copy(update={"models_used": {"discover_ask": ["gemini-3.5-flash-lite"]}})
     assert not fell_back(clean)
+
+
+def test_a_rung_may_set_each_solution_switch_value_and_every_run_approves_automatically(
+    tmp_path: Path,
+) -> None:
+    """Section 4.11's switches, each value in a rung of its own; a matrix run never waits at
+    the gate, since no one is there to decide it."""
+    from bidwright.graph.solution import RISK_MODES, SOLUTIONS
+
+    rungs = "".join(f"  - {{name: s-{v}, flags: {{solution: {v}}}}}\n" for v in SOLUTIONS)
+    rungs += "".join(f"  - {{name: r-{v}, flags: {{risk_mode: {v}}}}}\n" for v in RISK_MODES)
+    rungs += (
+        "  - {name: t-on, flags: {reflect: true}}\n  - {name: t-off, flags: {reflect: false}}\n"
+    )
+    entry = FakeEntry()
+    path = _matrix(tmp_path, rungs=rungs, repeats=1)
+    outcome = run_matrix(path, execute=entry, outputs=tmp_path / "out", say=lambda _: None)
+    assert outcome.status == "COMPLETED"
+    assert [c.get("solution") for c in entry.calls[: len(SOLUTIONS)]] == list(SOLUTIONS)
+    modes = entry.calls[len(SOLUTIONS) : len(SOLUTIONS) + len(RISK_MODES)]
+    assert [c.get("risk_mode") for c in modes] == list(RISK_MODES)
+    assert [c.get("reflect") for c in entry.calls[-2:]] == [True, False]
+    assert all(c["gate"] == "auto" for c in entry.calls)
