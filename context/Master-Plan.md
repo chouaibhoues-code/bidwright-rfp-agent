@@ -13,7 +13,7 @@ tags: [bidwright, project-management, plan, roadmap]
 > [!summary] Status on 2026-11-05
 > - Released: `v0.0`, Iteration 0a, the walking skeleton; `v0.0.1`, Iteration 0b, documents and review; `v0.1`, Iteration 1, on 2026-11-04, with the matcher's correction after the tag (ADR-030).
 > - Released: `v0.2`, Iteration 2, on 2026-11-05, approved by the owner with D-08 and D-09 decided; its close-out notes are in section 9.4.
-> - Next: Iteration 3. Its design doc, `docs/designs/iteration-3.md`, is written for its Stage 9 review (D-10); the Cerebras key is in place (D-03).
+> - Next: Iteration 3. Its design doc, `docs/designs/iteration-3.md`, passed its Stage 9 review and re-audit; the owner chose D-10's option C on 2026-11-05, which adds WP-3.6 (CH-94), and D-11 is open. The Cerebras key is in place, its credits running until 2026-12-03 (D-03), and the Groq key since 2026-11-05.
 > - At each tag the owner chooses to continue, release or stop (section 2.8).
 
 This file owns the scope, the work-package register, the assignment trace, the gates, the risks, the change log, the close-out notes and the full vision with its unbuilt scope. Other facts have one owner each: the current architecture is in `docs/architecture.md`, decisions in `DECISIONS.md`, assumptions in `ASSUMPTIONS.md`, hours in `TIMELOG.md`, research in [[Research-Register]], open decisions in [[Decision-Form]], and deferred work in [[Project-Backlog]].
@@ -280,6 +280,7 @@ The WBS is held as this register. Estimates are Claude's judgment (section 2.6).
 | WP-3.3 | Full `risk` and `techcheck` | 2.0 | A7, A10 | No invented ratings; a false technology claim blocks the gate | Planned |
 | WP-3.4 | `solution_gate`, method cards, bid memo, gated `reflect` | 2.0 | A7; CH-04, CH-68 | `WAITING_HUMAN` with no human; S-12 reported | Planned |
 | WP-3.5 | Small ablation, statistical scenarios, second architecture review | 2.0 | A3, A8, A13; CH-62 | QS-2, QS-3, QS-5, QS-8 on 5 live hero repeats | Planned |
+| WP-3.6 | Streamlit Run, Review and Ops pages, first version, and span replay into Phoenix | 2.5 | A15; CH-94 | The pages show a run's files; the Review page reaches the gate as `bidwright approve` does; Ops totals match `ledger.jsonl`; `spans.jsonl` replays into the local Phoenix | Planned |
 | WP-4.1 | `plan_sections`, `pink_check`, storyboards | 2.0 | A10; CH-05 | Every factor has a section or placeholder | Planned |
 | WP-4.2 | Full `draft`, `validate`, `repair` | 3.0 | A7, A10 | Seeded invention caught; repair rolls back regressions | Planned |
 | WP-4.3 | `redteam` and the Gold review | 2.0 | A7, A15; CH-06 | Weakened sections score lower | Planned |
@@ -290,14 +291,14 @@ The WBS is held as this register. Estimates are Claude's judgment (section 2.6).
 | WP-5.3 | External stage benchmarks | 1.5 | A3, A8 | Reported beside published figures | Planned |
 | WP-5.4 | Security, evaluation and product docs; assurance case; EY review standard | 2.5 | A5, A9, A13, A16; CH-47 | `docs/security.md` mapped to the OWASP lists; `docs/product.md` | Planned |
 | WP-R.1 | Release step | 4.0 | A6, A12, A13, A14, A16 | Held-out RFP scored once; the owner's brief on `local`; demo recorded; live changes rehearsed | Planned |
-| WP-6.1 | Streamlit Run, Review and Ops pages (optional) | 3.0 | A15 | Ops totals match the ledger | Optional |
+| WP-6.1 | Streamlit extensions: the proposal pack's review views and the bake-off's results on the Ops page (optional); the first version moved to WP-3.6 (CH-94) | 1.0 | A15 | The review UI reaches the proposal's `review` gate as the CLI does | Optional |
 | WP-6.2 | Local model bake-off (optional) | 3.0 | A9 | A model-by-role table for a 4 GB card | Optional |
 | WP-6.3 | Third RFP, full matrix, bid-review deck (optional) | 2.0 | A3, A10 | Full matrix scored | Optional |
 | WP-7.1 | Typed graph gate (optional) | 2.0 | A7 | Kept only if it beats flat checks | Optional |
 | WP-7.2 | Dense retrieval with fusion, `hybrid` profile (optional) | 3.0 | A15 | Kept only if it beats BM25 | Optional |
 | WP-7.3 | Metamorphic checks, render-and-compare hidden-text detection (optional) | 3.0 | A3 | Each kept only if it beats its baseline | Optional |
 
-Totals: Iteration 0a 8 hours, 0b 5, 1 12, 2 7, 3 12, 4 10, 5 10 and release 4, for 68 to the release target; Iterations 6 and 7 add 16.
+Totals: Iteration 0a 8 hours, 0b 5, 1 12, 2 7, 3 14.5, 4 10, 5 10 and release 4, for 70.5 to the release target; Iterations 6 and 7 add 14 (CH-94 moved 2.5 hours of WP-6.1 into WP-3.6).
 
 ## 4. Assignment trace
 
@@ -319,7 +320,7 @@ Each assignment item, the packages that deliver it, how it is verified (inspecti
 | A12 | A note of roughly how long each part took | WP-0a.1, WP-R.1 | Inspection | `TIMELOG.md`, hours entered by the owner | Partly met |
 | A13 | The ability to explain and defend everything, probed live | WP-0b.1, 0b.3, 0b.7, WP-R.1 | Demonstration | Architecture and decision records | Planned at release |
 | A14 | A repository or zip, a demo link, and a follow-up with a small live change | WP-R.1 | Demonstration | Live-change rehearsal at release | Planned |
-| A15 | Stretch: a critic agent, RAG grounding on provided data, a metrics dashboard | WP-4.3; WP-0a.6, WP-2.3, WP-3.1; WP-6.1 | Demonstration | `search_rfp` grounding at 0a | Partly met |
+| A15 | Stretch: a critic agent, RAG grounding on provided data, a metrics dashboard | WP-4.3; WP-0a.6, WP-2.3, WP-3.1; WP-3.6, WP-6.1 | Demonstration | `search_rfp` grounding at 0a | Partly met |
 | A16 | Judged on the rubric's six weighted dimensions | WP-5.4, WP-R.1 | Analysis | The EY review standard at release | Planned |
 
 ## 5. Gates
@@ -351,9 +352,9 @@ Each iteration's gate. Entry must hold before work starts; Items are its package
 - Result: every check passed, with no exception; section 9.4 gives the evidence. Closed on 2026-11-05.
 
 **Iteration 3, `v0.3`.**
-- Entry: `v0.2`; Stage 9 passed; a Cerebras key, created at the start of this iteration so its 30-day trial covers it.
-- Items: WP-3.1 to 3.5.
-- Exit and Verify: two requirement groups get different tool decisions in one run; a capability the knowledge base cannot support comes back `UNVERIFIED` with no prompt instruction; every tool call in a trace matches `config/agents.yaml`; `assess` never receives the author's reasoning; the capability map follows its rule, `PARTNER` first; in `pack` mode `techcheck` replays recorded Context7 answers and `discover` makes no LLM call; `options` scores reproduce from the logged scores and published weights, including a tie-break; every manifest fact has an evidence class and an existing source, every binding requirement maps to a work package or a gap, and every work package has effort with a basis; no risk carries an invented rating; a false technology claim is `INVALIDATED` and blocks the gate until revised or overridden with a logged reason, and under `--auto-select` the blocked run ends `POLICY_BLOCKED`; with no human the run waits in `WAITING_HUMAN`, and an edited field re-runs `techcheck` and `risk`; S-12 is reported; the small ablation is scored under the keep-or-drop rule; `reflect`, when enabled, is offered only after a failure signal and allows 2 thoughts; QS-2, QS-3, QS-5 and QS-8 pass on 5 live hero repeats or the owner accepts a recorded exception; the second architecture review is triaged.
+- Entry: `v0.2`; Stage 9 passed, with D-10 decided and D-11 answered; a Cerebras key (D-03), whose credits run until 2026-12-03.
+- Items: WP-3.1 to 3.6.
+- Exit and Verify: two requirement groups get different tool decisions in one run; a capability the knowledge base cannot support comes back `UNVERIFIED` with no prompt instruction; every tool call in a trace matches `config/agents.yaml`; `assess` never receives the author's reasoning; the capability map follows its rule, `PARTNER` first; in `pack` mode `techcheck` replays recorded Context7 answers and `discover` makes no LLM call; `options` scores reproduce from the logged scores and published weights, including a tie-break; every manifest fact has an evidence class and an existing source, every binding requirement maps to a work package or a gap, and every work package has effort with a basis; no risk carries an invented rating; a false technology claim is `INVALIDATED` and blocks the gate until revised or overridden with a logged reason, and under `--auto-select` the blocked run ends `POLICY_BLOCKED`; with no human the run waits in `WAITING_HUMAN`, and an edited field re-runs `techcheck` and `risk`; S-12 is reported; the small ablation is scored under the keep-or-drop rule; `reflect`, when enabled, is offered only after a failure signal and allows 2 thoughts; QS-2, QS-3, QS-5 and QS-8 pass on 5 live hero repeats or the owner accepts a recorded exception; the Run, Review and Ops pages show a run's files, the Review page reaches the gate as `bidwright approve` does, Ops totals match `ledger.jsonl`, and `spans.jsonl` replays into the local Phoenix; the second architecture review is triaged.
 
 **Iteration 4, `v0.4`.**
 - Entry: `v0.3`; Stage 9 passed.
@@ -370,7 +371,7 @@ Each iteration's gate. Entry must hold before work starts; Items are its package
 - Items: WP-R.1.
 - Exit and Verify: the held-out RFP scored once on 5 repeats with research `off`, reported apart; QS-2, QS-3, QS-5 and QS-8 pass on 5 live hero repeats, or the owner accepts a recorded exception that the README reports; the owner's brief runs on `local`, reported apart; the EY rubric review and V-01 are done, and every figure traces to a run or a checked paper; the five live changes are rehearsed with fresh cassettes. A readiness check shortly before the interview covers keys, quotas, the NotebookLM login, Docker, the host path and the demo.
 
-**Iterations 6 and 7, optional.** Exit and Verify: `--profile local` completes inside Docker with the GPU in use, Ops totals match the ledger, and the review UI reaches the same gates as the CLI (6); each extension shows its measured comparison, and any that fails is removed and logged (7).
+**Iterations 6 and 7, optional.** Exit and Verify: `--profile local` completes inside Docker with the GPU in use, and the review UI reaches the proposal's `review` gate as the CLI does (6); each extension shows its measured comparison, and any that fails is removed and logged (7).
 
 ## 6. Dependency graph
 
@@ -509,6 +510,9 @@ Every accepted change since the first agreed design, one line each. The Kind col
 | CH-89 | Node, the pinned sequential-thinking package, `package-lock.json` and `npm audit` join the image in Iteration 3 with `reflect`, their only consumer, instead of in Iteration 2; C7-17's recheck at version lock moves with them | Nothing in Iteration 2 uses them, and the MCP client's stdio path is tested against a small Python server. D-07, 2026-11-04. | An Iteration 2 node needs a stdio server | Process |
 | CH-90 | The `extract` examples return, with the second pass measured on the prompt that has them, at the start of Iteration 3's extraction ladder instead of after the delivery; the ADR superseding ADR-028's first decision is written then | The delivery is deferred, and the ladder measures extraction under the keep-or-drop rule anyway. The owner accepted the recommendation, D-07, 2026-11-04. | The delivery is set before Iteration 3 starts | Process |
 | CH-91 | Research mode `live` leaves out a cited source whose title or URL reads like a published solicitation before any excerpt is made, and withholds the text of an answer that cited one (ADR-038) | A live job returned a university's published request for proposal, whose excerpts reached the extraction call; the data rule keeps real tenders out of prompts. The owner chose option A, D-08, 2026-11-05. | A licensed research source with provenance metadata replaces NotebookLM | ADR |
+| CH-92 | Gold v4 adds about 20 technology seeds and an expected decision for each mandatory clause of the hero package, written from the knowledge base and the corpus specs; the owner reviews and hashes it, with the ladders' hypotheses, before the first ladder run | `techcheck` and `decide` need labeled answers to be scored, and the hash fixes them before any score. Accepted with D-10, 2026-11-05. | None: owner decision only | Process |
+| CH-93 | The owner spot-checks 10 assessments by hand before the `v0.3` tag | Q-04 found no evidence that a different model family alone decorrelates an assessor's errors, so the Assumptions table's fallback calls for a hand check. Accepted with D-10, 2026-11-05. | A larger labeled set measures the assessor's error | Process |
+| CH-94 | WP-3.6: the first version of the Streamlit UI (Run, Review and Ops pages over a run's files; the gate's approval and edit view through `bidwright approve`; the capability map and the manifest; the ladder tables; Ops totals matching `ledger.jsonl`) and span replay from `spans.jsonl` into the local Phoenix move from WP-6.1 into Iteration 3, as its steps 13 and 17; WP-6.1 keeps the proposal pack's review views and the bake-off's results | Iteration 3 brings the first human gate, the first manifests and the first ladders, which the pages serve directly; and under the walking-skeleton rule (CH-17), shipping them at `v0.3` meets the assignment's dashboard stretch item (A15) at any later stopping point. The owner's decision, D-10 option C, 2026-11-05. | The pages add nothing that the CLI and the committed reports do not already give the reviewers | Process |
 
 ## 9. Close-out notes
 
@@ -777,14 +781,14 @@ Each iteration gets `docs/designs/iteration-N.md` when it becomes next. The doc 
 | **0b Documents and review** | 5h | The WP-0b packages: the four `context/` documents with the voice converted, product and architecture ADRs, `docs/architecture.md` for the current tag, `docs/decision-matrix.md`, the one-page threat model in `docs/security.md`, a `docs/evaluation.md` stub, the doc generator and checks, the Iteration 1 design doc, and the first Goldfish architecture review | Q-07 | Triage the review |
 | **1 Trust the requirements** | 12h | `guard` (sanitize then parse, XLSX included), package input, Docling `ingest`, control register, `candidates` with lead-ins and neighbors, `triage`, full `extract`, the second-pass trial, `lint` with contract flags, `consolidate` with `RequirementGroup`s, `coverage`, unflagged sampling. Limiter, response cache, first `ContextManager`. Hero (with an XLSX annex), held-out and development DOCX RFPs, traps added to the development RFP, supplier KB, gold v2 and seeds. Docling replay for `demo` and `test`. Matcher, scorer self-test, full scorecard with funnel, regression gate, B0, the matrix runner `src/bidwright/matrix.py`, `evals/hypotheses.yaml`, and `guard` on CrackedPDFs. Compliance matrix, clarification questions, submission checklist. A measured partial hero run (extraction and consolidation) for the budget decision. | C7-08, C7-09, C7-10, C7-14 (Hypothesis); S-01, S-02, S-03 (on the hero), S-10, S-13; V-02; Q-10; read DR-01, DR-03, DR-16; launch DR-05, DR-18 | Review gold (about 1 hour), write the held-out RFP's requirement list (about 1 hour), set the paid budget, triage Stage 9 |
 | **2 Research the domain** | 7h | Control-plane core: supervisor, policy, gateway rules, budget, recovery, stop control and the run state machine. `brief`, the MCP client and tool pins, `discover`, `ask_research`, research packs with local search, and the research modes. The MCP client also speaks stdio, for the pinned sequential-thinking server. FI-01, FI-02, FI-09, FI-10, FI-11. | C7-16; S-11; Q-04; read DR-18 | NotebookLM login for `live`, triage Stage 9 |
-| **3 Engineer the solution** | 12h | `decide`, `assess`, the capability map, `options`, `blueprint` with a sourced `SolutionManifest`, full `risk`, `techcheck`, `solution_gate`, method cards, the bid/no-bid memo, and the gated `reflect` tool, off by default. A small ablation at the exit: EX0-EX3, SO0-SO3 with SO1-F and SO1-T, and RK0, RK1-F, RK1 and RK1-T, 5 repeats each, with SO and RK reading a frozen EX3 run. QS-2, QS-3, QS-5 and QS-8 on 5 live hero repeats. The second Goldfish architecture review. | C7-02, C7-03; S-12; Q-01, Q-09; read DR-05 | Cerebras key, approve one manifest, triage Stage 9 |
+| **3 Engineer the solution** | 14.5h | `decide`, `assess`, the capability map, `options`, `blueprint` with a sourced `SolutionManifest`, full `risk`, `techcheck`, `solution_gate`, method cards, the bid/no-bid memo, and the gated `reflect` tool, off by default. A small ablation at the exit: EX0-EX3, SO0-SO3 with SO1-F and SO1-T, and RK0, RK1-F, RK1 and RK1-T, 5 repeats each, with SO and RK reading a frozen EX3 run. QS-2, QS-3, QS-5 and QS-8 on 5 live hero repeats. The second Goldfish architecture review. The first version of the Streamlit Run, Review and Ops pages, with span replay into Phoenix (CH-94). | C7-02, C7-03, C7-14 (Streamlit); S-12; Q-01, Q-09; read DR-05 | Cerebras key, approve one manifest, triage Stage 9 |
 | **4 Write the proposal** | 10h | `plan_sections` with storyboards, `pink_check`, `draft`, `validate`, `redteam`, `repair`, the Gold review, the drift check and the two skills. Proposal DOCX, bid calendar, RACI, proof inventory, review log, departures schedule, handover pack. | C7-15; read DR-17 | Review the two skills and one section, triage Stage 9 |
 | **5 Prove it (release target)** | 10h | Full EX, SO, RK and PR ablations with their fixed controls and repeats, judges, calibration, consistency, external benchmarks, `docs/security.md` completed, `docs/evaluation.md` completed, the one-page assurance case, `docs/product.md` with the value story and production path, and `evals/rubrics/ey-review-standard.md` for the release review | V-01; DR-07, DR-09, DR-12 | 40 labels and 10 accept or reject decisions (about 45 minutes) |
 | **Release** | 4h | The release step, section 2.13 | V-01 | Read and rehearse, record the demo |
-| **6 Operate it (optional)** | 8h | Streamlit Run, Review and Ops pages, the seven-model local bake-off with `reflect` on and off, a third RFP, the full matrix, the bid-review deck | C7-04 (full), C7-14 (Streamlit); S-08 (GPU); DR-08, DR-10, DR-11 | Rate review usability |
+| **6 Operate it (optional)** | 6h | Streamlit extensions for the proposal pack's review and the bake-off's results, the seven-model local bake-off with `reflect` on and off, a third RFP, the full matrix, the bid-review deck | C7-04 (full); S-08 (GPU); DR-08, DR-10, DR-11 | Rate review usability |
 | **7 Extend it (optional)** | 8h | Typed graph gate, dense plus RRF retrieval, the `hybrid` profile, metamorphic checks, render-and-compare hidden-text detection. Each stays only if it beats its baseline in a measured comparison. | Q-08; S-06 | None |
 
-The release target needs about 68 hours, and 84 with both optional iterations.
+The release target needs about 70.5 hours, and 84.5 with both optional iterations (CH-94).
 
 **Open decisions each design doc must close**, as ADRs, before its Stage 9 review:
 - **Iteration 1:** final cue list, `triage` zone rules, the `consolidate` cluster rule, the quarantine and small-print review format, the compliance matrix layout.
@@ -1099,11 +1103,11 @@ Each row has one named test, built in the iteration that ships the row. FI tests
 | `render` | Schema failure | Block output, `UNRECOVERABLE_FAULT` | 0 | `test_render_schema` | 0a |
 | Any | Budget, quota or stop command | `BUDGET_EXCEEDED`, `QUOTA_PAUSED` or `STOPPED`, with checkpoint and artifacts kept | 0 | `test_budget_stop_resume` | 0a budget, 2 for the rest |
 
-- **HITL:** two gates. `solution_gate` approves the manifest with its research and validation log before drafting, and `review` is the Gold gate before anything leaves `UNREVIEWED_DRAFT`. Until Iteration 6 both are CLI gates: the run writes a review file, the owner edits or approve it, and `bidwright approve <run>` resumes. `--auto-select` exists for evaluation only, and every override, human or automatic, is logged in the run manifest. Maker-Checker applies to any High deployment: the agent that drafts never approves.
+- **HITL:** two gates. `solution_gate` approves the manifest with its research and validation log before drafting, and `review` is the Gold gate before anything leaves `UNREVIEWED_DRAFT`. Both are CLI gates: the run writes a review file, the owner edits or approves it, and `bidwright approve <run>` resumes; from Iteration 3 the Review page builds the same `approve` command for `solution_gate` (CH-94). `--auto-select` exists for evaluation only, and every override, human or automatic, is logged in the run manifest. Maker-Checker applies to any High deployment: the agent that drafts never approves.
 - **Automated triggers:** a regression blocks the CI gate, a safety breach halts the run with `POLICY_BLOCKED`, and an error spike opens the breaker.
 - **Stop control:** `bidwright stop <run>` halts at the next node boundary and keeps the last checkpoint, and `bidwright resume <run>` continues. Fault injection tests both.
 - **Compensation:** `ingest` and `render` only add new versions, so nothing needs undoing. `repair` commits a shadow candidate and rolls back to the last accepted version. Idempotency keys follow the cassette key in section 10.9.
-- **Observability:** the ledger, events and Phoenix trace, kept with run artifacts, with sample runs committed. Locally, alerts are CLI warnings, and Ops page flags from Iteration 6.
+- **Observability:** the ledger, events and Phoenix trace, kept with run artifacts, with sample runs committed. Locally, alerts are CLI warnings, and Ops page flags from Iteration 3.
 - **A/B plan:** each ablation's first rung is the control and each later rung a variant, under the keep-or-drop rule in Evaluation design, committed before the first scored run.
 
 **How each module gets built:** load the governing skill, validate the library claims, write tests first for code nodes, build, run on the development RFP with a trace, and log any real failure in `DECISIONS.md` at once.
@@ -1293,7 +1297,7 @@ Compliance status defaults to `UNVERIFIED` and stays separate from delivery mode
 
 | Service | Image | Job | Profile | From |
 |---|---|---|---|---|
-| `app` | Built here, multi-stage with `uv`, non-root | The `bidwright` CLI through `docker compose run`, and Streamlit on `:8501` from Iteration 6 | Default | 0a |
+| `app` | Built here, multi-stage with `uv`, non-root | The `bidwright` CLI through `docker compose run`, and Streamlit on `:8501` from Iteration 3 (CH-94) | Default | 0a |
 | `phoenix` | `arizephoenix/phoenix`, pinned | Traces and experiments on `:6006` | Default | 0a |
 | `eval` | Same image as `app` | `bidwright-eval`: scores frozen runs. The only service that sees gold. | `eval` | 0a |
 | `test` | Same image | Replay tests with no keys and no network, the same command CI runs | `test` | 0a |
@@ -1307,7 +1311,7 @@ Compliance status defaults to `UNVERIFIED` and stays separate from delivery mode
 | `config/`, `prompts/`, `skills/`, `knowledge_base/` | Read-only | Read-only | Read-only |
 | `outputs/` | Read-write | Read-only | Temporary copy |
 | `evals/corpus/`, `evals/gold/` | **Never** | Read-only | Never |
-| `evals/results/` | Never | Read-write | Never |
+| `evals/results/` | Never; read-only from Iteration 3, for the UI, if D-11 accepts ADR-050 | Read-write | Never |
 | `tests/cassettes/` | Never | Never | Read-only |
 | Named volumes for SQLite state | Read-write | Own volume | Temporary |
 
@@ -1341,7 +1345,7 @@ Python 3.12 inside the image. Versions are locked at implementation (V-08), and 
 | Corpus | `reportlab` for PDFs, `python-docx` and `openpyxl` for DOCX and XLSX | Renders every spec, including hidden-text traps |
 | Documents | `python-docx`, `openpyxl`, `python-pptx` | Proposal, matrix and deck |
 | CLI | `argparse` | No extra dependency |
-| UI | CLI gates first; `streamlit` 1.66 Run, Review and Ops pages in Iteration 6 | Gates work without a UI |
+| UI | CLI gates first; `streamlit` Run, Review and Ops pages from Iteration 3 (CH-94), extended in Iteration 6 | Gates work without a UI |
 | Quality | `ruff`, `pyright`, `pytest`, `gitleaks`, `pip-audit`, `npm audit` from Iteration 3 (CH-89), GitHub Actions | CI builds the image, runs replay tests, scans secrets and dependencies, and checks the documentation |
 
 #### Model strategy
@@ -1601,7 +1605,7 @@ warn:
 
 **Cassettes** are keyed by the prompt text's hash, the schema hash, the tool definitions' hash, the model, the decoding and thinking settings, the input's hash before delimiters, and the repeat index. Repeats therefore never hit each other's cache entries, and seeded delimiters keep replay and resume stable. Changing any part fails CI until the cassettes are re-recorded and re-scored, and tool descriptions are pinned the same way. CI shows that the code path and scorers are unchanged. Only live runs show model quality.
 
-**Where to see it:** `scorecard.md` in the repo, Phoenix for the trace behind any score, `bidwright-eval explain` for a single miss, and the Streamlit Ops page from Iteration 6.
+**Where to see it:** `scorecard.md` in the repo, Phoenix for the trace behind any score, `bidwright-eval explain` for a single miss, and the Streamlit Ops page from Iteration 3.
 
 **Output files**
 
@@ -1747,7 +1751,7 @@ The ablation tables are the centerpiece. They show what each rung buys and wheth
 - **Dual cost:** real spend plus a shadow price at paid list rates, so free, local and paid runs compare fairly. Cost per 1,000 requirements is the headline unit.
 - A quota view, the run manifest, and a frozen clock in replay.
 - The human override rate, tracked as a review-health signal with no fixed threshold.
-- The Streamlit Ops page from Iteration 6: cost and latency by node, cache hit rate, retries, quota, and scorecards across versions.
+- The Streamlit Ops page from Iteration 3 (CH-94): cost, tokens and latency by node and model, a run's scores and the ladders; cache hit rate, retries, quota and scorecards across versions in Iteration 6.
 
 #### Prompt assets
 
@@ -1790,7 +1794,7 @@ EY_Challenge/
     cli.py  matcher.py  score.py [0a]; funnel.py  gates.py  report.py  explain.py [1]
     judges.py  calibration.py  variants.py [5]; bakeoff.py [6]
     corpus/  gold/  render/ (pdf.py, gold.py) [0a]; hypotheses.yaml  rubrics/  labels/  external/  results/ [1-5]
-  app/               Streamlit pages                                                [6]
+  app/               Streamlit pages                                                [3]
   tests/             unit, property-based, fault-injection, replay end-to-end, cassettes/, data/s09_cases.yaml  [0a]
   samples/           outputs from one real run, the only committed sample folder    [0a, refreshed at each tag]
   docs/              verification_log.md  demo_script.md [0a]; architecture.md  decision-matrix.md  designs/  agents.md (generated)  security.md (one page)  evaluation.md (stub) [0b]; security.md and evaluation.md completed, product.md [5]
