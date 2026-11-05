@@ -1127,6 +1127,7 @@ The stored form of `control/budget.json`.
 | `statement` | str | yes |  |  |
 | `modality` | one of 'shall', 'must', 'will', 'should', 'may', 'none' | yes |  |  |
 | `quote` | str | yes |  |  |
+| `src_ids` | list[str] | no | [] |  |
 
 ## `NeedView`
 

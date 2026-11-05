@@ -349,8 +349,9 @@ def hosting_note(profile: str, provider: str) -> str:
 TOOL_ACCESS = {
     "search_rfp": "Reads the run's own search index of the RFP; writes nothing",
     "date_calc": "Computes dates; reads and writes nothing",
-    "ask_research": "Reads the selected research pack, or sends one question to the"
-    " NotebookLM notebook code bound; `discover` records each answer in `research.json`",
+    "ask_research": "For `discover`, reads the selected research pack, or sends one question"
+    " to the NotebookLM notebook code bound, and records each answer in `research.json`; for"
+    " `decide`, reads only the research the run already holds, and writes nothing",
     "start_research": "Sends one query, built from the research envelope, to NotebookLM"
     " as a deep research job on a notebook code created; `discover` writes the job to"
     " `research.json`",

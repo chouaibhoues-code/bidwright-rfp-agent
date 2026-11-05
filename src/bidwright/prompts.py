@@ -34,7 +34,7 @@ PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
 EXAMPLES_FILE = Path("examples") / "mini_rfp.yaml"
 NOTES_HEADING = "## Why it works"
 _TASK_ELEMENT = re.compile(
-    r"\s*<(task|final_task|second_pass|ask|extract|reminder|envelope|repair_[a-z_]+)>\s*(.*?)"
+    r"\s*<(task|final_task|second_pass|ask|extract|reminder|envelope|fixed|repair_[a-z_]+)>\s*(.*?)"
     r"\s*</\1>",
     re.DOTALL,
 )
@@ -212,6 +212,7 @@ def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
         "consolidate": _consolidate_examples,
         "brief": _brief_examples,
         "discover": _discover_examples,
+        "decide": _decide_examples,
     }
     if name not in renderers or name not in sets:
         raise ValueError(f"no example set {name!r} in {EXAMPLES_FILE}")
@@ -302,6 +303,33 @@ def _risk_examples(example: dict[str, Any]) -> str:
             f" {_dump(example['generic']['risk'])}",
         ]
     )
+
+
+def _decide_examples(examples: list[dict[str, Any]]) -> str:
+    """Contrasting needs, each with what `search_capabilities` returned and the decision. Every
+    claim cites only the records found and the need's own passages."""
+    blocks = []
+    for example in examples:
+        need = schemas.NeedView.model_validate(example["need"])
+        result = schemas.DecideResult.model_validate(example["result"])
+        found = {record["id"] for record in example["found"]}
+        passages = {s for r in need.requirements for s in r.src_ids}
+        for claim in result.claims:
+            if not set(claim.evidence_ids) <= found or not set(claim.src_ids) <= passages:
+                raise ValueError(f"example {need.need_id}: a claim cites what was not found")
+        blocks.append(
+            "\n".join(
+                [
+                    "A need:",
+                    f" {_dump(example['need'])}",
+                    "search_capabilities returned:",
+                    "\n".join(f" {_dump(record)}" for record in example["found"]),
+                    "The decision:",
+                    f" {_dump(example['result'])}",
+                ]
+            )
+        )
+    return "\n\n".join(blocks)
 
 
 def _draft_examples(examples: list[dict[str, Any]]) -> str:

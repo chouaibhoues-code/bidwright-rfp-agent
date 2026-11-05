@@ -25,6 +25,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `approach` | 0.2.0 | reason | `sha256:d95f06596240` |
 | `brief` | 0.2.0 | extract | `sha256:58dc56bb634a` |
 | `consolidate` | 0.1.0 | reason | `sha256:0e4706513b48` |
+| `decide` | 0.1.0 | reason | `sha256:7fad296ecb75` |
 | `discover` | 0.4.0 | reason | `sha256:be5de32c2002` |
 | `draft` | 0.2.0 | reason | `sha256:e565f6bb6f35` |
 | `extract` | 0.4.0 | extract | `sha256:11cde3336a38` |
@@ -42,6 +43,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `extract` | function | None | 1 call and 1 repair, fixed in code |
 | `approach` | function | None | 1 call and 1 repair, fixed in code |
 | `risk` | agent | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
+| `decide` | agent | `search_capabilities`, `search_rfp`, `read_section`, `ask_research` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
 | `draft` | function | None | 1 call and 1 repair, fixed in code |
 | `consolidate` | function | None | 1 call and 1 repair, fixed in code |
 
@@ -57,12 +59,12 @@ Controls on every run, in code:
 
 | Tool | Access | Called by |
 |---|---|---|
-| `search_rfp` | Reads the run's own search index of the RFP; writes nothing | `risk` |
+| `search_rfp` | Reads the run's own search index of the RFP; writes nothing | `risk`, `decide` |
 | `date_calc` | Computes dates; reads and writes nothing | `risk` |
-| `ask_research` | Reads the selected research pack, or sends one question to the NotebookLM notebook code bound; `discover` records each answer in `research.json` | `discover` |
+| `ask_research` | For `discover`, reads the selected research pack, or sends one question to the NotebookLM notebook code bound, and records each answer in `research.json`; for `decide`, reads only the research the run already holds, and writes nothing | `discover`, `decide` |
 | `start_research` | Sends one query, built from the research envelope, to NotebookLM as a deep research job on a notebook code created; `discover` writes the job to `research.json` | `discover` |
-| `search_capabilities` | Reads the run's own index of the supplier's knowledge base; writes nothing | No agent |
-| `read_section` | Reads one section of the run's passages, as its text view shows them; writes nothing | No agent |
+| `search_capabilities` | Reads the run's own index of the supplier's knowledge base; writes nothing | `decide` |
+| `read_section` | Reads one section of the run's passages, as its text view shows them; writes nothing | `decide` |
 | `sla_calc` | Computes service-level downtime and percentages; reads and writes nothing | No agent |
 
 ## Services

@@ -55,6 +55,16 @@ risk:
   tools: [search_rfp, date_calc]
   limits: {max_turns: 4, max_tool_calls: 6, stop_on_no_progress: true}
 
+# Iteration 3 (ADR-039, ADR-040): one loop per need; ask_research reads the run's own research.
+decide:
+  kind: agent
+  input: DecideTask
+  output: DecideResult
+  prompt: decide@0.1.0
+  model_role: reason
+  tools: [search_capabilities, search_rfp, read_section, ask_research]
+  limits: {max_turns: 4, max_tool_calls: 6, stop_on_no_progress: true}
+
 draft:
   kind: function
   input: DraftTask

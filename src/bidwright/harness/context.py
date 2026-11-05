@@ -74,6 +74,9 @@ CALL_PREFIX = {
     "risk": "R",
     "draft": "S",
 }
+# Iteration 3 (ADR-039): nodes whose call ids name their unit, a need, a claim or a technology
+# claim, as `consolidate`'s name the cluster, with no prefix.
+UNIT_NODES = frozenset({"decide", "assess", "techcheck"})
 BRIEF_ZONES = ("EVALUATION", "INSTRUCTION")  # packed in this order
 CONTEXT_DIR = "context"
 _PACK_KEYS = len(json.dumps({"passages": [], "context": [], "terms": []}, separators=(",", ":")))
@@ -502,8 +505,9 @@ class ContextManager:
         """The manifest of one call whose evidence is records or excerpts: `discover`'s, whose
         `record_ids` are the excerpt ids the call was given, and `approach`'s, `risk`'s and
         `draft`'s, whose `record_ids` are the requirement, approach, risk and question ids of
-        their input."""
-        _prefix(node)
+        their input. A node in `UNIT_NODES` names its call by its unit, with no prefix."""
+        if node not in UNIT_NODES:
+            _prefix(node)
         _check_budget(budget_tokens)
         return self._manifest(
             node,

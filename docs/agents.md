@@ -14,6 +14,7 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.4.0` | extract | None | None |
 | `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
 | `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
+| `decide` | agent | `DecideTask` | `DecideResult` | `decide@0.1.0` | reason | `search_capabilities`, `search_rfp`, `read_section`, `ask_research` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
 | `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | None |
 | `consolidate` | function | `ClusterTask` | `ConsolidationResult` | `consolidate@0.1.0` | reason | None | None |
 
@@ -26,6 +27,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | `approach` | 0.2.0 | reason | Skeleton-of-Thought | `ApproachResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `brief` | 0.2.0 | extract | plain rules and a factor table, positive directives | `BriefResult` | gemini: thinking low; ollama: think False | 2026-11-05 |
 | `consolidate` | 0.1.0 | reason | ordered steps in the task, positive directives | `ConsolidationResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
+| `decide` | 0.1.0 | reason | Typed decision first, then claims, after a bounded tool loop | `DecideResult` | gemini: thinking low; ollama: think False | never |
 | `discover` | 0.4.0 | reason | plain rules with positive directives; the research envelope of M18 for the query | `DiscoveryExtract` | gemini: thinking low; ollama: think False | 2026-11-05 |
 | `draft` | 0.2.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract` | 0.4.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
@@ -69,7 +71,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | call cap | Every call | The agent's tool-call cap is not yet spent, counting from the run's start | Deny |
 | G4 pinned server | `start_research`, `ask_research`, when the research provider is NotebookLM | The server's reported name and version, and its tools, matched their pins when the run first connected | Deny: "server refused: its tools do not match their pins" |
 | G1 job limit | `start_research` | Fewer than 2 jobs this run, or the query of a recorded job, which starts nothing; and no other `start_research` in the same turn | Deny: "the run's research jobs are spent", or "one job a turn" |
-| G5 question cap | `ask_research` | Fewer than 6 questions this run, or a recorded question, which is answered from `research.json` | Return to the model: "no questions left; finish" |
+| G5 question cap | `ask_research` from `discover` | Fewer than 6 questions this run, or a recorded question, which is answered from `research.json` | Return to the model: "no questions left; finish" |
 | G3 outbound overlap | `start_research`, `ask_research` | The text the tool would send shares fewer than 8 consecutive normalized words with every passage of the run | Deny, with a security event attributed `injection-dominant` when the passage is marked `suspect` and `indeterminate` otherwise |
 
 ## Runtime graph

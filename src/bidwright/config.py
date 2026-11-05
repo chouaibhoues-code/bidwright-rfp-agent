@@ -191,6 +191,14 @@ class BreakerConfig(Strict):
     cooldown_minutes: float = Field(gt=0)
 
 
+class SolutionLimits(Strict):
+    """Iteration 3's solution path (ADR-039): the needs `decide` takes a run and the claims a
+    need may draft."""
+
+    need_cap: int = Field(ge=1)
+    claims_per_need: int = Field(ge=1)
+
+
 class LimitsConfig(Strict):
     runs: dict[str, dict[str, RunLimits]]
     call: CallLimits
@@ -204,6 +212,7 @@ class LimitsConfig(Strict):
     second_pass: bool
     retention: RetentionConfig
     breaker: BreakerConfig
+    solution: SolutionLimits
 
     def run(self, corpus: str, profile: str) -> RunLimits:
         try:

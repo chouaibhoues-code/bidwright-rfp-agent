@@ -310,7 +310,7 @@ class JobLimit(Rule):
 
 class QuestionCap(Rule):
     name = "G5 question cap"
-    trigger = "`ask_research`"
+    trigger = "`ask_research` from `discover`"
     description = (
         "Fewer than 6 questions this run, or a recorded question, which is answered from"
         " `research.json`"
@@ -318,6 +318,11 @@ class QuestionCap(Rule):
     outcome = "return"
     note = ': "no questions left; finish"'
     tools = frozenset({"ask_research"})
+
+    def triggered(self, call: Call, gateway: "ToolGateway") -> bool:
+        """Only `discover`'s questions reach a research provider; `decide`'s ask the run's own
+        research and count against its call cap (Iteration 3, section 6.2)."""
+        return super().triggered(call, gateway) and call.request.agent == "discover"
 
     def check(self, call: Call, gateway: "ToolGateway") -> Finding | None:
         context = gateway.context

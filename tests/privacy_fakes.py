@@ -59,6 +59,8 @@ class ScriptedModel:
         if request.tools:
             if any(m.role == "tool" for m in request.messages):
                 return Response(text="The search answered the question.", usage=USAGE)
+            if any(tool.name == "search_capabilities" for tool in request.tools):
+                return tools(("search_capabilities", {"query": "case management"}))
             return tools(("search_rfp", {"query": "procurement officer"}))
         return Response(text=json.dumps(self._answer(request)), usage=USAGE)
 
@@ -74,6 +76,8 @@ class ScriptedModel:
             return {"summary": "", "items": [], "needs": [], "open_questions": []}
         if name == "ConsolidationResult":
             return {"topic": "Requirements of one section", "duplicates": [], "references": []}
+        if name == "DecideResult":  # Iteration 3: a gap, which copies no document text
+            return {"decision": "PROCEED_WITH_GAP", "reason": "No evidence.", "gap": "None."}
         if name == "ApproachResult":
             ids = [r["id"] for r in data["requirements"]]
             item = {"text": "Deliver each requirement.", "requirement_ids": ids, "basis": "Stated."}

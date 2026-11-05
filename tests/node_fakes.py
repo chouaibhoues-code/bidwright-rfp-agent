@@ -39,6 +39,7 @@ PROMPT_IDS = (
     "approach",
     "risk",
     "draft",
+    "decide",
 )
 RISK_LIMITS = AgentLimits(max_turns=4, max_tool_calls=6, stop_on_no_progress=True)
 USAGE = Usage(tokens_in=500, tokens_out=100)
@@ -108,6 +109,11 @@ class RuleBackend:
         if request.tools:
             names = {tool.name for tool in request.tools}
             answered = any(m.role == "tool" for m in request.messages)
+            if "search_capabilities" in names:  # decide: one knowledge-base search, then done
+                if answered:
+                    return Response(text="The knowledge base answered.", usage=USAGE)
+                words = data.get("need", {}).get("topic") or data.get("need", {}).get("text")
+                return tools(("search_capabilities", {"query": words or "case management"}))
             if "ask_research" in names:  # discover_ask: one question, then done
                 if answered:
                     return Response(text="The research covers what the brief needs.", usage=USAGE)
@@ -133,6 +139,8 @@ class RuleBackend:
             return Response(text=json.dumps(_discovery(data)), usage=USAGE)
         if name == "ConsolidationResult":
             return Response(text=json.dumps(_consolidate(data)), usage=USAGE)
+        if name == "DecideResult":
+            return Response(text=json.dumps(_decide(request, data)), usage=USAGE)
         if name == "ApproachResult":
             items = [
                 {
@@ -388,3 +396,31 @@ GENERIC_RISK = {
     "residual_exposure": "Medium.",
     "evidence_src_ids": [],
 }
+
+
+def _decide(request: Request, data: dict[str, Any]) -> dict[str, Any]:
+    """`decide`'s final answer: `RETRIEVE_EVIDENCE` with one claim citing the first
+    knowledge-base id its search returned and the need's first passage, or `PROCEED_WITH_GAP`
+    when the search returned none (Iteration 3, step 4)."""
+    evidence = []
+    for message in request.messages:
+        if message.role == "tool" and message.name == "search_capabilities":
+            body = json.loads(message.content)
+            evidence += [hit["id"] for hit in body.get("data") or []]
+    need = data.get("need", {})
+    evidence += [record["id"] for record in data.get("evidence", [])]  # the fixed mode
+    src_ids = [s for r in need.get("requirements", []) for s in r.get("src_ids", [])]
+    src_ids += [p["src_id"] for p in data.get("passages", [])]
+    if not evidence or not src_ids:
+        return {
+            "decision": "PROCEED_WITH_GAP",
+            "reason": "No record supports it.",
+            "gap": "No record.",
+        }
+    claim = {
+        "kind": "capability",
+        "text": f"The supplier delivers {need.get('topic') or 'this need'}.",
+        "evidence_ids": [evidence[0]],
+        "src_ids": [src_ids[0]],
+    }
+    return {"decision": "RETRIEVE_EVIDENCE", "reason": "A record supports it.", "claims": [claim]}

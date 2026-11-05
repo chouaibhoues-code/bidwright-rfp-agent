@@ -340,3 +340,34 @@ discover:
     needs:
       - {need: "Routes planned again when pupils' eligibility changes", excerpt_ids: [PX-0903]}
     open_questions: ["How often should background checks be renewed?"]
+# decide (Iteration 3): two contrasting needs. The first is supported by records its search
+# returned; the second asks for a named integration the knowledge base cannot show, so it is a
+# gap: a generic REST API is not proof of it (BA-003). Ids are the examples' own.
+decide:
+  - need:
+      need_id: RG-901
+      origin: RFP
+      topic: "Retention of signed consent forms"
+      requirements:
+        - {id: REQ-0901, statement: "Keep signed consent forms for ten years.", modality: shall, quote: "The Supplier shall keep signed consent forms for ten years.", src_ids: [SRC-0901]}
+    found:
+      - {id: CAP-901, kind: capability, name: "Document retention", text: "Retention periods are set for each document type and enforced automatically."}
+      - {id: CS-901, kind: case_study, name: "A county council, local government", text: "Ten-year retention of planning records, enforced since 2023."}
+    result:
+      decision: RETRIEVE_EVIDENCE
+      reason: "CAP-901 sets retention per document type, and CS-901 shows ten-year retention in use."
+      claims:
+        - {kind: capability, text: "Retention periods are set per document type and enforced automatically, so signed consent forms are kept for ten years.", evidence_ids: [CAP-901, CS-901], src_ids: [SRC-0901]}
+  - need:
+      need_id: RG-902
+      origin: RFP
+      topic: "Integration with the Trust's patient record system"
+      requirements:
+        - {id: REQ-0902, statement: "Integrate with the Halden patient record system.", modality: shall, quote: "The Supplier shall integrate with the Trust's Halden patient record system.", src_ids: [SRC-0902]}
+    found:
+      - {id: CAP-906, kind: capability, name: "REST API integration", text: "A documented REST API for exchanging data with other systems."}
+    result:
+      decision: PROCEED_WITH_GAP
+      reason: "The knowledge base shows a generic REST API, which does not show an integration with the Halden system."
+      claims: []
+      gap: "No evidence of an integration with the Halden patient record system."

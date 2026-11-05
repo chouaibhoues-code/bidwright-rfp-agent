@@ -1266,6 +1266,7 @@ class NeedRequirement(Facing):
     statement: str
     modality: Modality
     quote: str
+    src_ids: list[str] = Field(default_factory=list)  # the passages a claim may cite
 
 
 class NeedView(Facing):
