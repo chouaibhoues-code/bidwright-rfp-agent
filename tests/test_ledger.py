@@ -36,7 +36,9 @@ def test_ledger_totals_match_the_manifest(tmp_path: Path) -> None:
     assert manifest.totals == totals_of(ledger, manifest.totals.active_seconds)
     assert manifest.totals.requests == len(ledger) == len(model.requests)
     assert manifest.totals.cost_usd == 0.0 and manifest.totals.shadow_cost_usd > 0
-    nodes = {"triage", "extract", "consolidate", "approach", "risk", "draft"}
+    # Research mode `pack` finds no pack for the development RFP's domain, so `discover_load`
+    # makes no call.
+    nodes = {"triage", "extract", "consolidate", "brief", "approach", "risk", "draft"}
     assert {entry.node for entry in ledger} == nodes
 
 

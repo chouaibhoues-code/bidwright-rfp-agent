@@ -2,7 +2,8 @@
 the demo: on the profile, input and stop that `recording.json` names, with Docling replayed
 too, so no replay needs keys, a model or the Docling service. A recording whose pack size or
 second-pass setting differs from `config/limits.yaml` fails first, with a message that says
-which one, since neither is part of a cassette key."""
+which one, since neither is part of a cassette key. A replay runs in the recording's own
+research mode, `off` for a recording made before Iteration 2, unless `research` names another."""
 
 import json
 from pathlib import Path
@@ -13,11 +14,14 @@ from bidwright.config import load_config
 from bidwright.graph.build import RunResult, execute
 from bidwright.llm.replay import CassetteStore
 from bidwright.preflight import HOME
+from bidwright.schemas import ResearchModeName
 
 CASSETTES = HOME / "tests" / "cassettes"
 
 
-def replay(name: str, outputs: Path) -> tuple[RunResult, dict[str, Any]]:
+def replay(
+    name: str, outputs: Path, research: ResearchModeName | None = None
+) -> tuple[RunResult, dict[str, Any]]:
     store = CASSETTES / name
     recording = json.loads((store / "recording.json").read_text(encoding="utf-8"))
     limits = load_config().limits
@@ -31,6 +35,7 @@ def replay(name: str, outputs: Path) -> tuple[RunResult, dict[str, Any]]:
         mode="replay",
         cassettes=CassetteStore(store),
         until=recording.get("until", "render"),
+        research=research or recording.get("research", "off"),
         run_id=f"replay-{name}",
     )
     return result, recording

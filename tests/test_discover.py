@@ -1,5 +1,8 @@
-"""`discover` (Iteration 2, step 11): the five research nodes, called directly, against the fake
-NotebookLM server over HTTP through `NotebookLMProvider`, with scripted model turns."""
+"""`discover` (Iteration 2, steps 11 and 12): the five research nodes, called directly, against
+the fake NotebookLM server over HTTP through `NotebookLMProvider`, with scripted model turns;
+then whole live-research runs through `execute`, with the rule backend as the model: a wait
+and its resume, a crash after `discover_start`, a resume at `discover_ask`, and an open breaker
+on the server."""
 
 import json
 from collections.abc import Iterator, Sequence
@@ -10,7 +13,8 @@ from typing import Any
 import pytest
 
 from bidwright.candidates import cut
-from bidwright.config import ResearchConfig, ServerPins, compile_patterns, load_config
+from bidwright.config import Config, ResearchConfig, ServerPins, compile_patterns, load_config
+from bidwright.graph.build import RunResult, execute
 from bidwright.graph.discover import (
     BRIEF_FILE,
     RESEARCH_FILE,
@@ -21,9 +25,10 @@ from bidwright.graph.discover import (
 from bidwright.harness.budget import RunBudget
 from bidwright.harness.context import ContextManager
 from bidwright.harness.gateway import ToolLog
+from bidwright.harness.recovery import CircuitBreaker, server_key
 from bidwright.harness.rules import query_sha256
 from bidwright.ingest import display_text
-from bidwright.llm.types import Response
+from bidwright.llm.types import Request, Response
 from bidwright.obs.events import EventRecorder, read_events
 from bidwright.research.audit import query_overlaps
 from bidwright.research.mcp_client import McpClient
@@ -38,9 +43,21 @@ from bidwright.schemas import (
     PackSource,
     ResearchJob,
     ResearchRecord,
+    RunManifest,
 )
 from tests.mcp_fakes import INJECTED, WCAG, WCAG_URL, http_server, serving
-from tests.node_fakes import Reply, ScriptBackend, context, data_of, dev_ingest, text, tools
+from tests.node_fakes import (
+    DEV_RFP,
+    USAGE,
+    Reply,
+    RuleBackend,
+    ScriptBackend,
+    context,
+    data_of,
+    dev_ingest,
+    text,
+    tools,
+)
 
 CONFIG = load_config()
 AGENT = CONFIG.agents.agents["discover"]
@@ -528,3 +545,151 @@ def test_query_overlaps_finds_a_planted_copy(tmp_path: Path) -> None:
     )
     assert planted_query.shared >= 8, planted_query
     assert (question.kind, question.label) == ("question", "Q1") and question.shared < 8
+
+
+# --- whole runs through execute (step 12) -----------------------------------------------------
+
+
+def _config(**jobs: Any) -> Config:
+    """The configuration with research packs from tests/data/packs and the jobs changed."""
+    config = load_config()
+    research = config.research.model_copy(
+        update={"packs_dir": str(PACKS), "jobs": config.research.jobs.model_copy(update=jobs)}
+    )
+    return config.model_copy(update={"research": research})
+
+
+def _live(
+    outputs: Path,
+    provider: ResearchProvider,
+    run_id: str,
+    model: Any = None,
+    *,
+    config: Config | None = None,
+    resume: bool = False,
+) -> RunResult:
+    """The development PDF in research mode live, with the rule backend as the model."""
+    return execute(
+        docling_mode="replay",
+        source=DEV_RFP,
+        profile="free",
+        outputs=outputs,
+        backends={"gemini": model or RuleBackend()},
+        run_id=run_id,
+        research="live",
+        provider=provider,
+        config=config or _config(poll_seconds=0.01),
+        resume=resume,
+    )
+
+
+def _manifest(run_dir: Path) -> RunManifest:
+    return RunManifest.model_validate_json((run_dir / "run_manifest.json").read_text("utf-8"))
+
+
+def test_a_live_run_waits_for_research_and_a_resume_completes_it(
+    tmp_path: Path, fake_url: str
+) -> None:
+    capped = _config(wait_minutes=0.0005, poll_seconds=0.01)  # a cap of 30 milliseconds
+    waiting = _live(tmp_path, _provider(fake_url), "waiting", config=capped)
+    assert waiting.status == "WAITING_RESEARCH", waiting.reason
+    assert "J1 still runs after" in (waiting.reason or "")
+    assert _record(waiting.run_dir).jobs[0].state == "timed_out"
+    resumed = _live(tmp_path, _provider(fake_url), "waiting", config=capped, resume=True)
+    assert resumed.status == "COMPLETED", resumed.reason
+    record = _record(resumed.run_dir)
+    assert record.jobs[0].state == "completed" and len(record.answers) == 1
+    summary = (resumed.run_dir / "solution_summary.md").read_text(encoding="utf-8")
+    assert "## Appendix: domain research (external, unverified)" in summary
+    assert "From this run's live research, job J1." in summary
+    assert f"Sources: {WCAG} (tier 1)." in summary
+    manifest = _manifest(resumed.run_dir)
+    assert manifest.research is not None
+    assert (manifest.research.mode, manifest.research.jobs) == ("live", 1)
+    assert [change.status for change in manifest.status_history] == [
+        "RUNNING",
+        "WAITING_RESEARCH",
+        "RUNNING",
+        "COMPLETED",
+    ]
+
+
+class CrashOnPoll(NotebookLMProvider):
+    """The crash the design names: a KeyboardInterrupt from the next server call, the poll."""
+
+    def status(self, notebook_id: str, task_id: str, wait_s: float) -> JobStatus:
+        raise KeyboardInterrupt
+
+
+def test_a_crash_after_discover_start_resumes_without_a_second_job(
+    tmp_path: Path, fake_url: str
+) -> None:
+    before = _counts(fake_url)
+    with pytest.raises(KeyboardInterrupt):
+        _live(tmp_path, _provider(fake_url, kind=CrashOnPoll), "crashed")
+    assert _manifest(tmp_path / "crashed").status == "STOPPED"
+    resumed = _live(tmp_path, _provider(fake_url), "crashed", resume=True)
+    assert resumed.status == "COMPLETED", resumed.reason
+    after = _counts(fake_url)
+    assert after["research_start"] - before["research_start"] == 1, "no second job"
+    assert after["notebook_create"] - before["notebook_create"] == 1
+    assert [j.label for j in _record(resumed.run_dir).jobs] == ["J1"]
+
+
+class CopiesThenAsks(RuleBackend):
+    """In `discover_ask`, one turn with a question that copies an RFP passage and a clean one,
+    then done: a turn of the copied question alone would add no excerpt and end the pass."""
+
+    def __init__(self, copied: str) -> None:
+        super().__init__()
+        self.copied = copied
+
+    def call(self, request: Request) -> Response:
+        names = {tool.name for tool in request.tools or ()}
+        if "ask_research" not in names:
+            return super().call(request)
+        self.requests.append(request)
+        if not any(message.role == "tool" for message in request.messages):
+            return tools(
+                ("ask_research", {"question": self.copied}),
+                ("ask_research", {"question": FOLLOW_UP}),
+            )
+        return Response(text=DONE, usage=USAGE)
+
+
+class CrashOnAsk(NotebookLMProvider):
+    def ask(self, question: str) -> Any:
+        raise KeyboardInterrupt
+
+
+def test_a_resume_at_discover_ask_still_denies_a_copied_passage(
+    tmp_path: Path, fake_url: str
+) -> None:
+    passage = next(p for p in dev_ingest().passages if p.id == "SRC-0015")
+    copied = cut(display_text(passage.text), 250)
+    with pytest.raises(KeyboardInterrupt):
+        _live(tmp_path, _provider(fake_url, kind=CrashOnAsk), "asking", CopiesThenAsks(copied))
+    resumed = _live(tmp_path, _provider(fake_url), "asking", CopiesThenAsks(copied), resume=True)
+    assert resumed.status == "COMPLETED", resumed.reason
+    asks = [r for r in _rows(resumed.run_dir / "tool_calls.jsonl") if r["tool"] == "ask_research"]
+    copies = [r for r in asks if r["args"]["question"] == copied]
+    assert [(r["status"], r["part"]) for r in copies] == [("DENIED", 0), ("DENIED", 1)]
+    assert all("never carry RFP text" in r["reason"] for r in copies)
+    assert [a.question for a in _record(resumed.run_dir).answers] == [FOLLOW_UP]
+
+
+def test_an_open_breaker_on_the_server_sends_the_run_to_discover_load(
+    tmp_path: Path, fake_url: str
+) -> None:
+    breaker = CircuitBreaker(CONFIG.limits.breaker, root=tmp_path / "breaker")
+    for _ in range(CONFIG.limits.breaker.failures):
+        breaker.failure(server_key("notebooklm"))
+    pins = _provider(fake_url).pins
+    client = McpClient("notebooklm", http_server(fake_url), breaker=breaker)
+    provider = NotebookLMProvider(client, pins, CONFIG.research.tiers, CONFIG.research.jobs)
+    result = _live(tmp_path, provider, "broken")
+    assert result.status == "DEGRADED"
+    assert (result.reason or "").startswith("research: "), result.reason
+    record = _record(result.run_dir)
+    assert record.jobs == [] and "no pack for this domain" in record.notes
+    assert not (result.run_dir / BRIEF_FILE).exists(), "no research, so no domain brief"

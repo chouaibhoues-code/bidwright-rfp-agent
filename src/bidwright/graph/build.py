@@ -2,13 +2,18 @@
 
 guard -> ingest -> candidates -> triage -> pack -> extract (one `Send` per context pack, at most
 `concurrency` at once) -> verify -> coverage -> lint -> consolidate (one `Send` per cluster the
-model step takes) -> approach -> risk -> draft -> render (Iteration 1, section 4.1 of the
-design). `guard` checks and scans the files before any parser reads them, and a refusal ends
-the run `POLICY_BLOCKED`. `ingest` parses each accepted file with its parser, Docling or
-pdfplumber, through the control register. `--baseline b0` routes `candidates` to `b0`, which
-makes no model call, and stops after `verify`; `until` stops a run after `verify`, `coverage`
-or `consolidate`. `coverage` either stops, or sends the passages still without a disposition
-back to `extract` as gap packs, and `verify` runs again over every outcome.
+model step takes) -> brief -> research -> approach -> risk -> draft -> render (Iteration 1,
+section 4.1 of its design; `brief` and the research nodes from Iteration 2, section 4.1 of
+its design). Research mode `off` goes from `brief` to `approach`; `pack` goes through
+`discover_load`; `live` goes through `discover_start`, `discover_wait`, `discover_ask` and
+`discover_extract`, and a research failure in any of them goes to `discover_load`.
+
+`guard` checks and scans the files before any parser reads them, and a refusal ends the run
+`POLICY_BLOCKED`. `ingest` parses each accepted file with its parser, Docling or pdfplumber,
+through the control register. `--baseline b0` routes `candidates` to `b0`, which makes no model
+call, and stops after `verify`; `until` stops a run after `verify`, `coverage`, `consolidate`
+or `brief`. `coverage` either stops, or sends the passages still without a disposition back to
+`extract` as gap packs, and `verify` runs again over every outcome.
 
 The SQLite checkpointer keeps each step's state in the run folder. The LLM client, budget,
 prompts and search index stay outside the state, in `Runtime`, so a checkpoint holds plain data
@@ -27,6 +32,7 @@ import hashlib
 import json
 import os
 import subprocess
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -45,6 +51,7 @@ from bidwright.candidates import CompiledCues, cue_hits, defined_terms, write_ca
 from bidwright.clusters import Cluster, build_clusters, precedence_passages
 from bidwright.config import Config, ResearchConfig, compile_patterns, load_config
 from bidwright.coverage import degraded_reason, next_step, write_report
+from bidwright.graph.brief import brief as write_brief
 from bidwright.graph.consolidate import (
     GroupDraft,
     QuestionDraft,
@@ -54,7 +61,7 @@ from bidwright.graph.consolidate import (
     consolidate_cluster,
     write_consolidation,
 )
-from bidwright.graph.discover import ResearchPending, ResearchStopped
+from bidwright.graph.discover import Discovery, ResearchPending, ResearchStopped
 from bidwright.graph.nodes import (
     MALFORMED_AFTER_REPAIR,
     BatchOutcome,
@@ -103,7 +110,8 @@ from bidwright.preflight import (
 )
 from bidwright.prompts import Prompt, load_prompt, load_prompt_ref
 from bidwright.register import RegisterInput, build_register
-from bidwright.render import RenderBlocked, RunRecords, render
+from bidwright.render import DomainResearch, RenderBlocked, RunRecords, render
+from bidwright.research.nlm import notebooklm_provider
 from bidwright.research.provider import ResearchProvider
 from bidwright.retrieval import PassageIndex
 from bidwright.schemas import (
@@ -121,11 +129,13 @@ from bidwright.schemas import (
     Discrepancy,
     DiscrepancyProposal,
     DocumentHash,
+    DomainBrief,
     DuplicatePair,
     ExtractItem,
     LedgerEntry,
     LintFinding,
     OpenQuestion,
+    OpportunityBrief,
     Passage,
     ProposalSection,
     QuarantineRecord,
@@ -144,7 +154,9 @@ from bidwright.tools import date_tool, search_tool
 from bidwright.verify import QuoteCheck
 
 SECTIONS = ("understanding", "approach", "risks_and_assumptions")
-UNTIL = ("verify", "coverage", "consolidate", "render")
+UNTIL = ("verify", "coverage", "consolidate", "brief", "render")
+# The research nodes after `brief`, by research mode.
+AFTER_BRIEF = {"off": "approach", "pack": "discover_load", "live": "discover_start"}
 
 
 class NodeFunction(Protocol):
@@ -177,6 +189,8 @@ class Runtime:
     events: EventRecorder | None = None  # the run's events.jsonl
     provider: ResearchProvider | None = None  # the research provider, or None
     research: ResearchConfig | None = None  # the research configuration
+    research_mode: ResearchModeName = "off"
+    discovery: Discovery | None = None  # built once the passages are known
 
 
 @dataclass(frozen=True)
@@ -594,7 +608,86 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         }
 
     def after_consolidate(state: RunState) -> str:
-        return END if rt.until == "consolidate" else "approach"
+        return END if rt.until == "consolidate" else "brief"
+
+    # --- brief and research ------------------------------------------------------------------
+
+    def brief_node(state: RunState) -> dict[str, Any]:
+        found = passages(state)
+        profile = state.get("profile")
+        outcome = write_brief(
+            ctx,
+            found,
+            [ZoneRecord.model_validate(z) for z in state.get("zones", [])],
+            requirements_of(state),
+            RfpProfile.model_validate(profile) if profile else RfpProfile(),
+            manager=ContextManager(rt.run_dir, config.limits.context, found),
+            budget_tokens=config.limits.context.budgets["brief"],
+            run_dir=rt.run_dir,
+            first_discrepancy=len(state.get("discrepancies", [])) + 1,
+            first_question=len(state.get("questions", [])) + 1,
+        )
+        record = outcome.brief.model_dump(mode="json")
+        return {"brief": {"record": record, "degraded": outcome.degraded}}
+
+    def after_brief(state: RunState) -> str:
+        return END if rt.until == "brief" else AFTER_BRIEF[rt.research_mode]
+
+    def topics_of(state: RunState) -> list[str]:
+        return list(((state.get("brief") or {}).get("record") or {}).get("topics", []))
+
+    def discovery(state: RunState) -> Discovery:
+        """The run's research nodes, built once the passages are known."""
+        if rt.discovery is None:
+            found = passages(state)
+            rt.discovery = Discovery(
+                ctx=ctx,
+                provider=rt.provider,
+                config=config.research,
+                agent=config.agents.agents["discover"],
+                run_dir=rt.run_dir,
+                manager=ContextManager(rt.run_dir, config.limits.context, found),
+                passages=found,
+                patterns=compile_patterns(config.ingest.suspect_patterns, "config/ingest.yaml"),
+                mode=rt.research_mode,
+                events=rt.events,
+                tool_log=rt.tool_log,
+                control=rt.control,
+                budget_tokens=config.limits.context.budgets["discover"],
+            )
+        return rt.discovery
+
+    def discover_load_node(state: RunState) -> dict[str, Any]:
+        outcome = discovery(state).load(topics_of(state), state.get("research_failed"))
+        research = {"second_job": False, "degraded": outcome.degraded}
+        return {"research": research, "domain_brief": outcome.view}
+
+    def discover_start_node(state: RunState) -> dict[str, Any]:
+        return {"research_failed": discovery(state).start(topics_of(state)).failed}
+
+    def discover_wait_node(state: RunState) -> dict[str, Any]:
+        return {"research_failed": discovery(state).wait().failed}
+
+    def discover_ask_node(state: RunState) -> dict[str, Any]:
+        outcome = discovery(state).ask(topics_of(state))
+        research = {"second_job": outcome.second_job, "degraded": None}
+        return {"research_failed": outcome.failed, "research": research}
+
+    def discover_extract_node(state: RunState) -> dict[str, Any]:
+        outcome = discovery(state).extract(topics_of(state))
+        return {"research_failed": outcome.failed, "domain_brief": outcome.view}
+
+    def failed_or(following: str) -> Callable[[RunState], str]:
+        def route(state: RunState) -> str:
+            return "discover_load" if state.get("research_failed") else following
+
+        return route
+
+    def after_ask(state: RunState) -> str:
+        if state.get("research_failed"):
+            return "discover_load"
+        second = (state.get("research") or {}).get("second_job")
+        return "discover_wait" if second else "discover_extract"
 
     # --- approach, risk, draft and render -------------------------------------------------------
 
@@ -680,6 +773,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
 
     def render_node(state: RunState) -> dict[str, Any]:
         profile = state.get("profile")
+        brief = state.get("brief")
         coverage = state.get("coverage") or {}
         guard_dir = rt.run_dir / "quarantine.jsonl"
         quarantine = (
@@ -720,6 +814,8 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             lint_findings=findings_of(state),
             contract_flags=[ContractFlag.model_validate(f) for f in state.get("flags", [])],
             quarantine=quarantine,
+            brief=OpportunityBrief.model_validate(brief["record"]) if brief else None,
+            domain=_domain_research(state.get("domain_brief")),
         )
         render(rt.run_dir, records)
         return {}
@@ -727,7 +823,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
     def traced(name: str, node: NodeFunction) -> NodeFunction:
         kind = (
             OpenInferenceSpanKindValues.AGENT
-            if name == "risk"
+            if name in ("risk", "discover_start", "discover_ask")
             else OpenInferenceSpanKindValues.CHAIN
         )
 
@@ -754,6 +850,12 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         ("lint", lint_node),
         ("consolidate_plan", consolidate_plan),
         ("consolidate_join", consolidate_join),
+        ("brief", brief_node),
+        ("discover_load", discover_load_node),
+        ("discover_start", discover_start_node),
+        ("discover_wait", discover_wait_node),
+        ("discover_ask", discover_ask_node),
+        ("discover_extract", discover_extract_node),
         ("approach", approach_node),
         ("risk", risk_node),
         ("draft", draft_node),
@@ -780,7 +882,21 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         "consolidate_plan", to_consolidate, ["consolidate", "consolidate_join"]
     )
     builder.add_edge("consolidate", "consolidate_join")
-    builder.add_conditional_edges("consolidate_join", after_consolidate, ["approach", END])
+    builder.add_conditional_edges("consolidate_join", after_consolidate, ["brief", END])
+    builder.add_conditional_edges("brief", after_brief, [*AFTER_BRIEF.values(), END])
+    builder.add_conditional_edges(
+        "discover_start", failed_or("discover_wait"), ["discover_load", "discover_wait"]
+    )
+    builder.add_conditional_edges(
+        "discover_wait", failed_or("discover_ask"), ["discover_load", "discover_ask"]
+    )
+    builder.add_conditional_edges(
+        "discover_ask", after_ask, ["discover_load", "discover_wait", "discover_extract"]
+    )
+    builder.add_conditional_edges(
+        "discover_extract", failed_or("approach"), ["discover_load", "approach"]
+    )
+    builder.add_edge("discover_load", "approach")
     for first, second in (("approach", "risk"), ("risk", "draft"), ("draft", "render")):
         builder.add_edge(first, second)
     builder.add_edge("render", END)
@@ -828,6 +944,10 @@ def _degraded(state: dict[str, Any]) -> str | None:
     reasons += state.get("lint_skipped", [])
     if state.get("consolidate_fallback"):
         reasons.append(state["consolidate_fallback"])
+    for step in ("brief", "research"):
+        shortfall = (state.get(step) or {}).get("degraded")
+        if shortfall:
+            reasons.append(shortfall)
     for node in ("approach", "risk"):
         failure = (state.get(node) or {}).get("failure")
         if failure:
@@ -836,6 +956,14 @@ def _degraded(state: dict[str, Any]) -> str | None:
     if sections:
         reasons.append(f"sections failed: {', '.join(sections)}")
     return "; ".join(reasons) or None
+
+
+def _domain_research(view: dict[str, Any] | None) -> DomainResearch | None:
+    """The state's domain brief as `render` reads it."""
+    if not view:
+        return None
+    citations = {k: (str(v["title"]), int(v["tier"])) for k, v in view["citations"].items()}
+    return DomainResearch(DomainBrief.model_validate(view["brief"]), view["origin"], citations)
 
 
 def _second_pass(asked: bool | None, baseline: bool, config: Config) -> bool:
@@ -914,6 +1042,8 @@ def execute(
     view: TextView | None = None,
     fallback: bool = True,
     research: ResearchModeName | None = None,
+    provider: ResearchProvider | None = None,
+    fill: bool = False,
     resume: bool = False,
     raise_budget: int | None = None,
     control: RunControl | None = None,
@@ -932,7 +1062,9 @@ def execute(
     view (D-05), the frozen text when None; Iteration 5's masking passes one. `fallback=False`
     keeps every call on its role's primary model: a spent quota then pauses the run, and a
     call that exhausts its retries faults it, as matrix runs need. `research` is the research
-    mode, `config/research.yaml`'s when None.
+    mode, `config/research.yaml`'s when None; `provider`, for tests, is the research provider
+    used instead of the configured NotebookLM server. `fill` keeps a recording's cassettes in
+    the client's `record` mode and records only the calls they lack.
 
     The run executes under a `RunSupervisor` (ADR-031), which takes the run lock, writes the
     manifest and records each status. `resume=True` continues the run named by `run_id` under
@@ -1087,7 +1219,10 @@ def execute(
             journal_read=resume,
             breaker=breaker,
             fallback=fallback,
+            fill=fill,
         )
+        if provider is None and research_mode == "live":
+            provider = notebooklm_provider(config, breaker)
         tracing = Tracing(
             run_id,
             run_dir,
@@ -1123,7 +1258,9 @@ def execute(
             tool_log=tool_log,
             control=control,
             events=events,
+            provider=provider,
             research=config.research,
+            research_mode=research_mode,
         )
         # Until the graph returns, the run has not finished: any exit this function does not
         # name below is recorded as a fault, never as COMPLETED.

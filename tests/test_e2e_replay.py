@@ -1,7 +1,7 @@
 """Whole runs with no network and no keys: a development run recorded in the test, then
 replayed, and the live recordings of `bidwright record` replayed from their cassettes: the
-development PDF with its traps (the demo), the development DOCX, and the hero package
-through `consolidate`."""
+development PDF with its traps (the demo), in its recorded research mode `pack` and in `off`,
+the development DOCX, and the hero package through `consolidate`."""
 
 import json
 import socket
@@ -13,7 +13,14 @@ import pytest
 from bidwright.graph.build import execute
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Request, Response
-from bidwright.schemas import ControlRegister, LedgerEntry, Requirement, RunManifest
+from bidwright.schemas import (
+    ControlRegister,
+    LedgerEntry,
+    OpportunityBrief,
+    Requirement,
+    ResearchRecord,
+    RunManifest,
+)
 from tests.node_fakes import DEV_RFP, USAGE, RuleBackend
 from tests.recordings import replay
 
@@ -29,6 +36,8 @@ OUTPUTS = (
     "approach.json",
     "risks.jsonl",
     "tool_calls.jsonl",
+    "brief.json",
+    "research.json",
     "sections/understanding.md",
     "sections/approach.md",
     "sections/risks_and_assumptions.md",
@@ -85,8 +94,30 @@ def test_a_development_run_replays_with_no_network(tmp_path: Path) -> None:
     assert manifest.status == "COMPLETED" and manifest.totals.requests == len(ledger)
     assert manifest.models_used == {
         node: ["gemini-3.5-flash-lite"]
-        for node in ("approach", "consolidate", "draft", "extract", "risk", "triage")
+        for node in ("approach", "brief", "consolidate", "draft", "extract", "risk", "triage")
     }
+    research = ResearchRecord.model_validate_json(
+        (replay.run_dir / "research.json").read_text(encoding="utf-8")
+    )
+    assert (research.mode, research.pack_id, research.notes) == (
+        "pack",
+        None,
+        ["no pack for this domain"],
+    ), "the development PDF's domain has no research pack yet"
+    assert manifest.research is not None and manifest.research.mode == "pack"
+    brief = OpportunityBrief.model_validate_json(
+        (replay.run_dir / "brief.json").read_text(encoding="utf-8")
+    )
+    assert [(f.name, f.weight, f.status) for f in brief.factors] == [
+        ("Technical approach", "40%", "IN_SCOPE"),
+        ("Service levels and support", "20%", "IN_SCOPE"),
+        ("Integration and migration", "20%", "IN_SCOPE"),
+        ("Price", "20%", "OUT_OF_SCOPE"),
+    ]
+    summary = (replay.run_dir / "solution_summary.md").read_text(encoding="utf-8")
+    assert "**Evaluation factors**, as the RFP states them" in summary
+    assert "- Price: 20% (SRC-0038), out of scope for the bid team" in summary
+    assert "Appendix: domain research" not in summary, "no pack, so no appendix"
     calls = [
         json.loads(line)
         for line in (replay.run_dir / "tool_calls.jsonl").read_text(encoding="utf-8").splitlines()
@@ -310,6 +341,24 @@ def test_the_development_pdf_with_its_traps_replays_from_the_demo_cassettes(
     frozen = (result.run_dir / "frozen.txt").read_text(encoding="utf-8")
     assert not any(text in frozen for text in hidden), "no model saw the hidden text"
     assert (result.run_dir / "review" / "quarantine.md").exists()
+    assert recording["research"] == "pack"
+    research = ResearchRecord.model_validate_json(
+        (result.run_dir / "research.json").read_text(encoding="utf-8")
+    )
+    assert research.notes == ["no pack for this domain"]
+
+
+def test_the_demo_replays_in_research_mode_off(tmp_path: Path, no_network: None) -> None:
+    result, _ = replay("demo", tmp_path, research="off")
+    assert result.status == "COMPLETED", result.reason
+    _all_replayed(result.run_dir)
+    assert (result.run_dir / "brief.json").exists() and not (
+        result.run_dir / "research.json"
+    ).exists()
+    manifest = RunManifest.model_validate_json(
+        (result.run_dir / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest.research is None and manifest.run_args["research"] == "off"
 
 
 def test_the_development_docx_replays_from_its_cassettes(tmp_path: Path, no_network: None) -> None:

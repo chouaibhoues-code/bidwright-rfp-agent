@@ -25,6 +25,11 @@ With `journal_read`, which a resume turns on, a call is looked up in the journal
 model of its role, primary first, before any attempt, so a call the fallback answered is not
 paid again; a hit is reported as replayed, at no cost and with no budget attempt.
 
+A fill (Iteration 2, `bidwright record --fill`) keeps a recording: in `record` mode with
+`fill`, a call is looked up in the cassette store under every model of its role, primary first,
+before any attempt, and a hit is reported as replayed, at no cost and with no attempt; only a
+call whose keys the recording lacks reaches the model, and its answer is recorded as usual.
+
 An optional circuit breaker (Iteration 2, `harness/recovery.py`) is checked before each
 attempt, before the budget's, under the model's provider, tier and name. A transient failure
 counts against it and an answer resets it. An open breaker raises `CircuitOpen`, with the retry
@@ -122,6 +127,7 @@ class LLMClient:
         journal_read: bool = False,
         breaker: Breaker | None = None,
         fallback: bool = True,
+        fill: bool = False,
         sleep: Callable[[float], None] = time.sleep,
         rng: Callable[[], float] = random.random,
         clock: Callable[[], float] = time.perf_counter,
@@ -143,6 +149,7 @@ class LLMClient:
         self.journal_read = journal_read
         self.breaker = breaker
         self.fallback = fallback
+        self.fill = fill
         self._sleep = sleep
         self._rng = rng
         self._clock = clock
@@ -199,7 +206,7 @@ class LLMClient:
             )
             for model in models
         ]
-        journaled = self._journaled(plans)
+        journaled = self._journaled(plans) or self._filled(plans)
         if journaled is not None:
             request, response = journaled
             completion = _completion(
@@ -256,6 +263,17 @@ class LLMClient:
             return None
         for key, request in plans:
             response = self.journal.load(key)
+            if response is not None:
+                return request, response
+        return None
+
+    def _filled(self, plans: Sequence[tuple[str, Request]]) -> tuple[Request, Response] | None:
+        """In a fill, the answer the recording holds for this call, under the role's models in
+        order, primary first."""
+        if self.mode != "record" or not self.fill:
+            return None
+        for key, request in plans:
+            response = self._store().load(key)
             if response is not None:
                 return request, response
         return None

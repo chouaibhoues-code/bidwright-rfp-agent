@@ -191,7 +191,7 @@ def test_the_triage_prompt_renders_its_outline_example() -> None:
 def test_the_brief_prompt_renders_its_example_without_statuses() -> None:
     brief = load_prompt("brief")
     assert brief.meta.output_schema == "BriefResult" and brief.meta.role == "extract"
-    assert brief.meta.version == "0.1.0" and brief.meta.examples == "brief"
+    assert brief.meta.version == "0.2.0" and brief.meta.examples == "brief"
     assert "The sections of a brief call:" in brief.examples and '"Price"' in brief.examples
     assert '"status"' not in brief.examples, "code sets every status"
     assert brief.decoding == {"gemini": {"thinking": "low"}, "ollama": {"think": False}}

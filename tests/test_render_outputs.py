@@ -5,8 +5,21 @@ from pathlib import Path
 
 import pytest
 
-from bidwright.render import RenderBlocked, RunRecords, render
-from bidwright.schemas import ApproachItem, OpenQuestion, ProposalSection, Risk
+from bidwright.render import DomainResearch, RenderBlocked, RunRecords, render
+from bidwright.schemas import (
+    ApproachItem,
+    BriefItem,
+    ClarificationQuestion,
+    DomainBrief,
+    DomainItem,
+    DomainNeed,
+    EvaluationFactor,
+    FactorDiscrepancy,
+    OpenQuestion,
+    OpportunityBrief,
+    ProposalSection,
+    Risk,
+)
 from tests.node_fakes import GOOD_RISK, dev_requirements
 from tests.render_fakes import MARKER
 from tests.render_fakes import records as full_records
@@ -70,6 +83,103 @@ def test_the_summary_has_four_parts_with_hazards_first(tmp_path: Path) -> None:
     assert summary.requirements == ["REQ-0002", "REQ-0003", "REQ-0004"]
     assert summary.counts["rejected"] == 1 and summary.status == "UNREVIEWED_DRAFT"
     assert "UNREVIEWED_DRAFT" in (tmp_path / "proposal.md").read_text(encoding="utf-8")
+
+
+def _brief() -> OpportunityBrief:
+    return OpportunityBrief(
+        factors=[
+            EvaluationFactor(
+                id="EF-01",
+                name="Technical approach",
+                weight="40%",
+                scoring="not_stated",
+                src_ids=["SRC-0035"],
+                status="IN_SCOPE",
+            ),
+            EvaluationFactor(
+                id="EF-02",
+                name="Price",
+                weight="20%",
+                scoring="not_stated",
+                src_ids=["SRC-0038"],
+                status="OUT_OF_SCOPE",
+            ),
+        ],
+        constraints=[BriefItem(id="BI-001", text="One PDF of 20 pages.", src_ids=["SRC-0015"])],
+        topics=["higher education procurement"],
+        discrepancies=[
+            FactorDiscrepancy(
+                id="DS-001",
+                factor="Technical approach",
+                weights=["40%", "45%"],
+                src_ids=["SRC-0035"],
+            )
+        ],
+        questions=[
+            ClarificationQuestion(
+                id="CQ-001",
+                text="The RFP gives Technical approach two weights, 40% and 45%; which applies?",
+                src_ids=["SRC-0035"],
+                origin="brief",
+            )
+        ],
+    )
+
+
+def _domain() -> DomainResearch:
+    brief = DomainBrief(
+        domain_id="local-government-case-management",
+        mode="pack",
+        items=[
+            DomainItem(
+                id="DI-001",
+                kind="pitfall",
+                statement="Migration from legacy case systems is underestimated.",
+                excerpt_ids=["PX-0007", "PX-0019"],
+            )
+        ],
+        needs=[DomainNeed(id="DN-001", need="Accessible online forms", excerpt_ids=["PX-0011"])],
+    )
+    citations = {
+        "PX-0007": ("Case management procurement guidance", 1),
+        "PX-0019": ("Case management procurement guidance", 1),
+        "PX-0011": ("Web Content Accessibility Guidelines (WCAG) 2.2", 1),
+    }
+    origin = "the research pack `local-government-case-management`, version 1"
+    return DomainResearch(brief, origin, citations)
+
+
+def test_the_summary_keeps_four_parts_with_the_factors_and_the_appendix(tmp_path: Path) -> None:
+    summary = render(tmp_path, _records(brief=_brief(), domain=_domain()))
+    text = (tmp_path / "solution_summary.md").read_text(encoding="utf-8")
+    order = [
+        "## 1. Requirements",
+        "### Submission hazards",
+        "**Evaluation factors**, as the RFP states them",
+        "- Technical approach: 40% (SRC-0035)",
+        "- Price: 20% (SRC-0038), out of scope for the bid team",
+        "Discrepancies: 1, in `discrepancies.jsonl` and `brief.json`.",
+        "### Mandatory requirements",
+        "## 2. Approach",
+        "## 3. Risks",
+        "## 4. Open questions",
+        "- **CQ-001** The RFP gives Technical approach two weights",
+        "## Appendix: domain research (external, unverified)",
+        "From the research pack `local-government-case-management`, version 1.",
+        "- Pitfall: Migration from legacy case systems is underestimated. Sources: Case"
+        " management procurement guidance (tier 1).",
+        "- Need: Accessible online forms Sources: Web Content Accessibility Guidelines (WCAG)"
+        " 2.2 (tier 1).",
+    ]
+    positions = [text.index(marker) for marker in order]
+    assert positions == sorted(positions)
+    assert summary.factors == ["EF-01", "EF-02"] and summary.domain_items == ["DI-001"]
+    clarifications = (tmp_path / "clarification_questions.md").read_text(encoding="utf-8")
+    assert "## Evaluation factors" in clarifications and "**CQ-001**" in clarifications
+    plain = render(tmp_path / "plain", _records())
+    text = (tmp_path / "plain" / "solution_summary.md").read_text(encoding="utf-8")
+    assert "Evaluation factors" not in text and "Appendix" not in text
+    assert plain.factors == [] and plain.domain_items == []
 
 
 def test_render_schema_failure_blocks_all_output(tmp_path: Path) -> None:

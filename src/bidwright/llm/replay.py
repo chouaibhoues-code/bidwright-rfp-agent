@@ -13,6 +13,7 @@ an entry written without one loads as before. The native turn is not part of the
 """
 
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,8 @@ from pydantic import BaseModel
 from bidwright.fileio import write_atomic
 from bidwright.llm.schema import sha256_of
 from bidwright.llm.types import Response, ToolCall, Usage
+
+_CASSETTE = re.compile(r"^[0-9a-f]{64}$")  # a cassette's file stem: its key's digest
 
 
 def cache_key(
@@ -48,10 +51,13 @@ def cache_key(
 
 
 class CassetteStore:
-    """One JSON file per key under `root`."""
+    """One JSON file per key under `root`. `used` collects the keys this store loaded or saved
+    in this process, and `prune` deletes every other cassette, which is how a fill leaves a
+    recording holding exactly the calls of one replayable run."""
 
     def __init__(self, root: Path) -> None:
         self.root = root
+        self.used: set[str] = set()
 
     def _path(self, key: str) -> Path:
         return self.root / f"{key.removeprefix('sha256:')}.json"
@@ -60,6 +66,7 @@ class CassetteStore:
         path = self._path(key)
         if not path.exists():
             return None
+        self.used.add(key)
         body = json.loads(path.read_text(encoding="utf-8"))["response"]
         return Response(
             text=body["text"],
@@ -86,6 +93,23 @@ class CassetteStore:
             "recorded": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
         write_atomic(self._path(key), json.dumps(record, ensure_ascii=False, indent=1) + "\n")
+        self.used.add(key)
+
+    def keys(self) -> list[str]:
+        """The key of every cassette in the store, in name order."""
+        if not self.root.is_dir():
+            return []
+        return [
+            f"sha256:{p.stem}" for p in sorted(self.root.glob("*.json")) if _CASSETTE.match(p.stem)
+        ]
+
+    def prune(self, keep: set[str]) -> list[str]:
+        """Delete every cassette whose key is not in `keep`, such as `recording.json`'s
+        neighbours a fill did not use; other files stay. The keys deleted."""
+        gone = [key for key in self.keys() if key not in keep]
+        for key in gone:
+            self._path(key).unlink()
+        return gone
 
 
 def _native(native: Any) -> Any:

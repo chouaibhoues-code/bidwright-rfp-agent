@@ -29,7 +29,8 @@ options:
 ```text
 usage: bidwright run [-h] [--profile {free,local,paid}] [--baseline {b0,ex0}]
                      [--allow-non-corpus CONSENT] [--cache] [--second-pass | --no-second-pass]
-                     [--until {verify,coverage,consolidate,render}] [--outputs OUTPUTS]
+                     [--until {verify,coverage,consolidate,brief,render}]
+                     [--research {off,pack,live}] [--outputs OUTPUTS]
                      file
 
 positional arguments:
@@ -43,8 +44,10 @@ options:
   --cache               answer repeated calls from the cache
   --second-pass, --no-second-pass
                         re-read OBLIGATION zones (S-13); config/limits.yaml sets the default
-  --until {verify,coverage,consolidate,render}
+  --until {verify,coverage,consolidate,brief,render}
                         the last node to run
+  --research {off,pack,live}
+                        config/research.yaml sets the default
   --outputs OUTPUTS
 ```
 
@@ -62,7 +65,8 @@ options:
 
 ```text
 usage: bidwright record [-h] [--name NAME] [--profile {free,local,paid}]
-                        [--until {verify,coverage,consolidate,render}] [--outputs OUTPUTS]
+                        [--until {verify,coverage,consolidate,brief,render}]
+                        [--research {off,pack,live}] [--fill] [--outputs OUTPUTS]
                         file
 
 positional arguments:
@@ -72,8 +76,12 @@ options:
   -h, --help            show this help message and exit
   --name NAME
   --profile {free,local,paid}
-  --until {verify,coverage,consolidate,render}
+  --until {verify,coverage,consolidate,brief,render}
                         the last node to run
+  --research {off,pack,live}
+                        config/research.yaml sets the default
+  --fill                keep the recording, record only the calls it lacks, and drop the unused
+                        ones
   --outputs OUTPUTS
 ```
 

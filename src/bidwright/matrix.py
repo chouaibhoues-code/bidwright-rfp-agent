@@ -4,14 +4,17 @@
 
 A matrix file (`config/matrices/*.yaml`) names an RFP, a profile (`free` or `paid`), the
 number of repeats, the last node each run executes (`until`), a cost cap and its rungs, each
-with flags for `execute`: `batch_size`, `extract_prompt`, `second_pass` and `baseline`; any
-other flag is refused. Every run gets its repeat index, which is in every cassette and cache
-key, and the response cache is on, so a run started again answers the calls it already made
-from the cache. Runs go to `outputs/matrices/<matrix>/<matrix>-<rung>-r<repeat>/`.
+with flags for `execute`: `batch_size`, `extract_prompt`, `second_pass`, `baseline` and, from
+Iteration 2, `research` (`off` or `pack`); any other flag is refused. Every run gets its repeat
+index, which is in every cassette and cache key, and the response cache is on, so a run started
+again answers the calls it already made from the cache. Runs go to
+`outputs/matrices/<matrix>/<matrix>-<rung>-r<repeat>/`.
 
 - Before anything starts, a rung that `execute` would refuse is refused: an `extract_prompt`
   a run does not load, such as a retired one, or a baseline asked for the second pass, which a
-  baseline never runs (ADR-028). Nothing is created, and no run is spent first.
+  baseline never runs (ADR-028), or research mode `live`, since every repeat would start a
+  deep research job, minutes long, on the owner's NotebookLM account. Nothing is created, and
+  no run is spent first.
 - Every run stays on its roles' primary models (`fallback=False`): a second model would change
   what the matrix measures. A spent quota pauses the run instead, and a call that exhausts its
   retries faults it.
@@ -43,7 +46,9 @@ from bidwright.config import load_config
 from bidwright.preflight import HOME
 from bidwright.schemas import RunManifest
 
-FLAGS = ("batch_size", "extract_prompt", "second_pass", "baseline")
+FLAGS = ("batch_size", "extract_prompt", "second_pass", "baseline", "research")
+# The research nodes that call a model, each under the `discover` agent's role.
+DISCOVER_NODES = ("discover_start", "discover_ask", "discover_extract")
 FINISHED = ("COMPLETED", "DEGRADED")
 MANIFEST = "matrix_manifest.json"
 
@@ -60,6 +65,8 @@ class Rung(BaseModel):
         unknown = sorted(set(flags) - set(FLAGS))
         if unknown:
             raise ValueError(f"unknown flags {unknown}; a rung may set {', '.join(FLAGS)}")
+        if flags.get("research") is False:  # YAML 1.1 reads a bare `off` as false
+            return {**flags, "research": "off"}
         return flags
 
 
@@ -70,7 +77,7 @@ class MatrixFile(BaseModel):
     rfp: str
     profile: Literal["free", "paid"]
     repeats: int = Field(ge=1)
-    until: Literal["verify", "coverage", "consolidate", "render"] = "render"
+    until: Literal["verify", "coverage", "consolidate", "brief", "render"] = "render"
     max_cost_usd: float = Field(ge=0)
     rungs: list[Rung] = Field(min_length=1)
 
@@ -109,7 +116,9 @@ def fell_back(manifest: RunManifest, roles: Mapping[str, str] | None = None) -> 
     role's primary. `roles` maps each node to its model role, from `config/agents.yaml` by
     default; a node with no known role is checked against every role's primary."""
     if roles is None:
-        roles = {name: agent.model_role for name, agent in load_config().agents.agents.items()}
+        agents = load_config().agents.agents
+        roles = {name: agent.model_role for name, agent in agents.items()}
+        roles |= {node: agents["discover"].model_role for node in DISCOVER_NODES}
     every = set(manifest.models.values())
     for node, used in manifest.models_used.items():
         role = roles.get(node)
@@ -188,6 +197,14 @@ def check_rungs(matrix: MatrixFile) -> None:
                 f"rung {rung.name} sets a baseline and the second pass; a baseline runs"
                 " without the second pass (ADR-028)"
             )
+        research = rung.flags.get("research")
+        if research == "live":
+            raise MatrixRefused(
+                f"rung {rung.name} sets research mode live; each repeat would start a deep"
+                " research job, minutes long, on the owner's NotebookLM account: use off or pack"
+            )
+        if research is not None and research not in ("off", "pack"):
+            raise MatrixRefused(f"rung {rung.name} sets research {research!r}; use off or pack")
 
 
 def run_matrix(

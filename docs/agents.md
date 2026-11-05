@@ -9,8 +9,8 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | Name | Kind | Input | Output | Prompt | Model role | Tools | Limits |
 |---|---|---|---|---|---|---|---|
 | `triage` | function | `TriageInput` | `TriageResult` | `triage@0.1.0` | extract | None | None |
-| `brief` | function | `BriefInput` | `BriefResult` | `brief@0.1.0` | extract | None | None |
-| `discover` | agent | `DiscoveryTask` | `DiscoveryExtract` | `discover@0.1.0` | reason | `ask_research`, `start_research` | max_turns 4, max_tool_calls 8, stop_on_no_progress True |
+| `brief` | function | `BriefInput` | `BriefResult` | `brief@0.2.0` | extract | None | None |
+| `discover` | agent | `DiscoveryTask` | `DiscoveryExtract` | `discover@0.2.0` | reason | `ask_research`, `start_research` | max_turns 4, max_tool_calls 8, stop_on_no_progress True |
 | `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.4.0` | extract | None | None |
 | `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
 | `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc` | max_turns 4, max_tool_calls 6, stop_on_no_progress True |
@@ -24,9 +24,9 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | Prompt | Version | Role | Pattern | Schema | Decoding | Last tested |
 |---|---|---|---|---|---|---|
 | `approach` | 0.2.0 | reason | Skeleton-of-Thought | `ApproachResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
-| `brief` | 0.1.0 | extract | plain rules and a factor table, positive directives | `BriefResult` | gemini: thinking low; ollama: think False | never |
+| `brief` | 0.2.0 | extract | plain rules and a factor table, positive directives | `BriefResult` | gemini: thinking low; ollama: think False | 2026-11-05 |
 | `consolidate` | 0.1.0 | reason | ordered steps in the task, positive directives | `ConsolidationResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
-| `discover` | 0.1.0 | reason | plain rules with positive directives; the research envelope of M18 for the query | `DiscoveryExtract` | gemini: thinking low; ollama: think False | never |
+| `discover` | 0.2.0 | reason | plain rules with positive directives; the research envelope of M18 for the query | `DiscoveryExtract` | gemini: thinking low; ollama: think False | never |
 | `draft` | 0.2.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract` | 0.4.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract_oneshot` | 0.4.0 | extract | plain instruction | `ExtractResult` | gemini: thinking medium; ollama: think False | never |
@@ -92,6 +92,12 @@ graph TD;
 	lint(lint)
 	consolidate_plan(consolidate_plan)
 	consolidate_join(consolidate_join)
+	brief(brief)
+	discover_load(discover_load)
+	discover_start(discover_start)
+	discover_wait(discover_wait)
+	discover_ask(discover_ask)
+	discover_extract(discover_extract)
 	approach(approach)
 	risk(risk)
 	draft(draft)
@@ -102,16 +108,30 @@ graph TD;
 	__start__ --> guard;
 	approach --> risk;
 	b0 --> verify;
+	brief -.-> __end__;
+	brief -.-> approach;
+	brief -.-> discover_load;
+	brief -.-> discover_start;
 	candidates -.-> b0;
 	candidates -.-> triage;
 	consolidate --> consolidate_join;
 	consolidate_join -.-> __end__;
-	consolidate_join -.-> approach;
+	consolidate_join -.-> brief;
 	consolidate_plan -.-> consolidate;
 	consolidate_plan -.-> consolidate_join;
 	coverage -.-> __end__;
 	coverage -.-> extract;
 	coverage -.-> lint;
+	discover_ask -.-> discover_extract;
+	discover_ask -.-> discover_load;
+	discover_ask -.-> discover_wait;
+	discover_extract -.-> approach;
+	discover_extract -.-> discover_load;
+	discover_load --> approach;
+	discover_start -.-> discover_load;
+	discover_start -.-> discover_wait;
+	discover_wait -.-> discover_ask;
+	discover_wait -.-> discover_load;
 	draft --> render;
 	extract --> verify;
 	guard --> ingest;

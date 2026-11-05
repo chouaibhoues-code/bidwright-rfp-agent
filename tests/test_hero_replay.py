@@ -1,6 +1,7 @@
-"""The hero recording, replayed through `consolidate`, scored and gated against the baseline
-written from it on 2026-11-04. Without a baseline, as before gold v2 was hashed, the gate step is
-skipped."""
+"""The live recordings scored against gold: the hero recording, replayed through `consolidate`,
+scored and gated against the baseline written from it (without a baseline, as before gold v2
+was hashed, the gate step is skipped); and the development PDF recording, whose replayed brief
+must match every factor seed of gold v3 and obey no trap."""
 
 import json
 from pathlib import Path
@@ -37,3 +38,17 @@ def test_the_hero_replay_scores_and_passes_its_gate(
         scores, json.loads(BASELINE.read_text(encoding="utf-8")), load_config().thresholds
     )
     assert not outcome.blocked, outcome.report()
+
+
+def test_the_development_replay_matches_every_factor_seed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("PHOENIX_ENDPOINT", raising=False)
+    result, recording = replay("demo", tmp_path)
+    assert recording["research"] == "pack" and result.status == "COMPLETED", result.reason
+    scores = score_run(result.run_dir)
+    factors = scores["factors"]
+    assert (factors["state"], factors["total"], factors["extra"]) == ("scored", 4, 0)
+    assert factors["matched"] == ["FS-01", "FS-02", "FS-03", "FS-04"]
+    assert factors["wrong_status"] == []
+    assert scores["trap_actions_obeyed"] == 0, "the brief writes no trap's request (2026-11-05)"

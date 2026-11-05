@@ -4,9 +4,12 @@
 Iteration 1 `compliance_matrix.xlsx` and `.csv` (`render_xlsx.py`),
 `clarification_questions.md`, `submission_checklist.md` and `review/quarantine.md`. Every
 record is validated against its schema first, and a schema failure in any list blocks all
-output. The summary lists hazards first, then the rest of the binding requirements, then the
-optional ones, then the approach, the risks and the open questions. Rejected quotes and the
-other dispositions are counted, not listed, and the summary never repeats quarantined text.
+output. The summary lists hazards first, then the evaluation factors as the RFP states them
+(Iteration 2), then the rest of the binding requirements, then the optional ones, then the
+approach, the risks and the open questions, the brief's questions among them. Rejected quotes
+and the other dispositions are counted, not listed, and the summary never repeats quarantined
+text. When the run's domain research holds items, "Appendix: domain research (external,
+unverified)" follows part 4: never capability evidence, and marked as research from outside.
 """
 
 import dataclasses
@@ -31,8 +34,10 @@ from bidwright.schemas import (
     ControlRegister,
     CoverageReport,
     Discrepancy,
+    DomainBrief,
     LintFinding,
     OpenQuestion,
+    OpportunityBrief,
     Passage,
     ProposalSection,
     QuarantineRecord,
@@ -52,6 +57,16 @@ STATUS_LINE = (
 
 class RenderBlocked(Exception):
     """A record failed its schema, so nothing was written."""
+
+
+@dataclass(frozen=True)
+class DomainResearch:
+    """The run's domain brief, where it came from, and each cited excerpt's source title and
+    tier, by excerpt id."""
+
+    brief: DomainBrief
+    origin: str  # such as "the research pack `local-government-case-management`, version 1"
+    citations: dict[str, tuple[str, int]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -80,6 +95,8 @@ class RunRecords:
     lint_findings: list[LintFinding] = field(default_factory=list)
     contract_flags: list[ContractFlag] = field(default_factory=list)
     quarantine: list[QuarantineRecord] = field(default_factory=list)
+    brief: OpportunityBrief | None = None  # Iteration 2
+    domain: DomainResearch | None = None
 
 
 def validated[ModelT: BaseModel](model: type[ModelT], rows: Sequence[Any]) -> list[ModelT]:
@@ -119,6 +136,8 @@ def summary_of(records: RunRecords) -> SolutionSummary:
         risks=[r.id for r in records.risks],
         open_questions=records.questions,
         counts=counts,
+        factors=[f.id for f in records.brief.factors] if records.brief else [],
+        domain_items=[i.id for i in records.domain.brief.items] if records.domain else [],
     )
 
 
@@ -147,6 +166,7 @@ def summary_markdown(records: RunRecords, summary: SolutionSummary) -> str:
         lines.append("")
 
     requirement_lines("Submission hazards", summary.hazards)
+    lines += factor_lines(records)
     lines += [*review_lines(records), ""]
     binding = [i for i in summary.requirements if by_id[i].disposition == "BINDING"]
     optional = [i for i in summary.requirements if by_id[i].disposition == "OPTIONAL"]
@@ -182,12 +202,58 @@ def summary_markdown(records: RunRecords, summary: SolutionSummary) -> str:
     if not records.risks:
         lines.append("No risks passed the checks.")
     lines += ["", "## 4. Open questions", ""]
+    asked = records.brief.questions if records.brief else []
     for question in records.questions:
         sources = f" ({', '.join(question.src_ids)})" if question.src_ids else ""
         lines.append(f"- {question.text}{sources}")
-    if not records.questions:
+    for question in asked:
+        lines.append(f"- **{question.id}** {question.text} ({', '.join(question.src_ids)})")
+    if not records.questions and not asked:
         lines.append("None.")
+    lines += appendix_lines(records)
     return "\n".join(lines) + "\n"
+
+
+def factor_lines(records: RunRecords) -> list[str]:
+    """The evaluation factors, as the RFP states them, each with its first passage."""
+    if records.brief is None or not records.brief.factors:
+        return []
+    lines = ["**Evaluation factors**, as the RFP states them"]
+    for factor in records.brief.factors:
+        scope = ", out of scope for the bid team" if factor.status == "OUT_OF_SCOPE" else ""
+        lines.append(f"- {factor.name}: {factor.weight} ({factor.src_ids[0]}){scope}")
+    return [*lines, ""]
+
+
+KIND_LABELS = {"pattern": "Pattern", "standard": "Standard", "pitfall": "Pitfall"}
+
+
+def _sources(ids: Sequence[str], citations: dict[str, tuple[str, int]]) -> str:
+    named = dict.fromkeys(
+        f"{citations[i][0]} (tier {citations[i][1]})" for i in ids if i in citations
+    )
+    return ", ".join(named) or "none recorded"
+
+
+def appendix_lines(records: RunRecords) -> list[str]:
+    """After part 4, the domain research, when it holds items or needs."""
+    domain = records.domain
+    if domain is None or not (domain.brief.items or domain.brief.needs):
+        return []
+    lines = [
+        "",
+        "## Appendix: domain research (external, unverified)",
+        "",
+        f"From {domain.origin}.",
+    ]
+    for item in domain.brief.items:
+        sources = _sources(item.excerpt_ids, domain.citations)
+        lines.append(f"- {KIND_LABELS[item.kind]}: {item.statement} Sources: {sources}.")
+    for need in domain.brief.needs:
+        lines.append(
+            f"- Need: {need.need} Sources: {_sources(need.excerpt_ids, domain.citations)}."
+        )
+    return lines
 
 
 def _count(number: int, noun: str) -> str:
@@ -202,11 +268,18 @@ def review_lines(records: RunRecords) -> list[str]:
         f"Hidden content quarantined: {_count(len(records.quarantine), 'item')}; small print:"
         f" {_count(small, 'passage')}; suspect passages: {suspect}; see `review/quarantine.md`.",
         f"Requirement groups: {len(records.groups)}, in `requirement_groups.jsonl`.",
-        f"Discrepancies: {len(records.discrepancies)}, in `discrepancies.jsonl`.",
+        _discrepancy_line(records),
         f"Clarification questions: {len(records.clarifications)}, in `clarification_questions.md`.",
         f"Contract flags for legal review: {len(records.contract_flags)}, in"
         " `contract_flags.jsonl`.",
     ]
+
+
+def _discrepancy_line(records: RunRecords) -> str:
+    if records.brief is None:
+        return f"Discrepancies: {len(records.discrepancies)}, in `discrepancies.jsonl`."
+    count = len(records.discrepancies) + len(records.brief.discrepancies)
+    return f"Discrepancies: {count}, in `discrepancies.jsonl` and `brief.json`."
 
 
 def _fence(text: str) -> list[str]:
@@ -278,7 +351,14 @@ def clarifications_markdown(records: RunRecords) -> str:
                 if rid in by_id:
                     lines.append(f'  > {rid}: "{cut(by_id[rid].quote, 200)}"')
         lines.append("")
-    if not records.clarifications:
+    asked = records.brief.questions if records.brief else []
+    if asked:
+        lines += ["## Evaluation factors", ""]
+        for question in asked:
+            lines.append(f"- **{question.id}** {question.text}")
+            lines.append(f"  Passages: {', '.join(question.src_ids)}. Origin: {question.origin}.")
+        lines.append("")
+    if not records.clarifications and not asked:
         lines += ["No clarification questions.", ""]
     return "\n".join(lines)
 
@@ -346,6 +426,10 @@ def render(run_dir: Path, records: RunRecords) -> SolutionSummary:
         validated(CoverageReport, [records.coverage])
     if records.register is not None:
         validated(ControlRegister, [records.register])
+    if records.brief is not None:
+        validated(OpportunityBrief, [records.brief])
+    if records.domain is not None:
+        validated(DomainBrief, [records.domain.brief])
     checked = dataclasses.replace(
         records,
         requirements=requirements,
@@ -371,6 +455,10 @@ def render(run_dir: Path, records: RunRecords) -> SolutionSummary:
         "unmapped_requirement_ids": records.unmapped,
         "risks": [r.model_dump(mode="json") for r in risks],
     }
+    if records.brief is not None:
+        twin["brief"] = records.brief.model_dump(mode="json")
+    if records.domain is not None:
+        twin["domain_brief"] = records.domain.brief.model_dump(mode="json")
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "solution_summary.md").write_text(
         summary_markdown(checked, summary), encoding="utf-8", newline="\n"

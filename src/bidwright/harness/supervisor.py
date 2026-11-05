@@ -41,6 +41,7 @@ from bidwright.obs.events import EventRecorder, utc_now
 from bidwright.preflight import Refused
 from bidwright.schemas import (
     BudgetSnapshot,
+    ResearchRecord,
     ResearchSummary,
     RunManifest,
     RunStatus,
@@ -54,6 +55,7 @@ CONTROL = "control"
 LOCK = "run.lock"
 STOP_REQUEST = "stop.request"
 BUDGET = "budget.json"
+RESEARCH = "research.json"  # graph/discover.py writes it; the manifest summarizes it
 LOCK_WAIT_S = 5.0
 TERMINAL = frozenset({"COMPLETED", "DEGRADED", "POLICY_BLOCKED", "UNRECOVERABLE_FAULT"})
 STOP_REASON = "stopped by request"
@@ -196,6 +198,25 @@ def _merged(
     )
 
 
+def research_summary(run_dir: Path) -> ResearchSummary | None:
+    """The manifest's research block, from the run's `research.json`, or None without one."""
+    path = run_dir / RESEARCH
+    if not path.exists():
+        return None
+    try:
+        record = ResearchRecord.model_validate_json(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return None
+    return ResearchSummary(
+        mode=record.mode,
+        pack_id=record.pack_id,
+        pack_sha256=record.pack_sha256,
+        jobs=len(record.jobs),
+        questions=len(record.answers),
+        notes=record.notes,
+    )
+
+
 class RunSupervisor:
     def __init__(
         self,
@@ -291,7 +312,10 @@ class RunSupervisor:
         models_used: dict[str, list[str]],
         research: ResearchSummary | None = None,
     ) -> None:
-        """The part's last status, with the run's totals over every part."""
+        """The part's last status, with the run's totals over every part, and the research
+        block from `research.json` when the run has one."""
+        if research is None:
+            research = research_summary(self.run_dir)
         with self._writing:
             self.manifest = self.manifest.model_copy(
                 update={
@@ -358,4 +382,5 @@ __all__ = [
     "lock_held",
     "read_manifest",
     "refusal",
+    "research_summary",
 ]

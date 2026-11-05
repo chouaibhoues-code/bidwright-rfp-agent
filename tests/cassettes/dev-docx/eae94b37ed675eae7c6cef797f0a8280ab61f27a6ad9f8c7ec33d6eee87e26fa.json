@@ -1,0 +1,35 @@
+{
+ "key": "sha256:eae94b37ed675eae7c6cef797f0a8280ab61f27a6ad9f8c7ec33d6eee87e26fa",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "BriefResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"factors\": [{\"name\": \"Fit to requirements\", \"weight\": \"50%\", \"scoring\": \"not_stated\", \"src_ids\": [\"SRC-0029\"]}, {\"name\": \"Ease of use for volunteers\", \"weight\": \"20%\", \"scoring\": \"not_stated\", \"src_ids\": [\"SRC-0030\"]}, {\"name\": \"Price\", \"weight\": \"30%\", \"scoring\": \"not_stated\", \"src_ids\": [\"SRC-0031\"]}], \"scoring_method\": null, \"needs\": [], \"scope_in\": [], \"scope_out\": [], \"constraints\": [{\"text\": \"Proposals must be sent by e-mail as one document of no more than 15 pages by 17:00 GMT on 2027-02-12.\", \"src_ids\": [\"SRC-0013\"]}], \"never\": [], \"ask\": [], \"always\": [], \"topics\": [\"donor and volunteer management software\", \"cloud systems for charitable trusts\"]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2394,
+   "tokens_out": 226,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"factors\": [{\"name\": \"Fit to requirements\", \"weight\": \"50%\", \"scoring\": \"not_stated\", \"src_ids\": [\"SRC-0029\"]}, {\"name\": \"Ease of use for volunteers\", \"weight\": \"20%\", \"scoring\": \"not_stated\", \"src_ids\": [\"SRC-0030\"]}, {\"name\": \"Price\", \"weight\": \"30%\", \"scoring\": \"not_stated\", \"src_ids\": [\"SRC-0031\"]}], \"scoring_method\": null, \"needs\": [], \"scope_in\": [], \"scope_out\": [], \"constraints\": [{\"text\": \"Proposals must be sent by e-mail as one document of no more than 15 pages by 17:00 GMT on 2027-02-12.\", \"src_ids\": [\"SRC-0013\"]}], \"never\": [], \"ask\": [], \"always\": [], \"topics\": [\"donor and volunteer management software\", \"cloud systems for charitable trusts\"]}",
+     "thought_signature": "EmAKXgFpFH0TbcYKCVwCvqGtHhyR71gK6VmXcYZ8IoO2wLWpJwCvFywkKGZEi1pXqIlef0P-kQIbZR7wGxYUHAxFD_IBOc_-VGk88UqSI-JTUD22poMopQPtt6Liuw64jBo="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-05T07:47:56Z"
+}

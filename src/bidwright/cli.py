@@ -2,10 +2,14 @@
 
     bidwright run <file or folder> [--profile free|local|paid] [--baseline ex0|b0]
                   [--allow-non-corpus=i-accept-free-tier-terms] [--cache]
-                  [--second-pass | --no-second-pass] [--until NODE] [--outputs DIR]
+                  [--second-pass | --no-second-pass] [--until NODE]
+                  [--research off|pack|live] [--outputs DIR]
     bidwright demo       replays a recorded development run; needs no keys
     bidwright record <file or folder> [--name demo] [--profile free|local|paid] [--until NODE]
-                         runs live and writes LLM and Docling cassettes, on the host
+                         [--research off|pack|live] [--fill]
+                         runs live and writes LLM and Docling cassettes, on the host; --fill
+                         keeps the recording's cassettes, records only the calls it lacks,
+                         and removes the ones the run did not use
     bidwright stop <run>  asks a running run to stop when its current step ends
     bidwright resume <run> [--raise-budget PERCENT] [--profile paid]
                          continues a stopped, paused or killed run from its last checkpoint
@@ -47,7 +51,8 @@ CASSETTES = HOME / "tests" / "cassettes"
 RECORDING = "recording.json"
 DEMO_RECORD = "inputs/dev/dev_rfp.pdf"
 PROFILES = ["free", "local", "paid"]
-UNTIL = ["verify", "coverage", "consolidate", "render"]
+UNTIL = ["verify", "coverage", "consolidate", "brief", "render"]
+RESEARCH = ["off", "pack", "live"]  # config/research.yaml sets the default
 
 
 def load_env(path: Path) -> None:
@@ -255,6 +260,7 @@ def main(argv: list[str] | None = None) -> int:
         help="re-read OBLIGATION zones (S-13); config/limits.yaml sets the default",
     )
     run.add_argument("--until", choices=UNTIL, default="render", help="the last node to run")
+    run.add_argument("--research", choices=RESEARCH, help="config/research.yaml sets the default")
     run.add_argument("--outputs", type=Path, default=HOME / "outputs")
     demo = sub.add_parser("demo", help="replay the recorded development run, with no keys")
     demo.add_argument("--outputs", type=Path, default=HOME / "outputs")
@@ -263,6 +269,14 @@ def main(argv: list[str] | None = None) -> int:
     record.add_argument("--name", default="demo")
     record.add_argument("--profile", choices=PROFILES, default="free")
     record.add_argument("--until", choices=UNTIL, default="render", help="the last node to run")
+    record.add_argument(
+        "--research", choices=RESEARCH, help="config/research.yaml sets the default"
+    )
+    record.add_argument(
+        "--fill",
+        action="store_true",
+        help="keep the recording, record only the calls it lacks, and drop the unused ones",
+    )
     record.add_argument("--outputs", type=Path, default=HOME / "outputs")
     stop = sub.add_parser("stop", help="ask a running run to stop when its current step ends")
     stop.add_argument("run", help="a run id under outputs/, or a run folder")
@@ -333,19 +347,23 @@ def main(argv: list[str] | None = None) -> int:
             mode="replay",
             cassettes=CassetteStore(store),
             until=recording.get("until", "render"),
+            research=recording.get("research", "off"),
         )
         return _report(result)
+    cassettes = CassetteStore(CASSETTES / args.name) if args.command == "record" else None
     try:
-        if args.command == "record":
-            store = CASSETTES / args.name
+        if cassettes is not None:
             result = execute(
                 source=args.file,
                 profile=args.profile,
                 outputs=args.outputs,
                 mode="record",
-                cassettes=CassetteStore(store),
+                cassettes=cassettes,
                 backends=default_backends(paid=args.profile == "paid"),
                 until=args.until,
+                research=args.research,
+                fill=args.fill,
+                docling_mode="replay" if args.fill else None,
             )
         else:
             result = execute(
@@ -358,29 +376,35 @@ def main(argv: list[str] | None = None) -> int:
                 until=args.until,
                 second_pass=args.second_pass,
                 cache=args.cache,
+                research=args.research,
             )
     except Refused as exc:
         print(f"Refused: {exc}", file=sys.stderr)
         return 2
-    if args.command == "record" and result.status in ("COMPLETED", "DEGRADED"):
+    if cassettes is not None and result.status in ("COMPLETED", "DEGRADED"):
         from bidwright.config import load_config
 
         # `record` passes neither setting, so the run used the configured values; a replay
         # checks them, since neither is part of a cassette key.
-        limits = load_config().limits
+        config = load_config()
+        limits = config.limits
         source = args.file.resolve()
+        if args.fill:
+            gone = cassettes.prune(cassettes.used)
+            print(f"  filled: {len(cassettes.used)} cassettes kept, {len(gone)} unused removed")
         recording = {
             "profile": args.profile,
             "source": source.relative_to(HOME).as_posix()
             if source.is_relative_to(HOME)
             else str(source),
             "until": args.until,
+            "research": args.research or config.research.mode,
             "batch_size": limits.batch_size,
             "second_pass": limits.second_pass,
             "run_id": result.run_id,
             "status": result.status,
         }
-        (CASSETTES / args.name / RECORDING).write_text(
+        (cassettes.root / RECORDING).write_text(
             json.dumps(recording, indent=1) + "\n", encoding="utf-8", newline="\n"
         )
     return _report(result)

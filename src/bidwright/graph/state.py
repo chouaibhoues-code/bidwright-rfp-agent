@@ -36,6 +36,15 @@ class RunState(TypedDict):
     discrepancies: list[dict[str, Any]]
     questions: list[dict[str, Any]]  # `ClarificationQuestion`s
     consolidate_fallback: str | None
+    # Iteration 2: the brief, as {"record": the `OpportunityBrief`, "degraded": the shortfall};
+    # the research, as {"second_job": whether `discover_ask` started one, "degraded": the
+    # shortfall `discover_load` records}; the live node's research failure, which routes to
+    # `discover_load`; and the domain brief, as {"brief": the `DomainBrief`, "origin": where
+    # it came from, "citations": each cited excerpt's source title and tier}, or None.
+    brief: dict[str, Any]
+    research: dict[str, Any]
+    research_failed: str | None
+    domain_brief: dict[str, Any] | None
     approach: dict[str, Any]
     risk: dict[str, Any]
     sections: list[dict[str, Any]]

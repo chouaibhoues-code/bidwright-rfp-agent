@@ -2,6 +2,7 @@
 
 import json
 import os
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -9,8 +10,10 @@ import pytest
 from bidwright import cli
 from bidwright.config import load_config
 from bidwright.graph.build import RunResult, execute
+from bidwright.llm.replay import CassetteStore
+from bidwright.llm.types import Response
 from bidwright.preflight import Refused
-from tests.node_fakes import DEV_RFP, RuleBackend
+from tests.node_fakes import DEV_RFP, USAGE, RuleBackend
 
 
 def test_free_refuses_a_non_corpus_file_before_any_run(
@@ -51,8 +54,8 @@ def test_unknown_profiles_are_rejected_by_argparse() -> None:
 def test_run_passes_its_flags_to_the_run_entry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A package folder, `--until`, `--baseline b0`, `--cache`, `--no-second-pass`, and `paid`
-    with the paid key."""
+    """A package folder, `--until`, `--baseline b0`, `--cache`, `--no-second-pass`,
+    `--research off`, and `paid` with the paid key."""
     seen: dict[str, object] = {}
 
     def fake_execute(**kwargs: object) -> RunResult:
@@ -64,8 +67,9 @@ def test_run_passes_its_flags_to_the_run_entry(
     folder = cli.HOME / "inputs" / "hero"
     arguments = ["run", str(folder), "--profile", "paid", "--baseline", "b0", "--cache"]
     arguments += ["--no-second-pass", "--until", "coverage", "--outputs", str(tmp_path)]
-    assert cli.main(arguments) == 0
+    assert cli.main(arguments + ["--research", "off"]) == 0
     assert seen["source"] == folder and seen["profile"] == "paid"
+    assert seen["research"] == "off"
     assert (seen["baseline"], seen["until"], seen["cache"], seen["second_pass"]) == (
         "b0",
         "coverage",
@@ -91,14 +95,51 @@ def test_record_passes_until_and_writes_it_to_the_recording(
     source = cli.HOME / "inputs" / "hero"
     assert cli.main(["record", str(source), "--name", "probe", "--until", "consolidate"]) == 0
     assert seen["until"] == "consolidate" and seen["mode"] == "record"
+    assert (seen["research"], seen["fill"], seen["docling_mode"]) == (None, False, None)
     recording = json.loads((tmp_path / "probe" / cli.RECORDING).read_text(encoding="utf-8"))
     assert recording["until"] == "consolidate" and recording["source"] == "inputs/hero"
+    assert recording["research"] == load_config().research.mode, "the configured mode"
     limits = load_config().limits
     assert (recording["batch_size"], recording["second_pass"]) == (
         limits.batch_size,
         limits.second_pass,
     )
     assert cli.stale_recording(recording, limits.batch_size, limits.second_pass) is None
+
+
+def _cassette(store: CassetteStore, name: str) -> str:
+    """A stored call under a made-up key, as `record` writes one; its key."""
+    key = f"sha256:{sha256(name.encode()).hexdigest()}"
+    store.save(key, {"role": "extract"}, Response(text=name, usage=USAGE))
+    return key
+
+
+@pytest.mark.parametrize("fill", [True, False])
+def test_record_passes_research_and_a_fill_removes_the_cassettes_the_run_did_not_use(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fill: bool
+) -> None:
+    """`--fill` replays Docling and keeps only the cassettes the run used; a plain record
+    removes nothing."""
+    seen: dict[str, object] = {}
+    store = CassetteStore(tmp_path / "probe")
+    used, unused = _cassette(store, "used"), _cassette(store, "unused")
+
+    def fake_execute(**kwargs: object) -> RunResult:
+        seen.update(kwargs)
+        cassettes = kwargs["cassettes"]
+        assert isinstance(cassettes, CassetteStore) and cassettes.load(used) is not None
+        return RunResult("run", tmp_path, "COMPLETED", None)
+
+    monkeypatch.setattr("bidwright.graph.build.execute", fake_execute)
+    monkeypatch.setattr(cli, "CASSETTES", tmp_path)
+    arguments = ["record", str(DEV_RFP), "--name", "probe", "--until", "brief"]
+    arguments += ["--research", "pack"] + (["--fill"] if fill else [])
+    assert cli.main(arguments) == 0
+    assert (seen["research"], seen["until"], seen["fill"]) == ("pack", "brief", fill)
+    assert seen["docling_mode"] == ("replay" if fill else None)
+    assert set(store.keys()) == ({used} if fill else {used, unused})
+    recording = json.loads((tmp_path / "probe" / cli.RECORDING).read_text(encoding="utf-8"))
+    assert recording["research"] == "pack" and recording["until"] == "brief"
 
 
 def test_a_stale_recording_names_the_setting_to_record_again() -> None:

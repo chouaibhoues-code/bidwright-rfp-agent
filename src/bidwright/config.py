@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Annotated, Any, Literal, get_args
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from bidwright.schemas import ContractCategory, CueKind, Severity, Zone
 
@@ -498,6 +498,12 @@ class ResearchConfig(Strict):
     outbound: OutboundConfig
     servers: dict[str, ServerConfig]
     tiers: TiersConfig
+
+    @field_validator("mode", mode="before")
+    @classmethod
+    def _off_is_a_mode(cls, value: Any) -> Any:
+        """YAML 1.1 reads a bare `off` as false; the file means the mode `off`."""
+        return "off" if value is False else value
 
 
 class ServerIdentity(Strict):

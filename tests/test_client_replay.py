@@ -138,3 +138,38 @@ def test_the_journal_is_not_written_in_record_or_replay_mode(tmp_path: Path) -> 
     replay = LLMClient(config, "free", mode="replay", cassettes=store, journal=journal)
     replay.complete("extract", MESSAGES, ExtractResult, **CALL)
     assert not journal.root.exists()
+
+
+def test_a_fill_keeps_every_stored_cassette_and_records_only_the_missing_ones(
+    tmp_path: Path,
+) -> None:
+    store = CassetteStore(tmp_path)
+    config = load_config()
+    first = LLMClient(config, "free", {"gemini": FakeBackend()}, mode="record", cassettes=store)
+    first.complete("extract", MESSAGES, ExtractResult, **CALL)
+    stale = {**CALL, "input_hash": "sha256:gone"}
+    first.complete("extract", MESSAGES, ExtractResult, **stale)
+    kept = {p.name: p.read_bytes() for p in tmp_path.glob("*.json")}
+    assert len(kept) == 2
+
+    filling = CassetteStore(tmp_path)
+    backend = FakeBackend()
+    fill = LLMClient(
+        config, "free", {"gemini": backend}, mode="record", cassettes=filling, fill=True
+    )
+    again = fill.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert again.replayed and backend.requests == [], "a stored call never reaches the model"
+    added = {**CALL, "input_hash": "sha256:new"}
+    fresh = fill.complete("extract", MESSAGES, ExtractResult, **added)
+    assert not fresh.replayed and len(backend.requests) == 1, "a missing call is recorded"
+    assert len(filling.used) == 2
+
+    gone = filling.prune(filling.used)
+    assert len(gone) == 1, "the cassette the fill did not use is removed"
+    left = {p.name: p.read_bytes() for p in tmp_path.glob("*.json")}
+    assert len(left) == 2
+    for name, body in left.items():
+        if name in kept:
+            assert body == kept[name], "a kept cassette is byte-identical"
+    (tmp_path / "recording.json").write_text("{}", encoding="utf-8")
+    assert filling.prune(set()) and (tmp_path / "recording.json").exists(), "only cassettes go"

@@ -145,12 +145,32 @@ class NodeOutcome:
 
     failed: str | None = None
     second_job: bool = False
+    view: dict[str, Any] | None = None  # `discover_extract`'s domain brief, for the summary
 
 
 @dataclass(frozen=True)
 class LoadOutcome:
     domain_brief: DomainBrief | None
     degraded: str | None  # the run's shortfall, or None
+    view: dict[str, Any] | None = None  # the domain brief, for the summary
+
+
+def domain_view(
+    brief: DomainBrief,
+    origin: str,
+    excerpts: Sequence[PackExcerpt],
+    sources: Sequence[PackSource],
+) -> dict[str, Any]:
+    """The domain brief as the summary's appendix reads it: where it came from, and each cited
+    excerpt's source title and tier, so `render` needs neither the pack nor `research.json`."""
+    titles = {s.id: (s.title, s.tier) for s in sources}
+    cited = {i for entry in [*brief.items, *brief.needs] for i in entry.excerpt_ids}
+    citations = {
+        e.id: {"title": titles[e.source_id][0], "tier": titles[e.source_id][1]}
+        for e in excerpts
+        if e.id in cited and e.source_id in titles
+    }
+    return {"brief": brief.model_dump(mode="json"), "origin": origin, "citations": citations}
 
 
 @dataclass
@@ -344,7 +364,9 @@ class Discovery:
         )
         write_atomic(self.run_dir / BRIEF_FILE, brief.model_dump_json(indent=1) + "\n")
         self._event(f"research pack {pack.domain_id} loaded", "discover_load")
-        return LoadOutcome(brief, failure)
+        origin = f"the research pack `{pack.domain_id}`, version {pack.manifest.version}"
+        view = domain_view(brief, origin, pack.excerpts, pack.sources)
+        return LoadOutcome(brief, failure, view)
 
     def _pack_brief(self, pack: Pack) -> DomainBrief:
         brief, notes = settle_brief(
@@ -578,7 +600,11 @@ class Discovery:
                 self.store.note(*notes)
             write_atomic(self.run_dir / BRIEF_FILE, brief.model_dump_json(indent=1) + "\n")
             self._finish(None)
-            return NodeOutcome()
+            done = sorted(job.label for job in finished)
+            jobs = f"job {done[0]}" if len(done) == 1 else f"jobs {' and '.join(done)}"
+            origin = f"this run's live research, {jobs}"
+            view = domain_view(brief, origin, record.excerpts, record.sources)
+            return NodeOutcome(view=view)
         except _Failed as exc:
             return self._failed(str(exc))
 
@@ -944,6 +970,7 @@ class Discovery:
 
 __all__ = [
     "BRIEF_FILE",
+    "domain_view",
     "NO_TOPICS",
     "RESEARCH_FILE",
     "Discovery",

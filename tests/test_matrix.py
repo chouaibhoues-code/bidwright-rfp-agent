@@ -137,6 +137,8 @@ def test_the_committed_matrix_files_load() -> None:
     [
         ("{extract_prompt: extract_noexamples}", "extract_noexamples"),
         ("{baseline: ex0, second_pass: true}", "ADR-028"),
+        ("{research: live}", "the owner's NotebookLM account"),
+        ("{research: lively}", "use off or pack"),
     ],
 )
 def test_a_rung_that_execute_would_refuse_is_refused_before_anything_starts(
@@ -287,3 +289,33 @@ def test_a_fallback_is_found_even_when_it_is_another_roles_primary() -> None:
     manifest.models_used["extract"] = ["flash-lite"]
     assert not fell_back(manifest, roles), "each node on its own role's primary"
     assert fell_back(manifest.model_copy(update={"models_used": {"unknown": ["other"]}}), roles)
+
+
+def test_a_rung_may_set_research_off_or_pack(tmp_path: Path) -> None:
+    entry = FakeEntry()
+    rungs = "  - {name: none, flags: {research: off}}\n  - {name: pack, flags: {research: pack}}\n"
+    run_matrix(
+        _matrix(tmp_path, rungs=rungs), execute=entry, outputs=tmp_path / "out", say=lambda _: None
+    )
+    assert [call["research"] for call in entry.calls] == ["off", "off", "pack", "pack"]
+
+
+def test_the_research_nodes_are_checked_against_the_discover_role() -> None:
+    """`fell_back` maps discover_start, discover_ask and discover_extract to the `discover`
+    agent's role, so a call there that a fallback model answered marks the run."""
+    manifest = RunManifest.model_validate(
+        {
+            "run_id": "r",
+            "commit": "c",
+            "profile": "free",
+            "models": {"reason": "gemini-3.5-flash-lite", "extract": "gemini-3.5-flash-lite"},
+            "prompt_hashes": {},
+            "input_hashes": {},
+            "started": "2026-11-05T00:00:00Z",
+            "status": "COMPLETED",
+            "models_used": {"discover_ask": ["gemini-3.1-flash-lite"]},
+        }
+    )
+    assert fell_back(manifest)
+    clean = manifest.model_copy(update={"models_used": {"discover_ask": ["gemini-3.5-flash-lite"]}})
+    assert not fell_back(clean)
