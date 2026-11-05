@@ -21,7 +21,7 @@
 # of CAP-005 (pdfplumber reads PDF files and writes no PDF/A).
 
 corpus: hero
-gold_version: 3
+gold_version: 4
 package: hero
 documents:
   - doc_id: hero-rfp
@@ -712,3 +712,73 @@ seeds:
   # section 1(1) promptly and in any event not later than the twentieth working day following
   # the date of receipt."
   - {id: DM-12, type: domain, doc_id: hero-rfp, category: pitfall, terms: [[Freedom of Information, FOI]], source: "https://www.legislation.gov.uk/ukpga/2000/36/section/10"}
+
+  # Gold v4: Technology seeds (TS-01 to TS-20)
+  # TS-01 is CAP-005's false claim from the knowledge base.
+  - {id: TS-01, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "Documents of closed cases are converted to PDF/A with the pdfplumber library's to_pdfa() export.", holds: false}
+  - {id: TS-02, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber provides direct support for reconstructing and extracting image content.", holds: false}
+  - {id: TS-03, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber Page.extract_table extracts and returns all tables found across the page.", holds: false}
+  - {id: TS-04, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber structure_tree accessibility features can be relied upon to extract structure from all PDFs.", holds: false}
+  - {id: TS-05, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber Page.extract_text_lines is a fully stable non-experimental feature.", holds: false}
+  - {id: TS-06, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber TableFinder vertical_strategy lines_strict uses rectangle sides as cell borders.", holds: false}
+  - {id: TS-07, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber Page.extract_words discards character bounding box coordinates.", holds: false}
+  - {id: TS-08, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber PageImage.save defaults to saving images in JPEG format.", holds: false}
+  - {id: TS-09, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber open with repair=True automatically saves the repaired PDF file to disk.", holds: false}
+  - {id: TS-10, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber PageImage draw_rect stroke_width defaults to 5 points.", holds: false}
+  - {id: TS-11, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "Page text is extracted using pdfplumber Page.extract_text with layout tolerance.", holds: true}
+  - {id: TS-12, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber Page.extract_text_simple provides faster text extraction from page characters.", holds: true}
+  - {id: TS-13, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber Page.extract_words returns a list of words and their bounding boxes.", holds: true}
+  - {id: TS-14, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber Page.extract_table extracts text from the largest table on a page.", holds: true}
+  - {id: TS-15, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber Page.extract_tables extracts tables from a PDF page using configurable table_settings.", holds: true}
+  - {id: TS-16, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber Page.find_tables returns a list of Table objects found on the page.", holds: true}
+  - {id: TS-17, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber repair repairs malformed PDF files using Ghostscript.", holds: true}
+  - {id: TS-18, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber PageImage debug_tablefinder returns an image with detected lines and tables overlaid.", holds: true}
+  - {id: TS-19, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber PageImage.draw_vline draws a vertical line at the specified x-coordinate location.", holds: true}
+  - {id: TS-20, type: tech, doc_id: hero-rfp, library: pdfplumber, text: "pdfplumber PageImage.save saves an annotated image as a PNG file.", holds: true}
+
+  # Gold v4: Decision seeds (DD-01 to DD-45), one per mandatory clause.
+  - {id: DD-01, type: decision, gold_id: GR-0001, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-02, type: decision, gold_id: GR-0003, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-03, type: decision, gold_id: GR-0004, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-04, type: decision, gold_id: GR-0005, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-05, type: decision, gold_id: GR-0006, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-06, type: decision, gold_id: GR-0007, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-07, type: decision, gold_id: GR-0008, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-08, type: decision, gold_id: GR-0009, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-09, type: decision, gold_id: GR-0010, decision: PROCEED_WITH_GAP}
+  - {id: DD-10, type: decision, gold_id: GR-0012, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-11, type: decision, gold_id: GR-0013, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-12, type: decision, gold_id: GR-0014, decision: REQUEST_CLARIFICATION}
+  - {id: DD-13, type: decision, gold_id: GR-0015, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-14, type: decision, gold_id: GR-0016, decision: PROCEED_WITH_GAP}
+  - {id: DD-15, type: decision, gold_id: GR-0018, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-16, type: decision, gold_id: GR-0020, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-17, type: decision, gold_id: GR-0021, decision: REQUEST_CLARIFICATION}
+  - {id: DD-18, type: decision, gold_id: GR-0022, decision: REQUEST_CLARIFICATION}
+  - {id: DD-19, type: decision, gold_id: GR-0023, decision: PROCEED_WITH_GAP}
+  - {id: DD-20, type: decision, gold_id: GR-0024, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-21, type: decision, gold_id: GR-0026, decision: PROCEED_WITH_GAP}
+  - {id: DD-22, type: decision, gold_id: GR-0027, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-23, type: decision, gold_id: GR-0028, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-24, type: decision, gold_id: GR-0030, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-25, type: decision, gold_id: GR-0031, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-26, type: decision, gold_id: GR-0032, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-27, type: decision, gold_id: GR-0033, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-28, type: decision, gold_id: GR-0034, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-29, type: decision, gold_id: GR-0036, decision: REQUEST_CLARIFICATION}
+  - {id: DD-30, type: decision, gold_id: GR-0037, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-31, type: decision, gold_id: GR-0038, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-32, type: decision, gold_id: GR-0039, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-33, type: decision, gold_id: GR-0040, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-34, type: decision, gold_id: GR-0042, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-35, type: decision, gold_id: GR-0043, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-36, type: decision, gold_id: GR-0044, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-37, type: decision, gold_id: GR-0045, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-38, type: decision, gold_id: GR-0046, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-39, type: decision, gold_id: GR-0047, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-40, type: decision, gold_id: GR-0048, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-41, type: decision, gold_id: GR-0049, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-42, type: decision, gold_id: GR-0050, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-43, type: decision, gold_id: GR-0051, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-44, type: decision, gold_id: GR-0052, decision: RETRIEVE_EVIDENCE}
+  - {id: DD-45, type: decision, gold_id: GR-0053, decision: RETRIEVE_EVIDENCE}

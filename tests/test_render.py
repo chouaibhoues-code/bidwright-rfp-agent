@@ -16,13 +16,17 @@ from evals.render.package import INPUTS_DIR, MANIFEST, render_package
 from evals.render.spec import (
     CORPUS_DIR,
     HIDDEN_LAYERS,
+    REPO_ROOT,
     VISIBLE_LAYERS,
     Clause,
+    DecisionSeed,
     DomainSeed,
     FactorSeed,
+    GapSeed,
     Implicit,
     Spec,
     TableBlock,
+    TechSeed,
     load_spec,
 )
 from tests.render_checks import normalized, text_in_layer, visible_text
@@ -254,3 +258,39 @@ def test_the_hero_has_its_domain_seeds() -> None:
     assert 10 <= len(seeds) <= 14
     assert {seed.category for seed in seeds} == {"pattern", "standard", "pitfall"}
     assert all(seed.doc_id == "hero-rfp" for seed in seeds)
+
+
+# --- gold v4 (Iteration 3, step 15) -----------------------------------------------------------
+
+
+def test_the_hero_has_its_technology_and_decision_seeds() -> None:
+    """Step 15: technology seeds and decision seeds for hero."""
+    spec = load_spec("hero")
+    assert spec.gold_version == 4
+    tech = [seed for seed in spec.seeds if isinstance(seed, TechSeed)]
+    decision = [seed for seed in spec.seeds if isinstance(seed, DecisionSeed)]
+    assert len(tech) >= 20
+    assert len(decision) == 45
+
+    # Every technology seed's library is one a knowledge-base record or a corpus clause names
+    kb_path = REPO_ROOT / "knowledge_base" / "capabilities" / "capabilities.yaml"
+    kb_text = kb_path.read_text(encoding="utf-8") if kb_path.exists() else ""
+    clause_text = " ".join(at.clause.text for at in spec.clauses())
+    for t in tech:
+        assert (t.library in kb_text) or (t.library in clause_text), t.id
+
+    # Every decision seed names a mandatory clause
+    mandatory = {
+        at.clause.id
+        for at in spec.clauses()
+        if at.clause.gold.kind == "requirement" and at.clause.gold.mandatory
+    }
+    assert {d.gold_id for d in decision} == mandatory
+
+    # Each one whose clause is a gap seed's anchor expects PROCEED_WITH_GAP
+    gap_anchors = {
+        anchor for seed in spec.seeds if isinstance(seed, GapSeed) for anchor in seed.anchors
+    }
+    for d in decision:
+        if d.gold_id in gap_anchors:
+            assert d.decision == "PROCEED_WITH_GAP", d.id

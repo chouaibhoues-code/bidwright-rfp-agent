@@ -19,3 +19,32 @@ s13-second-pass:
   control: "off"
   rungs:
     "on": {metric: missed_mandatory_count, kind: improvement, secondary: {metric: precision_low, max_drop: 0.03}, hypothesis: "The second pass lowers the median misses and costs at most 3 points of precision"}
+ex-ladder:
+  control: "ex0"
+  rungs:
+    "ex1": {metric: missed_mandatory_count, kind: keep_or_drop, direction: lower, margin: 1, secondary: {metric: precision_low, direction: higher}, hypothesis: "Bare extraction without triage or coverage loses no more than 1 additional mandatory requirement than the baseline while improving precision"}
+    "ex2": {metric: missed_mandatory_count, kind: keep_or_drop, direction: lower, margin: 1, secondary: {metric: precision_low, direction: higher}, hypothesis: "Full context without triage or coverage loses no more than 1 additional mandatory requirement while improving precision"}
+    "ex3": {metric: missed_mandatory_count, kind: keep_or_drop, direction: lower, margin: 1, secondary: {metric: precision_low, direction: higher}, hypothesis: "Triage and coverage without second pass lose no more than 1 additional mandatory requirement while improving precision"}
+    "ex4": {metric: missed_mandatory_count, kind: keep_or_drop, direction: lower, margin: 1, secondary: {metric: precision_low, direction: higher}, hypothesis: "Full extraction with second pass loses no more than 1 additional mandatory requirement while improving precision"}
+so-ladder:
+  control: "so0"
+  rungs:
+    "so1-f": {metric: gap_assertions, kind: keep_or_drop, direction: lower, margin: 0, secondary: {metric: approach_mapping, direction: higher}, hypothesis: "The fixed retrieval asserts no more gaps than the one-call baseline and maps more binding requirements"}
+    "so1": {metric: gap_assertions, kind: keep_or_drop, direction: lower, margin: 0, secondary: {metric: approach_mapping, direction: higher}, hypothesis: "Decide agent asserts no more gaps than the one-call baseline and maps more binding requirements"}
+    "so1-t": {metric: gap_assertions, kind: keep_or_drop, direction: lower, margin: 0, secondary: {metric: approach_mapping, direction: higher}, compare_to: "so1", hypothesis: "Reflection after a failed tool call asserts no more gaps than decide alone and maps more binding requirements"}
+    "so2": {metric: gap_assertions, kind: keep_or_drop, direction: lower, margin: 0, secondary: {metric: approach_mapping, direction: higher}, hypothesis: "Independent assessment asserts no more gaps than the baseline and maps more binding requirements"}
+    "so3": {metric: gap_assertions, kind: keep_or_drop, direction: lower, margin: 0, secondary: {metric: approach_mapping, direction: higher}, hypothesis: "Full manifest generation asserts no more gaps than the baseline and maps more binding requirements"}
+rk-ladder:
+  control: "rk0"
+  rungs:
+    "rk1-f": {metric: risk_seed_recall, kind: keep_or_drop, direction: higher, secondary: {metric: generic_risks_rejected, direction: lower}, hypothesis: "Fixed risk retrieval achieves higher risk seed recall with fewer generic risks rejected"}
+    "rk1": {metric: risk_seed_recall, kind: keep_or_drop, direction: higher, secondary: {metric: generic_risks_rejected, direction: lower}, hypothesis: "Risk agent achieves higher risk seed recall with fewer generic risks rejected"}
+    "rk1-t": {metric: risk_seed_recall, kind: keep_or_drop, direction: higher, secondary: {metric: generic_risks_rejected, direction: lower}, compare_to: "rk1", hypothesis: "Risk reflection achieves higher risk seed recall than risk agent alone with fewer generic risks rejected"}
+s12-cards:
+  control: "off"
+  rungs:
+    "on": {metric: violations, kind: superiority, hypothesis: "Model cards and checks reduce violations by more than the spread"}
+s12-scorecard:
+  control: "off"
+  rungs:
+    "on": {metric: missed_mandatory_count, kind: within_noise, hypothesis: "Model cards and checks stay within noise on missed mandatory requirements and seeded gaps claimed"}

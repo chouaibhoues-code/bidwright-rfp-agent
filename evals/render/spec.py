@@ -380,6 +380,26 @@ class DomainSeed(Strict):
     source: str = Field(pattern=r"^https://")
 
 
+class TechSeed(Strict):
+    """A technology claim (gold v4, Iteration 3, step 15): library, text and holds."""
+
+    id: str = Field(pattern=r"^TS-\d{2}$")
+    type: Literal["tech"]
+    doc_id: str = "hero-rfp"
+    library: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+    holds: bool
+
+
+class DecisionSeed(Strict):
+    """An expected decision on a mandatory clause (gold v4, Iteration 3, step 15)."""
+
+    id: str = Field(pattern=r"^DD-\d{2}$")
+    type: Literal["decision"]
+    gold_id: str = Field(pattern=r"^GR-\d{4}$")
+    decision: Literal["RETRIEVE_EVIDENCE", "PROCEED_WITH_GAP", "REQUEST_CLARIFICATION", "ABSTAIN"]
+
+
 Seed = Annotated[
     RiskSeed
     | GapSeed
@@ -389,7 +409,9 @@ Seed = Annotated[
     | LintSeed
     | DuplicateSeed
     | FactorSeed
-    | DomainSeed,
+    | DomainSeed
+    | TechSeed
+    | DecisionSeed,
     Field(discriminator="type"),
 ]
 
@@ -468,10 +490,21 @@ class Spec(Strict):
                 raise ValueError(f"duplicate {label} ids: {duplicates}")
         known = {at.clause.id for at in self.clauses()}
         documents = {document.doc_id for document in self.documents}
+        mandatory_ids = {
+            at.clause.id
+            for at in self.clauses()
+            if at.clause.gold.kind == "requirement" and at.clause.gold.mandatory
+        }
         for seed in self.seeds:
-            if isinstance(seed, FactorSeed | DomainSeed):
+            if isinstance(seed, FactorSeed | DomainSeed | TechSeed):
                 if seed.doc_id not in documents:
                     raise ValueError(f"{seed.id} names an unknown document: {seed.doc_id}")
+                continue
+            if isinstance(seed, DecisionSeed):
+                if seed.gold_id not in known:
+                    raise ValueError(f"{seed.id} names an unknown clause: {seed.gold_id}")
+                if seed.gold_id not in mandatory_ids:
+                    raise ValueError(f"{seed.id} names a non-mandatory clause: {seed.gold_id}")
                 continue
             missing = sorted(set(seed.anchors) - known)
             if missing:
