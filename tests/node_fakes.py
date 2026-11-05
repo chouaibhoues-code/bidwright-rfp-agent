@@ -44,6 +44,7 @@ PROMPT_IDS = (
     "options",
     "blueprint",
     "blueprint_detail",
+    "techcheck",
 )
 RISK_LIMITS = AgentLimits(max_turns=4, max_tool_calls=6, stop_on_no_progress=True)
 USAGE = Usage(tokens_in=500, tokens_out=100)
@@ -154,6 +155,8 @@ class RuleBackend:
                 "missing": "",
             }
             return Response(text=json.dumps(result), usage=USAGE)
+        if name == "TechVerdict":
+            return Response(text=json.dumps(_tech_verdict(data)), usage=USAGE)
         if name == "BlueprintPlan":
             return Response(text=json.dumps(_blueprint_plan(data)), usage=USAGE)
         if name == "BlueprintDetail":
@@ -421,6 +424,12 @@ GENERIC_RISK = {
     "residual_exposure": "Medium.",
     "evidence_src_ids": [],
 }
+
+
+def _tech_verdict(data: dict[str, Any]) -> dict[str, Any]:
+    """`VALIDATED`, quoting the documentation's first sentence."""
+    first = re.split(r"(?<=[.!?])\s", data.get("documentation", "").strip(), maxsplit=1)[0]
+    return {"reason": "The documentation states it.", "verdict": "VALIDATED", "quote": first}
 
 
 def _blueprint_plan(data: dict[str, Any]) -> dict[str, Any]:

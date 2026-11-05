@@ -360,6 +360,11 @@ TOOL_ACCESS = {
     "read_section": "Reads one section of the run's passages, as its text view shows them;"
     " writes nothing",
     "sla_calc": "Computes service-level downtime and percentages; reads and writes nothing",
+    "resolve-library-id": "Called by code, never a model: sends a library's name and a query"
+    " built from a technology claim to Context7, and reads back the library's id",
+    "query-docs": "Called by code, never a model: sends a library id and that query to"
+    " Context7, and reads back its documentation, which `techcheck` writes to"
+    " `tech_docs.jsonl`",
 }
 
 
@@ -387,17 +392,18 @@ def _rules_table() -> list[str]:
 
 
 def _host_services(config: Any) -> list[str]:
-    """The research servers, which run on the host and never in Compose: only `live`
-    research starts one, bound to loopback (Iteration 2)."""
+    """The research servers with a package, which run on the host and never in Compose: only
+    `live` research starts one, bound to loopback (Iteration 2). A remote server, such as
+    Context7, has no package and is not a service."""
     from urllib.parse import urlparse
 
     from bidwright.config import HttpServer
 
     rows = []
     for name, server in sorted(config.research.servers.items()):
-        if not isinstance(server, HttpServer):
+        if not isinstance(server, HttpServer) or not server.package:
             continue
-        package = f"`{server.package}=={server.version}`" if server.package else "Not pinned"
+        package = f"`{server.package}=={server.version}`"
         address = urlparse(server.url).netloc or server.url
         rows.append(
             f"| `{name}` | {package}, started on the host for `live` research | `{address}`"

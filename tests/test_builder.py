@@ -397,3 +397,55 @@ def test_leave_out_keeps_a_published_tender_out_of_the_pack(tmp_path: Path) -> N
     assert built.review == []
     with pytest.raises(BuildRefused, match="does not hold"):
         build_pack(_forms_request(run_dir, "PS-099"), config=config)
+
+
+# --- Iteration 3, step 8: the library pack ----------------------------------------------------
+
+
+def test_research_libraries_writes_a_pack_whose_hashes_check_and_run_adds_tech_docs(
+    tmp_path: Path,
+) -> None:
+    from bidwright.research.builder import build_library_pack
+    from bidwright.research.context7 import SENT as C7_SENT
+    from bidwright.research.context7 import Context7Docs
+    from bidwright.research.pack import load_library_pack
+
+    patterns = compile_patterns(load_config().ingest.suspect_patterns, "config/ingest.yaml")
+    packs = tmp_path / "packs"
+    with serving("--context7") as url:
+        client = McpClient("context7", http_server(url))
+        reported, tools = client.list_tools()
+        pins = pinned("context7", reported, tools, C7_SENT, None)
+
+        def docs() -> Context7Docs:
+            return Context7Docs(McpClient("context7", http_server(url)), pins, patterns)
+
+        first = build_library_pack(
+            ["pdfplumber", "nosuchlib"], ["PDF/A export"], docs=docs(), packs_dir=packs
+        )
+        assert first.manifest.version == 1 and first.manifest.libraries == ["pdfplumber"]
+        assert any("nosuchlib" in note for note in first.notes)
+        pack = load_library_pack(first.path, patterns)
+        assert {s.query for s in pack.sources} == {"pdfplumber PDF/A export"}
+        assert all(e.library == "pdfplumber" for e in pack.excerpts)
+
+        run = tmp_path / "run"
+        run.mkdir()
+        doc = {
+            "claim_id": "TC-01",
+            "library": "docforge",
+            "library_id": "/example/docforge",
+            "query": "docforge read tables",
+            "text": "## Page.read_tables\n\nReturns every table on the page as a list of rows.",
+            "retrieved": "2026-11-05T12:00:00Z",
+        }
+        (run / "tech_docs.jsonl").write_text(json.dumps(doc) + "\n", encoding="utf-8")
+        second = build_library_pack(
+            ["pdfplumber"], ["PDF/A export"], run=run, docs=docs(), packs_dir=packs
+        )
+    assert second.manifest.version == 2
+    assert second.manifest.libraries == ["docforge", "pdfplumber"]
+    assert any("already in the pack" in note for note in second.notes)
+    pack = load_library_pack(second.path, patterns)
+    assert [s.id for s in pack.sources] == ["LS-001", "LS-002"]
+    assert pack.excerpts[-1].text == "Returns every table on the page as a list of rows."

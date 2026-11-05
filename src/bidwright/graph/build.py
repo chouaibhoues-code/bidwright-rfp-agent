@@ -83,7 +83,7 @@ from bidwright.graph.triage import triage
 from bidwright.guard import GuardResult, PolicyBlocked, run_guard
 from bidwright.harness.budget import BudgetExceeded, RunBudget
 from bidwright.harness.context import CONTEXT_DIR, ContextManager, prompt_tokens
-from bidwright.harness.egress import RESEARCH_DESTINATION, check_run
+from bidwright.harness.egress import CONTEXT7_DESTINATION, RESEARCH_DESTINATION, check_run
 from bidwright.harness.gateway import ToolGateway, ToolLog
 from bidwright.harness.recovery import DEAD_LETTERS, CircuitBreaker, DeadLetters
 from bidwright.harness.supervisor import STOP_REASON, RunSupervisor, environment, read_manifest
@@ -174,6 +174,10 @@ class NodeFunction(Protocol):
     """A graph node: takes the state it reads, returns the keys it writes."""
 
     def __call__(self, state: Any) -> dict[str, Any]: ...
+
+
+# The servers research mode `live` reaches (Iteration 3: Context7 for techcheck).
+LIVE_SERVERS = (RESEARCH_DESTINATION, CONTEXT7_DESTINATION)
 
 
 @dataclass
@@ -1150,10 +1154,10 @@ def execute(
     endpoint = trace_endpoint()
     parses = docling_mode in ("live", "record") and needs_docling(preflight.documents, config)
     research_mode = research or config.research.mode
-    research_server = (
-        (RESEARCH_DESTINATION, config.research.servers[RESEARCH_DESTINATION])
+    research_servers = (
+        [(name, config.research.servers[name]) for name in LIVE_SERVERS]
         if research_mode == "live"
-        else None
+        else []
     )
     refused = check_run(
         run_backends,
@@ -1162,7 +1166,7 @@ def execute(
         preflight.data_class,
         register=config.egress,
         consent=profile == "free" and consent == CONSENT,
-        research=research_server,
+        research=research_servers,
     )
     started = datetime.now(UTC)
     suffix = f"-{baseline}" if baseline else ""

@@ -7,8 +7,8 @@ that rule's outcome, `DENIED` or `EMPTY` with the rule's reason, which goes back
 and the tool never runs; a rule that finds a security breach also records a security event
 with its attribution class. A call that passes every rule runs and counts against the agent's
 cap, which can start from the run's own count, so a cap holds across nodes and resumes. The
-research rules need a `RuleContext`; an agent that may call a research tool is refused one
-without it. Every request and result is kept in `calls` for the trace.
+research rules need a `RuleContext`; an agent that may call a research or Context7 tool is
+refused one without it. Every request and result is kept in `calls` for the trace.
 
 `ToolLog` is the only writer of the run's `tool_calls.jsonl`: every gateway's calls, one row
 each, with `part`, the run's resume count, so a call made again after a resume is told apart.
@@ -21,7 +21,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from bidwright.harness.rules import RESEARCH_TOOLS, RULES, Call, RuleContext
+from bidwright.harness.rules import OUTBOUND_TOOLS, RULES, Call, RuleContext
 from bidwright.schemas import ToolRequest, ToolResult
 from bidwright.tools import Tool
 
@@ -79,8 +79,10 @@ class ToolGateway:
     ) -> "ToolGateway":
         """`executed` is the run's count so far against `max_tool_calls`."""
         listed = frozenset(allowed)
-        if listed & RESEARCH_TOOLS and context is None:
-            raise ValueError(f"agent {agent!r} may call research tools, which need a RuleContext")
+        if listed & OUTBOUND_TOOLS and context is None:
+            raise ValueError(
+                f"agent {agent!r} may call research or Context7 tools, which need a RuleContext"
+            )
         return cls(
             agent,
             listed,

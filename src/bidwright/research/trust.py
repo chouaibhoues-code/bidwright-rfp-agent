@@ -5,7 +5,8 @@ answer against the suspect patterns of `config/ingest.yaml`, as `ingest` checks 
 quarantines a match: the item stays, with `quarantined` set, so the run can show what it held
 back, and each match records a security event attributed `injection-dominant`. A quarantined
 excerpt is never returned and no item may cite it; a quarantined answer's text is withheld
-while its clean excerpts still return. A research pack is screened again each time it loads.
+while its clean excerpts still return. A research pack, and from Iteration 3 the library pack's
+excerpts, are screened again each time they load.
 
 `solicitation` tells whether a source's title or URL reads like a published solicitation, such
 as a request for proposal: the data rule keeps real tenders out of prompts and out of the
@@ -24,7 +25,7 @@ from bidwright.config import TiersConfig
 from bidwright.harness.egress import hostname
 from bidwright.obs.events import EventRecorder
 from bidwright.research.provider import tier_of
-from bidwright.schemas import Attribution, PackAnswer, PackExcerpt
+from bidwright.schemas import Attribution, LibraryExcerpt, PackAnswer, PackExcerpt
 
 ATTRIBUTION: Attribution = "injection-dominant"
 # A title or URL that reads like a published solicitation, which the data rule keeps out.
@@ -44,14 +45,14 @@ def suspect(text: str, patterns: Sequence[re.Pattern[str]]) -> bool:
     return any(pattern.search(text) for pattern in patterns)
 
 
-def _label(item: PackExcerpt | PackAnswer) -> tuple[str, str]:
-    if isinstance(item, PackExcerpt):
+def _label(item: PackExcerpt | PackAnswer | LibraryExcerpt) -> tuple[str, str]:
+    if isinstance(item, PackExcerpt | LibraryExcerpt):
         return item.id, item.text
     question = item.question if len(item.question) <= 60 else item.question[:57] + "..."
     return f"the recorded answer to {question!r}", item.answer
 
 
-def screen[T: (PackExcerpt, PackAnswer)](
+def screen[T: (PackExcerpt, PackAnswer, LibraryExcerpt)](
     items: Sequence[T],
     patterns: Sequence[re.Pattern[str]],
     events: EventRecorder | None = None,

@@ -40,6 +40,15 @@ Rebuilding a domain's pack replaces it, so its earlier version does not compete,
 `version` by one. The pack is staged and loaded with `load_pack` before it replaces anything,
 so a pack `load_pack` would refuse is never written; a pack with no domain item or need is
 refused too. `pack.yaml` takes the flags, each file's hash and the counts.
+
+`build_library_pack` (Iteration 3, step 8; ADR-044) is `bidwright research libraries`: for each
+library and each topic it asks Context7, through `Context7Docs` and a gateway for agent
+`techcheck` with no RFP, for the library's documentation on the topic, and `--run` adds a live
+run's `tech_docs.jsonl`. Each documentation becomes one `LibrarySource`, and its paragraphs
+(`context7.paragraphs`) its `LibraryExcerpt`s, screened and kept with their `quarantined`
+flag. A source already in the pack, by library and query, is not fetched again. The pack keeps
+its earlier sources and excerpts, raises its version, and is staged and loaded with
+`load_library_pack` before it replaces anything. Topics are general words, never RFP text.
 """
 
 import json
@@ -73,7 +82,7 @@ from bidwright.harness.context import ContextManager
 from bidwright.harness.egress import RESEARCH_DESTINATION, EgressRefused, check_run
 from bidwright.harness.gateway import ToolLog
 from bidwright.harness.recovery import CircuitBreaker
-from bidwright.harness.rules import query_sha256
+from bidwright.harness.rules import RuleContext, query_sha256
 from bidwright.harness.supervisor import STOP_REASON, RunSupervisor, environment
 from bidwright.llm.client import LLMClient
 from bidwright.llm.limits import Limiter, tier_for
@@ -82,14 +91,21 @@ from bidwright.obs.ledger import LedgerFile, models_used, totals_of
 from bidwright.obs.tracing import Tracing, trace_endpoint
 from bidwright.preflight import HOME
 from bidwright.prompts import load_prompt_ref
+from bidwright.research import context7
+from bidwright.research.mcp_client import McpError
 from bidwright.research.nlm import notebooklm_provider
 from bidwright.research.pack import (
     DATA_FILES,
+    LIBRARY_DATA,
+    LIBRARY_FILE,
     PACK_FILE,
+    LibraryPack,
     PackRefused,
     choose,
     digest,
     keyword_matches,
+    library_pack_path,
+    load_library_pack,
     load_pack,
     pack_keywords,
     packs_root,
@@ -101,6 +117,9 @@ from bidwright.restricted import RestrictedNames
 from bidwright.schemas import (
     DiscoveryExtract,
     DomainBrief,
+    LibraryExcerpt,
+    LibraryManifest,
+    LibrarySource,
     OpportunityBrief,
     PackAnswer,
     PackExcerpt,
@@ -110,6 +129,7 @@ from bidwright.schemas import (
     ResearchRecord,
     RunManifest,
     RunStatus,
+    TechDoc,
 )
 
 PACK_COMMAND = "research pack"
@@ -313,7 +333,7 @@ def _notebook_run(
             None,
             "synthetic",
             register=config.egress,
-            research=(RESEARCH_DESTINATION, server),
+            research=[(RESEARCH_DESTINATION, server)],
         )
     except EgressRefused as exc:
         raise BuildRefused(str(exc)) from exc
@@ -681,10 +701,168 @@ def _write(target: Path, texts: Mapping[str, str], manifest_text: str, config: C
     return target
 
 
+# --- the library pack (Iteration 3, step 8) ---------------------------------------------------
+
+
+@dataclass(frozen=True)
+class BuiltLibraryPack:
+    path: Path
+    manifest: LibraryManifest
+    notes: list[str] = field(default_factory=list)
+
+
+def build_library_pack(
+    libraries: Sequence[str],
+    topics: Sequence[str],
+    *,
+    run: Path | None = None,
+    docs: "context7.Context7Docs | None" = None,
+    packs_dir: str | Path | None = None,
+    config: Config | None = None,
+    now: Callable[[], datetime] = lambda: datetime.now(UTC),
+) -> BuiltLibraryPack:
+    """Fetch each library's documentation on each topic, add a run's, and write the pack."""
+    config = config or load_config()
+    libraries = list(dict.fromkeys(name.strip() for name in libraries if name.strip()))
+    topics = list(dict.fromkeys(topic.strip() for topic in topics if topic.strip()))
+    if not libraries or not topics:
+        raise BuildRefused("a library pack needs at least one --library and one --topic")
+    target = library_pack_path(packs_dir or config.research.packs_dir)
+    patterns = compile_patterns(config.ingest.suspect_patterns, "config/ingest.yaml")
+    previous = _stored_library_pack(target, patterns)
+    sources = list(previous.sources) if previous else []
+    excerpts = list(previous.excerpts) if previous else []
+    known = {(s.library, s.query) for s in sources}
+    notes: list[str] = []
+
+    def add(library: str, library_id: str, query: str, text: str, retrieved: datetime) -> None:
+        if (library, query) in known:
+            notes.append(f"{library}: {query!r} is already in the pack")
+            return
+        known.add((library, query))
+        source = LibrarySource(
+            id=f"LS-{len(sources) + 1:03d}",
+            library=library,
+            library_id=library_id,
+            query=query,
+            retrieved=retrieved,
+        )
+        sources.append(source)
+        for paragraph in context7.paragraphs(text):
+            excerpts.append(
+                LibraryExcerpt(
+                    id=f"LX-{len(excerpts) + 1:04d}",
+                    source_id=source.id,
+                    library=library,
+                    text=paragraph,
+                )
+            )
+
+    docs = docs or _library_docs(config, patterns)
+    try:
+        docs.connect()
+    except McpError as exc:
+        raise BuildRefused(f"Context7 is out of reach: {exc}") from exc
+    if not docs.pinned:
+        raise BuildRefused(docs.refusal or "Context7 does not match its pins")
+    context = RuleContext(passages=[], rfp=False)
+    allowed = config.agents.agents[context7.AGENT].tools
+    gateway = docs.gateway(context, allowed, 2 * len(libraries) * (len(topics) + 1))
+    for library in libraries:
+        for turn, topic in enumerate(topics, start=1):
+            query = context7.query_for(library, None, topic)
+            if (library, query) in known:
+                notes.append(f"{library}: {query!r} is already in the pack")
+                continue
+            found = docs.lookup(gateway, library, query, turn)
+            if isinstance(found, context7.NotFetched):
+                notes.append(f"{library}: {query!r} not fetched: {found.reason}")
+                continue
+            add(library, found[0], query, found[1], now())
+    if run is not None:
+        for doc in _tech_docs(run):
+            add(doc.library, doc.library_id, doc.query, doc.text, doc.retrieved)
+    if not excerpts:
+        raise BuildRefused("Context7 returned no documentation, so there is no pack to write")
+    texts = {
+        "sources.jsonl": "".join(s.model_dump_json() + "\n" for s in sources),
+        "excerpts.jsonl": "".join(e.model_dump_json() + "\n" for e in excerpts),
+    }
+    manifest = LibraryManifest(
+        version=previous.manifest.version + 1 if previous else 1,
+        created=now().date(),
+        libraries=sorted({s.library for s in sources}, key=str.casefold),
+        files={name: digest(texts[name].encode("utf-8")) for name in LIBRARY_DATA},
+        counts={"sources": len(sources), "excerpts": len(excerpts)},
+    )
+    _write_library(target, texts, manifest, patterns)
+    return BuiltLibraryPack(target, manifest, notes)
+
+
+def _library_docs(config: Config, patterns: Sequence[re.Pattern[str]]) -> "context7.Context7Docs":
+    return context7.context7_docs(config, patterns)
+
+
+def _stored_library_pack(target: Path, patterns: Sequence[re.Pattern[str]]) -> LibraryPack | None:
+    if not (target / LIBRARY_FILE).exists():
+        return None
+    try:
+        return load_library_pack(target, patterns)
+    except PackRefused as exc:
+        raise BuildRefused(f"the library pack in place does not load: {exc}") from exc
+
+
+def _tech_docs(run: Path) -> list[TechDoc]:
+    path = run / "tech_docs.jsonl"
+    if not path.is_file():
+        raise BuildRefused(f"{run.name} holds no tech_docs.jsonl")
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return [TechDoc.model_validate_json(line) for line in lines if line.strip()]
+
+
+def _library_manifest_text(manifest: LibraryManifest) -> str:
+    def quoted(value: Any) -> str:
+        return json.dumps(value, ensure_ascii=False)
+
+    lines = [
+        f"id: {manifest.id}",
+        f"version: {manifest.version}",
+        f"created: {manifest.created.isoformat()}",
+        f"libraries: {quoted(manifest.libraries)}",
+        "files:",
+        *(f"  {name}: {quoted(manifest.files[name])}" for name in LIBRARY_DATA),
+        "counts: {" + ", ".join(f"{k}: {v}" for k, v in manifest.counts.items()) + "}",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def _write_library(
+    target: Path,
+    texts: Mapping[str, str],
+    manifest: LibraryManifest,
+    patterns: Sequence[re.Pattern[str]],
+) -> None:
+    """Stage the pack and load it, then replace the target's files, `library.yaml` last."""
+    manifest_text = _library_manifest_text(manifest)
+    with tempfile.TemporaryDirectory() as staging:
+        staged = Path(staging) / target.name
+        for name, text in {**texts, LIBRARY_FILE: manifest_text}.items():
+            write_atomic(staged / name, text)
+        try:
+            load_library_pack(staged, patterns)
+        except PackRefused as exc:
+            raise BuildRefused(f"the staged library pack does not load: {exc}") from exc
+    for name in LIBRARY_DATA:
+        write_atomic(target / name, texts[name])
+    write_atomic(target / LIBRARY_FILE, manifest_text)
+
+
 __all__ = [
     "PACK_COMMAND",
     "BuildRefused",
+    "BuiltLibraryPack",
     "BuiltPack",
     "PackRequest",
+    "build_library_pack",
     "build_pack",
 ]

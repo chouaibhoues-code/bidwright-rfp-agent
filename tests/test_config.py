@@ -32,6 +32,8 @@ KNOWN_TOOLS = {
     "search_capabilities",
     "read_section",
     "sla_calc",
+    "resolve-library-id",  # Context7, called by code for techcheck
+    "query-docs",
 }
 
 

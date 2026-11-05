@@ -35,6 +35,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `extract_oneshot` | 0.4.0 | extract | `sha256:cda10111ce58` |
 | `options` | 0.1.0 | reason | `sha256:0d38b5d27fbf` |
 | `risk` | 0.2.0 | reason | `sha256:10c255fbf785` |
+| `techcheck` | 0.1.0 | assess | `sha256:88c175538fd6` |
 | `triage` | 0.1.0 | extract | `sha256:7e154ae7564a` |
 
 ## Agentic control factors
@@ -52,6 +53,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `options` | function | None | 1 call and 1 repair, fixed in code |
 | `blueprint` | function | None | 1 call and 1 repair, fixed in code |
 | `blueprint_detail` | function | None | 1 call and 1 repair, fixed in code |
+| `techcheck` | function | `resolve-library-id`, `query-docs` | 1 call and 1 repair, fixed in code |
 | `draft` | function | None | 1 call and 1 repair, fixed in code |
 | `consolidate` | function | None | 1 call and 1 repair, fixed in code |
 
@@ -74,6 +76,8 @@ Controls on every run, in code:
 | `search_capabilities` | Reads the run's own index of the supplier's knowledge base; writes nothing | `decide` |
 | `read_section` | Reads one section of the run's passages, as its text view shows them; writes nothing | `decide` |
 | `sla_calc` | Computes service-level downtime and percentages; reads and writes nothing | No agent |
+| `resolve-library-id` | Called by code, never a model: sends a library's name and a query built from a technology claim to Context7, and reads back the library's id | `techcheck` |
+| `query-docs` | Called by code, never a model: sends a library id and that query to Context7, and reads back its documentation, which `techcheck` writes to `tech_docs.jsonl` | `techcheck` |
 
 ## Services
 

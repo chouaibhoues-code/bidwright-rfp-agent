@@ -1819,6 +1819,40 @@ class TechDoc(Record):
     retrieved: datetime
 
 
+LIBRARY_EXCERPT_MAX_CHARS = 1200
+
+
+class LibrarySource(Record):
+    """One line of the library pack's `sources.jsonl`: one fetched documentation (step 8)."""
+
+    id: Annotated[str, Field(pattern=r"^LS-\d{3}$")]
+    library: str = Field(min_length=1)
+    library_id: str = Field(min_length=1)
+    query: str = Field(min_length=1)
+    retrieved: datetime
+
+
+class LibraryExcerpt(Record):
+    """One line of the library pack's `excerpts.jsonl`: a paragraph of one documentation."""
+
+    id: Annotated[str, Field(pattern=r"^LX-\d{4}$")]
+    source_id: Annotated[str, Field(pattern=r"^LS-\d{3}$")]
+    library: str = Field(min_length=1)
+    text: str = Field(min_length=1, max_length=LIBRARY_EXCERPT_MAX_CHARS)
+    quarantined: bool = False
+
+
+class LibraryManifest(Record):
+    """The stored form of `research_packs/libraries/library.yaml`."""
+
+    id: Literal["libraries"] = "libraries"
+    version: int = Field(ge=1)
+    created: date
+    libraries: list[str] = Field(default_factory=list)
+    files: dict[str, Sha256]
+    counts: dict[str, int] = Field(default_factory=dict)
+
+
 class TechValidation(Record):
     claim_id: TechClaimId
     library: str | None = None

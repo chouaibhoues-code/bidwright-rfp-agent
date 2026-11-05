@@ -18,6 +18,13 @@ A pack is one folder of six files, which `research_packs/README.md` lists: `pack
   the same rule to a pack before writing it. `packs_dir` resolves against `preflight.HOME`.
 - `PackProvider` is research mode `pack`'s research provider: `ask` answers from its pack by
   ADR-034's rule, and every other method refuses, since a pack starts no job.
+- `LibraryPack` (Iteration 3, step 8; ADR-044) is `research_packs/libraries/`: `library.yaml`,
+  a `LibraryManifest` holding the hash of `sources.jsonl` and `excerpts.jsonl`, each excerpt a
+  paragraph of one Context7 documentation with its library. `load_library_pack` refuses a
+  missing or changed file and an excerpt naming a source the pack lacks or another library,
+  and screens every excerpt; `LibraryPack.answer` applies ADR-034's matching rule among the
+  clean excerpts of one library. `pack_keywords` reads only `pack.yaml`, so research-pack
+  selection never sees the library pack.
 """
 
 import hashlib
@@ -40,6 +47,9 @@ from bidwright.schemas import (
     AskResult,
     DomainBrief,
     JobStatus,
+    LibraryExcerpt,
+    LibraryManifest,
+    LibrarySource,
     PackAnswer,
     PackExcerpt,
     PackManifest,
@@ -50,6 +60,9 @@ from bidwright.text import content_stems
 PACK_FILE = "pack.yaml"
 DATA_FILES = ("summary.md", "sources.jsonl", "excerpts.jsonl", "domain_brief.json", "answers.jsonl")
 NO_PACK = "no pack for this domain"
+LIBRARY_DIR = "libraries"  # research_packs/libraries/, the library pack
+LIBRARY_FILE = "library.yaml"
+LIBRARY_DATA = ("sources.jsonl", "excerpts.jsonl")
 
 
 class PackRefused(Exception):
@@ -315,8 +328,107 @@ class PackProvider:
         )
 
 
+@dataclass(frozen=True)
+class LibraryPack:
+    """The loaded library pack, its excerpts screened."""
+
+    path: Path
+    manifest: LibraryManifest
+    sha256: str  # the hash of library.yaml
+    sources: list[LibrarySource]
+    excerpts: list[LibraryExcerpt]
+
+    @property
+    def ref(self) -> str:
+        """The pack's id and version, which a technology verdict names as its source."""
+        return f"{self.manifest.id}@{self.manifest.version}"
+
+    def holds(self, library: str) -> bool:
+        return any(e.library.casefold() == library.casefold() for e in self.excerpts)
+
+    def answer(self, library: str, query: str, rules: QuestionsConfig) -> list[LibraryExcerpt]:
+        """ADR-034's rule among the library's clean excerpts: each must hold at least
+        `max(min_terms, ceil(match_share × n))` of the query's `n` content stems; by stems
+        held, then pack order; at most `max_matches`."""
+        wanted = content_stems(query)
+        if len(wanted) < rules.min_terms:
+            return []
+        needed = max(rules.min_terms, math.ceil(rules.match_share * len(wanted)))
+        own = [
+            (index, excerpt)
+            for index, excerpt in enumerate(self.excerpts)
+            if excerpt.library.casefold() == library.casefold() and not excerpt.quarantined
+        ]
+        held = {index: len(wanted & content_stems(e.text)) for index, e in own}
+        ranked = sorted(
+            (pair for pair in own if held[pair[0]] >= needed),
+            key=lambda pair: (-held[pair[0]], pair[0]),
+        )
+        return [excerpt for _, excerpt in ranked][: rules.max_matches]
+
+
+def library_pack_path(packs_dir: str | Path) -> Path:
+    return packs_root(packs_dir) / LIBRARY_DIR
+
+
+def read_library_manifest(path: Path) -> LibraryManifest:
+    try:
+        return LibraryManifest.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+    except (OSError, yaml.YAMLError, ValidationError) as exc:
+        raise PackRefused(f"{LIBRARY_DIR}/{LIBRARY_FILE} is not a library manifest: {exc}") from exc
+
+
+def load_library_pack(
+    path: Path,
+    patterns: Sequence[re.Pattern[str]],
+    events: EventRecorder | None = None,
+    *,
+    node: str = "techcheck",
+) -> LibraryPack:
+    """The library pack in `path`, each file checked against its hash in `library.yaml`."""
+    manifest_path = path / LIBRARY_FILE
+    if not manifest_path.is_file():
+        raise PackRefused(f"{LIBRARY_DIR}: no {LIBRARY_FILE}")
+    manifest = read_library_manifest(manifest_path)
+    if sorted(manifest.files) != sorted(LIBRARY_DATA):
+        raise PackRefused(f"{LIBRARY_DIR}: {LIBRARY_FILE} must list exactly {LIBRARY_DATA}")
+    data: dict[str, str] = {}
+    for file in LIBRARY_DATA:
+        try:
+            raw = (path / file).read_bytes()
+        except OSError as exc:
+            raise PackRefused(f"{LIBRARY_DIR}: {file} is missing") from exc
+        if digest(raw) != manifest.files[file]:
+            raise PackRefused(f"{LIBRARY_DIR}: {file} does not match its hash in {LIBRARY_FILE}")
+        data[file] = raw.decode("utf-8")
+    sources = _rows(LIBRARY_DIR, "sources.jsonl", data["sources.jsonl"], LibrarySource)
+    excerpts = _rows(LIBRARY_DIR, "excerpts.jsonl", data["excerpts.jsonl"], LibraryExcerpt)
+    by_id = {s.id: s for s in sources}
+    for kind, ids in (("source", [s.id for s in sources]), ("excerpt", [e.id for e in excerpts])):
+        repeated = sorted({i for i in ids if ids.count(i) > 1})
+        if repeated:
+            raise PackRefused(f"{LIBRARY_DIR}: {kind} ids appear twice: {', '.join(repeated)}")
+    for excerpt in excerpts:
+        source = by_id.get(excerpt.source_id)
+        if source is None or source.library != excerpt.library:
+            raise PackRefused(
+                f"{LIBRARY_DIR}: {excerpt.id} names a source the pack lacks, or another library"
+            )
+    return LibraryPack(
+        path=path,
+        manifest=manifest,
+        sha256=digest(manifest_path.read_bytes()),
+        sources=sources,
+        excerpts=screen(excerpts, patterns, events, node=node),
+    )
+
+
 __all__ = [
     "DATA_FILES",
+    "LIBRARY_DATA",
+    "LIBRARY_DIR",
+    "LIBRARY_FILE",
+    "LibraryPack",
     "NO_PACK",
     "PACK_FILE",
     "Pack",
@@ -326,9 +438,12 @@ __all__ = [
     "choose",
     "digest",
     "keyword_matches",
+    "library_pack_path",
+    "load_library_pack",
     "load_pack",
     "pack_keywords",
     "packs_root",
+    "read_library_manifest",
     "read_manifest",
     "select_pack",
 ]

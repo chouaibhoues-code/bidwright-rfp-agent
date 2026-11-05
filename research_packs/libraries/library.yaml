@@ -1,0 +1,8 @@
+id: libraries
+version: 1
+created: 2026-11-05
+libraries: ["openpyxl", "pdfplumber", "python-docx"]
+files:
+  sources.jsonl: "sha256:1afe0413271cf6833871dfb08b32bbd1f55f0a75a6a6ca2a16d22f6db407ff4f"
+  excerpts.jsonl: "sha256:4eeb4ab2b06d6db8ecdca98c616443e018f3396ac9edb6777078c8b0fda8f98c"
+counts: {sources: 12, excerpts: 574}

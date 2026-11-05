@@ -516,3 +516,23 @@ blueprint_detail:
       - {hypothesis: "Clinic staff spend less time finding old consent forms.", measure: "The time to find a form, before and after.", need_id: RG-901}
     win_themes:
       - {feature: "Retention set per document type", metric: "Every consent form under a ten-year rule", benefit: "The Trust meets its retention duty without tracking forms by hand", proof_claim_id: CL-901}
+# techcheck (Iteration 3): one technology claim per verdict, on a fictional library's documentation.
+techcheck:
+  - task:
+      claim_text: "Tables are read from each page with docforge's read_tables()."
+      library: docforge
+      version: "2.1"
+      documentation: "## Page.read_tables\n\nReturns every table on the page as a list of rows. Each row is a list of cell strings, left to right."
+    result: {reason: "The documentation names Page.read_tables and says it returns the page's tables.", verdict: VALIDATED, quote: "Returns every table on the page as a list of rows."}
+  - task:
+      claim_text: "Signed forms are converted to PDF/A with docforge's to_pdfa()."
+      library: docforge
+      version: "2.1"
+      documentation: "docforge reads PDF files and extracts their text, tables and images. It does not write or convert PDF files."
+    result: {reason: "The documentation says docforge does not write or convert PDF files, so it has no conversion to PDF/A.", verdict: INVALIDATED, quote: "It does not write or convert PDF files."}
+  - task:
+      claim_text: "docforge opens password-protected PDF files."
+      library: docforge
+      version: "2.1"
+      documentation: "## Page.read_tables\n\nReturns every table on the page as a list of rows. Each row is a list of cell strings, left to right."
+    result: {reason: "The documentation covers reading tables and says nothing about passwords or protected files.", verdict: INSUFFICIENT_DOCS, quote: ""}

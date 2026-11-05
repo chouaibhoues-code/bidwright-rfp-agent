@@ -1784,6 +1784,43 @@ One line of `tech_docs.jsonl`: the documentation one technology claim was judged
 | `text` | str | yes |  |  |
 | `retrieved` | datetime | yes |  |  |
 
+## `LibrarySource`
+
+One line of the library pack's `sources.jsonl`: one fetched documentation (step 8).
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^LS-\d{3}$) | yes |  |  |
+| `library` | str (min length 1) | yes |  |  |
+| `library_id` | str (min length 1) | yes |  |  |
+| `query` | str (min length 1) | yes |  |  |
+| `retrieved` | datetime | yes |  |  |
+
+## `LibraryExcerpt`
+
+One line of the library pack's `excerpts.jsonl`: a paragraph of one documentation.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | str (pattern ^LX-\d{4}$) | yes |  |  |
+| `source_id` | str (pattern ^LS-\d{3}$) | yes |  |  |
+| `library` | str (min length 1) | yes |  |  |
+| `text` | str (min length 1, max length 1200) | yes |  |  |
+| `quarantined` | bool | no | False |  |
+
+## `LibraryManifest`
+
+The stored form of `research_packs/libraries/library.yaml`.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `id` | one of 'libraries' | no | 'libraries' |  |
+| `version` | int (ge 1) | yes |  |  |
+| `created` | date | yes |  |  |
+| `libraries` | list[str] | no | [] |  |
+| `files` | dict[str, str (pattern ^sha256:[0-9a-f]{64}$)] | yes |  |  |
+| `counts` | dict[str, int] | no | {} |  |
+
 ## `TechValidation`
 
 | Field | Type | Required | Default | Description |

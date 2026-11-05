@@ -8,8 +8,11 @@ the run uses no tool of that server. A changed description can carry an instruct
 model, so a new version of the server is pinned again, on the host, by a person.
 
 `pinned` builds the pins that `bidwright research pin` writes: it refuses a server whose
-pinned tools lack a parameter `NotebookLMProvider` sends, since such a call would fail or be
-read differently. NotebookLM's FastMCP server declares no version of its own, so the version
+pinned tools lack a parameter Bidwright sends, as the server's own module lists them
+(`nlm.SENT`, `context7.SENT`), since such a call would fail or be read differently.
+`write_pins` lists in `mcp_servers.txt` the Python package of each HTTP server in
+`config/research.yaml` that declares one, for the dependency audit; Context7 is remote and has
+none. NotebookLM's FastMCP server declares no version of its own, so the version
 `initialize` reports is the MCP SDK's; the package and its version come from
 `config/research.yaml`.
 """
@@ -19,7 +22,7 @@ from pathlib import Path
 
 import yaml
 
-from bidwright.config import ServerIdentity, ServerPins
+from bidwright.config import HttpServer, ServerIdentity, ServerPins, StdioServer
 from bidwright.fileio import write_atomic
 from bidwright.llm.schema import sha256_of
 from bidwright.research.mcp_client import ServerInfo, ToolInfo
@@ -92,18 +95,29 @@ def pinned(
     )
 
 
-def write_pins(folder: Path, server: str, pins: ServerPins) -> None:
+def packages(servers: Mapping[str, HttpServer | StdioServer]) -> list[str]:
+    """`name==version` for each HTTP server that declares its Python package."""
+    return sorted(
+        f"{s.package}=={s.version}"
+        for s in servers.values()
+        if isinstance(s, HttpServer) and s.package and s.version
+    )
+
+
+def write_pins(
+    folder: Path,
+    server: str,
+    pins: ServerPins,
+    servers: Mapping[str, HttpServer | StdioServer],
+) -> None:
     """Write `server`'s pins into `mcp_pins.yaml`, keeping the other servers' pins, and the
-    pinned packages into `mcp_servers.txt`."""
+    HTTP servers' Python packages into `mcp_servers.txt`."""
     path = folder / PINS_FILE
     stored = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) if path.exists() else {}
     stored[server] = pins.model_dump(mode="json")
     body = yaml.safe_dump(stored, sort_keys=True, default_flow_style=False, allow_unicode=True)
     write_atomic(path, _PINS_HEADER + body)
-    packages = sorted(
-        str(entry["package"]) for entry in stored.values() if entry and entry.get("package")
-    )
-    listing = "".join(f"{package}\n" for package in packages)
+    listing = "".join(f"{package}\n" for package in packages(servers))
     write_atomic(folder / SERVERS_FILE, _SERVERS_HEADER + listing)
 
 
@@ -112,6 +126,7 @@ __all__ = [
     "SERVERS_FILE",
     "ServerRefused",
     "check",
+    "packages",
     "pinned",
     "tool_hash",
     "write_pins",

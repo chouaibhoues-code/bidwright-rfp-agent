@@ -141,11 +141,12 @@ options:
 ## `bidwright research pin`
 
 ```text
-usage: bidwright research pin [-h] [--server SERVER]
+usage: bidwright research pin [-h] [--server {notebooklm,context7}]
 
 options:
-  -h, --help       show this help message and exit
-  --server SERVER  a server in config/research.yaml
+  -h, --help            show this help message and exit
+  --server {notebooklm,context7}
+                        the server
 ```
 
 ## `bidwright research pack`

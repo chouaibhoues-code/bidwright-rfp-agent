@@ -16,6 +16,11 @@ them, the research record's counts read live at each check, whether the research
 matched when the run first connected, the events log for security events, and `query_for`,
 the text a research tool would send.
 
+From Iteration 3 (section 6.2 of its design), G3 and G4 also trigger on Context7's two tools,
+`CONTEXT7_TOOLS`, which code calls for `techcheck`: G3 checks their `query` and `libraryName`,
+each on its own, and G4 the `context7` server's pins. G2 does not trigger on them, since code
+builds their arguments.
+
 A replay consumes nothing (Iteration 2, step 11): a resumed node's model asks again what it asked
 before the stop, so G1 lets through a `start_research` whose query is a recorded job's, which
 returns that job's label and starts nothing, and G5 an `ask_research` whose question is
@@ -43,6 +48,10 @@ if TYPE_CHECKING:
 
 Outcome = Literal["deny", "return", "pause"]
 RESEARCH_TOOLS = frozenset({"start_research", "ask_research"})
+# Context7's tools, which code calls for `techcheck` (Iteration 3, ADR-044).
+CONTEXT7_TOOLS = frozenset({"resolve-library-id", "query-docs"})
+OUTBOUND_TOOLS = RESEARCH_TOOLS | CONTEXT7_TOOLS  # the tools whose text leaves the run
+_CONTEXT7_TEXTS = ("query", "libraryName")  # what G3 reads of a Context7 call
 MAX_IDENTICAL_CALLS = 2
 _UUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 _LONG_RUN = re.compile(r"[A-Za-z0-9_-]{30,}")
@@ -76,7 +85,7 @@ class RuleContext:
     passages: Sequence[Passage]
     view: "TextView | None" = None
     research: Callable[[], ResearchRecord] | None = None
-    server: str | None = None  # the research provider's MCP server, when it is NotebookLM
+    server: str | None = None  # the MCP server, NotebookLM's or Context7's, when there is one
     pinned: bool = False  # whether that server matched its pins when the run first connected
     events: EventRecorder | None = None
     node: str | None = None  # the node the events name
@@ -118,6 +127,13 @@ class RuleContext:
         if self.query_for is not None:
             return self.query_for(request)
         return str(request.args.get("question", ""))
+
+    def sent_texts(self, request: ToolRequest) -> list[str]:
+        """Each text a call would send, which G3 checks on its own: a Context7 call's query
+        and library name, or `sent` for a research tool."""
+        if request.tool in CONTEXT7_TOOLS:
+            return [str(request.args.get(name, "")) for name in _CONTEXT7_TEXTS]
+        return [self.sent(request)]
 
     def overlap(self, text: str) -> tuple[int, str] | None:
         """The longest run of normalized words `text` shares with one passage, and that
@@ -260,13 +276,16 @@ class CallCap(Rule):
 
 class PinnedServer(Rule):
     name = "G4 pinned server"
-    trigger = "`start_research`, `ask_research`, when the research provider is NotebookLM"
+    trigger = (
+        "`start_research`, `ask_research`, when the research provider is NotebookLM;"
+        " `resolve-library-id`, `query-docs`"
+    )
     description = (
         "The server's reported name and version, and its tools, matched their pins when the"
         " run first connected"
     )
     note = ': "server refused: its tools do not match their pins"'
-    tools = RESEARCH_TOOLS
+    tools = OUTBOUND_TOOLS
 
     def triggered(self, call: Call, gateway: "ToolGateway") -> bool:
         context = gateway.context
@@ -338,23 +357,24 @@ class QuestionCap(Rule):
 
 class OutboundOverlap(Rule):
     name = "G3 outbound overlap"
-    trigger = "`start_research`, `ask_research`"
+    trigger = "`start_research`, `ask_research`, `resolve-library-id`, `query-docs`"
     description = (
-        "The text the tool would send shares fewer than 8 consecutive normalized words with"
-        " every passage of the run"
+        "Each text the tool would send (a Context7 call's query and library name each on its"
+        " own) shares fewer than 8 consecutive normalized words with every passage of the run"
     )
     note = (
         ", with a security event attributed `injection-dominant` when the passage is marked"
         " `suspect` and `indeterminate` otherwise"
     )
-    tools = RESEARCH_TOOLS
+    tools = OUTBOUND_TOOLS
 
     def check(self, call: Call, gateway: "ToolGateway") -> Finding | None:
         context = gateway.context
         if context is None:
             return Finding("research needs the run's passages to check what it sends")
         tool = call.request.tool
-        shared = context.overlap(context.sent(call.request))
+        found = [context.overlap(text) for text in context.sent_texts(call.request)]
+        shared = max((f for f in found if f is not None), default=None)
         if shared is None:
             return None
         count, src_id = shared
@@ -384,7 +404,9 @@ OUTCOMES: Mapping[Outcome, str] = {
 }
 
 __all__ = [
+    "CONTEXT7_TOOLS",
     "MAX_IDENTICAL_CALLS",
+    "OUTBOUND_TOOLS",
     "OUTCOMES",
     "RESEARCH_TOOLS",
     "RULES",

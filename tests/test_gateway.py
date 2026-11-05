@@ -416,3 +416,60 @@ def test_outbound_rule_denies_every_copied_passage() -> None:
         finding = rule.check(Call(_ask(case["passage"])), gateway)
         assert finding is not None, case["id"]
         assert finding.reason.startswith("ask_research denied"), case["id"]
+
+
+# --- Iteration 3, step 8: Context7's tools ---------------------------------------------------
+
+
+def _context7_tools() -> list[Tool]:
+    from bidwright.research.context7 import QueryDocsArgs, ResolveArgs
+
+    def run(args: Any) -> ToolResult:
+        return ToolResult(status="OK", data={"library_id": "/jsvine/pdfplumber"})
+
+    return [
+        Tool("resolve-library-id", "Resolve.", ResolveArgs, run),
+        Tool("query-docs", "Docs.", QueryDocsArgs, run),
+    ]
+
+
+def _resolve(library: str, query: str = "pdfplumber text") -> ToolRequest:
+    return ToolRequest(
+        tool="resolve-library-id",
+        args={"libraryName": library, "query": query},
+        agent="techcheck",
+        turn=1,
+    )
+
+
+def test_context7_tools_need_a_rule_context() -> None:
+    with pytest.raises(ValueError, match="RuleContext"):
+        ToolGateway.for_agent("techcheck", ["query-docs"], _context7_tools(), max_tool_calls=4)
+
+
+def test_g4_refuses_context7_when_its_pins_did_not_match() -> None:
+    context = RuleContext(_passages(), server="context7", pinned=False)
+    gateway = ToolGateway.for_agent(
+        "techcheck", ["resolve-library-id"], _context7_tools(), 4, context=context
+    )
+    result = gateway.call(_resolve("pdfplumber"))
+    assert (result.status, result.reason) == (
+        "DENIED",
+        "server refused: its tools do not match their pins",
+    )
+    context.pinned = True
+    assert gateway.call(_resolve("pdfplumber")).status == "OK"
+
+
+def test_g3_checks_a_context7_query_and_library_name_each_on_its_own() -> None:
+    words = COPIED.split()
+    context = RuleContext(_passages(), server="context7", pinned=True)
+    gateway = ToolGateway.for_agent(
+        "techcheck", ["resolve-library-id"], _context7_tools(), 6, context=context
+    )
+    copied_name = gateway.call(_resolve(" ".join(words[:9])))
+    assert copied_name.status == "DENIED" and "never carry RFP text" in (copied_name.reason or "")
+    copied_query = gateway.call(_resolve("pdfplumber", " ".join(words[:9])))
+    assert copied_query.status == "DENIED"
+    split = gateway.call(_resolve(" ".join(words[:4]), " ".join(words[4:9])))
+    assert split.status == "OK", "neither text alone shares 8 words with a passage"

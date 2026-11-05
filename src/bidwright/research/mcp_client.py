@@ -7,7 +7,8 @@ server as a subprocess; and it runs the session with `anyio.run`, so a node gets
 returns the server's name and version as `initialize` reports them. A tool's result is read
 from its JSON text, which FastMCP servers always send, or from its structured content. A result
 whose `isError` is set, or whose `status` is `"error"`, raises `McpToolError` with the server's
-message; a connection or protocol failure raises `McpUnavailable`.
+message; a connection or protocol failure raises `McpUnavailable`. An HTTP server entry with
+`bearer_env` sends `Authorization: Bearer` with that variable's value when it is set.
 
 With a circuit breaker (`harness/recovery.py`), the server's key is checked before each
 connection, a tool error or a failed connection counts as a failure, and an answer resets it.
@@ -17,6 +18,7 @@ certificate bundle, about half a second, which would otherwise be paid on every 
 """
 
 import json
+import os
 import ssl
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -113,7 +115,9 @@ class McpClient:
         if isinstance(self.server, HttpServer):
             async with (
                 httpx.AsyncClient(
-                    timeout=httpx.Timeout(self.server.timeout_s), verify=_tls()
+                    timeout=httpx.Timeout(self.server.timeout_s),
+                    verify=_tls(),
+                    headers=bearer(self.server),
                 ) as http,
                 streamable_http_client(server_url(self.name, self.server), http_client=http) as (
                     read,
@@ -148,6 +152,13 @@ class McpClient:
             dict(arguments),
             read_timeout_seconds=timedelta(seconds=self.server.tool_timeout_s),
         )
+
+
+def bearer(server: HttpServer) -> dict[str, str]:
+    """The `Authorization` header from the server entry's `bearer_env`, when that variable is
+    set and not empty; no header otherwise. The key is never logged."""
+    key = os.environ.get(server.bearer_env, "") if server.bearer_env else ""
+    return {"Authorization": f"Bearer {key}"} if key else {}
 
 
 @cache

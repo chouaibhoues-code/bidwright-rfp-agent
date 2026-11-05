@@ -19,6 +19,7 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 | `options` | function | `OptionsTask` | `OptionsResult` | `options@0.1.0` | reason | None | None |
 | `blueprint` | function | `BlueprintPlanTask` | `BlueprintPlan` | `blueprint@0.1.0` | reason | None | None |
 | `blueprint_detail` | function | `BlueprintDetailTask` | `BlueprintDetail` | `blueprint_detail@0.1.0` | reason | None | None |
+| `techcheck` | function | `TechVerdictTask` | `TechVerdict` | `techcheck@0.1.0` | assess | `resolve-library-id`, `query-docs` | None |
 | `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | None |
 | `consolidate` | function | `ClusterTask` | `ConsolidationResult` | `consolidate@0.1.0` | reason | None | None |
 
@@ -41,6 +42,7 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | `extract_oneshot` | 0.4.0 | extract | plain instruction | `ExtractResult` | gemini: thinking medium; ollama: think False | never |
 | `options` | 0.1.0 | reason | Distinct options compared before scoring, in one call; the baseline first | `OptionsResult` | gemini: thinking medium; ollama: think False | never |
 | `risk` | 0.2.0 | reason | Multi-Perspective pre-mortem in one call | `RiskRegister` | gemini: thinking low; ollama: think False | 2026-11-04 |
+| `techcheck` | 0.1.0 | assess | A strict three-way verdict; unsure means INSUFFICIENT_DOCS; the quote copied from the documentation | `TechVerdict` | cerebras: reasoning_effort medium; groq: reasoning_effort medium; gemini: thinking low; ollama: think False | never |
 | `triage` | 0.1.0 | extract | plain rules and a zone table, positive directives | `TriageResult` | gemini: thinking low; ollama: think False | 2026-11-04 |
 
 ## Models by profile and role
@@ -77,10 +79,10 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | argument schema | Every call | The arguments validate against the tool's Pydantic model | Deny |
 | repeats | Every call | No third identical call: the same tool with the same arguments | Deny |
 | call cap | Every call | The agent's tool-call cap is not yet spent, counting from the run's start | Deny |
-| G4 pinned server | `start_research`, `ask_research`, when the research provider is NotebookLM | The server's reported name and version, and its tools, matched their pins when the run first connected | Deny: "server refused: its tools do not match their pins" |
+| G4 pinned server | `start_research`, `ask_research`, when the research provider is NotebookLM; `resolve-library-id`, `query-docs` | The server's reported name and version, and its tools, matched their pins when the run first connected | Deny: "server refused: its tools do not match their pins" |
 | G1 job limit | `start_research` | Fewer than 2 jobs this run, or the query of a recorded job, which starts nothing; and no other `start_research` in the same turn | Deny: "the run's research jobs are spent", or "one job a turn" |
 | G5 question cap | `ask_research` from `discover` | Fewer than 6 questions this run, or a recorded question, which is answered from `research.json` | Return to the model: "no questions left; finish" |
-| G3 outbound overlap | `start_research`, `ask_research` | The text the tool would send shares fewer than 8 consecutive normalized words with every passage of the run | Deny, with a security event attributed `injection-dominant` when the passage is marked `suspect` and `indeterminate` otherwise |
+| G3 outbound overlap | `start_research`, `ask_research`, `resolve-library-id`, `query-docs` | Each text the tool would send (a Context7 call's query and library name each on its own) shares fewer than 8 consecutive normalized words with every passage of the run | Deny, with a security event attributed `injection-dominant` when the passage is marked `suspect` and `indeterminate` otherwise |
 
 ## Runtime graph
 

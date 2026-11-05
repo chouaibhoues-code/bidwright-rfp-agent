@@ -301,5 +301,43 @@ def test_a_stdio_research_server_is_refused() -> None:
     )
     with pytest.raises(EgressRefused, match="runs over stdio"):
         check_run(
-            {}, None, None, "synthetic", register=CONFIG.egress, research=("notebooklm", server)
+            {}, None, None, "synthetic", register=CONFIG.egress, research=[("notebooklm", server)]
         )
+
+
+# --- Iteration 3, step 8: Context7 ------------------------------------------------------------
+
+
+def test_the_bearer_header_is_sent_when_its_variable_is_set_and_absent_otherwise(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tests.mcp_fakes import http_server
+
+    monkeypatch.delenv("FAKE_CONTEXT7_KEY", raising=False)
+    with _serving("--context7") as url:
+        client = McpClient("context7", http_server(url, bearer_env="FAKE_CONTEXT7_KEY"))
+        client.call("resolve-library-id", {"libraryName": "pdfplumber", "query": "text"})
+        assert client.call("fake_auth", {})["authorization"] is None
+        monkeypatch.setenv("FAKE_CONTEXT7_KEY", "test-key-not-real")
+        client.call("resolve-library-id", {"libraryName": "pdfplumber", "query": "text"})
+        assert client.call("fake_auth", {})["authorization"] == "Bearer test-key-not-real"
+
+
+def test_research_pin_context7_writes_its_pins_and_no_package_line(
+    fake_url: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from bidwright.research import context7
+
+    monkeypatch.setattr(cli, "CONFIG_DIR", tmp_path)
+    with _serving("--context7") as url:
+        monkeypatch.setenv("CONTEXT7_MCP_URL", url)
+        assert cli.main(["research", "pin", "--server", "context7"]) == 0
+    written = yaml.safe_load((tmp_path / "mcp_pins.yaml").read_text(encoding="utf-8"))
+    pins = PinsConfig.model_validate({"servers": written}).servers["context7"]
+    assert pins.server is not None and (pins.server.name, pins.server.version) == (
+        "Context7",
+        "4.5.0",
+    )
+    assert set(pins.tools) == set(context7.SENT) and pins.package is None
+    listing = (tmp_path / "mcp_servers.txt").read_text(encoding="utf-8").splitlines()
+    assert [line for line in listing if not line.startswith("#")] == ["notebooklm-mcp-cli==0.15.8"]

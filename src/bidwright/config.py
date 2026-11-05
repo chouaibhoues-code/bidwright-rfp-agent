@@ -193,11 +193,12 @@ class BreakerConfig(Strict):
 
 
 class SolutionLimits(Strict):
-    """Iteration 3's solution path (ADR-039): the needs `decide` takes a run and the claims a
-    need may draft."""
+    """Iteration 3's solution path (ADR-039): the needs `decide` takes a run, the claims a
+    need may draft, and the technology claims `techcheck` checks a run (ADR-044)."""
 
     need_cap: int = Field(ge=1)
     claims_per_need: int = Field(ge=1)
+    tech_claim_cap: int = Field(ge=1)
 
 
 class LimitsConfig(Strict):
@@ -553,6 +554,9 @@ class HttpServer(Strict):
     tool_timeout_s: float = Field(gt=0)
     package: str | None = None
     version: str | None = None
+    # The variable holding a key sent as `Authorization: Bearer`, when it is set and not empty
+    # (Iteration 3: Context7's CONTEXT7_API_KEY).
+    bearer_env: str | None = Field(default=None, pattern=r"^[A-Z][A-Z0-9_]*$")
 
 
 class StdioServer(Strict):

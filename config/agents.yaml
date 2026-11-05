@@ -101,6 +101,16 @@ blueprint_detail:
   model_role: reason
   tools: []
 
+# Iteration 3 (ADR-044): one assess-role verdict per checkable technology claim. The two tools
+# are the Context7 calls code makes, listed so the allowlist and the scorer cover them.
+techcheck:
+  kind: function
+  input: TechVerdictTask
+  output: TechVerdict
+  prompt: techcheck@0.1.0
+  model_role: assess
+  tools: [resolve-library-id, query-docs]
+
 draft:
   kind: function
   input: DraftTask

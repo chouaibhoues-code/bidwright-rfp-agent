@@ -12,14 +12,15 @@ A refused backend or Docling URL stops the run with `EgressRefused`, a `Refused`
 leaves no folder. A refused trace endpoint does not stop it: spans go to `spans.jsonl`, and
 `check_run` returns the refusal for `RunManifest.refused_destinations`.
 
-From Iteration 2, `execute` also passes the research server when the research mode is `live`.
-Its URL is `server_url`'s: the server entry's, unless `<NAME>_MCP_URL` names another, as
-`NOTEBOOKLM_MCP_URL` does on the host. A refused research server names `--research pack`, which
+From Iteration 2, `execute` also passes the research servers when the research mode is `live`:
+NotebookLM's, and from Iteration 3 Context7's (ADR-044). A server's URL is `server_url`'s: the
+server entry's, unless `<NAME>_MCP_URL` names another, as `NOTEBOOKLM_MCP_URL` does on the
+host. A refused research server names `--research pack`, which
 needs no server; a stdio entry has no host to check, so it is refused on any run.
 """
 
 import os
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from urllib.parse import urlparse
 
 from bidwright.config import EgressConfig, HttpServer, StdioServer, load_config
@@ -29,6 +30,7 @@ CONSENT_DESTINATION = "gemini"  # the one remote destination the consent overrid
 DOCLING_DESTINATION = "docling"
 TRACE_DESTINATION = "phoenix"
 RESEARCH_DESTINATION = "notebooklm"  # the research server, and its entry in research.yaml
+CONTEXT7_DESTINATION = "context7"  # techcheck's documentation server (Iteration 3)
 PACK_ADVICE = "Run it with --research pack, which needs no server."
 
 
@@ -85,14 +87,14 @@ def check_run(
     *,
     register: EgressConfig | None = None,
     consent: bool = False,
-    research: tuple[str, HttpServer | StdioServer] | None = None,
+    research: Sequence[tuple[str, HttpServer | StdioServer]] = (),
 ) -> list[str]:
     """Check a run's outbound channels; return the refused trace endpoint, if any, for the
-    manifest. Backends are keyed by provider, which names their destination. `research` is the
-    research server's name and entry, on a `live` run."""
+    manifest. Backends are keyed by provider, which names their destination. `research` holds
+    each research server's name and entry, on a `live` run."""
     register = register or load_config().egress
-    if research is not None:
-        _check_research(*research, data_class, register)
+    for name, server in research:
+        _check_research(name, server, data_class, register)
     for provider, backend in backends.items():
         host = getattr(backend, "host", None)
         if host is None:
@@ -120,4 +122,11 @@ def _check_research(
     check(name, server_url(name, server), data_class, register=register, advice=PACK_ADVICE)
 
 
-__all__ = ["EgressRefused", "check", "check_run", "hostname", "server_url"]
+__all__ = [
+    "CONTEXT7_DESTINATION",
+    "EgressRefused",
+    "check",
+    "check_run",
+    "hostname",
+    "server_url",
+]

@@ -1,6 +1,14 @@
 # Tool pins for MCP servers (ADR-032), written by `bidwright research pin` on the host.
 # A server with no pinned tools is refused. The server's name and version are what
 # `initialize` reports; the package is the one config/research.yaml declares.
+context7:
+  package: null
+  server:
+    name: Context7
+    version: 4.5.0
+  tools:
+    query-docs: sha256:a6a60e4e1dc87c2a2ecb9a922e01a0dd8a235afc4dcbade7447da0592c950adf
+    resolve-library-id: sha256:16d48931714f0002c54e18283292b996c90f2adebb545bd8594334c10e42752b
 notebooklm:
   package: notebooklm-mcp-cli==0.15.8
   server:

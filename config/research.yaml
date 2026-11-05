@@ -12,6 +12,10 @@ servers:
   # localhost may resolve to ::1 first, where the server does not listen.
   notebooklm: {transport: http, url: "http://127.0.0.1:8000/mcp", timeout_s: 360, tool_timeout_s: 300,
                package: notebooklm-mcp-cli, version: 0.15.8}
+  # Context7, remote, for techcheck in research mode live (Iteration 3, ADR-044). Code builds
+  # every argument; the key goes in the Authorization header when CONTEXT7_API_KEY is set.
+  context7: {transport: http, url: "https://mcp.context7.com/mcp", timeout_s: 60, tool_timeout_s: 60,
+             bearer_env: CONTEXT7_API_KEY}
 # Authority tiers by host: the lowest tier with a matching entry. An entry that starts with a dot
 # matches any host ending with it; another entry matches that host and its subdomains.
 tiers:

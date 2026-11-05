@@ -80,6 +80,8 @@ class ScriptedModel:
             return {"reason": "Not stated.", "disposition": "UNVERIFIED", "supporting_ids": []}
         if name == "DecideResult":  # Iteration 3: a gap, which copies no document text
             return {"decision": "PROCEED_WITH_GAP", "reason": "No evidence.", "gap": "None."}
+        if name == "TechVerdict":  # Iteration 3: the documentation settles nothing
+            return {"reason": "Not stated.", "verdict": "INSUFFICIENT_DOCS", "quote": ""}
         if name == "BlueprintPlan":  # Iteration 3: one work package with every requirement
             ids = [r["id"] for n in data.get("needs", []) for r in n["requirements"]]
             work = {"code": "1.1", "name": "Work", "requirement_ids": ids}

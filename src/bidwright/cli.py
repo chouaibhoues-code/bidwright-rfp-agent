@@ -19,8 +19,10 @@
     bidwright matrix run <file> [--resume]
                          runs a matrix file's rungs and repeats in order, under
                          outputs/matrices/<name>/
-    bidwright research pin [--server notebooklm]
-                         pins the research server's tools in config/mcp_pins.yaml, on the host
+    bidwright research pin [--server notebooklm|context7]
+                         pins a server's tools in config/mcp_pins.yaml, on the host
+    bidwright research libraries --library NAME --topic WORDS ... [--run RUN]
+                         builds or extends research_packs/libraries/ from Context7, on the host
     bidwright research pack --domain ID --title TEXT --keyword WORDS ... --select-for RUN
                             (--run RUN | --notebook ID --job TASK --topic WORDS ...)
                             [--leave-out SOURCE ...] [--profile free|paid]
@@ -217,24 +219,44 @@ def _pin(args: argparse.Namespace) -> int:
     """List the research server's tools and pin the ones research uses. Run on the host,
     with the server started, after its version changes."""
     from bidwright.config import load_config
+    from bidwright.research import context7, nlm
     from bidwright.research.mcp_client import McpClient, McpError
-    from bidwright.research.nlm import SENT
     from bidwright.research.pins import ServerRefused, pinned, write_pins
 
-    server = load_config().research.servers.get(args.server)
-    if server is None:
-        print(f"Refused: config/research.yaml lists no server {args.server!r}", file=sys.stderr)
+    servers = load_config().research.servers
+    server = servers.get(args.server)
+    sent = {nlm.SERVER: nlm.SENT, context7.SERVER: context7.SENT}.get(args.server)
+    if server is None or sent is None:
+        print(f"Refused: no server {args.server!r} research can pin", file=sys.stderr)
         return 2
     package = f"{server.package}=={server.version}" if server.package and server.version else None
     try:
         reported, tools = McpClient(args.server, server).list_tools()
-        pins = pinned(args.server, reported, tools, SENT, package)
+        pins = pinned(args.server, reported, tools, sent, package)
     except (McpError, ServerRefused) as exc:
         print(f"Refused: {exc}", file=sys.stderr)
         return 2
-    write_pins(CONFIG_DIR, args.server, pins)
+    write_pins(CONFIG_DIR, args.server, pins, servers)
     print(f"Pinned {len(pins.tools)} tools of {reported.name} {reported.version}")
     print(f"  wrote {CONFIG_DIR / 'mcp_pins.yaml'} and {CONFIG_DIR / 'mcp_servers.txt'}")
+    return 0
+
+
+def _libraries(args: argparse.Namespace) -> int:
+    """Build or extend `research_packs/libraries/` from Context7, and a live run's documents."""
+    from bidwright.research.builder import BuildRefused, build_library_pack
+
+    try:
+        built = build_library_pack(
+            args.libraries, args.topics, run=_run_folder(args.run) if args.run else None
+        )
+    except BuildRefused as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    counts = ", ".join(f"{count} {name}" for name, count in built.manifest.counts.items())
+    print(f"Wrote {built.path} version {built.manifest.version}: {counts}")
+    for note in built.notes:
+        print(f"  {note}")
     return 0
 
 
@@ -355,7 +377,23 @@ def main(argv: list[str] | None = None) -> int:
     research = sub.add_parser("research", help="manage the research server")
     research_sub = research.add_subparsers(dest="research_command", required=True)
     pin = research_sub.add_parser("pin", help="pin the research server's tools, on the host")
-    pin.add_argument("--server", default="notebooklm", help="a server in config/research.yaml")
+    pin.add_argument(
+        "--server", default="notebooklm", choices=["notebooklm", "context7"], help="the server"
+    )
+    libraries = research_sub.add_parser(
+        "libraries", help="build or extend the library pack from Context7, on the host"
+    )
+    libraries.add_argument(
+        "--library", dest="libraries", action="append", required=True, help="a library's name"
+    )
+    libraries.add_argument(
+        "--topic",
+        dest="topics",
+        action="append",
+        required=True,
+        help="general words to look up for each library, such as 'PDF/A export'; never RFP text",
+    )
+    libraries.add_argument("--run", help="a live run whose tech_docs.jsonl the pack adds")
     pack = research_sub.add_parser(
         "pack", help="build a research pack from a finished live run or a NotebookLM job"
     )
@@ -403,7 +441,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "resume":
         return _resume(args)
     if args.command == "research":
-        return _pin(args) if args.research_command == "pin" else _pack(args)
+        if args.research_command == "pin":
+            return _pin(args)
+        return _libraries(args) if args.research_command == "libraries" else _pack(args)
     if args.command == "matrix":
         return _matrix(args)
     from bidwright.graph.build import execute

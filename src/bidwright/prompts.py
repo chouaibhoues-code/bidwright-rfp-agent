@@ -217,6 +217,7 @@ def render_examples(name: str, root: Path = PROMPTS_DIR) -> str:
         "options": _options_examples,
         "blueprint": _blueprint_examples,
         "blueprint_detail": _blueprint_detail_examples,
+        "techcheck": _techcheck_examples,
     }
     if name not in renderers or name not in sets:
         raise ValueError(f"no example set {name!r} in {EXAMPLES_FILE}")
@@ -391,6 +392,32 @@ def _blueprint_detail_examples(example: dict[str, Any]) -> str:
             f" {_dump(example['result'])}",
         ]
     )
+
+
+def _techcheck_examples(examples: list[dict[str, Any]]) -> str:
+    """One technology claim per verdict: a settling verdict quotes the documentation."""
+    verdicts: set[str] = set()
+    blocks = []
+    for example in examples:
+        task = schemas.TechVerdictTask.model_validate(example["task"])
+        result = schemas.TechVerdict.model_validate(example["result"])
+        verdicts.add(result.verdict)
+        settles = result.verdict != "INSUFFICIENT_DOCS"
+        if settles and (not result.quote or result.quote not in task.documentation):
+            raise ValueError("a techcheck example's quote is not in its documentation")
+        blocks.append(
+            "\n".join(
+                [
+                    "A technology claim and its documentation:",
+                    f" {_dump(example['task'])}",
+                    "The verdict:",
+                    f" {_dump(example['result'])}",
+                ]
+            )
+        )
+    if verdicts != {"VALIDATED", "INVALIDATED", "INSUFFICIENT_DOCS"}:
+        raise ValueError("the techcheck examples show each verdict once")
+    return "\n\n".join(blocks)
 
 
 def _assess_examples(examples: list[dict[str, Any]]) -> str:

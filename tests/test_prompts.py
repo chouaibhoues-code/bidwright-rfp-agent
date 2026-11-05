@@ -313,3 +313,19 @@ def test_the_blueprint_prompts_hold_their_examples_and_elements() -> None:
     assert "REQ-0002" in plan_prompt.task_text("repair_closure", ids="REQ-0002")
     assert "data-x" in plan_prompt.task_text("revise", data_tag="data-x")
     assert set(detail_prompt.tasks) == {"task", "repair_format"}
+
+
+def test_the_techcheck_example_quotes_its_documentation_for_each_settling_verdict() -> None:
+    """Iteration 3, step 8: code's quote check passes on every example."""
+    from bidwright.graph.techcheck import settle
+    from bidwright.schemas import TechVerdict, TechVerdictTask
+
+    example = yaml.safe_load((PROMPTS_DIR / "examples" / "mini_rfp.yaml").read_text("utf-8"))
+    shown = set()
+    for case in example["techcheck"]:
+        task = TechVerdictTask.model_validate(case["task"])
+        answer = TechVerdict.model_validate(case["result"])
+        assert settle(answer, task.documentation)[0] == answer.verdict
+        shown.add(answer.verdict)
+    assert shown == {"VALIDATED", "INVALIDATED", "INSUFFICIENT_DOCS"}
+    assert "docforge" in load_prompt("techcheck").system

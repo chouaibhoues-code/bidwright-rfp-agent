@@ -184,3 +184,15 @@ def test_cerebras_groq_and_context7_are_remote_destinations() -> None:
         check(name, host, "synthetic", register=REGISTER)
         with pytest.raises(EgressRefused, match="local destinations only"):
             check(name, host, "client", register=REGISTER, consent=True)
+
+
+def test_live_research_checks_every_research_server(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Iteration 3: research mode live reaches NotebookLM on loopback and Context7 remotely."""
+    servers = load_config().research.servers
+    research = [(name, servers[name]) for name in ("notebooklm", "context7")]
+    assert check_run({}, None, None, "synthetic", register=REGISTER, research=research) == []
+    monkeypatch.setenv("CONTEXT7_MCP_URL", "https://evil.example.com/mcp")
+    with pytest.raises(EgressRefused, match="evil.example.com"):
+        check_run({}, None, None, "synthetic", register=REGISTER, research=research)
+    with pytest.raises(EgressRefused, match="context7"):
+        check_run({}, None, None, "client", register=REGISTER, research=research[1:])

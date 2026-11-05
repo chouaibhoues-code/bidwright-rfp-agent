@@ -12,3 +12,13 @@ Recorded domain research for research mode `pack` (ADR-033), one folder per doma
 | `answers.jsonl` | One recorded `ask_research` answer a line: the question, the answer, the excerpts it cites, and whether it is quarantined |
 
 Everything here is external research with the evidence class `EXTERNAL_RESEARCH`: it is never capability evidence, and the summary shows it in an appendix marked unverified. Raw research reports stay out of the repository.
+
+## The library pack
+
+`libraries/` (Iteration 3, ADR-044) holds current library documentation from Context7, which `techcheck` judges technology claims on in research mode `pack`, with no network call. `bidwright research libraries --library NAME --topic WORDS ...` builds or extends it on the host; the topics are general words, never RFP text. Version 1 covers `pdfplumber`, `python-docx` and `openpyxl` for the topics "extract text", "read tables", "write or save files" and "hidden content". Research-pack selection never reads it, since it holds no `pack.yaml`.
+
+| File | Holds |
+|---|---|
+| `library.yaml` | The pack's id, version, creation date, libraries, the `sha256:` hash of each other file, and the counts |
+| `sources.jsonl` | One fetched documentation a line: its `LS-` id, the library, its Context7 library id, the query, and when it was retrieved |
+| `excerpts.jsonl` | One paragraph a line, at most 1,200 characters: its `LX-` id, its source's id, the library, and whether it is quarantined |
