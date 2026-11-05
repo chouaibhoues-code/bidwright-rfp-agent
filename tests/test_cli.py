@@ -149,3 +149,82 @@ def test_load_env_never_overrides_and_skips_empty_values(
     assert os.environ["BW_A"] == "set"
     assert "BW_B" not in os.environ
     assert os.environ["BW_C"] == "3"
+
+
+# --- stop and resume (Iteration 2, ADR-031) ---------------------------------------------------
+
+
+def _manifest_file(run_dir: Path, status: str, run_args: dict[str, object]) -> None:
+    run_dir.mkdir(parents=True)
+    manifest = {
+        "run_id": run_dir.name,
+        "commit": "abc1234",
+        "profile": "free",
+        "models": {},
+        "started": "2026-11-04T10:00:00Z",
+        "status": status,
+        "run_args": run_args,
+    }
+    (run_dir / "run_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def test_stop_writes_the_request_for_a_running_run_only(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    running, stopped = tmp_path / "running", tmp_path / "stopped"
+    _manifest_file(running, "RUNNING", {})
+    _manifest_file(stopped, "STOPPED", {})
+    assert cli.main(["stop", str(running)]) == 0
+    assert (running / "control" / "stop.request").is_file()
+    assert cli.main(["stop", str(stopped)]) == 1
+    assert "the run is STOPPED, not RUNNING" in capsys.readouterr().err
+    assert not (stopped / "control" / "stop.request").exists()
+    assert cli.main(["stop", str(tmp_path / "nowhere")]) == 1
+
+
+def test_resume_calls_the_run_entry_with_the_recorded_arguments(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_execute(**kwargs: object) -> RunResult:
+        seen.update(kwargs)
+        return RunResult("paused", tmp_path, "COMPLETED", None)
+
+    monkeypatch.setattr("bidwright.graph.build.execute", fake_execute)
+    monkeypatch.setenv("GEMINI_PAID_API_KEY", "test-paid-key")
+    run_args = {
+        "source": "inputs/dev/dev_rfp.pdf",
+        "profile": "free",
+        "outputs": "outputs",
+        "limits": "dev",
+        "until": "render",
+        "batch_size": 40,
+        "second_pass": True,
+        "extract_prompt": "extract",
+        "research": "pack",
+        "repeat": 2,
+        "cache": False,
+        "docling_mode": "live",
+        "fallback": False,
+        "mode": "live",
+        "environment": "host:anywhere",
+    }
+    run_dir = tmp_path / "runs" / "paused"
+    _manifest_file(run_dir, "QUOTA_PAUSED", run_args)
+    arguments = ["resume", str(run_dir), "--raise-budget", "50", "--profile", "paid"]
+    assert cli.main(arguments) == 0
+    assert seen["source"] == cli.HOME / "inputs" / "dev" / "dev_rfp.pdf"
+    assert (seen["outputs"], seen["run_id"]) == (tmp_path / "runs", "paused")
+    assert (seen["resume"], seen["raise_budget"], seen["profile"]) == (True, 50, "paid")
+    assert (seen["repeat"], seen["fallback"], seen["limits"]) == (2, False, "dev")
+    assert "environment" not in seen, "the supervisor checks it against the stored manifest"
+    backends = seen["backends"]
+    assert isinstance(backends, dict) and backends["gemini"].paid is True
+
+
+def test_a_raise_must_be_a_positive_percentage() -> None:
+    with pytest.raises(SystemExit):
+        cli.main(["resume", "run", "--raise-budget", "0"])
+    with pytest.raises(SystemExit):
+        cli.main(["resume", "run", "--profile", "local"])

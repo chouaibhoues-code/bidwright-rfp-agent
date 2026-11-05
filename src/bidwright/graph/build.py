@@ -33,7 +33,9 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.errors import EmptyInputError, GraphDrained
 from langgraph.graph import END, START, StateGraph
+from langgraph.runtime import RunControl
 from langgraph.types import Send
 from openinference.semconv.trace import OpenInferenceSpanKindValues
 from opentelemetry import trace as otel_trace
@@ -71,6 +73,7 @@ from bidwright.harness.budget import BudgetExceeded, RunBudget
 from bidwright.harness.context import ContextManager, prompt_tokens
 from bidwright.harness.egress import check_run
 from bidwright.harness.gateway import ToolGateway
+from bidwright.harness.supervisor import STOP_REASON, RunSupervisor, environment, read_manifest
 from bidwright.harness.view import TextView
 from bidwright.ingest import doc_id_for, ingest_package
 from bidwright.lint import run_lint, write_lint
@@ -87,6 +90,7 @@ from bidwright.parsers.docling_parser import DoclingParser
 from bidwright.parsers.pdfplumber_parser import PdfplumberParser
 from bidwright.preflight import (
     CONSENT,
+    HOME,
     Preflight,
     Refused,
     check_preconditions,
@@ -95,7 +99,7 @@ from bidwright.preflight import (
 )
 from bidwright.prompts import Prompt, load_prompt, load_prompt_ref
 from bidwright.register import RegisterInput, build_register
-from bidwright.render import RenderBlocked, RunRecords, render, write_manifest
+from bidwright.render import RenderBlocked, RunRecords, render
 from bidwright.retrieval import PassageIndex
 from bidwright.schemas import (
     ApproachItem,
@@ -123,6 +127,7 @@ from bidwright.schemas import (
     ReferenceLink,
     Requirement,
     RequirementGroup,
+    ResearchModeName,
     RfpProfile,
     Risk,
     RunManifest,
@@ -889,9 +894,15 @@ def execute(
     docling_cassettes: Path | None = None,
     view: TextView | None = None,
     fallback: bool = True,
+    research: ResearchModeName | None = None,
+    resume: bool = False,
+    raise_budget: int | None = None,
+    control: RunControl | None = None,
+    config: Config | None = None,
+    watch_interval_s: float = 1.0,
 ) -> RunResult:
-    """Run one RFP file or package end to end. A failed run still leaves its manifest and
-    ledger.
+    """Run one RFP file or package end to end, or resume a run. A failed run still leaves its
+    manifest and ledger.
 
     The profile's preconditions are checked first (`preflight.py`): a run that is refused
     leaves no folder, and `Refused` carries what to do instead. `limits` names the tier in
@@ -901,14 +912,27 @@ def execute(
     set, so a test can record its LLM cassettes while Docling replays. `view` is the run's text
     view (D-05), the frozen text when None; Iteration 5's masking passes one. `fallback=False`
     keeps every call on its role's primary model: a spent quota then pauses the run, and a
-    call that exhausts its retries faults it, as matrix runs need."""
+    call that exhausts its retries faults it, as matrix runs need. `research` is the research
+    mode, `config/research.yaml`'s when None.
+
+    The run executes under a `RunSupervisor` (ADR-031), which takes the run lock, writes the
+    manifest and records each status. `resume=True` continues the run named by `run_id` under
+    `outputs` from its last checkpoint, with its journal answering the calls it had made and
+    `raise_budget` added to its limits; `bidwright resume` passes the arguments the manifest's
+    `run_args` recorded. `control` drains the run between super-steps, which is how
+    `bidwright stop` stops it; each part gets a fresh one. `config`, used instead of
+    `load_config()`, and `watch_interval_s`, the stop watcher's interval, are for tests."""
     if until not in UNTIL:
         raise Refused(f"--until takes one of {', '.join(UNTIL)}")
+    if raise_budget is not None and not resume:
+        raise Refused("--raise-budget applies to a resume")
+    if resume and run_id is None:
+        raise Refused("a resume names its run")
     chosen = BASELINES[baseline] if baseline is not None else None
     if chosen is not None and chosen.until is not None:
         until = chosen.until
     docling_mode = docling_mode or mode
-    config = load_config()
+    config = config or load_config()
     prompts = run_prompts(config)
     extract_id = extract_prompt or (chosen.extract_prompt if chosen else "extract")
     check_extract_prompt(extract_id, prompts)
@@ -926,7 +950,6 @@ def execute(
         docling=docling if docling_mode in ("live", "record") else None,
         models=chosen is None or chosen.llm,
     )
-    overrides = preflight.overrides
     used = {role.provider for role in config.models.profiles[profile].values()}
     llm = chosen is None or chosen.llm
     run_backends = (
@@ -948,125 +971,205 @@ def execute(
         package_id = _package_id(source, preflight.package_id)
         run_id = f"{started:%Y%m%dT%H%M%SZ}-{package_id}-{profile}{suffix}"
     run_dir = outputs / run_id
+    if resume:
+        read_manifest(run_dir)  # refuses a folder that holds no run
     run_dir.mkdir(parents=True, exist_ok=True)
-    ledger_file = LedgerFile(run_dir / "ledger.jsonl")
-    ledger_file.create()
-    client = LLMClient(
-        config,
-        profile,
-        run_backends,
-        mode=mode,
-        cassettes=cassettes,
+    tier = limits or preflight.tier
+    run_args = {
+        "source": _relative(source),
+        "profile": profile,
+        "outputs": _relative(outputs),
+        "baseline": baseline,
+        "consent": consent,
+        "limits": tier,
+        "until": until,
+        "batch_size": batch_size or config.limits.batch_size,
+        "second_pass": second,
+        "extract_prompt": extract_id,
+        "research": research or config.research.mode,
+        "repeat": repeat,
+        "cache": cache,
+        "docling_mode": docling_mode,
+        "fallback": fallback,
+        "mode": mode,
+        "environment": environment(),
+    }
+    hashes = {
+        document.path.name: f"sha256:{document.sha256}" for document in preflight.documents
+    } or {source.name: _file_hash(source)}
+    manifest = RunManifest(
         run_id=run_id,
-        limiter=Limiter(config.limits, tier_for(profile)) if mode != "replay" else None,
-        cache=response_cache() if cache and mode == "live" else None,
-        # A fresh run only writes its journal; a resume reads it (ADR-031).
-        journal=run_journal(run_dir) if mode == "live" else None,
-        fallback=fallback,
+        commit=_commit(),
+        profile=profile,
+        models={role: rc.model for role, rc in config.models.profiles[profile].items()},
+        prompt_hashes={name: prompt.hash for name, prompt in prompts.items()},
+        input_hashes=hashes,
+        started=started,
+        status="RUNNING",
+        overrides=preflight.overrides,
+        documents=_documents(preflight, preflight.data_class),
+        data_class=preflight.data_class,
+        refused_destinations=refused,
+        run_args=run_args,
     )
-    budget = RunBudget(config.limits.run(limits or preflight.tier, profile))
-    tracing = Tracing(
-        run_id,
+    budget = RunBudget(config.limits.run(tier, profile))
+    control = control or RunControl()
+    supervisor = RunSupervisor(
         run_dir,
-        None if refused else endpoint,
-        os.environ.get("PHOENIX_API_KEY") or None,
+        manifest,
+        control=control,
+        budget=budget,
+        resume=resume,
+        raise_budget=raise_budget,
+        watch_interval_s=watch_interval_s,
     )
-    ctx = RunContext(
-        run_id,
-        client,
-        budget,
-        prompts,
-        {},
-        tracing=tracing,
-        view=view,
-        repeat=repeat,
-        ledger_file=ledger_file,
-    )
-    rt = Runtime(
-        ctx=ctx,
-        config=config,
-        source=source,
-        run_dir=run_dir,
-        extract_prompt=extract_id,
-        one_batch=chosen.one_batch if chosen else False,
-        second_pass=second,
-        until=until,
-        batch_size=batch_size,
-        baseline=baseline,
-        docling_mode=docling_mode,
-        docling_cassettes=docling_cassettes or DOCLING_CASSETTES,
-        data_class=preflight.data_class if mode != "replay" else None,
-    )
-    # Until the graph returns, the run has not finished: any exit this function does not name
-    # below is recorded as a fault, never as COMPLETED.
-    status: RunStatus = "UNRECOVERABLE_FAULT"
-    reason: str | None = "the run ended before it finished"
-    budget.start()
-    run_attributes = {"bidwright.run_id": run_id, "bidwright.profile": profile}
-    try:
-        with (
-            tracing.span("run", OpenInferenceSpanKindValues.CHAIN, **run_attributes),
-            SqliteSaver.from_conn_string(str(run_dir / "checkpoints.sqlite")) as saver,
-        ):
-            graph = build_graph(rt, saver)
-            final = graph.invoke(
-                {},
-                {
+    with supervisor:
+        ledger_file = LedgerFile(run_dir / "ledger.jsonl")
+        if resume and ledger_file.path.exists():
+            cut = ledger_file.repair()
+            if cut:
+                detail = f"ledger_cut: {len(cut)} characters of an unfinished last line removed"
+                supervisor.events.record("recovery", None, detail)
+        else:
+            ledger_file.create()
+        client = LLMClient(
+            config,
+            profile,
+            run_backends,
+            mode=mode,
+            cassettes=cassettes,
+            run_id=run_id,
+            limiter=Limiter(config.limits, tier_for(profile)) if mode != "replay" else None,
+            cache=response_cache() if cache and mode == "live" else None,
+            journal=run_journal(run_dir) if mode == "live" else None,
+            journal_read=resume,
+            fallback=fallback,
+        )
+        tracing = Tracing(
+            run_id,
+            run_dir,
+            None if refused else endpoint,
+            os.environ.get("PHOENIX_API_KEY") or None,
+        )
+        ctx = RunContext(
+            run_id,
+            client,
+            budget,
+            prompts,
+            {},
+            tracing=tracing,
+            view=view,
+            repeat=repeat,
+            ledger_file=ledger_file,
+        )
+        rt = Runtime(
+            ctx=ctx,
+            config=config,
+            source=source,
+            run_dir=run_dir,
+            extract_prompt=extract_id,
+            one_batch=chosen.one_batch if chosen else False,
+            second_pass=second,
+            until=until,
+            batch_size=batch_size,
+            baseline=baseline,
+            docling_mode=docling_mode,
+            docling_cassettes=docling_cassettes or DOCLING_CASSETTES,
+            data_class=preflight.data_class if mode != "replay" else None,
+        )
+        # Until the graph returns, the run has not finished: any exit this function does not
+        # name below is recorded as a fault, never as COMPLETED.
+        status: RunStatus = "UNRECOVERABLE_FAULT"
+        reason: str | None = "the run ended before it finished"
+        budget.start()
+        run_attributes = {"bidwright.run_id": run_id, "bidwright.profile": profile}
+        try:
+            with (
+                tracing.span("run", OpenInferenceSpanKindValues.CHAIN, **run_attributes),
+                SqliteSaver.from_conn_string(str(run_dir / "checkpoints.sqlite")) as saver,
+            ):
+                graph = build_graph(rt, saver)
+                thread: dict[str, Any] = {
                     "configurable": {"thread_id": run_id},
                     "max_concurrency": config.limits.concurrency_for(profile),
-                },
-            )
-        reason = _degraded(final)
-        status = "DEGRADED" if reason else "COMPLETED"
-        if until != "render":
-            stopped = f"stopped after {until} by request"
-            reason = f"{reason}; {stopped}" if reason else stopped
-    except PolicyBlocked as exc:
-        status, reason = "POLICY_BLOCKED", str(exc)
-    except BudgetExceeded as exc:
-        status, reason = "BUDGET_EXCEEDED", str(exc)
-    except QuotaExhausted as exc:
-        status, reason = "QUOTA_PAUSED", f"{exc}; rerun after the quota resets"
-    except (LLMError, RenderBlocked, DoclingError) as exc:
-        status, reason = "UNRECOVERABLE_FAULT", f"{type(exc).__name__}: {exc}"
-    except KeyboardInterrupt:
-        status, reason = "STOPPED", "interrupted by the operator"
-        raise
-    except Exception as exc:
-        # Recorded before it propagates, so the manifest tells what happened.
-        status, reason = "UNRECOVERABLE_FAULT", f"unexpected {type(exc).__name__}: {exc}"
-        raise
-    finally:
-        budget.pause()
-        try:
-            tracing.close()
+                }
+                if resume:
+                    _rebuild(graph, thread, rt)
+                final = _invoke(graph, thread, control, resume)
+            reason = _degraded(final)
+            status = "DEGRADED" if reason else "COMPLETED"
+            if until != "render":
+                stopped = f"stopped after {until} by request"
+                reason = f"{reason}; {stopped}" if reason else stopped
+        except GraphDrained:
+            status, reason = "STOPPED", STOP_REASON
+        except PolicyBlocked as exc:
+            status, reason = "POLICY_BLOCKED", str(exc)
+        except BudgetExceeded as exc:
+            status, reason = "BUDGET_EXCEEDED", str(exc)
+        except QuotaExhausted as exc:
+            status, reason = "QUOTA_PAUSED", f"{exc}; rerun after the quota resets"
+        except (LLMError, RenderBlocked, DoclingError) as exc:
+            status, reason = "UNRECOVERABLE_FAULT", f"{type(exc).__name__}: {exc}"
+        except KeyboardInterrupt:
+            status, reason = "STOPPED", "interrupted by the operator"
+            raise
+        except Exception as exc:
+            # Recorded before it propagates, so the manifest tells what happened.
+            status, reason = "UNRECOVERABLE_FAULT", f"unexpected {type(exc).__name__}: {exc}"
+            raise
         finally:
-            # Nothing here may raise again and hide the run's own error: the manifest is the
-            # record of the run, whatever happened.
-            hashes = {
-                document.path.name: f"sha256:{document.sha256}" for document in preflight.documents
-            } or {source.name: _file_hash(source)}
-            entries = _ledger_entries(ledger_file, ctx.ledger)
-            manifest = RunManifest(
-                run_id=run_id,
-                commit=_commit(),
-                profile=profile,
-                models={role: rc.model for role, rc in config.models.profiles[profile].items()},
-                models_used=models_used(entries),
-                prompt_hashes={name: prompt.hash for name, prompt in prompts.items()},
-                input_hashes=hashes,
-                started=started,
-                ended=datetime.now(UTC),
-                status=status,
-                status_reason=reason,
-                overrides=overrides,
-                totals=totals_of(entries, budget.active_seconds),
-                documents=_documents(preflight, preflight.data_class),
-                data_class=preflight.data_class,
-                refused_destinations=refused,
-            )
-            write_manifest(run_dir, manifest)
+            budget.pause()
+            try:
+                tracing.close()
+            finally:
+                # Nothing here may raise again and hide the run's own error: the manifest is
+                # the record of the run, whatever happened.
+                entries = _ledger_entries(ledger_file, ctx.ledger)
+                supervisor.finish(
+                    status,
+                    reason,
+                    totals_of(entries, budget.active_seconds),
+                    models_used(entries),
+                )
     return RunResult(run_id, run_dir, status, reason)
+
+
+def _relative(path: Path) -> str:
+    """A path as `run_args` records it: relative to HOME when under it, so a resume finds it
+    from any working directory."""
+    resolved = path.resolve()
+    if resolved.is_relative_to(HOME):
+        return resolved.relative_to(HOME).as_posix()
+    return str(resolved)
+
+
+def _rebuild(graph: Any, thread: dict[str, Any], rt: Runtime) -> None:
+    """Before a resume, what the nodes keep outside the checkpointed state: the passages, which
+    the `Send` workers do not carry, the text view's binding, the search index and the input
+    documents. A run killed before its first checkpoint has no passages to rebuild."""
+    ctx = rt.ctx
+    values = graph.get_state(thread).values or {}
+    found = [Passage.model_validate(p) for p in values.get("passages", [])]
+    if found:
+        ctx.passages = {p.id: p for p in found}
+        if ctx.view is not None:
+            ctx.view.bind(found)
+        index = rt.run_dir / "search.sqlite"
+        if index.exists():
+            rt.index = PassageIndex(index)
+    rt.paths = package_documents(rt.source) if rt.source.is_dir() else [rt.source]
+
+
+def _invoke(graph: Any, thread: dict[str, Any], control: RunControl, resume: bool) -> Any:
+    """Run the graph, each checkpoint written before the next super-step starts. A resume
+    continues from the last checkpoint; one killed before its first starts from the beginning."""
+    if resume:
+        try:
+            return graph.invoke(None, thread, control=control, durability="sync")
+        except EmptyInputError:
+            pass
+    return graph.invoke({}, thread, control=control, durability="sync")
 
 
 def _ledger_entries(ledger_file: LedgerFile, kept: list[LedgerEntry]) -> list[LedgerEntry]:

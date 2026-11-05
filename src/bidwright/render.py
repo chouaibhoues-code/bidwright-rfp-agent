@@ -1,13 +1,12 @@
 """Render a run's records into its outputs, all labeled `UNREVIEWED_DRAFT`.
 
-`render` is the only writer of `solution_summary.md` and `.json`, `proposal.md`,
-`run_manifest.json`, and from Iteration 1 `compliance_matrix.xlsx` and `.csv`
-(`render_xlsx.py`), `clarification_questions.md`, `submission_checklist.md` and
-`review/quarantine.md`. Every record is validated against its schema first, and a schema
-failure in any list blocks all output. The summary lists hazards first, then the rest of the
-binding requirements, then the optional ones, then the approach, the risks and the open
-questions. Rejected quotes and the other dispositions are counted, not listed, and the summary
-never repeats quarantined text.
+`render` is the only writer of `solution_summary.md` and `.json`, `proposal.md`, and from
+Iteration 1 `compliance_matrix.xlsx` and `.csv` (`render_xlsx.py`),
+`clarification_questions.md`, `submission_checklist.md` and `review/quarantine.md`. Every
+record is validated against its schema first, and a schema failure in any list blocks all
+output. The summary lists hazards first, then the rest of the binding requirements, then the
+optional ones, then the approach, the risks and the open questions. Rejected quotes and the
+other dispositions are counted, not listed, and the summary never repeats quarantined text.
 """
 
 import dataclasses
@@ -41,7 +40,6 @@ from bidwright.schemas import (
     RequirementGroup,
     RfpProfile,
     Risk,
-    RunManifest,
     SolutionSummary,
     SubmissionHazard,
 )
@@ -333,15 +331,6 @@ def proposal_markdown(records: RunRecords) -> str:
         )
         lines.append("")
     return "\n".join(lines)
-
-
-def write_manifest(run_dir: Path, manifest: RunManifest) -> None:
-    """Also used when a run stops early, so a failed run still leaves its manifest. The ledger
-    is `LedgerFile`'s, appended as each call finishes (ADR-031)."""
-    run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "run_manifest.json").write_text(
-        manifest.model_dump_json(indent=1) + "\n", encoding="utf-8", newline="\n"
-    )
 
 
 def render(run_dir: Path, records: RunRecords) -> SolutionSummary:

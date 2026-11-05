@@ -22,7 +22,10 @@ COPY prompts ./prompts
 COPY knowledge_base ./knowledge_base
 COPY inputs ./inputs
 COPY tests ./tests
-ENV PATH="/app/.venv/bin:$PATH" BIDWRIGHT_HOME=/app LANGGRAPH_STRICT_MSGPACK=true
+# BIDWRIGHT_ENV names the environment a run records, so a run started here is resumed and
+# purged here (ADR-031): a lock taken in a container is not seen on the host.
+ENV PATH="/app/.venv/bin:$PATH" BIDWRIGHT_HOME=/app LANGGRAPH_STRICT_MSGPACK=true \
+    BIDWRIGHT_ENV=container
 RUN mkdir -p /app/outputs /app/evals/results && chown -R bidwright:bidwright /app/outputs /app/evals/results
 USER bidwright
 ENTRYPOINT ["bidwright"]

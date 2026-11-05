@@ -5,15 +5,17 @@
 ## `bidwright`
 
 ```text
-usage: bidwright [-h] {run,demo,record,purge,matrix} ...
+usage: bidwright [-h] {run,demo,record,stop,resume,purge,matrix} ...
 
 Bidwright: RFP to proposal.
 
 positional arguments:
-  {run,demo,record,purge,matrix}
+  {run,demo,record,stop,resume,purge,matrix}
     run                 run one RFP file or package folder live
     demo                replay the recorded development run, with no keys
     record              run live and record cassettes, on the host
+    stop                ask a running run to stop when its current step ends
+    resume              continue a run from its last checkpoint
     purge               delete a run and its cache entries, or expired runs
     matrix              run a matrix of rungs and repeats
 
@@ -72,6 +74,33 @@ options:
   --until {verify,coverage,consolidate,render}
                         the last node to run
   --outputs OUTPUTS
+```
+
+## `bidwright stop`
+
+```text
+usage: bidwright stop [-h] run
+
+positional arguments:
+  run         a run id under outputs/, or a run folder
+
+options:
+  -h, --help  show this help message and exit
+```
+
+## `bidwright resume`
+
+```text
+usage: bidwright resume [-h] [--raise-budget PERCENT] [--profile {paid}] run
+
+positional arguments:
+  run                   a run id under outputs/, or a run folder
+
+options:
+  -h, --help            show this help message and exit
+  --raise-budget PERCENT
+                        raise each run limit by PERCENT of its configured value
+  --profile {paid}      continue a free run that paused on its quota under the paid key
 ```
 
 ## `bidwright purge`

@@ -6,6 +6,9 @@
     bidwright demo       replays a recorded development run; needs no keys
     bidwright record <file or folder> [--name demo] [--profile free|local|paid] [--until NODE]
                          runs live and writes LLM and Docling cassettes, on the host
+    bidwright stop <run>  asks a running run to stop when its current step ends
+    bidwright resume <run> [--raise-budget PERCENT] [--profile paid]
+                         continues a stopped, paused or killed run from its last checkpoint
     bidwright purge <run> | --expired
                          deletes a run's folder and its cache entries, or every client run
                          past the retention period
@@ -25,8 +28,9 @@ import json
 import os
 import sys
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from bidwright.baselines import BASELINES
 from bidwright.preflight import HOME, Refused
@@ -78,21 +82,29 @@ def stale_recording(
     return None
 
 
+def _run_folder(name: str) -> Path:
+    """A run as `stop`, `resume` and `purge` name it: a run folder, or a run id under
+    outputs/."""
+    from bidwright.purge import outputs_root
+
+    candidate = Path(name)
+    return candidate if candidate.is_dir() else outputs_root() / name
+
+
 def _purge(args: argparse.Namespace) -> int:
     from bidwright.config import load_config
-    from bidwright.purge import NotARun, outputs_root, purge_expired, purge_run
+    from bidwright.purge import NotARun, RunInUse, purge_expired, purge_run
 
     if args.expired:
         deleted = purge_expired(load_config().limits.retention.client_days)
     elif args.run:
-        candidate = Path(args.run)
-        run_dir = candidate if candidate.is_dir() else outputs_root() / args.run
+        run_dir = _run_folder(args.run)
         if not run_dir.is_dir():
             print(f"No run folder {run_dir}", file=sys.stderr)
             return 1
         try:
             deleted = purge_run(run_dir)
-        except NotARun as exc:
+        except (NotARun, RunInUse) as exc:
             print(f"Refused: {exc}", file=sys.stderr)
             return 1
     else:
@@ -103,6 +115,86 @@ def _purge(args: argparse.Namespace) -> int:
     if not deleted:
         print("Nothing to delete.")
     return 0
+
+
+def _stop(args: argparse.Namespace) -> int:
+    """Write the run's stop request, which its supervisor's watcher reads within a second."""
+    from bidwright.harness.supervisor import CONTROL, STOP_REQUEST, read_manifest
+
+    run_dir = _run_folder(args.run)
+    try:
+        manifest = read_manifest(run_dir)
+    except Refused as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 1
+    if manifest.status != "RUNNING":
+        print(f"Refused: the run is {manifest.status}, not RUNNING", file=sys.stderr)
+        return 1
+    request = run_dir / CONTROL / STOP_REQUEST
+    request.parent.mkdir(parents=True, exist_ok=True)
+    stamp = f"{datetime.now(UTC):%Y-%m-%dT%H:%M:%SZ}"
+    request.write_text(stamp + "\n", encoding="utf-8", newline="\n")
+    print(f"Stop requested: {run_dir}")
+    print("  the run stops when its current step ends; resume it with bidwright resume")
+    return 0
+
+
+def resume_arguments(run_args: Mapping[str, Any], run_dir: Path) -> dict[str, Any]:
+    """The arguments of `execute` that a manifest's `run_args` recorded, for a resume of the
+    run in `run_dir`. The run's own folder names where it is, whatever `outputs` said."""
+    source = Path(str(run_args["source"]))
+    keys = (
+        "baseline",
+        "consent",
+        "until",
+        "batch_size",
+        "second_pass",
+        "extract_prompt",
+        "research",
+        "repeat",
+        "cache",
+        "docling_mode",
+        "fallback",
+        "mode",
+    )
+    return {
+        "source": source if source.is_absolute() else HOME / source,
+        "outputs": run_dir.parent,
+        "run_id": run_dir.name,
+        "limits": run_args.get("limits"),
+        **{key: run_args[key] for key in keys if key in run_args},
+    }
+
+
+def _resume(args: argparse.Namespace) -> int:
+    from bidwright.graph.build import execute
+    from bidwright.harness.supervisor import read_manifest
+    from bidwright.llm.client import default_backends
+
+    run_dir = _run_folder(args.run)
+    try:
+        manifest = read_manifest(run_dir)
+        if not manifest.run_args:
+            raise Refused("this run predates v0.2; start it again")
+        profile = args.profile or str(manifest.run_args["profile"])
+        result = execute(
+            **resume_arguments(manifest.run_args, run_dir),
+            profile=profile,
+            backends=default_backends(paid=profile == "paid"),
+            resume=True,
+            raise_budget=args.raise_budget,
+        )
+    except Refused as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    return _report(result)
+
+
+def _percent(value: str) -> int:
+    percent = int(value)
+    if percent <= 0:
+        raise argparse.ArgumentTypeError(f"a budget raise is a positive percentage, not {value}")
+    return percent
 
 
 def _matrix(args: argparse.Namespace) -> int:
@@ -144,6 +236,21 @@ def main(argv: list[str] | None = None) -> int:
     record.add_argument("--profile", choices=PROFILES, default="free")
     record.add_argument("--until", choices=UNTIL, default="render", help="the last node to run")
     record.add_argument("--outputs", type=Path, default=HOME / "outputs")
+    stop = sub.add_parser("stop", help="ask a running run to stop when its current step ends")
+    stop.add_argument("run", help="a run id under outputs/, or a run folder")
+    resume = sub.add_parser("resume", help="continue a run from its last checkpoint")
+    resume.add_argument("run", help="a run id under outputs/, or a run folder")
+    resume.add_argument(
+        "--raise-budget",
+        type=_percent,
+        metavar="PERCENT",
+        help="raise each run limit by PERCENT of its configured value",
+    )
+    resume.add_argument(
+        "--profile",
+        choices=["paid"],
+        help="continue a free run that paused on its quota under the paid key",
+    )
     purge = sub.add_parser("purge", help="delete a run and its cache entries, or expired runs")
     purge.add_argument("run", nargs="?", help="a run id under outputs/, or a run folder")
     purge.add_argument(
@@ -162,6 +269,10 @@ def main(argv: list[str] | None = None) -> int:
     load_env(HOME / ".env")
     if args.command == "purge":
         return _purge(args)
+    if args.command == "stop":
+        return _stop(args)
+    if args.command == "resume":
+        return _resume(args)
     if args.command == "matrix":
         return _matrix(args)
     from bidwright.graph.build import execute

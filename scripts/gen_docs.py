@@ -183,7 +183,7 @@ def cli_md() -> str:
         (
             "bidwright",
             bidwright_main,
-            [[], ["run"], ["demo"], ["record"], ["purge"], ["matrix", "run"]],
+            [[], ["run"], ["demo"], ["record"], ["stop"], ["resume"], ["purge"], ["matrix", "run"]],
         ),
         (
             "bidwright-eval",
