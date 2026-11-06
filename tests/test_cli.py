@@ -600,10 +600,6 @@ def test_the_container_ui_binds_every_address_and_starts_the_api_beside_it(
     assert started and "uvicorn" in started[0] and EVERY_ADDRESS in started[0]
     assert "streamlit" in ran[0] and ran[0][ran[0].index("--server.address") + 1] == EVERY_ADDRESS
     assert stopped == [True]
-    import yaml
-
-    compose = yaml.safe_load((cli.HOME / "compose.yaml").read_text(encoding="utf-8"))
-    assert compose["services"]["ui"]["command"] == ["ui", "--address", EVERY_ADDRESS, "--api"]
 
 
 def test_api_starts_uvicorn_on_loopback_8001(

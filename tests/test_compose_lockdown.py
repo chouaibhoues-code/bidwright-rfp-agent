@@ -78,6 +78,9 @@ def test_ui_publishes_8501_on_loopback_only_and_mounts_results_read_only() -> No
     ui = COMPOSE["services"]["ui"]
     assert ui["ports"] == ["127.0.0.1:8501:8501", "127.0.0.1:8001:8001"]
     assert ui["profiles"] == ["ui"]
+    # Section 4.14: both servers bind every address inside the container, where loopback is
+    # unreachable through a published port; the ports above keep them on the host's loopback.
+    assert ui["command"] == ["ui", "--address", "0.0.0.0", "--api"]  # noqa: S104
     for name, service in COMPOSE["services"].items():
         ports = [str(p) for p in service.get("ports", [])]
         if any("8501" in p or "8001" in p for p in ports):
