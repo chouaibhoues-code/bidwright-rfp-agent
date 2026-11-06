@@ -238,19 +238,22 @@ options:
 ## `bidwright ui`
 
 ```text
-usage: bidwright ui [-h]
+usage: bidwright ui [-h] [--address ADDRESS] [--api]
 
 options:
-  -h, --help  show this help message and exit
+  -h, --help         show this help message and exit
+  --address ADDRESS  0.0.0.0 inside the container
+  --api              also start the API on port 8001
 ```
 
 ## `bidwright api`
 
 ```text
-usage: bidwright api [-h]
+usage: bidwright api [-h] [--host HOST]
 
 options:
-  -h, --help  show this help message and exit
+  -h, --help   show this help message and exit
+  --host HOST  0.0.0.0 inside the container
 ```
 
 ## `bidwright spans replay`
