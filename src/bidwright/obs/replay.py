@@ -1,7 +1,8 @@
 """Replay a run's `spans.jsonl` into Phoenix over OTLP HTTP (`WP-3.6`, `CH-94`).
 
-When a run runs without a reachable Phoenix collector (or when a collector refuses a batch),
-`FallbackExporter` in `obs/tracing.py` writes every span to `<run>/spans.jsonl`. `replay_spans`
+`TeeExporter` in `obs/tracing.py` writes every span of a run to `<run>/spans.jsonl`, whether
+or not a Phoenix collector took them (ADR-053), so a run made without one, or a run Phoenix has
+since lost, can be sent again. `replay_spans`
 reads `spans.jsonl`, builds an OTLP `ExportTraceServiceRequest` with `opentelemetry-proto`
 preserving each span's trace id, span id, parent span id, start and end times, kind, status,
 attributes, events and resource, checks the destination against the egress register's `phoenix`

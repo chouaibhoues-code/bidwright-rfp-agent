@@ -724,15 +724,55 @@ def load_run_data(
     )
 
 
-def select_run_data() -> RunData | None:
-    """Render the sidebar run selector in Streamlit and return the selected `RunData`."""
-    import streamlit as st
+# --- The run monitor and the record views (ADR-053) -------------------------------------------
 
-    runs = list_runs()
-    if not runs:
-        st.text("No run folders with run_manifest.json found under outputs/.")
+
+def load_events(run_dir: Path) -> list[dict[str, Any]]:
+    """The run's `events.jsonl`, oldest first."""
+    from bidwright.fileio import read_lines
+
+    return [json.loads(line) for line in read_lines(run_dir / "events.jsonl")]
+
+
+def load_budget(run_dir: Path) -> dict[str, Any] | None:
+    """What the run has spent so far, from `control/budget.json`, or None."""
+    path = run_dir / "control" / "budget.json"
+    if not path.is_file():
         return None
-    by_name = {run.name: run for run in runs}
-    chosen_name = st.sidebar.selectbox("Run folder", options=list(by_name.keys()), index=0)
-    chosen_dir = by_name[chosen_name] if chosen_name in by_name else runs[0]
-    return load_run_data(chosen_dir)
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def run_limits(manifest: RunManifest) -> dict[str, float] | None:
+    """The run's limits from `config/limits.yaml`, for its tier and profile, or None."""
+    from bidwright.config import load_config
+
+    tier = str(manifest.run_args.get("limits") or "dev")
+    try:
+        limits = load_config().limits.run(tier, manifest.profile)
+    except KeyError:
+        return None
+    return {
+        "requests": float(limits.requests),
+        "tokens": float(limits.tokens),
+        "active_minutes": float(limits.active_minutes),
+    }
+
+
+def load_passages(run_dir: Path) -> dict[str, dict[str, Any]]:
+    """The run's passages by id, from `passages.jsonl`."""
+    from bidwright.fileio import read_lines
+
+    return {
+        row["id"]: row
+        for row in (json.loads(line) for line in read_lines(run_dir / "passages.jsonl"))
+    }
+
+
+def extract_batches(run_dir: Path) -> dict[str, str]:
+    """Each passage id's extract call, from the calls' context manifests."""
+    batches: dict[str, str] = {}
+    for path in sorted((run_dir / "context").glob("extract-*.json")):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for src in data.get("included_src_ids", []):
+            batches.setdefault(src, data["call_id"])
+    return batches

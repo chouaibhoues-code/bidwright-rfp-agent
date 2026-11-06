@@ -1,21 +1,55 @@
 """The Ops page (`WP-3.6`, `CH-94`): ledger requests, four-layer tokens, cost, shadow cost and
 latency by node and by model; evaluation scores from `evals/results/runs/<run>/` when present;
 `keep_or_drop` ablation ladder reports from `evals/results/<matrix>/report.json`; matrix totals
-summed from `outputs/matrices/<matrix>/*/ledger.jsonl`; and OTLP span replay into Phoenix.
+summed from `outputs/matrices/<matrix>/*/ledger.jsonl`; and Phoenix (ADR-053): the run's
+traces and sessions, and buttons that send the run, its code checks and review verdicts, and its
+scores, each through the command that owns it.
 """
 
 import streamlit as st
 
-from app.data import load_ladder_reports, load_matrix_totals, select_run_data
+import app.actions as actions
+from app.data import RunData, load_ladder_reports, load_matrix_totals
+from app.phoenix_view import links_for
+from app.state import current_run
 from bidwright.obs.replay import replay_spans
 from bidwright.preflight import Refused
 
 
-def render_ops_page() -> None:
-    st.title("Bidwright — Ops")
-    data = select_run_data()
-    if data is None:
+def _phoenix(data: RunData) -> None:
+    st.header("Phoenix")
+    links = links_for(data)
+    if not links.available:
+        st.text(
+            "Phoenix does not answer. Start it with docker compose up -d phoenix, or set"
+            " PHOENIX_ENDPOINT; a run made meanwhile keeps its spans in spans.jsonl."
+        )
         return
+    st.text(f"Project: {links.project or 'none yet for this run'}")
+    for trace, page in links.traces:
+        if page:
+            st.link_button(f"Trace {trace[:12]}", page)
+        else:
+            st.text(f"Trace {trace[:12]}: not in Phoenix yet")
+    if links.sessions:
+        st.link_button("All sessions (one per run)", links.sessions)
+    left, right = st.columns(2)
+    if left.button("Send the run, its checks and its review verdicts", key="ops_sync"):
+        done = actions.run(actions.phoenix_sync(data.run_dir))
+        st.code((done.stdout or "") + (done.stderr or ""), language=None)
+        st.cache_data.clear()
+    if right.button("Score the run and send its scores", key="ops_eval"):
+        done = actions.run(actions.eval_to_phoenix(data.run_dir))
+        st.code((done.stdout or "") + (done.stderr or ""), language=None)
+
+
+def render_ops_page() -> None:
+    st.title("Bidwright: Ops")
+    data = current_run()
+    if data is None:
+        st.text("No run folders with run_manifest.json found under outputs/.")
+        return
+    _phoenix(data)
 
     st.header("Ledger totals")
     st.table([data.ledger_totals.as_dict("Scope")])
@@ -101,7 +135,8 @@ def render_ops_page() -> None:
 
     st.header("Phoenix span replay")
     st.text(
-        "Note: replaying a run twice sends its spans twice, so the trace appears twice in Phoenix."
+        "Replaying a run twice sends its spans twice, so the trace appears twice in Phoenix;"
+        " the send button above replays only a trace Phoenix does not hold."
     )
     if st.button("Replay spans.jsonl to Phoenix", disabled=not data.has_spans):
         try:

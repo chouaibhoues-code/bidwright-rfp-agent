@@ -30,6 +30,13 @@ DEV_SAMPLE = HOME / "samples" / "dev"
 DUMMY_SHA = "sha256:" + "a" * 64
 
 
+@pytest.fixture(autouse=True)
+def no_phoenix(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The pages ask Phoenix for links; here nothing listens, so no test depends on a Phoenix
+    that happens to run on the machine."""
+    monkeypatch.setenv("PHOENIX_ENDPOINT", "http://127.0.0.1:9")
+
+
 def _write_iter3_fixture(run_dir: Path, *, status: str = "WAITING_HUMAN") -> None:
     """Populate `run_dir` with Iteration 3 capability map, options, manifest, tech validations,
     and gate review / approval artifacts."""
@@ -347,8 +354,9 @@ def test_run_page_table_holds_the_compliance_matrix_rows(
 
     at = AppTest.from_file(str(RUN_PAGE)).run(timeout=15)
     assert len(at.exception) == 0
-    assert len(at.dataframe) == 1
-    df = at.dataframe[0].value
+    matrices = [d for d in at.dataframe if "Requirement id" in d.value.columns]
+    assert len(matrices) == 1, "the Files tab's compliance matrix"
+    df = matrices[0].value
     assert len(df) == len(expected_rows)
     assert list(df["Requirement id"]) == [row["Requirement id"] for row in expected_rows]
     assert list(df["Quote"]) == [row["Quote"] for row in expected_rows]
@@ -417,8 +425,8 @@ def test_a_quote_with_a_markdown_image_link_appears_only_as_plain_text(
         assert len(at.exception) == 0
         assert len(at.markdown) == 0
     at_run = AppTest.from_file(str(RUN_PAGE)).run(timeout=15)
-    plain_texts = [el.value for el in at_run.text]
-    assert any(trap_quote in text for text in plain_texts)
+    plain_texts = [el.value for el in at_run.text] + [el.value for el in at_run.code]
+    assert any(trap_quote in text for text in plain_texts), "shown as plain text or code"
 
 
 def test_a_run_with_no_scores_shows_none_and_no_error(
@@ -581,7 +589,7 @@ def test_review_page_for_run_not_waiting_shows_approval_file_and_no_form(
     at = AppTest.from_file(str(REVIEW_PAGE)).run(timeout=15)
     assert len(at.exception) == 0
     assert len(at.markdown) == 0
-    assert len(at.button) == 0
+    assert not [b for b in at.button if "Submit gate decision" in b.label], "no gate form"
     texts = [el.value for el in at.text]
     assert any("Decision: approve | Role: Bid Director | Option: OPT-1" in t for t in texts)
     assert any("approver_role: Bid Director" in el.value for el in at.code)
@@ -672,3 +680,125 @@ def test_app_modules_write_no_files_directly() -> None:
                     raise AssertionError(f"{path} must not call open()")
                 if isinstance(node.func, ast.Attribute) and node.func.attr in forbidden_attrs:
                     raise AssertionError(f"{path} must not call .{node.func.attr}()")
+
+
+# --- ADR-053: the pages share their state, start runs and record verdicts --------------------
+
+
+def _two_runs(root: Path) -> tuple[Path, Path]:
+    older, newer = root / "20261105T000000Z-a", root / "20261106T000000Z-b"
+    for run_dir in (older, newer):
+        shutil.copytree(DEV_SAMPLE, run_dir)
+    return older, newer
+
+
+def test_the_run_selection_follows_the_url_and_a_page_keeps_the_values_it_is_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Persistence rests on three things, each checked here: the entrypoint draws the run
+    selector, which takes the URL's run and the session's value; the entrypoint saves every
+    sticky key again before the page runs (Streamlit's documented way to keep a widget's value
+    on a page that does not draw it); and a page never resets a value it is given. AppTest
+    drops an `st.navigation` entrypoint's widgets after its first run, so a page switch inside
+    AppTest cannot show the browser's behavior directly."""
+    older, _ = _two_runs(tmp_path)
+    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(tmp_path))
+    at = AppTest.from_file(str(MAIN_PAGE))
+    at.query_params["run"] = older.name
+    at.run(timeout=20)
+    assert len(at.exception) == 0
+    assert at.sidebar.selectbox(key="run").value == older.name, "the URL names the run"
+    assert at.session_state["run"] == older.name
+
+    source = MAIN_PAGE.read_text(encoding="utf-8")
+    assert source.index("keep_sticky()") < source.index("navigation.run()")
+    from app.state import STICKY_KEYS
+
+    for page, key, value in (
+        (RUN_PAGE, "run_search", "audit"),
+        (REVIEW_PAGE, "review_role", "Bid manager"),
+        (REVIEW_PAGE, "review_unreviewed_only", True),
+    ):
+        assert key in STICKY_KEYS
+        at = AppTest.from_file(str(page))
+        at.session_state[key] = value
+        at.run(timeout=20)
+        assert len(at.exception) == 0
+        assert at.session_state[key] == value, (page.name, key)
+
+
+def test_the_launcher_starts_bidwright_run_with_the_chosen_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import app.actions as actions
+
+    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(tmp_path / "none"))
+    started: list[tuple[str, list[str], str | None]] = []
+
+    class FakeProcess:
+        def poll(self) -> int | None:
+            return None
+
+    def fake_start(label: str, command: list[str], run_id: str | None = None) -> actions.Job:
+        started.append((label, command, run_id))
+        return actions.Job(label, command, run_id, FakeProcess())  # type: ignore[arg-type]
+
+    monkeypatch.setattr("app.actions.start", fake_start)
+    at = AppTest.from_file(str(RUN_PAGE)).run(timeout=15)
+    assert len(at.exception) == 0
+    at.selectbox(key="launch_input").select("inputs/dev/dev_rfp.pdf")
+    at.selectbox(key="launch_solution").select("assess")
+    at.checkbox(key="launch_reflect").check()
+    next(b for b in at.button if b.label == "Start the run").click()
+    at = at.run(timeout=15)
+    assert len(at.exception) == 0
+    assert len(started) == 1
+    _, command, run_id = started[0]
+    assert run_id is not None and run_id.endswith("-dev-rfp-free-ui")
+    assert command[1:4] == ["-m", "bidwright.cli", "run"]
+    assert command[4] == "inputs/dev/dev_rfp.pdf"
+    flags = command[5:]
+    assert flags[flags.index("--solution") + 1] == "assess"
+    assert "--reflect" in flags and "--auto-select" not in flags, "a person decides the gate"
+    assert flags[flags.index("--run-id") + 1] == run_id
+
+
+def test_a_launch_of_a_file_outside_inputs_is_refused() -> None:
+    import app.actions as actions
+
+    with pytest.raises(ValueError, match="under inputs/"):
+        actions.LaunchRequest(source="../private/secret.pdf").command()
+    with pytest.raises(ValueError, match="profile"):
+        actions.LaunchRequest(source="inputs/dev/dev_rfp.pdf", profile="root").command()
+
+
+def test_the_review_page_records_verdicts_through_bidwright_review(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = tmp_path / "run-done"
+    _write_iter3_fixture(run_dir, status="COMPLETED")
+    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(run_dir))
+    recorded: list[tuple[list[str], str | None]] = []
+
+    def fake_run(command: list[str], stdin_text: str | None = None) -> Any:
+        recorded.append((command, stdin_text))
+        return subprocess.CompletedProcess(command, 0, "Recorded 1 verdicts\n", "")
+
+    monkeypatch.setattr("app.actions.run", fake_run)
+    at = AppTest.from_file(str(REVIEW_PAGE)).run(timeout=15)
+    assert len(at.exception) == 0
+    assert any("Reviewed" == m.label for m in at.metric)
+    at.text_input(key="review_role").input("Bid manager")
+    at.checkbox(key="review_auto_sync").uncheck()
+    at.radio(key="verdict:REQ-0001").set_value("accept")
+    at.text_input(key="note:REQ-0001").input("Checked against the portal rule.")
+    next(b for b in at.button if b.label == "Record these verdicts").click()
+    at = at.run(timeout=15)
+    assert len(at.exception) == 0
+    assert len(recorded) == 1
+    command, stdin_text = recorded[0]
+    assert command[3:] == ["review", str(run_dir), "--role", "Bid manager", "--from", "-"]
+    assert yaml.safe_load(stdin_text or "") == [
+        {"item": "REQ-0001", "verdict": "accept", "note": "Checked against the portal rule."}
+    ]
+    assert len(at.markdown) == 0

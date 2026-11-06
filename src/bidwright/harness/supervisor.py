@@ -216,6 +216,7 @@ def _merged(
         update={
             "started": stored.started,
             "status_history": list(stored.status_history),
+            "trace_ids": list(stored.trace_ids),
             "overrides": overrides,
         }
     )
@@ -319,6 +320,15 @@ class RunSupervisor:
         if cut:
             detail = f"events_cut: {len(cut)} characters of an unfinished last line removed"
             self.events.record("recovery", None, detail)
+
+    def record_trace(self, trace_id: str | None) -> None:
+        """Add this part's trace id to the manifest (ADR-053), once."""
+        if trace_id is None or trace_id in self.manifest.trace_ids:
+            return
+        with self._writing:
+            ids = [*self.manifest.trace_ids, trace_id]
+            self.manifest = self.manifest.model_copy(update={"trace_ids": ids})
+            write_atomic(self.run_dir / MANIFEST, self.manifest.model_dump_json(indent=1) + "\n")
 
     def transition(self, status: RunStatus, reason: str | None = None) -> None:
         """Record a status: in the manifest's history, in the events log, and on disk."""

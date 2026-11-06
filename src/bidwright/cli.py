@@ -41,6 +41,12 @@
     bidwright api        starts the local FastAPI wrapper on 127.0.0.1:8001
     bidwright spans replay <run> [--endpoint URL]
                          replays a run's spans.jsonl into Phoenix over OTLP HTTP
+    bidwright review <run> --role TEXT (--item ID --verdict V [--note TEXT] | --from -)
+                         records a person's verdicts on a run's records in
+                         review/decisions.jsonl; with no verdict, prints the queue
+    bidwright phoenix sync <run>
+                         sends a run's checks, gate decision and review verdicts to its
+                         Phoenix trace as annotations, replaying the trace first if needed
 
 The command line parses arguments and prints what the run entry refuses. The rules themselves
 sit at the run entry, in `preflight.py`: on `free`, a file is refused unless its hash is
@@ -573,6 +579,73 @@ def _spans_replay(args: argparse.Namespace) -> int:
     return 0
 
 
+RUN_ID_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.")
+
+
+def _run_id(value: str) -> str:
+    """A run id a caller names, such as the UI: a folder name, never a path."""
+    if not value or not set(value) <= RUN_ID_CHARS or value.startswith("."):
+        raise argparse.ArgumentTypeError(
+            f"a run id holds letters, digits, '-', '_' and '.' only, not {value!r}"
+        )
+    return value
+
+
+def _review(args: argparse.Namespace, stdin: Any = None) -> int:
+    """Print the run's review queue and progress, or record verdicts (ADR-053)."""
+    import yaml
+
+    from bidwright.review import ReviewRefused, latest, progress, record, review_queue
+
+    run_dir = _run_folder(args.run)
+    if not (run_dir / "run_manifest.json").is_file():
+        print(f"Refused: no run folder {run_dir}", file=sys.stderr)
+        return 2
+    entries: list[dict[str, Any]] = []
+    if args.source == "-":
+        loaded = yaml.safe_load((stdin or sys.stdin).read())
+        if not isinstance(loaded, list) or not all(isinstance(e, dict) for e in loaded):
+            print("Refused: --from - takes a YAML list of {item, verdict, note}", file=sys.stderr)
+            return 2
+        entries = loaded
+    elif args.item:
+        entries = [{"item": args.item, "verdict": args.verdict, "note": args.note}]
+    if entries:
+        try:
+            recorded = record(run_dir, entries, args.role or "")
+        except ReviewRefused as exc:
+            print(f"Refused: {exc}", file=sys.stderr)
+            return 2
+        print(f"Recorded {len(recorded)} verdicts in {run_dir / 'review' / 'decisions.jsonl'}")
+    queue = review_queue(run_dir)
+    done = progress(queue, latest(run_dir))
+    print(f"Reviewed {done.reviewed} of {done.total} items; {done.stale} stale")
+    if not entries:
+        decisions = latest(run_dir)
+        for item in queue:
+            mark = decisions[item.id].verdict if item.id in decisions else "-"
+            print(f"  {item.kind:<13} {item.id:<10} {mark:<8} {item.title[:70]}")
+    return 0
+
+
+def _phoenix_sync(args: argparse.Namespace) -> int:
+    from bidwright.obs.phoenix import sync_run
+
+    try:
+        report = sync_run(_run_folder(args.run))
+    except Refused as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    replayed = f", {len(report.replayed)} replayed first" if report.replayed else ""
+    print(
+        f"Synced {len(report.traces)} traces{replayed}: {report.span_annotations} span"
+        f" annotations, {report.trace_annotations} trace annotations"
+    )
+    if report.url:
+        print(f"  {report.url}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="bidwright", description="Bidwright: RFP to proposal.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -592,6 +665,9 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--research", choices=RESEARCH, help="config/research.yaml sets the default")
     _solution_flags(run)
     run.add_argument("--outputs", type=Path, default=HOME / "outputs")
+    run.add_argument(
+        "--run-id", type=_run_id, help="the run folder's name; the UI names the runs it starts"
+    )
     demo = sub.add_parser("demo", help="replay the recorded development run, with no keys")
     demo.add_argument("--outputs", type=Path, default=HOME / "outputs")
     record = sub.add_parser("record", help="run live and record cassettes, on the host")
@@ -719,6 +795,21 @@ def main(argv: list[str] | None = None) -> int:
         "--endpoint",
         help="collector URL; PHOENIX_ENDPOINT or http://127.0.0.1:6006 when unset",
     )
+    review = sub.add_parser("review", help="record verdicts on a run's records")
+    review.add_argument("run", help="a run id under outputs/, or a run folder")
+    review.add_argument("--role", help="the reviewer's role, never a name")
+    review.add_argument("--item", help="a record id, such as REQ-0003")
+    review.add_argument(
+        "--verdict", choices=["accept", "correct", "reject", "flag", "clear", "missed"]
+    )
+    review.add_argument("--note", help="the correction, or the reason")
+    review.add_argument(
+        "--from", dest="source", choices=["-"], help="a YAML list of {item, verdict, note}"
+    )
+    phoenix = sub.add_parser("phoenix", help="annotate a run's Phoenix trace")
+    phoenix_sub = phoenix.add_subparsers(dest="phoenix_command", required=True)
+    sync = phoenix_sub.add_parser("sync", help="send a run's annotations to Phoenix")
+    sync.add_argument("run", help="a run id under outputs/, or a run folder")
     args = parser.parse_args(argv)
 
     os.environ.setdefault("LANGGRAPH_STRICT_MSGPACK", "true")
@@ -743,6 +834,13 @@ def main(argv: list[str] | None = None) -> int:
         return _api(args.host)
     if args.command == "spans":
         return _spans_replay(args)
+    if args.command == "review":
+        if args.item and not args.verdict:
+            print("Refused: --item takes a --verdict", file=sys.stderr)
+            return 2
+        return _review(args)
+    if args.command == "phoenix":
+        return _phoenix_sync(args)
     from bidwright.graph.build import execute
     from bidwright.llm.client import default_backends
     from bidwright.llm.replay import CassetteStore
@@ -791,6 +889,7 @@ def main(argv: list[str] | None = None) -> int:
                 second_pass=args.second_pass,
                 cache=args.cache,
                 research=args.research,
+                run_id=args.run_id,
                 **_solution_arguments(args),
             )
     except Refused as exc:

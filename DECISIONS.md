@@ -13,7 +13,7 @@ Model and prompt ADRs also give the evaluation evidence and the model's expected
 
 ## ADRs
 
-ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05. ADR-039 to ADR-050 were proposed by the Iteration 3 design doc, `docs/designs/iteration-3.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-05: ADR-039 to ADR-049 with D-10's option C, and ADR-050 with D-11's option A. ADR-051 records the owner's addition of a loopback API to WP-3.6, the same day. ADR-052 records which of the owner's proposed prompt edits step 12 keeps, the same day.
+ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05. ADR-039 to ADR-050 were proposed by the Iteration 3 design doc, `docs/designs/iteration-3.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-05: ADR-039 to ADR-049 with D-10's option C, and ADR-050 with D-11's option A. ADR-051 records the owner's addition of a loopback API to WP-3.6, the same day. ADR-052 records which of the owner's proposed prompt edits step 12 keeps, the same day. ADR-053 records the owner's UI and Phoenix requests, the same day.
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -69,6 +69,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 050 | A separate `ui` service reads the scores in Docker | accepted |
 | 051 | A loopback API beside the UI | accepted |
 | 052 | Prompt revisions with step 12's recordings | accepted |
+| 053 | Review records, run control in the UI, and Phoenix's sessions and annotations | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -1249,6 +1250,27 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** A ladder rung, or the scorecard on the development and hero packages, shows a revised prompt missing more requirements, hazards or risk seeds, or losing precision beyond its margin.
 
 **Provenance.** The owner's proposed edits, 2026-11-05; ADR-028; ADR-049; DR-16; `docs/designs/iteration-3.md`, step 12.
+
+### ADR-053: Review records, run control in the UI, and Phoenix's sessions and annotations
+
+**Status:** accepted, 2026-11-05, by the owner, who asked for the UI to keep its selections across pages, for Run and Review pages that do the human's part, and for a full use of Phoenix. It extends ADR-050 and ADR-051.
+
+**Context.** The first UI read a run's files and decided the gate. A person could not start or steer a run from it, record what they found in the records, or see the run in Phoenix beyond its spans, and its selections reset between pages. The Master-Plan's Gold review orders a person's checks by consequence, beside the verbatim source, with a negative-space sample, and Phoenix can group a run's traces into a session and hold human and code annotations next to the spans.
+
+**Decision.**
+- Review records: `bidwright review`, in `src/bidwright/review.py`, is the one writer of `review/decisions.jsonl`. Its queue orders a run's records by consequence, each with its source and its hash; a record takes accept, correct (with the corrected text), reject or flag; a sampled passage no record cites takes clear or missed. A decision on a record a resume rewrote reads as stale. Outputs stay `UNREVIEWED_DRAFT`: the sign-off is Iteration 4's `review` gate.
+- The UI: the run selector and the pages' filters persist across pages (the entrypoint draws the selector and saves the filter keys again), and the URL names the run. The Run page starts, follows, stops and resumes runs through the CLI; the Review page records verdicts through `bidwright review`. The pages still write no file. A run the Run page starts in the `ui` service runs where `evals/results/` is mounted read-only, as a resumed one already did under ADR-050; producer code reads no `evals/` path, as `test_isolation.py` checks.
+- Phoenix: every span also lands in `spans.jsonl`; spans go to the project `PHOENIX_PROJECT_NAME` (default `bidwright`) with `session.id` set to the run id, so a resumed run's parts form one session, and with tags and the run's settings as metadata; LLM spans carry their system, prompt version, decoding settings and shadow cost; the run manifest lists the trace ids. `bidwright phoenix sync` sends a run's code checks, gate decision and review verdicts as annotations on the spans of the nodes that made the records, replaying a trace Phoenix lacks, and `bidwright-eval phoenix` sends the scores. No annotation or span holds RFP or prompt text.
+
+**Consequences.** A person can run and review a bid end to end in the UI, and Phoenix shows each run's checks, decisions and scores beside its trace, filterable by session and tag. The span attributes change no cassette key. The decisions file is a new output with one writer.
+
+**Options.** A review page that writes its own file, which would give the run folder a second writer; storing verdicts only in Phoenix, which would make the run folder incomplete and tie review to a running Phoenix; Phoenix's datasets and experiments for the ladders, left to step 19, where the matrices run.
+
+**Confirmation.** `tests/test_review.py`, `tests/test_phoenix.py`, `tests/test_app.py` and `tests/test_tracing.py`.
+
+**Reverse if.** Iteration 4's `review` gate supersedes the decisions file, or a deployment replaces Phoenix with another collector.
+
+**Provenance.** The owner's request of 2026-11-05; ADR-050; ADR-051; the Master-Plan's Gold review; Phoenix's REST API and OpenInference attributes, checked through Context7 and against the local Phoenix 21 on 2026-11-05 (`docs/verification_log.md`).
 
 ## Failure modes hit
 

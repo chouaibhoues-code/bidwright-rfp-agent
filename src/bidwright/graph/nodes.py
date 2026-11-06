@@ -153,6 +153,9 @@ class RunContext:
             "bidwright.prompt": prompt.ref,
             "bidwright.prompt_hash": prompt.hash,
             "bidwright.input_hash": input_hash,
+            # The prompt's id and version, and its decoding settings: no prompt text.
+            SpanAttributes.LLM_PROMPT_TEMPLATE_VERSION: prompt.ref,
+            SpanAttributes.LLM_INVOCATION_PARAMETERS: json.dumps(prompt.decoding, sort_keys=True),
         }
         with self.span(f"llm.{node}", OpenInferenceSpanKindValues.LLM, **attributes) as span:
             completion = self.client.complete(

@@ -5,12 +5,14 @@
 ## `bidwright`
 
 ```text
-usage: bidwright [-h] {run,demo,record,stop,approve,resume,purge,matrix,research,ui,api,spans} ...
+usage: bidwright [-h]
+                 {run,demo,record,stop,approve,resume,purge,matrix,research,ui,api,spans,review,phoenix}
+                 ...
 
 Bidwright: RFP to proposal.
 
 positional arguments:
-  {run,demo,record,stop,approve,resume,purge,matrix,research,ui,api,spans}
+  {run,demo,record,stop,approve,resume,purge,matrix,research,ui,api,spans,review,phoenix}
     run                 run one RFP file or package folder live
     demo                replay the recorded development run, with no keys
     record              run live and record cassettes, on the host
@@ -23,6 +25,8 @@ positional arguments:
     ui                  start the local Streamlit UI on 127.0.0.1:8501
     api                 start the local FastAPI wrapper on 127.0.0.1:8001
     spans               manage recorded OpenTelemetry spans
+    review              record verdicts on a run's records
+    phoenix             annotate a run's Phoenix trace
 
 options:
   -h, --help            show this help message and exit
@@ -37,7 +41,7 @@ usage: bidwright run [-h] [--profile {free,local,paid}] [--baseline {b0,ex0}]
                      [--research {off,pack,live}] [--auto-select] [--bid-policy FILE]
                      [--solution {oneshot,fixed,decide,assess,manifest}]
                      [--risk-mode {oneshot,fixed,agent}] [--reflect | --no-reflect]
-                     [--outputs OUTPUTS]
+                     [--outputs OUTPUTS] [--run-id RUN_ID]
                      file
 
 positional arguments:
@@ -66,6 +70,7 @@ options:
                         offer the gated reflect tool; config/limits.yaml's switches set the
                         default
   --outputs OUTPUTS
+  --run-id RUN_ID       the run folder's name; the UI names the runs it starts
 ```
 
 ## `bidwright demo`
@@ -272,7 +277,7 @@ options:
 ## `bidwright-eval`
 
 ```text
-usage: bidwright-eval [-h] {score,gate,baseline,explain,report,hash-gold,external} ...
+usage: bidwright-eval [-h] {score,gate,baseline,explain,report,hash-gold,phoenix,external} ...
 
 `bidwright-eval`: score frozen runs against gold. It never changes a run.
 
@@ -285,6 +290,8 @@ bidwright-eval explain <run_dir> <gold_id>
                                      shows what happened to one gold item in the run
 bidwright-eval report <matrix>       scores every run of outputs/matrices/<matrix>/ and
                                      writes evals/results/<matrix>/ with each rung's decision
+bidwright-eval phoenix <run_dir>     scores the run and sends the scorecard's headline lines to
+                                     its Phoenix trace as annotations (ADR-053)
 bidwright-eval hash-gold             records the hashes of the gold files and of
                                      evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
 bidwright-eval external crackedpdfs --data <folder>
@@ -293,13 +300,14 @@ bidwright-eval external crackedpdfs --data <folder>
                                      to evals/results/external/crackedpdfs.md
 
 positional arguments:
-  {score,gate,baseline,explain,report,hash-gold,external}
+  {score,gate,baseline,explain,report,hash-gold,phoenix,external}
     score               score one run folder
     gate                gate one run folder against a committed baseline
     baseline            write a run's scores as the baseline
     explain             what happened to one gold item in a run
     report              score a matrix's runs and decide each rung
     hash-gold           freeze the current gold files' hashes
+    phoenix             score a run and send its scores to its trace
     external            run one stage against a public benchmark
 
 options:

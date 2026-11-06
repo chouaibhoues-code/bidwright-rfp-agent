@@ -424,6 +424,8 @@ class RunManifest(Record):
     seed: SeedRecord | None = None
     assess_route: Literal["primary", "fallback", "same"] | None = None
     switches: dict[str, Any] = Field(default_factory=dict)
+    # ADR-053: each part's trace id, in order, which the UI links to Phoenix.
+    trace_ids: list[str] = Field(default_factory=list)
 
 
 # --- Model-facing requests and responses ----------------------------------------------
@@ -1912,6 +1914,34 @@ class GateEdit(Record):
 class ReviewedHashes(Record):
     manifest: Sha256
     options: Sha256
+
+
+ReviewKind = Literal[
+    "hazard",
+    "requirement",
+    "optional",
+    "contract_flag",
+    "quarantine",
+    "tech_claim",
+    "risk",
+    "question",
+    "passage",
+]
+ReviewVerdict = Literal["accept", "correct", "reject", "flag", "clear", "missed"]
+
+
+class ReviewDecision(Record):
+    """One line of `review/decisions.jsonl` (ADR-053): a person's verdict on one record of a
+    run, which `bidwright review` alone writes. `item_sha256` is the record as it was shown,
+    so a later rewrite of the record marks the verdict stale."""
+
+    item_id: str = Field(min_length=1)
+    kind: ReviewKind
+    verdict: ReviewVerdict
+    role: str = Field(min_length=1)
+    note: str = ""
+    decided: datetime
+    item_sha256: Sha256
 
 
 class GateApproval(Record):

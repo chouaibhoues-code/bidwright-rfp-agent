@@ -43,7 +43,7 @@ from langgraph.errors import EmptyInputError, GraphDrained
 from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import RunControl
 from langgraph.types import Command, Send
-from openinference.semconv.trace import OpenInferenceSpanKindValues
+from openinference.semconv.trace import OpenInferenceSpanKindValues, SpanAttributes
 from opentelemetry import trace as otel_trace
 
 from bidwright.baselines import BASELINES, b0_outcome
@@ -107,7 +107,7 @@ from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Backend, CircuitOpen, LLMError, QuotaExhausted
 from bidwright.obs.events import EventRecorder
 from bidwright.obs.ledger import LedgerFile, models_used, totals_of
-from bidwright.obs.tracing import Tracing, maybe_span, set_attribute, trace_endpoint
+from bidwright.obs.tracing import Tracing, maybe_span, run_metadata, set_attribute, trace_endpoint
 from bidwright.parsers.docling_client import CASSETTES as DOCLING_CASSETTES
 from bidwright.parsers.docling_client import DoclingClient, DoclingError
 from bidwright.parsers.docling_parser import DoclingParser
@@ -1415,6 +1415,7 @@ def execute(
             run_dir,
             None if refused else endpoint,
             os.environ.get("PHOENIX_API_KEY") or None,
+            tags=[profile, mode, f"solution:{switches['solution']}", f"research:{research_mode}"],
         )
         ctx = RunContext(
             run_id,
@@ -1463,12 +1464,30 @@ def execute(
         status: RunStatus = "UNRECOVERABLE_FAULT"
         reason: str | None = "the run ended before it finished"
         budget.start()
-        run_attributes = {"bidwright.run_id": run_id, "bidwright.profile": profile}
+        run_attributes = {
+            "bidwright.run_id": run_id,
+            "bidwright.profile": profile,
+            "bidwright.part": supervisor.part,
+            SpanAttributes.METADATA: run_metadata(
+                {
+                    "profile": profile,
+                    "mode": mode,
+                    "source": run_args.get("source"),
+                    "research": research_mode,
+                    "until": until,
+                    "gate": gate,
+                    "assess_route": route,
+                    "commit": supervisor.manifest.commit,
+                    **switches,
+                }
+            ),
+        }
         try:
             with (
                 tracing.span("run", OpenInferenceSpanKindValues.CHAIN, **run_attributes),
                 SqliteSaver.from_conn_string(str(run_dir / "checkpoints.sqlite")) as saver,
             ):
+                supervisor.record_trace(tracing.trace_id)
                 graph = build_graph(rt, saver)
                 thread: dict[str, Any] = {
                     "configurable": {"thread_id": run_id},

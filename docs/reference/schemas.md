@@ -248,6 +248,7 @@ The seed run a run started from (ADR-048), as its manifest records it.
 | `seed` | SeedRecord \| None | no | None |  |
 | `assess_route` | one of 'primary', 'fallback', 'same' \| None | no | None |  |
 | `switches` | dict[str, Any] | no | {} |  |
+| `trace_ids` | list[str] | no | [] |  |
 
 ## `PassageView`
 
@@ -1896,6 +1897,20 @@ The stored form of `research_packs/libraries/library.yaml`.
 |---|---|---|---|---|
 | `manifest` | str (pattern ^sha256:[0-9a-f]{64}$) | yes |  |  |
 | `options` | str (pattern ^sha256:[0-9a-f]{64}$) | yes |  |  |
+
+## `ReviewDecision`
+
+One line of `review/decisions.jsonl` (ADR-053): a person's verdict on one record of a run, which `bidwright review` alone writes. `item_sha256` is the record as it was shown, so a later rewrite of the record marks the verdict stale.
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `item_id` | str (min length 1) | yes |  |  |
+| `kind` | one of 'hazard', 'requirement', 'optional', 'contract_flag', 'quarantine', 'tech_claim', 'risk', 'question', 'passage' | yes |  |  |
+| `verdict` | one of 'accept', 'correct', 'reject', 'flag', 'clear', 'missed' | yes |  |  |
+| `role` | str (min length 1) | yes |  |  |
+| `note` | str | no | '' |  |
+| `decided` | datetime | yes |  |  |
+| `item_sha256` | str (pattern ^sha256:[0-9a-f]{64}$) | yes |  |  |
 
 ## `GateApproval`
 

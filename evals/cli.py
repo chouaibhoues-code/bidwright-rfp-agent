@@ -9,6 +9,8 @@ bidwright-eval explain <run_dir> <gold_id>
                                      shows what happened to one gold item in the run
 bidwright-eval report <matrix>       scores every run of outputs/matrices/<matrix>/ and
                                      writes evals/results/<matrix>/ with each rung's decision
+bidwright-eval phoenix <run_dir>     scores the run and sends the scorecard's headline lines to
+                                     its Phoenix trace as annotations (ADR-053)
 bidwright-eval hash-gold             records the hashes of the gold files and of
                                      evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
 bidwright-eval external crackedpdfs --data <folder>
@@ -79,6 +81,8 @@ def main(argv: list[str] | None = None) -> int:
     matrix = sub.add_parser("report", help="score a matrix's runs and decide each rung")
     matrix.add_argument("matrix", help="the matrix name, as in outputs/matrices/<matrix>/")
     sub.add_parser("hash-gold", help="freeze the current gold files' hashes")
+    phoenix = sub.add_parser("phoenix", help="score a run and send its scores to its trace")
+    phoenix.add_argument("run_dir", type=Path)
     external = sub.add_parser("external", help="run one stage against a public benchmark")
     external.add_argument("benchmark", choices=["crackedpdfs"])
     external.add_argument(
@@ -111,6 +115,17 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         return 0
     scores = score_run(args.run_dir)
+    if args.command == "phoenix":
+        from bidwright.preflight import Refused
+        from evals.phoenix import push_scores
+
+        try:
+            count, url = push_scores(args.run_dir, scores)
+        except Refused as exc:
+            print(f"Refused: {exc}", file=sys.stderr)
+            return 2
+        print(f"Sent {count} score annotations to Phoenix" + (f": {url}" if url else ""))
+        return 0
     if args.command == "baseline":
         print(f"wrote {write_baseline(scores, args.out)}")
         return 0
