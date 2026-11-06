@@ -604,6 +604,8 @@ def score_run(run_dir: Path, gold_dir: Path = GOLD_DIR) -> dict[str, Any]:
             c.gold_id for c in mandatory if c.gold_id not in result.strict
         ),
         "missed_mandatory_count": len(missed),
+        # The gold clause ids the run captures, relaxed: QS-8 compares them across repeats.
+        "captured": sorted(result.captured),
         "missed_mandatory_strict_count": len(
             [c for c in mandatory if c.gold_id not in result.strict]
         ),

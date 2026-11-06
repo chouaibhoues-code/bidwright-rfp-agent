@@ -133,6 +133,7 @@ About 90 one-sentence technical claims, each checked just before the module that
 | V-01 | Paper check | The primary source of every figure that may enter a deliverable: ORCS first, then MAUD, REGen, The Power of Noise and the Cortex full text, and the OWASP lists | 5 and release | Partly done: the OWASP Agentic Top 10 and LLM Top 10 read at source on 2026-11-02 |
 | V-04 | The owner | RFP-SPEC-001 and the repository the owner's notes mention, if they exist; until then the boundary notes are the baseline | Any time | Open |
 | V-09 | Source check | The UK GDPR on pseudonymization (Articles 4, 25 and 32), and Carrell et al. 2013 on realistic surrogates | 0b, for D-05 | Done 2026-11-03 (section 17) |
+| V-10 | Source check | The method cards' source, before `cards.yaml` is used (Iteration 3, step 18) | 3 | Done 2026-11-06: the 18 cards come from the owner's note "Original PMI-Informed RFP Method Cards v0.1" (PMI notebook source `9ad65110`, 4,430 characters, marked "not external evidence" and stating that it holds no text from the PMI PDFs), not from one of the PDFs; all 18 texts in `knowledge_base/methods/cards.yaml` match the note word for word |
 | H-06 | Save | Raw reports and answers kept privately | 0a | Done 2026-11-02 |
 | H-01 | Audit | Numeric-claim audit of any report to be quoted | Before quoting | As needed |
 | H-02 | Repair | Re-add the INCOSE guide, the APMP Body of Knowledge, OWASP AISVS, and the PyMuPDF and pypdf docs to their notebooks | Backlog | Backlog |
