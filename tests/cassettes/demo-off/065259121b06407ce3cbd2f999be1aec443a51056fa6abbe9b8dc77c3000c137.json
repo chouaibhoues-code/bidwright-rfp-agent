@@ -1,0 +1,53 @@
+{
+ "key": "sha256:065259121b06407ce3cbd2f999be1aec443a51056fa6abbe9b8dc77c3000c137",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_9669946058157912790",
+    "name": "search_capabilities",
+    "arguments": {
+     "query": "browser signing mobile desktop reminder 72 hours templates ten years REST API on-premises deployment"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 2650,
+   "tokens_out": 33,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_9669946058157912790",
+      "args": {
+       "query": "browser signing mobile desktop reminder 72 hours templates ten years REST API on-premises deployment"
+      },
+      "name": "search_capabilities"
+     },
+     "thought_signature": "EmAKXgFpFH0TZCRAAq5CwvcvVzOMLqmvIO03cq_vrzU1XgBGdO7pNgylCZJ4pFeH4ZGCn3Q5JYi_prpL_fYHDKBKhSl4rsGptekHFuUq9bMts2lJzncCJMYv3enUsiNBRMk="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:29:59Z"
+}

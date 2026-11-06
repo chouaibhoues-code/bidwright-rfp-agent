@@ -1,7 +1,8 @@
 """Whole runs with no network and no keys: a development run recorded in the test, then
 replayed, and the live recordings of `bidwright record` replayed from their cassettes: the
-development PDF with its traps (the demo), in its recorded research mode `pack` and in `off`,
-the development DOCX, and the hero package through `consolidate`."""
+development PDF with its traps (the demo) through the solution path and its gate, in research
+mode `pack` and, from its own recording, `off`; the development DOCX; and the hero package
+through `consolidate`."""
 
 import json
 import socket
@@ -22,7 +23,7 @@ from bidwright.schemas import (
     ResearchRecord,
     RunManifest,
 )
-from tests.node_fakes import DEV_RFP, USAGE, RuleBackend
+from tests.node_fakes import DEV_RFP, USAGE, RuleBackend, fake_backends
 from tests.recordings import replay
 
 pytestmark = pytest.mark.replay
@@ -50,6 +51,22 @@ OUTPUTS = (
 )
 
 
+SOLUTION_FILES = (
+    "claims.jsonl",
+    "decisions.jsonl",
+    "assessments.jsonl",
+    "capability_map.json",
+    "options.json",
+    "manifest.json",
+    "tech_validations.jsonl",
+    "bid_signal.json",
+    "bid_memo.md",
+    "risk_rejected.jsonl",
+    "review/solution_gate.md",
+    "review/solution_gate.approval.yaml",
+)
+
+
 def _summary(run_dir: Path) -> dict:
     data = json.loads((run_dir / "solution_summary.json").read_text(encoding="utf-8"))
     data["summary"].pop("run_id")
@@ -66,7 +83,7 @@ def test_a_development_run_replays_with_no_network(tmp_path: Path) -> None:
         outputs=tmp_path / "out",
         mode="record",
         cassettes=store,
-        backends={"gemini": model},
+        backends=fake_backends(model),
         run_id="recorded",
     )
     assert live.status == "COMPLETED", live.reason
@@ -93,10 +110,11 @@ def test_a_development_run_replays_with_no_network(tmp_path: Path) -> None:
         (replay.run_dir / "run_manifest.json").read_text(encoding="utf-8")
     )
     assert manifest.status == "COMPLETED" and manifest.totals.requests == len(ledger)
+    generators = ("triage", "extract", "consolidate", "brief", "decide", "options", "blueprint")
     assert manifest.models_used == {
-        node: ["gemini-3.5-flash-lite"]
-        for node in ("approach", "brief", "consolidate", "draft", "extract", "risk", "triage")
-    }
+        **{node: ["gemini-3.5-flash-lite"] for node in (*generators, "risk", "draft")},
+        "assess": ["gpt-oss-120b"],
+    }, "the default manifest path, with assess on another family"
     research = ResearchRecord.model_validate_json(
         (replay.run_dir / "research.json").read_text(encoding="utf-8")
     )
@@ -123,8 +141,9 @@ def test_a_development_run_replays_with_no_network(tmp_path: Path) -> None:
         json.loads(line)
         for line in (replay.run_dir / "tool_calls.jsonl").read_text(encoding="utf-8").splitlines()
     ]
-    assert [(c["tool"], c["turn"], c["status"]) for c in calls] == [("search_rfp", 1, "OK")]
-    assert calls[0]["data"] and calls[0]["reason"] is None
+    risk = [c for c in calls if c["agent"] == "risk"]
+    assert [(c["tool"], c["turn"], c["status"]) for c in risk] == [("search_rfp", 1, "OK")]
+    assert risk[0]["data"] and risk[0]["reason"] is None
 
 
 class BrokenApproach(RuleBackend):
@@ -145,8 +164,9 @@ def test_a_broken_approach_degrades_the_run_and_keeps_the_summary(tmp_path: Path
         outputs=tmp_path,
         mode="record",
         cassettes=CassetteStore(tmp_path / "c"),
-        backends={"gemini": BrokenApproach()},
+        backends=fake_backends(BrokenApproach()),
         run_id="broken-approach",
+        solution="oneshot",  # the approach node runs on SO0's path only
     )
     assert result.status == "DEGRADED"
     assert result.reason == "approach: malformed output twice"
@@ -265,7 +285,7 @@ def test_ex0_sends_every_passage_in_one_call(tmp_path: Path) -> None:
         outputs=tmp_path,
         mode="record",
         cassettes=CassetteStore(tmp_path / "c"),
-        backends={"gemini": model},
+        backends=fake_backends(model),
         baseline="ex0",
         run_id="ex0",
     )
@@ -357,10 +377,38 @@ def test_the_development_pdf_with_its_traps_replays_from_the_demo_cassettes(
     appendix = summary.index("## Appendix: domain research (external, unverified)")
     assert appendix > summary.index("## 4. Open questions")
     assert "From the research pack `higher-education-procurement`, version 1." in summary
+    # The solution path, through the gate with automatic approval (step 12).
+    assert (recording["solution"], recording["gate"]) == ("manifest", "auto")
+    for name in SOLUTION_FILES:
+        assert (result.run_dir / name).exists(), name
+    approval = (result.run_dir / "review" / "solution_gate.approval.yaml").read_text("utf-8")
+    assert "auto_selected: true" in approval
+    block = summary.index("### The chosen solution")
+    assert summary.index("## 2. Approach") < block < summary.index("## 3. Risks")
+    manifest = RunManifest.model_validate_json(
+        (result.run_dir / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest.assess_route == "primary" and manifest.switches["solution"] == "manifest"
+    assert manifest.models_used["assess"] == ["gpt-oss-120b"], "assess ran on Cerebras"
+
+
+def test_every_tool_call_matches_agents_yaml(tmp_path: Path, no_network: None) -> None:
+    """Each tool call of the replayed demo names a tool its agent lists in config/agents.yaml."""
+    from bidwright.config import load_config
+
+    result, _ = replay("demo", tmp_path)
+    agents = load_config().agents.agents
+    calls = _records(result.run_dir, "tool_calls.jsonl")
+    assert {c["agent"] for c in calls} >= {"decide", "risk"}
+    for call in calls:
+        assert call["tool"] in agents[call["agent"]].tools, call
 
 
 def test_the_demo_replays_in_research_mode_off(tmp_path: Path, no_network: None) -> None:
-    result, _ = replay("demo", tmp_path, research="off")
+    """Without the domain brief, decide's needs differ, so research mode off has its own
+    recording, tests/cassettes/demo-off/."""
+    result, recording = replay("demo-off", tmp_path)
+    assert (recording["research"], recording["solution"]) == ("off", "manifest")
     assert result.status == "COMPLETED", result.reason
     _all_replayed(result.run_dir)
     assert (result.run_dir / "brief.json").exists() and not (

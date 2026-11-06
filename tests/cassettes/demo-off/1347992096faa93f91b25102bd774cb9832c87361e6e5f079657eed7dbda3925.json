@@ -1,0 +1,35 @@
+{
+ "key": "sha256:1347992096faa93f91b25102bd774cb9832c87361e6e5f079657eed7dbda3925",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base includes a service desk role for resolving incidents against targets, but lacks specific evidence confirming a 99.5% service availability commitment with five-day planned maintenance notice or a one-hour response time for severity-one incidents.\",\n  \"claims\": [\n    {\n      \"kind\": \"role\",\n      \"text\": \"A service desk analyst answers calls from customer staff and resolves incidents against agreed targets.\",\n      \"evidence_ids\": [\n        \"ROLE-005\"\n      ],\n      \"src_ids\": [\n        \"SRC-0030\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence supporting the 99.5% monthly availability requirement, the five-day advance notice for planned maintenance, or the one-hour response time for severity-one incidents.\",\n  \"question\": null\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1901,
+   "tokens_out": 206,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base includes a service desk role for resolving incidents against targets, but lacks specific evidence confirming a 99.5% service availability commitment with five-day planned maintenance notice or a one-hour response time for severity-one incidents.\",\n  \"claims\": [\n    {\n      \"kind\": \"role\",\n      \"text\": \"A service desk analyst answers calls from customer staff and resolves incidents against agreed targets.\",\n      \"evidence_ids\": [\n        \"ROLE-005\"\n      ],\n      \"src_ids\": [\n        \"SRC-0030\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence supporting the 99.5% monthly availability requirement, the five-day advance notice for planned maintenance, or the one-hour response time for severity-one incidents.\",\n  \"question\": null\n}",
+     "thought_signature": "EmAKXgFpFH0TARAkBzDSJ-DRI0Ztwc9cL0QcSAAnKyXINZQ31BjFn1BjKinld475etxTVMyfe6LoptaSMRH2pt9C-AhWOaWJm0Yn3c-wsralfJ6wQ--e-OcN9Gy72PMxxHA="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:30:16Z"
+}

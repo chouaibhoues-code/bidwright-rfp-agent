@@ -1,0 +1,35 @@
+{
+ "key": "sha256:a94c7a4da33cf74941bc5e8337952b365afa8ef4bbcb764d74bfea7908cfaab3",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"decision\":\"PROCEED_WITH_GAP\",\"reason\":\"CAP-013, CS-005, and CAP-008 support donor records, consent tracking, volunteer hours, session reminders, spreadsheet migration, and UK data hosting, but there is no record of the 99% availability SLA or the optional mobile app for volunteers.\",\"claims\":[{\"kind\":\"capability\",\"text\":\"Donor, gift, and volunteer records for charities are provided, with consent tracking and session reminders.\",\"evidence_ids\":[\"CAP-013\"],\"src_ids\":[\"SRC-0016\",\"SRC-0017\",\"SRC-0019\",\"SRC-0020\"]},{\"kind\":\"capability\",\"text\":\"Migration of historic records and spreadsheets is supported.\",\"evidence_ids\":[\"CAP-007\"],\"src_ids\":[\"SRC-0021\"]},{\"kind\":\"capability\",\"text\":\"The system is hosted in two data centers in the United Kingdom.\",\"evidence_ids\":[\"CAP-008\"],\"src_ids\":[\"SRC-0022\"]}],\"gap\":\"No evidence of a 99% availability SLA or an optional mobile app for volunteers.\",\"question\":null}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2401,
+   "tokens_out": 248,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"decision\":\"PROCEED_WITH_GAP\",\"reason\":\"CAP-013, CS-005, and CAP-008 support donor records, consent tracking, volunteer hours, session reminders, spreadsheet migration, and UK data hosting, but there is no record of the 99% availability SLA or the optional mobile app for volunteers.\",\"claims\":[{\"kind\":\"capability\",\"text\":\"Donor, gift, and volunteer records for charities are provided, with consent tracking and session reminders.\",\"evidence_ids\":[\"CAP-013\"],\"src_ids\":[\"SRC-0016\",\"SRC-0017\",\"SRC-0019\",\"SRC-0020\"]},{\"kind\":\"capability\",\"text\":\"Migration of historic records and spreadsheets is supported.\",\"evidence_ids\":[\"CAP-007\"],\"src_ids\":[\"SRC-0021\"]},{\"kind\":\"capability\",\"text\":\"The system is hosted in two data centers in the United Kingdom.\",\"evidence_ids\":[\"CAP-008\"],\"src_ids\":[\"SRC-0022\"]}],\"gap\":\"No evidence of a 99% availability SLA or an optional mobile app for volunteers.\",\"question\":null}",
+     "thought_signature": "EmAKXgFpFH0TWGGIYVx2DDue6TiZw9Z9_w6VrhSAS6K3o4_HfgfBKavXs41IyG-HPeG43KtOnwZRvpGxHgglCoiTFvtgKKaWh2jcVGxJ-9NUPHxphmzTF0THw7XSIcYAlcg="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:22:41Z"
+}

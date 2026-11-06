@@ -1,0 +1,35 @@
+{
+ "key": "sha256:480e6800fe52cdfd0c8a8f888116139e358748c8cdd888eeba44a666371ef866",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base contains no records regarding proposal submission procedures, procurement portals, or page and file format limits for bidding.\",\n  \"claims\": [],\n  \"gap\": \"No evidence or capabilities related to submitting proposals through a procurement portal as a single PDF within a page limit.\",\n  \"question\": null\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1698,
+   "tokens_out": 84,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base contains no records regarding proposal submission procedures, procurement portals, or page and file format limits for bidding.\",\n  \"claims\": [],\n  \"gap\": \"No evidence or capabilities related to submitting proposals through a procurement portal as a single PDF within a page limit.\",\n  \"question\": null\n}",
+     "thought_signature": "EmAKXgFpFH0T0S7gcmRRywyCC_fEVBG8TlGlvYLp1roCffII7QGPL4foG-v66LfHGM-Mclf6zt5l8oNHcdWLtow3S7nfB95YAekwdhsPDnYe9svirO0K-ua5rnDU5O4Gctw="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:18:40Z"
+}

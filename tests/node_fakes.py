@@ -26,7 +26,7 @@ from bidwright.schemas import (
     PassageView,
     Requirement,
 )
-from bidwright.tools import date_tool, search_tool
+from bidwright.tools import date_tool, search_tool, sla_tool
 
 DEV_RFP = Path(__file__).resolve().parents[1] / "inputs" / "dev" / "dev_rfp.pdf"
 PROMPT_IDS = (
@@ -355,8 +355,8 @@ def gateway(tmp_path: Path, limits: AgentLimits = RISK_LIMITS) -> ToolGateway:
     index = PassageIndex.build(dev_ingest().passages, tmp_path / "search.sqlite")
     return ToolGateway.for_agent(
         "risk",
-        allowed=["search_rfp", "date_calc"],
-        tools=[search_tool(index), date_tool()],
+        allowed=["search_rfp", "date_calc", "sla_calc"],
+        tools=[search_tool(index), date_tool(), sla_tool()],
         max_tool_calls=limits.max_tool_calls or 6,
     )
 

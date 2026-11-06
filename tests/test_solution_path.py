@@ -118,3 +118,37 @@ def test_a_gemini_only_free_run_is_degraded_same_family(tmp_path: Path) -> None:
 def test_an_unknown_switch_value_is_refused(tmp_path: Path) -> None:
     with pytest.raises(Exception, match="solution takes one of"):
         run(tmp_path, solution="everything")
+
+
+def test_a_resumed_run_keeps_its_switches_and_its_route(tmp_path: Path) -> None:
+    """The arguments `bidwright approve` rebuilds from the manifest carry the switches, the
+    gate's mode and the assess route, so the run's second part takes its first part's path."""
+    from bidwright import cli
+
+    first = run(tmp_path, run_id="kept", solution="manifest", risk_mode="fixed", gate="wait")
+    assert first.status == "WAITING_HUMAN", first.reason
+    before = RunManifest.model_validate_json((first.run_dir / "run_manifest.json").read_text())
+    approval = GateApproval(
+        run_id="kept",
+        reviewed=reviewed_hashes(first.run_dir),
+        decision="approve",
+        approver_role="Bid director",
+        decided="2026-11-05T15:00:00Z",  # type: ignore[arg-type]
+    )
+    arguments = cli.resume_arguments(before.run_args, first.run_dir)
+    assert (arguments["solution"], arguments["risk_mode"], arguments["gate"]) == (
+        "manifest",
+        "fixed",
+        "wait",
+    )
+    done = execute(
+        **arguments,
+        profile="free",
+        backends=fake_backends(RuleBackend()),
+        resume=True,
+        approval=approval,
+    )
+    assert done.status in ("COMPLETED", "DEGRADED"), done.reason
+    after = RunManifest.model_validate_json((done.run_dir / "run_manifest.json").read_text())
+    assert after.switches == before.switches
+    assert after.assess_route == before.assess_route == "primary"

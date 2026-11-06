@@ -1,0 +1,54 @@
+{
+ "key": "sha256:58a420258b220aeafec1ec71d21e432ac3b82e799d0712c02341b591669d140b",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "ask_research",
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_3318845196137769115",
+    "name": "search_capabilities",
+    "arguments": {
+     "query": "implementation timeline rollout schedule go-live"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 2311,
+   "tokens_out": 22,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_3318845196137769115",
+      "args": {
+       "query": "implementation timeline rollout schedule go-live"
+      },
+      "name": "search_capabilities"
+     },
+     "thought_signature": "EmAKXgFpFH0TjvW_MF2qpUYZrnUloOAJGiDFX-SkuXdRXafWy4mgoEiMnq9-M1yQwIKcFMDpm8TT6RTi-lA6fZ89USfK79Mw9nv2L_1N28leVcudmFb5d2OtBihP49jFFiU="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:18:48Z"
+}

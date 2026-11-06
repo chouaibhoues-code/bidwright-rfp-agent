@@ -1,0 +1,39 @@
+{
+ "key": "sha256:4dcece5d71a7f2a33be88eff9be6bc81b12f1780ad760596461e23e3d8e2acfd",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "```json\n{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base supports audit trails, document retention, data migration, and REST API integration, but lacks evidence for browser signing, automated reminders, templates, and on-premises deployment.\",\n  \"claims\": [\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Every change and action is logged with the user and the time.\",\n      \"evidence_ids\": [\n        \"CAP-004\"\n      ],\n      \"src_ids\": [\n        \"SRC-0020\"\n      ]\n    },\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Documents attached to cases are stored with their version history, and retention periods can be set for each case type.\",\n      \"evidence_ids\": [\n        \"CAP-004\",\n        \"CAP-005\"\n      ],\n      \"src_ids\": [\n        \"SRC-0025\"\n      ]\n    },\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Migration of historic records and documents is supported, with trial runs, reconciliation reports and a final cut-over.\",\n      \"evidence_ids\": [\n        \"CAP-007\"\n      ],\n      \"src_ids\": [\n        \"SRC-0026\"\n      ]\n    },\n    {\n      \"kind\": \"capability\",\n      \"text\": \"A documented REST API and webhooks are provided for exchanging data with other line-of-business systems.\",\n      \"evidence_ids\": [\n        \"CAP-006\"\n      ],\n      \"src_ids\": [\n        \"SRC-0027\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence of support for signing on current desktop and mobile browsers, automated reminders within 72 hours, pre-built templates for the College's twelve most used forms, or an on-premises deployment option.\"\n}\n```",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3003,
+   "tokens_out": 452,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "```json\n{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base supports audit trails, document retention, data migration, and REST API integration, but lacks evidence for browser signing, automated reminders, templates, and on-premises deployment.\",\n  \"claims\": [\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Every change and action is logged with the user and the time.\",\n      \"evidence_ids\": [\n        \"CAP-004\"\n      ],\n      \"src_ids\": [\n        \"SRC-0020\"\n      ]\n    },\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Documents attached to cases are stored with their version history, and retention periods can be set for each case type.\",\n      \"evidence_ids\": [\n        \"CAP-004\",\n        \"CAP-005\"\n      ],\n      \"src_ids\": [\n        \"SRC-0025\"\n      ]\n    },\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Migration of historic records and documents is supported, with trial runs, reconciliation reports and a final cut-over.\",\n      \"evidence_ids\": [\n        \"CAP-007\"\n      ],\n      \"src_ids\": [\n        \"SRC-0026\"\n      ]\n    },\n    {\n      \"kind\": \"capability\",\n      \"text\": \"A documented REST API and webhooks are provided for exchanging data with other line-of-business systems.\",\n      \"evidence_ids\": [\n        \"CAP-006\"\n      ],\n      \"src_ids\": [\n        \"SRC-0027\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence of support for signing on current desktop and mobile browsers, automated reminders within 72 hours, pre-built templates for the College's twelve most used forms, or an on-premises deployment option.\"\n}\n```",
+     "thought_signature": "EmAKXgFpFH0TONWzA5u552cgwtLNGhjdwJPqY_P90ZAarXtlDMzMghxVvqfjeJqwdAenqJ887jcq9URSYQVZHLmETFR7rcdr6JchmEoRO7rH_cmBa2CsmmB0xFX9fas_Vj0="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:30:02Z"
+}

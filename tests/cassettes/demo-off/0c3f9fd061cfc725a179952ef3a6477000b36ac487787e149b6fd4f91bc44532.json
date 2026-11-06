@@ -1,0 +1,26 @@
+{
+ "key": "sha256:0c3f9fd061cfc725a179952ef3a6477000b36ac487787e149b6fd4f91bc44532",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"ROLE-005 states that the service desk analyst answers calls from customer staff and resolves incidents against the agreed targets, directly supporting the claim. However, the record does not mention the required 99.5% monthly availability or the one‑hour response time for severity‑one incidents required by the buyer.\", \"disposition\":\"PARTIALLY_SUPPORTED\", \"supporting_ids\":[\"ROLE-005\"], \"missing\":\"Specification of the 99.5% monthly availability and the one‑hour response time for severity‑one incidents.\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1621,
+   "tokens_out": 118,
+   "tokens_cached": 1408,
+   "tokens_thinking": 1144,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:30:39Z"
+}

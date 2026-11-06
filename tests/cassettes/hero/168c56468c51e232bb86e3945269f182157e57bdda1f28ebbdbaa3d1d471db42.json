@@ -1,0 +1,35 @@
+{
+ "key": "sha256:168c56468c51e232bb86e3945269f182157e57bdda1f28ebbdbaa3d1d471db42",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Contractor liability, data protection, intellectual property indemnity, and insurance\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [],\n  \"references\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2325,
+   "tokens_out": 50,
+   "tokens_cached": 0,
+   "tokens_thinking": 556,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"topic\": \"Contractor liability, data protection, intellectual property indemnity, and insurance\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [],\n  \"references\": []\n}",
+     "thought_signature": "EqISCp8SAWkUfRPTuFg17FEbrMWFIFMtO3c34OHhc5ebK_1WNB1W9ctxpY8sRlSKmCB7sm256mlTlY1yV4CK1CBC9IG1Tn6aEG-naLtJJyS1Pz_TP5I1IAv3c_D7OtgI-0vuz1SZPgkXVC_Ml3dRJ83WHHk8zZl-vc8D7B7waV5IGa3dAk2EmAAETMBfNFBTNgj2RjEcUDDd23_jGI6J8IGUZysvZ_z-8HSpFeIjwJPz8yJq0q8yy6V6zPL87ox3bZ3Fox1D53SrI1rULI2BReyWv-OmCvFO4p8R-gNb6oS7Vmc2xol0UHeS1syGH4XQuY9K5uNlGFmWkXs1MyswR4sKRPmKRnfyrMn6vvvdVLkVW9acqzDPGP1-tum7sXJnE8hqktEE8V1Ya4aj2EcaZoXilCG0j474ZnwfOITofykx15T_KYO9kDcipuToZXrS-gonG3W_EH6O2tbvMKpTtOnBE2ZI-iu21vy_01SKaa5ZMgPsdB165N5D_Jnkr8w4ekiSJW2amLZqOfwWoLhSyqr4h0bT_cih2KUtuqllBEQbWDsYRKGWLGwOLggCHB94uTK9ckWM4wARKObNW3KFN7uQmc_iLp3YZeC8mKYkt1Gh_uFS0x0wGWdydD1A8zXM7ZGGpTqmcHFfbRes7BQvfh2KtG_-bSB-GQIrw_qrtaPSaO3YyP-abV8C5OyYda6a38Xei1t2MxgpzR7JDj0sb4phueOKrsPCtMdY8s9Vlo0fruL4ZJSQQ-LtsayNHzwAGz-OGSZyqyljDDhJ42xfV_FBLsiunwJ0AXNjyVIvDmO4QpjGvY0ziOfpPoXcbkdyLNuhOSzVZBlMXeXvdZiZaJySh0GkUNQFq8TliI4LSe0geOruRZmHJfuCcw41HHqV5M7FT8vJ8j0eEt7OQ4l7thvgLdcs_iljTjFJQSX5tIZNKLWuWS14HzgYO5vZc-gF5vkpjsAAcAUGkHGy9TuLIYKd-pwkzmWyqfWShZamqMohNLUGBptDEuIGuttuDGpoTv2eY4Ih-X04XIalW3ilHgj87aNdf9j3KeiMd-4bFPJ7pHILyd5FSAPPjwj_4Z7Od0e6xBHbOsQb0FVZIgMzTANDD9DngucFUV3J4PT-xSmrvp7BZKdAJez7YWM9Lm7SYXE49byE42BgIFkVne6bNqgp0M4NwbqFGXm94RgliIhucHEebpitrqd7ztB0G31TlSgvo3-t7Gc2NGB9Oj8Lh3vBlQlVzRYfRzsj4FNEpYTLjupdm3-Q6S-23bPS2yj3ZULV07ZDiFwRYTSb5_5IaZfgg8vwdYGkaAouc7p8p8lNcm2-eeSH0YBZGw8XW4aThGTzM6Fr_bFOaIPUk5FFFoQZBb210H9nImLkirvoyF5IdTAW4WK1b4Q5WMlLQbGEpMmAZ2eZNh2oG_chuligm1AtUfzA7iQdiDj4FdKc3XEcz9er-JrCNU9H1UQp-Qk-b1E5nbdqipdwzAm7hjgZPqEYyKuLBZXEySGmznkm_Y6yvGUODI8JBBkn86l02ks16Pt_IndzcmEYAT06h49rzi7upkhu9TcZDlwxTAH_r-jbAtp-8W0pFZkjP0iWXELCPmC4U7OUJgk-Xh-tYHKMQg-0yJhZ0IHdYCLvHyNJ_L6p04-X8Le3M9JFgSJzLzFl4AW_V8GFEhSRyrBpjYz4sBrYitnkShr1K2BgCZAJNqDf-Glqp0IwpHuxybdrImx3Y70-sSkTjviePwRs2H4BDzjin9p5edz-UFRs0a51tT0pNu0t_OrjFxVLrCSwDGEpP_uGUiFf1SwM3bxCxMXzp8l70dQN33koCGGcMwqjQ5a_gFvfviycv6zFHfQ1gsE99NjG1jrig_141ZHs3HgbKD3hIvJG0PiQsPCutBZpjaRfOAU0Di2X3EMCKPEpeii1w2aqfAlciPoaNxCQL58GKVLGPympdvvKHtZUfQKAkj24W_fb_VB8MSdBYo5NNqxSZuFzomcuVrW1Mh4SS-vcIWHmiXQsjQS0LZWTJvygkYONAY14BvyWP5nsZXJVW9GGMDjX2gmI3aCHORsSkBTjQgWz5wkr6UWdmohVustAjkraMspzHfz-h9LEAp_4xE8Q2Qao21C83eWFJgMLRoAuNj_-v8Vkod7Cz-V2CxaIDbCeApDgknyGVadgcX9NVG26XeBjb7pW0Ip6tPFJgU-5Sm7UznHiZ4_9dCafWCK4XQqzptSXJ5nPuRKyfkxNPnoxA_k5s8w6CJ4Hfy-E4K0WQnJnbFFT_-LUFjxdfxQlOgUG0LxFqxwUhofptwDI7V4cD8hk-WNBMh4nLvlI5JYA1UZzHk4KqzxrD4Vo3Hi24_limhStnt7yjMltr998N-6d6a6xBhMYrKpO4JF_M6EwGAY6N8EE7UdVYoD14TeF8el5k5BRnpKaGU1b7MsjFmPg60SYU9gzdJbVuAGIWygR1Xb7yBqy8Ft-LvCtw1lFuph6hN6ausBkdSpSgfFrkdS_eSUCAy_ovZVJDq25ua8zWnEp2iqx1jU8L0XOASY-xiFX33vPPuSRcTnH7c7wB753L54H3OtPV9GRylXtc86MFdeRobJXuMwdfCMNEyuCjEOzugAojHVWj6MAbJ_QB5lsHyAWnCspdzzsdMcSoQlSCRx4LpWd1Q8vzr24701JxkQx7onfAwKrqiDfQJiHvHVS8qf_2O_IDdMTqy6eYhREhxCft6bN0_g438z2146b0oAc0sVgILPNjh8qWrrXlrauRS6UGN0PriFyQObp86Fl199RG4hcch4JU7tK7FewdGVifvxqTCSdjesNz5LQwbEInWkQS-g1Z-Kjs1vVUxI2Z3waK98JAaP_zwX-9BfISXT87gKI3VucbSrVo1HVphIG-CToeQU1uiUlkrO6NF4zDm3kY-8vG-y_JVMW3FmX9nGI66_yZcAPiIW259OOh963XDrrhrtLEtJ9mT-MTzBHqb92_yD0Sw8V2uUlRVsWxQd4fXCihtbvrvjpaXN8aQ1q8SJ8L1W6kqD0hvUEegMjt6JD69VpNxTAQPCmubLhovkQ6VR8swDBAMGYuxc4FAL4m660jDE57EBpnefmEcmO3G4lXNgKPkINP3AZLGsiblFdM1agsA=="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:35:23Z"
+}

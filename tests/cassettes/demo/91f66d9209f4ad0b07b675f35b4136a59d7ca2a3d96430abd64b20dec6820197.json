@@ -1,0 +1,35 @@
+{
+ "key": "sha256:91f66d9209f4ad0b07b675f35b4136a59d7ca2a3d96430abd64b20dec6820197",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"decision\":\"PROCEED_WITH_GAP\",\"reason\":\"The knowledge base holds no records regarding FERPA-aware attribute release controls or filtering PII for students with active disclosure blocks.\",\"claims\":[],\"gap\":\"No evidence of FERPA-aware attribute release controls or PII filtering for students with active disclosure blocks.\",\"question\":null}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1368,
+   "tokens_out": 69,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"decision\":\"PROCEED_WITH_GAP\",\"reason\":\"The knowledge base holds no records regarding FERPA-aware attribute release controls or filtering PII for students with active disclosure blocks.\",\"claims\":[],\"gap\":\"No evidence of FERPA-aware attribute release controls or PII filtering for students with active disclosure blocks.\",\"question\":null}",
+     "thought_signature": "EmAKXgFpFH0TH7N6O3-m31qOiTiiIvb_sKSr0U_JJrkVevfv6PH01dYAzw_1FpLHH-IunP9WHOD2q1OLFJAODptHKKYxgjfiflSaYdePwCUkJqoAgiCeUrxfWfv5tFO50SE="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:18:53Z"
+}

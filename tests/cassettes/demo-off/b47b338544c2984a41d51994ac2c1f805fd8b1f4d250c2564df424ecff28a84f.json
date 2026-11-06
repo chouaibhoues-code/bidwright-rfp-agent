@@ -1,0 +1,26 @@
+{
+ "key": "sha256:b47b338544c2984a41d51994ac2c1f805fd8b1f4d250c2564df424ecff28a84f",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"CAP-007 states that migration of historic records and documents is supported, including trial runs, reconciliation reports and a final cut‑over, which aligns with the need for migrating signed records. However, the record does not mention the required migration deadline, integration with the student records system, audit logging, browser support, reminder functionality, form templates, ten‑year storage, or on‑premises deployment.\", \"disposition\":\"PARTIALLY_SUPPORTED\", \"supporting_ids\":[\"CAP-007\"], \"missing\":\"Migration by 2027-02-28, integration with the College's student records system via REST API, audit record of every signature event, support for current desktop and mobile browsers, 72‑hour reminder to unsigned signers, templates for the twelve most used forms, ten‑year storage of signed documents, on‑premises deployment option.\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1726,
+   "tokens_out": 185,
+   "tokens_cached": 0,
+   "tokens_thinking": 480,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:19:41Z"
+}

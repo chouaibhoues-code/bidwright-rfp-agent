@@ -1,0 +1,35 @@
+{
+ "key": "sha256:4c10036ff77ae9c307aed5d7e552c7d502848859958c9bcd187bd08780b75c8f",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"decision\":\"ABSTAIN\",\"reason\":\"The need specifies instructions for proposal submission rather than a supplier capability or requirement to be fulfilled by the solution.\",\"claims\":[],\"gap\":null,\"question\":null}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1475,
+   "tokens_out": 42,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"decision\":\"ABSTAIN\",\"reason\":\"The need specifies instructions for proposal submission rather than a supplier capability or requirement to be fulfilled by the solution.\",\"claims\":[],\"gap\":null,\"question\":null}",
+     "thought_signature": "EmAKXgFpFH0T0wwGRZME_r8d74GhSn-MkYUzlrL0CNSGplkcIFuBmt0iZYLHz_a_XGge8JTKlgTxcb0aGpF5kKJm_203MXO-eT1cNE_uTPZfxddRWp2seLLgL8is520aWi8="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:22:38Z"
+}

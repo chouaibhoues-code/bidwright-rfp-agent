@@ -1,0 +1,26 @@
+{
+ "key": "sha256:2e37c4169bb0b6ddc3d253ad4f9813f36e12bed6c612fbc58ac3464563f0c8aa",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"CAP-016 states role‑based training is delivered on site or by video with guides for each role, and ROLE-004 confirms staff deliver such training and write the guides. However, none of the records specify that the training must be completed before the system goes live by the June 2027 deadline.\", \"disposition\":\"PARTIALLY_SUPPORTED\", \"supporting_ids\":[\"CAP-016\",\"ROLE-004\"], \"missing\":\"Evidence that the training is performed before the system goes live (by 2027‑06‑30).\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1650,
+   "tokens_out": 121,
+   "tokens_cached": 0,
+   "tokens_thinking": 596,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:23:06Z"
+}

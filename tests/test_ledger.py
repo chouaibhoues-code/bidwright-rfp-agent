@@ -13,7 +13,7 @@ from bidwright.llm.simulator import ProviderSimulator
 from bidwright.llm.types import Request, Response
 from bidwright.obs.ledger import LedgerFile, models_used, read_ledger, totals_of
 from bidwright.schemas import LedgerEntry, RunManifest
-from tests.node_fakes import DEV_RFP, RuleBackend
+from tests.node_fakes import DEV_RFP, RuleBackend, fake_backends
 
 
 def test_ledger_totals_match_the_manifest(tmp_path: Path) -> None:
@@ -25,7 +25,7 @@ def test_ledger_totals_match_the_manifest(tmp_path: Path) -> None:
         outputs=tmp_path,
         mode="record",
         cassettes=CassetteStore(tmp_path / "cassettes"),
-        backends={"gemini": model},
+        backends=fake_backends(model),
         run_id="ledger",
     )
     assert result.status == "COMPLETED", result.reason
@@ -37,8 +37,9 @@ def test_ledger_totals_match_the_manifest(tmp_path: Path) -> None:
     assert manifest.totals.requests == len(ledger) == len(model.requests)
     assert manifest.totals.cost_usd == 0.0 and manifest.totals.shadow_cost_usd > 0
     # Research mode `pack` finds no pack for the development RFP's domain, so `discover_load`
-    # makes no call.
-    nodes = {"triage", "extract", "consolidate", "brief", "approach", "risk", "draft"}
+    # makes no call; the default `manifest` path's nodes replace `approach`.
+    nodes = {"triage", "extract", "consolidate", "brief", "decide", "assess", "options"}
+    nodes |= {"blueprint", "risk", "draft"}
     assert {entry.node for entry in ledger} == nodes
 
 
@@ -53,7 +54,7 @@ def test_the_manifest_lists_the_models_that_answered(tmp_path: Path) -> None:
         outputs=tmp_path,
         mode="record",
         cassettes=CassetteStore(tmp_path / "cassettes"),
-        backends={"gemini": model},
+        backends=fake_backends(model),
         run_id="fallback",
     )
     assert result.status == "COMPLETED", result.reason
@@ -61,14 +62,17 @@ def test_the_manifest_lists_the_models_that_answered(tmp_path: Path) -> None:
     manifest = RunManifest.model_validate_json(
         (result.run_dir / "run_manifest.json").read_text(encoding="utf-8")
     )
-    # With only a Gemini backend, the assess role takes route `same`, the reason role's model.
+    # The fake serves every provider, so the assess role takes its primary route, Cerebras.
     assert manifest.models == {
-        role: "gemini-3.5-flash-lite" for role in ("extract", "reason", "assess")
+        "extract": "gemini-3.5-flash-lite",
+        "reason": "gemini-3.5-flash-lite",
+        "assess": "gpt-oss-120b",
     }
     assert manifest.models_used == models_used(ledger)
     assert manifest.models_used["triage"] == ["gemini-3.1-flash-lite"]
     assert manifest.models_used["extract"] == ["gemini-3.5-flash-lite"]
-    assert manifest.models_used["approach"] == ["gemini-3.5-flash-lite"]
+    assert manifest.models_used["options"] == ["gemini-3.5-flash-lite"]
+    assert manifest.models_used["assess"] == ["gpt-oss-120b"]
     assert sum(entry.retries for entry in ledger) == 1  # the refused attempt
 
 
@@ -160,7 +164,7 @@ def test_a_run_that_dies_after_its_first_call_has_that_call_on_disk(tmp_path: Pa
             outputs=tmp_path,
             mode="record",
             cassettes=CassetteStore(tmp_path / "cassettes"),
-            backends={"gemini": model},
+            backends=fake_backends(model),
             run_id="killed",
         )
     assert [e.node for e in model.seen] == ["triage"], "written as the call finished"

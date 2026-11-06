@@ -240,3 +240,67 @@ def test_risk_no_invented_rating(tmp_path: Path, mode: str) -> None:
 def test_a_baseline_degrades_after_two_schema_failures() -> None:
     outcome = risk_baseline(context(ScriptBackend(["{}", "[]"])), dev_requirements(), [], "oneshot")
     assert outcome.risks == [] and outcome.failure == MALFORMED_TWICE
+
+
+# --- Iteration 3, step 12: the full risk (section 4.7) ----------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("change", "missing"),
+    [
+        ({"trigger": " "}, "trigger"),
+        ({"owner_role": ""}, "owner role"),
+        ({"responses": []}, "response"),
+        ({"effect": "", "responses": ["  "]}, "effect, response"),
+    ],
+)
+def test_a_risk_with_an_empty_field_is_rejected_once_then_dropped_with_its_reason(
+    tmp_path: Path, change: dict, missing: str
+) -> None:
+    """The six-field check: the register still parses with no response, and the risk fails its
+    own check, with the generic risks' one retry."""
+    bad = GOOD_RISK | change
+    register = text({"risks": [bad], "open_questions": []})
+    backend = ScriptBackend(["Done.", register, register])
+    outcome = risk(context(backend), dev_requirements(), [], gateway(tmp_path), RISK_LIMITS)
+    assert outcome.risks == []
+    assert "were rejected" in backend.requests[2].messages[-1].content
+    assert outcome.rejected[0]["reason"] == f"incomplete: no {missing}"
+    assert outcome.rejected[0]["risk"]["condition"] == bad["condition"], "the whole proposal"
+
+
+def test_a_new_sla_calc_result_counts_as_progress(tmp_path: Path) -> None:
+    sla = ("sla_calc", {"target_percent": 99.5, "period": "month"})
+    other = ("sla_calc", {"target_percent": 99.9, "period": "month"})
+    backend = ScriptBackend([tools(sla), tools(other), tools(other), REGISTER])
+    outcome = risk(context(backend), dev_requirements(), [], gateway(tmp_path), RISK_LIMITS)
+    assert outcome.stop_reason == "no_progress" and outcome.turns == 3
+
+
+def test_affects_keeps_only_the_codes_and_ids_that_exist(tmp_path: Path) -> None:
+    from bidwright.graph.nodes import RiskView
+
+    named = GOOD_RISK | {"affects": ["1.2", "NEED-001", "9.9", "1.2"]}
+    backend = ScriptBackend(["Done.", text({"risks": [named], "open_questions": []})])
+    view = RiskView(affectable=frozenset({"1.2", "NEED-001"}))
+    outcome = risk(
+        context(backend), dev_requirements(), [], gateway(tmp_path), RISK_LIMITS, None, view
+    )
+    assert outcome.risks[0].affects == ["1.2", "NEED-001"]
+
+
+def test_the_risk_input_carries_the_manifests_view(tmp_path: Path) -> None:
+    from bidwright.graph.nodes import RiskView
+    from bidwright.schemas import RiskClaimView, RiskGapView, RiskPackageView
+
+    view = RiskView(
+        work_packages=[RiskPackageView(code="1.1", name="Migration", predecessors=[])],
+        assumptions=["The buyer provides test accounts."],
+        tech_claims=[RiskClaimView(text="PDF/A export through pdfplumber", verdict="INVALIDATED")],
+        gaps=[RiskGapView(need_id="NEED-002", text="Offline signing", status="GAP")],
+    )
+    backend = ScriptBackend(["Done.", REGISTER])
+    risk(context(backend), dev_requirements(), [], gateway(tmp_path), RISK_LIMITS, None, view)
+    sent = backend.requests[0].messages[-1].content
+    for value in ("Migration", "test accounts", "INVALIDATED", "Offline signing"):
+        assert value in sent, value

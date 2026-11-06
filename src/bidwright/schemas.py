@@ -272,6 +272,8 @@ class Risk(Record):
     responses: list[str] = Field(min_length=1)
     residual_exposure: str
     evidence_src_ids: list[SrcId] = Field(min_length=1)
+    # Iteration 3: the work package codes and need ids the risk bears on, those that exist.
+    affects: list[str] = Field(default_factory=list)
 
 
 class SolutionSummary(Record):
@@ -511,22 +513,60 @@ class ApproachItemView(Facing):
     requirement_ids: list[str]
 
 
+class RiskPackageView(Facing):
+    code: str
+    name: str
+    predecessors: list[str] = Field(default_factory=list)
+    low_days: float | None = None
+    high_days: float | None = None
+
+
+class RiskClaimView(Facing):
+    text: str
+    verdict: str
+
+
+class RiskGapView(Facing):
+    need_id: str
+    text: str
+    status: str
+
+
+class RiskDiscrepancyView(Facing):
+    kind: str
+    requirement_ids: list[str] = Field(default_factory=list)
+    description: str
+
+
 class RiskInput(Facing):
+    """`risk`'s input. From Iteration 3 (section 4.7) it adds the manifest's view: its work
+    packages, assumptions and technology claims with their verdicts, the capability map's
+    `GAP` rows and the discrepancies; each list is empty on a path with no manifest."""
+
     requirements: list[RequirementView]
     approach: list[ApproachItemView]
     hazards: list[str] = Field(default_factory=list)
+    work_packages: list[RiskPackageView] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+    tech_claims: list[RiskClaimView] = Field(default_factory=list)
+    gaps: list[RiskGapView] = Field(default_factory=list)
+    discrepancies: list[RiskDiscrepancyView] = Field(default_factory=list)
 
 
 class RiskProposal(Facing):
+    """A risk as the model proposes it. `responses` has no minimum, so a risk with none
+    fails its own check, not the register's parse (section 4.7)."""
+
     condition: str
     event: str
     effect: str
     assumptions: list[str] = Field(default_factory=list)
     owner_role: str
     trigger: str
-    responses: list[str] = Field(min_length=1)
+    responses: list[str] = Field(default_factory=list)
     residual_exposure: str
     evidence_src_ids: list[str] = Field(default_factory=list)
+    affects: list[str] = Field(default_factory=list)
 
 
 class RiskQuestion(Facing):

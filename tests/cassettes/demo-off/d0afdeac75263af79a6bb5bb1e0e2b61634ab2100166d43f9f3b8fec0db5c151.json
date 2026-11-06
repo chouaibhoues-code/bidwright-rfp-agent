@@ -1,0 +1,35 @@
+{
+ "key": "sha256:d0afdeac75263af79a6bb5bb1e0e2b61634ab2100166d43f9f3b8fec0db5c151",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base supports audit records, data migration, and REST API integration, but lacks evidence for browser signing, automated reminders within 72 hours, template provisions, ten-year document storage, and an on-premises deployment option.\",\n  \"claims\": [\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Every change to a case is logged with the user, the time and the previous value, supporting audit records of signature events.\",\n      \"evidence_ids\": [\n        \"CAP-004\"\n      ],\n      \"src_ids\": [\n        \"SRC-0020\"\n      ]\n    },\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Migration of historic records and documents is supported, including trial runs, reconciliation reports and a final cut-over.\",\n      \"evidence_ids\": [\n        \"CAP-007\"\n      ],\n      \"src_ids\": [\n        \"SRC-0026\"\n      ]\n    },\n    {\n      \"kind\": \"capability\",\n      \"text\": \"A documented REST API and webhooks are provided for exchanging data with other line-of-business systems.\",\n      \"evidence_ids\": [\n        \"CAP-006\"\n      ],\n      \"src_ids\": [\n        \"SRC-0027\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence for supporting signing on current desktop and mobile browsers, sending a reminder within 72 hours, providing templates for the College's twelve most used forms, storing signed documents for ten years, or proposing an on-premises deployment option.\",\n  \"question\": null\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2919,
+   "tokens_out": 391,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base supports audit records, data migration, and REST API integration, but lacks evidence for browser signing, automated reminders within 72 hours, template provisions, ten-year document storage, and an on-premises deployment option.\",\n  \"claims\": [\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Every change to a case is logged with the user, the time and the previous value, supporting audit records of signature events.\",\n      \"evidence_ids\": [\n        \"CAP-004\"\n      ],\n      \"src_ids\": [\n        \"SRC-0020\"\n      ]\n    },\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Migration of historic records and documents is supported, including trial runs, reconciliation reports and a final cut-over.\",\n      \"evidence_ids\": [\n        \"CAP-007\"\n      ],\n      \"src_ids\": [\n        \"SRC-0026\"\n      ]\n    },\n    {\n      \"kind\": \"capability\",\n      \"text\": \"A documented REST API and webhooks are provided for exchanging data with other line-of-business systems.\",\n      \"evidence_ids\": [\n        \"CAP-006\"\n      ],\n      \"src_ids\": [\n        \"SRC-0027\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence for supporting signing on current desktop and mobile browsers, sending a reminder within 72 hours, providing templates for the College's twelve most used forms, storing signed documents for ten years, or proposing an on-premises deployment option.\",\n  \"question\": null\n}",
+     "thought_signature": "EmAKXgFpFH0TKYn6vksE0i1BEKCLH5bEjrwxQ-nYLaIYElzop_lf58lC8vlfKjuNlUSJNObIvKZ5MiTUQgSXZ4bWCOFWSQNzcWPnJxEzbPDQrsGkMsm2C3fYNvuYUBcn-9Q="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:18:43Z"
+}

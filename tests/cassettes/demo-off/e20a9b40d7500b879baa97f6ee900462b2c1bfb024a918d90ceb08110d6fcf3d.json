@@ -1,0 +1,53 @@
+{
+ "key": "sha256:e20a9b40d7500b879baa97f6ee900462b2c1bfb024a918d90ceb08110d6fcf3d",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_7461919877843834197",
+    "name": "search_capabilities",
+    "arguments": {
+     "query": "audit record signature event signer identity time document version"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 2297,
+   "tokens_out": 24,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_7461919877843834197",
+      "args": {
+       "query": "audit record signature event signer identity time document version"
+      },
+      "name": "search_capabilities"
+     },
+     "thought_signature": "EmAKXgFpFH0TLb8fsPg-QiGkTdNVzq3b-JZ4NfNgjLEeaefsf1KEfiAbKgcKf-d47whyW-39d3-2vX1V9NTrPB3Sic2SqnFPmvyOdXNvOxXabxOhwrWSNGi6VI6kVkdOQ3g="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:29:58Z"
+}

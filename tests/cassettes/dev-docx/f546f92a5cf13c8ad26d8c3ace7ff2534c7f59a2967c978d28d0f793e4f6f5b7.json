@@ -1,0 +1,26 @@
+{
+ "key": "sha256:f546f92a5cf13c8ad26d8c3ace7ff2534c7f59a2967c978d28d0f793e4f6f5b7",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"CAP-007 states that migration of historic records and documents is supported, which covers the historic records part of the claim. However, the record does not mention spreadsheets, so the claim’s assertion about spreadsheet migration is not directly supported.\", \"disposition\":\"PARTIALLY_SUPPORTED\", \"supporting_ids\":[\"CAP-007\"], \"missing\":\"Support for migration of spreadsheets.\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1717,
+   "tokens_out": 87,
+   "tokens_cached": 1408,
+   "tokens_thinking": 216,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:23:05Z"
+}

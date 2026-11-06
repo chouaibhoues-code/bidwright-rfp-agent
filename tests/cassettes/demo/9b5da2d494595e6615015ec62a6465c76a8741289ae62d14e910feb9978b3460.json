@@ -1,0 +1,35 @@
+{
+ "key": "sha256:9b5da2d494595e6615015ec62a6465c76a8741289ae62d14e910feb9978b3460",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"decision\": \"PROCEED_WITH_GAP\", \"reason\": \"The knowledge base shows a delivery lead role managing implementations up to go-live, but provides no specific timeline or confirmation of meeting the 2027-01-11 go-live date.\", \"claims\": [{\"kind\": \"role\", \"text\": \"A delivery lead is provided to manage the implementation from the contract start until three months after go-live.\", \"evidence_ids\": [\"ROLE-001\"], \"src_ids\": [\"SRC-0032\"]}], \"gap\": \"No record confirms the ability to have the service live by 2027-01-11.\", \"question\": null}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1831,
+   "tokens_out": 149,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"decision\": \"PROCEED_WITH_GAP\", \"reason\": \"The knowledge base shows a delivery lead role managing implementations up to go-live, but provides no specific timeline or confirmation of meeting the 2027-01-11 go-live date.\", \"claims\": [{\"kind\": \"role\", \"text\": \"A delivery lead is provided to manage the implementation from the contract start until three months after go-live.\", \"evidence_ids\": [\"ROLE-001\"], \"src_ids\": [\"SRC-0032\"]}], \"gap\": \"No record confirms the ability to have the service live by 2027-01-11.\", \"question\": null}",
+     "thought_signature": "EmAKXgFpFH0TgvozHRBSjSJ3JipiiGrs1gryLOIv4Z58Nk1u99qHyKhv1FBukfkAd7DFLj6Nqe59RnmF7owWTndEcumeHZykTjLJ_tpdgBshWbxF9twB4MPfM9RmmuZ4RNc="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:18:49Z"
+}

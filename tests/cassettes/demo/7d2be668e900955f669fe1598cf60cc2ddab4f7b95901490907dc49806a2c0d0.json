@@ -1,0 +1,26 @@
+{
+ "key": "sha256:7d2be668e900955f669fe1598cf60cc2ddab4f7b95901490907dc49806a2c0d0",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"ROLE-001 states that a delivery lead leads an implementation from the contract start until three months after go‑live, but the buyer’s need is about the service being live for students by 2027‑01‑11, which the claim does not address.\", \"disposition\":\"NOT_APPLICABLE\", \"supporting_ids\":[], \"missing\":\"\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1606,
+   "tokens_out": 85,
+   "tokens_cached": 0,
+   "tokens_thinking": 567,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:19:43Z"
+}

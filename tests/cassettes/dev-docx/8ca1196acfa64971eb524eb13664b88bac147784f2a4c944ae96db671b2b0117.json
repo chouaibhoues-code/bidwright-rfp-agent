@@ -1,0 +1,35 @@
+{
+ "key": "sha256:8ca1196acfa64971eb524eb13664b88bac147784f2a4c944ae96db671b2b0117",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "BriefResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"factors\":[{\"name\":\"Fit to requirements\",\"weight\":\"50%\",\"scoring\":\"not_stated\",\"src_ids\":[\"SRC-0029\"]},{\"name\":\"Ease of use for volunteers\",\"weight\":\"20%\",\"scoring\":\"not_stated\",\"src_ids\":[\"SRC-0030\"]},{\"name\":\"Price\",\"weight\":\"30%\",\"scoring\":\"not_stated\",\"src_ids\":[\"SRC-0031\"]}],\"scoring_method\":{\"text\":\"The Trust scores proposals on the criteria below.\",\"src_ids\":[\"SRC-0027\"]},\"needs\":[],\"scope_in\":[],\"scope_out\":[],\"constraints\":[{\"text\":\"Proposals must be sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12, as one document of no more than 15 pages.\",\"src_ids\":[\"SRC-0013\"]}],\"never\":[],\"ask\":[],\"always\":[],\"topics\":[\"cloud software for donor management\",\"volunteer coordination platforms\"]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2533,
+   "tokens_out": 215,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"factors\":[{\"name\":\"Fit to requirements\",\"weight\":\"50%\",\"scoring\":\"not_stated\",\"src_ids\":[\"SRC-0029\"]},{\"name\":\"Ease of use for volunteers\",\"weight\":\"20%\",\"scoring\":\"not_stated\",\"src_ids\":[\"SRC-0030\"]},{\"name\":\"Price\",\"weight\":\"30%\",\"scoring\":\"not_stated\",\"src_ids\":[\"SRC-0031\"]}],\"scoring_method\":{\"text\":\"The Trust scores proposals on the criteria below.\",\"src_ids\":[\"SRC-0027\"]},\"needs\":[],\"scope_in\":[],\"scope_out\":[],\"constraints\":[{\"text\":\"Proposals must be sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12, as one document of no more than 15 pages.\",\"src_ids\":[\"SRC-0013\"]}],\"never\":[],\"ask\":[],\"always\":[],\"topics\":[\"cloud software for donor management\",\"volunteer coordination platforms\"]}",
+     "thought_signature": "EmAKXgFpFH0ToWNF2DuonCAOuQpKT7iigRF8j34TCNS-G-vWZ9jFEUMKCC5gD63DUPmE2ewk6cy_wWArgslr6Xlltfs-Vu_u4fmbQbf86LmmDGEHdBqxmkGFvg0gQGOIt08="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:22:35Z"
+}

@@ -85,6 +85,7 @@ No fields.
 | `responses` | list[str] (min length 1) | yes |  |  |
 | `residual_exposure` | str | yes |  |  |
 | `evidence_src_ids` | list[str (pattern ^SRC-\d{4}$)] (min length 1) | yes |  |  |
+| `affects` | list[str] | no | [] |  |
 
 ## `SolutionSummary`
 
@@ -355,15 +356,57 @@ One obligation. `settle` enforces the 3-id and 300-character limits per item, so
 | `text` | str | yes |  |  |
 | `requirement_ids` | list[str] | yes |  |  |
 
+## `RiskPackageView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `code` | str | yes |  |  |
+| `name` | str | yes |  |  |
+| `predecessors` | list[str] | no | [] |  |
+| `low_days` | float \| None | no | None |  |
+| `high_days` | float \| None | no | None |  |
+
+## `RiskClaimView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `text` | str | yes |  |  |
+| `verdict` | str | yes |  |  |
+
+## `RiskGapView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `need_id` | str | yes |  |  |
+| `text` | str | yes |  |  |
+| `status` | str | yes |  |  |
+
+## `RiskDiscrepancyView`
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `kind` | str | yes |  |  |
+| `requirement_ids` | list[str] | no | [] |  |
+| `description` | str | yes |  |  |
+
 ## `RiskInput`
+
+`risk`'s input. From Iteration 3 (section 4.7) it adds the manifest's view: its work packages, assumptions and technology claims with their verdicts, the capability map's `GAP` rows and the discrepancies; each list is empty on a path with no manifest.
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `requirements` | list[RequirementView] | yes |  |  |
 | `approach` | list[ApproachItemView] | yes |  |  |
 | `hazards` | list[str] | no | [] |  |
+| `work_packages` | list[RiskPackageView] | no | [] |  |
+| `assumptions` | list[str] | no | [] |  |
+| `tech_claims` | list[RiskClaimView] | no | [] |  |
+| `gaps` | list[RiskGapView] | no | [] |  |
+| `discrepancies` | list[RiskDiscrepancyView] | no | [] |  |
 
 ## `RiskProposal`
+
+A risk as the model proposes it. `responses` has no minimum, so a risk with none fails its own check, not the register's parse (section 4.7).
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
@@ -373,9 +416,10 @@ One obligation. `settle` enforces the 3-id and 300-character limits per item, so
 | `assumptions` | list[str] | no | [] |  |
 | `owner_role` | str | yes |  |  |
 | `trigger` | str | yes |  |  |
-| `responses` | list[str] (min length 1) | yes |  |  |
+| `responses` | list[str] | no | [] |  |
 | `residual_exposure` | str | yes |  |  |
 | `evidence_src_ids` | list[str] | no | [] |  |
+| `affects` | list[str] | no | [] |  |
 
 ## `RiskQuestion`
 
@@ -1751,6 +1795,11 @@ The input of `risk_oneshot.md`: RK0's holds no dates or passages, RK1-F's code's
 | `requirements` | list[RequirementView] | yes |  |  |
 | `approach` | list[ApproachItemView] | yes |  |  |
 | `hazards` | list[str] | no | [] |  |
+| `work_packages` | list[RiskPackageView] | no | [] |  |
+| `assumptions` | list[str] | no | [] |  |
+| `tech_claims` | list[RiskClaimView] | no | [] |  |
+| `gaps` | list[RiskGapView] | no | [] |  |
+| `discrepancies` | list[RiskDiscrepancyView] | no | [] |  |
 | `dates` | list[DateFact] | no | [] |  |
 | `passages` | list[PassageView] | no | [] |  |
 

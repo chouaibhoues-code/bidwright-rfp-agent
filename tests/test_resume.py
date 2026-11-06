@@ -22,7 +22,7 @@ from bidwright.obs.ledger import read_ledger
 from bidwright.preflight import HOME
 from bidwright.schemas import RunManifest
 from tests.kill_target import RUN_ID, ScriptedRun, kind, one_worker
-from tests.node_fakes import DEV_RFP, RuleBackend
+from tests.node_fakes import DEV_RFP, RuleBackend, fake_backends
 
 # The outputs a resumed run must share with an uninterrupted one; none names the run.
 SAME = ("requirements.jsonl", "rejected.jsonl", "approach.json", "risks.jsonl", "coverage.json")
@@ -50,7 +50,7 @@ def _run(outputs: Path, model: Any, run_id: str, **kwargs: Any) -> RunResult:
         source=DEV_RFP,
         profile="free",
         outputs=outputs,
-        backends={"gemini": model},
+        backends=fake_backends(model),
         run_id=run_id,
         config=one_worker(),
         **kwargs,
@@ -63,7 +63,7 @@ def _resume(run_dir: Path, model: Any, **kwargs: Any) -> RunResult:
     return execute(
         **cli.resume_arguments(manifest.run_args, run_dir),
         profile=manifest.profile,
-        backends={"gemini": model},
+        backends=fake_backends(model),
         resume=True,
         config=one_worker(),
         **kwargs,
@@ -246,7 +246,7 @@ def test_the_hero_package_stopped_after_guard_rebuilds_its_documents(
         source=hero,
         profile="free",
         outputs=tmp_path / "out",
-        backends={"gemini": RuleBackend()},
+        backends=fake_backends(RuleBackend()),
         run_id="hero",
         until="verify",
         control=control,

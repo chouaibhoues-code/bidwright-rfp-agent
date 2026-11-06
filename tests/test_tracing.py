@@ -16,7 +16,7 @@ from bidwright.graph.build import execute
 from bidwright.llm.replay import CassetteStore
 from bidwright.obs.ledger import read_ledger
 from bidwright.obs.tracing import FallbackExporter, JsonlExporter, reachable
-from tests.node_fakes import DEV_RFP, RuleBackend
+from tests.node_fakes import DEV_RFP, RuleBackend, fake_backends
 
 
 def _spans(run_dir: Path) -> list[dict[str, Any]]:
@@ -41,20 +41,26 @@ def test_without_a_collector_spans_land_in_jsonl(
         outputs=tmp_path,
         mode="record",
         cassettes=CassetteStore(tmp_path / "cassettes"),
-        backends={"gemini": RuleBackend()},
+        backends=fake_backends(RuleBackend()),
         run_id="traced",
     )
     assert result.status == "COMPLETED", result.reason
     spans = _spans(result.run_dir)
     kinds = Counter(span["attributes"]["openinference.span.kind"] for span in spans)
     assert kinds["LLM"] == len(read_ledger(result.run_dir / "ledger.jsonl"))
-    assert kinds["TOOL"] >= 1 and kinds["AGENT"] == 1
+    agents = Counter(
+        s["name"] for s in spans if s["attributes"]["openinference.span.kind"] == "AGENT"
+    )
+    assert kinds["TOOL"] >= 1 and set(agents) == {"node.risk", "node.decide"}
+    assert agents["node.risk"] == 1, "one risk agent; one decide agent per need"
+    needs = {s["attributes"]["bidwright.call_id"] for s in spans if s["name"] == "node.decide"}
+    assert len(needs) == agents["node.decide"] and None not in needs
     names = {span["name"] for span in spans}
     assert {"run", "node.ingest", "node.extract", "llm.extract", "tool.search_rfp"} <= names
     agent = next(span for span in spans if span["name"] == "node.risk")
     assert agent["attributes"]["bidwright.stop_reason"] == "answered"
     assert agent["attributes"]["bidwright.tool_calls"] == 1
-    llm = next(span for span in spans if span["name"] == "llm.approach")
+    llm = next(span for span in spans if span["name"] == "llm.options")
     assert llm["attributes"]["llm.model_name"] == "gemini-3.5-flash-lite"
     assert llm["attributes"]["llm.token_count.prompt"] > 0
     text = (result.run_dir / "spans.jsonl").read_text(encoding="utf-8")

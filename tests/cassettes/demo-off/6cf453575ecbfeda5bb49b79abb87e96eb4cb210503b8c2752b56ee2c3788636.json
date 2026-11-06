@@ -1,0 +1,39 @@
+{
+ "key": "sha256:6cf453575ecbfeda5bb49b79abb87e96eb4cb210503b8c2752b56ee2c3788636",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "```json\n{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base includes a delivery lead role for implementation and case studies of phased go-lives, but contains no specific evidence guaranteeing a live date by 2027-01-11.\",\n  \"claims\": [\n    {\n      \"kind\": \"role\",\n      \"text\": \"A delivery lead is available to lead the implementation from contract start until three months after go-live.\",\n      \"evidence_ids\": [\n        \"ROLE-001\"\n      ],\n      \"src_ids\": [\n        \"SRC-0032\"\n      ]\n    }\n  ],\n  \"gap\": \"No specific evidence or timeline confirmation that the service will be live by 2027-01-11.\",\n  \"question\": null\n}\n```",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2375,
+   "tokens_out": 195,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "```json\n{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base includes a delivery lead role for implementation and case studies of phased go-lives, but contains no specific evidence guaranteeing a live date by 2027-01-11.\",\n  \"claims\": [\n    {\n      \"kind\": \"role\",\n      \"text\": \"A delivery lead is available to lead the implementation from contract start until three months after go-live.\",\n      \"evidence_ids\": [\n        \"ROLE-001\"\n      ],\n      \"src_ids\": [\n        \"SRC-0032\"\n      ]\n    }\n  ],\n  \"gap\": \"No specific evidence or timeline confirmation that the service will be live by 2027-01-11.\",\n  \"question\": null\n}\n```",
+     "thought_signature": "EmAKXgFpFH0TKEInqy0Dw1iXaa_V0S7U27zKQYVWIVHNwk6Nzs2khtZ-GKc3xBXj5EgmhPf3oNxRfjifDdDjTh_JUa71t0pdd93Sst3PKgKj6nvOwsLj5Shs3D3wMw7y8tA="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:30:36Z"
+}

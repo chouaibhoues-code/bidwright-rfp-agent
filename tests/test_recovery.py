@@ -18,7 +18,7 @@ from bidwright.obs.events import read_events
 from bidwright.schemas import ExtractResult, LedgerEntry, RunManifest
 from tests.kill_target import ScriptedRun
 from tests.llm_fakes import CALL, FakeBackend
-from tests.node_fakes import DEV_RFP, RuleBackend
+from tests.node_fakes import DEV_RFP, RuleBackend, fake_backends
 
 MESSAGES = [Message("system", "Extract obligations."), Message("user", "passages")]
 PRIMARY = model_key("gemini", "free", "gemini-3.5-flash-lite")
@@ -131,7 +131,7 @@ def _run(tmp_path: Path, model: Backend, **kwargs: Any) -> RunResult:
         "source": DEV_RFP,
         "profile": "free",
         "outputs": tmp_path / "out",
-        "backends": {"gemini": model},
+        "backends": fake_backends(model),
         "run_id": "run",
         **kwargs,
     }

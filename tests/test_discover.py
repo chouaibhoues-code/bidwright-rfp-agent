@@ -62,6 +62,7 @@ from tests.node_fakes import (
     context,
     data_of,
     dev_ingest,
+    fake_backends,
     text,
     tools,
 )
@@ -759,7 +760,7 @@ def _live(
         source=DEV_RFP,
         profile="free",
         outputs=outputs,
-        backends={"gemini": model or RuleBackend()},
+        backends=fake_backends(model or RuleBackend()),
         run_id=run_id,
         research="live",
         provider=provider,
@@ -834,7 +835,9 @@ def test_a_crash_after_discover_start_resumes_without_a_second_job(
 
 class CopiesThenAsks(RuleBackend):
     """In `discover_ask`, one turn with a question that copies an RFP passage and a clean one,
-    then done: a turn of the copied question alone would add no excerpt and end the pass."""
+    then done: a turn of the copied question alone would add no excerpt and end the pass.
+    `decide`, which also holds `ask_research` beside `search_capabilities`, gets the rule
+    backend's answers."""
 
     def __init__(self, copied: str) -> None:
         super().__init__()
@@ -842,7 +845,7 @@ class CopiesThenAsks(RuleBackend):
 
     def call(self, request: Request) -> Response:
         names = {tool.name for tool in request.tools or ()}
-        if "ask_research" not in names:
+        if "ask_research" not in names or "search_capabilities" in names:
             return super().call(request)
         self.requests.append(request)
         if not any(message.role == "tool" for message in request.messages):

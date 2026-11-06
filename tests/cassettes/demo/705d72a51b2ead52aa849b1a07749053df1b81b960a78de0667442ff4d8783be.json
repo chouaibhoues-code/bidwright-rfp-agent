@@ -1,0 +1,54 @@
+{
+ "key": "sha256:705d72a51b2ead52aa849b1a07749053df1b81b960a78de0667442ff4d8783be",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "ask_research",
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_16885577840304621371",
+    "name": "search_capabilities",
+    "arguments": {
+     "query": "submission format procurement portal"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 2235,
+   "tokens_out": 19,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_16885577840304621371",
+      "args": {
+       "query": "submission format procurement portal"
+      },
+      "name": "search_capabilities"
+     },
+     "thought_signature": "EmAKXgFpFH0ThcLrzA9igmgdMly63VHXy-xRLaOQvETYP1ZgqbcM3d5q8PFyB3xCfRIBawujFM9Shl-URuxxq-t0hOhhfwOQSWmTEeZ2kknqnH97HhDMp_3TBjNpBlDDvys="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:18:37Z"
+}

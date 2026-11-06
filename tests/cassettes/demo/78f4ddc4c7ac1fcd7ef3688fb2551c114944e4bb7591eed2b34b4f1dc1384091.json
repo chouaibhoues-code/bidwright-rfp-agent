@@ -1,0 +1,54 @@
+{
+ "key": "sha256:78f4ddc4c7ac1fcd7ef3688fb2551c114944e4bb7591eed2b34b4f1dc1384091",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "ask_research",
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_14880052100406622463",
+    "name": "search_capabilities",
+    "arguments": {
+     "query": "availability uptime support incident response SLA"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 2459,
+   "tokens_out": 21,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_14880052100406622463",
+      "args": {
+       "query": "availability uptime support incident response SLA"
+      },
+      "name": "search_capabilities"
+     },
+     "thought_signature": "EmAKXgFpFH0TCj7rLtoG-X82wO6ltqypFC0p3Mn6e7m1m6JPp4plSbpulvabzaBovWq3A-NsOyl-JGqzBX2U-aY-3d3kQAMXxddWomKtuvDuYnm1P4hRyf3jlRKxrABj4og="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:19:04Z"
+}

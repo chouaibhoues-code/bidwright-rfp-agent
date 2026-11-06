@@ -13,7 +13,7 @@ Model and prompt ADRs also give the evaluation evidence and the model's expected
 
 ## ADRs
 
-ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05. ADR-039 to ADR-050 were proposed by the Iteration 3 design doc, `docs/designs/iteration-3.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-05: ADR-039 to ADR-049 with D-10's option C, and ADR-050 with D-11's option A. ADR-051 records the owner's addition of a loopback API to WP-3.6, the same day.
+ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05. ADR-039 to ADR-050 were proposed by the Iteration 3 design doc, `docs/designs/iteration-3.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-05: ADR-039 to ADR-049 with D-10's option C, and ADR-050 with D-11's option A. ADR-051 records the owner's addition of a loopback API to WP-3.6, the same day. ADR-052 records which of the owner's proposed prompt edits step 12 keeps, the same day.
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -55,6 +55,20 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 036 | Research in the run: `brief`, then `discover`, behind a research provider | accepted |
 | 037 | Three planned components wait for their consumers | accepted |
 | 038 | Research leaves out a source that reads like a published solicitation | accepted |
+| 039 | The solution path in the run | accepted |
+| 040 | Every claim `decide` drafts is material | accepted |
+| 041 | `options` weighting when weights are unstated or a factor is pass or fail | accepted |
+| 042 | The bid policy and the bid signal | accepted |
+| 043 | The solution manifest's fields and its checks in code | accepted |
+| 044 | `techcheck` and its recorded answers | accepted |
+| 045 | `assess` judges entailment over cited evidence, on a route set once a run | accepted |
+| 046 | `solution_gate`, its approval and `bidwright approve` | accepted |
+| 047 | `reflect`, a gated thought after a failed or empty turn | accepted |
+| 048 | How the ablation runs | accepted |
+| 049 | The `extract` examples return | accepted |
+| 050 | A separate `ui` service reads the scores in Docker | accepted |
+| 051 | A loopback API beside the UI | accepted |
+| 052 | Prompt revisions with step 12's recordings | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -1153,7 +1167,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-049: The `extract` examples return
 
-**Status:** accepted, 2026-11-05, by the owner (D-10, option C), as CH-90 scheduled. It supersedes ADR-028's first decision. Prompt ADR: `extract.md` 0.5.0 on `gemini-3.5-flash-lite`, with `gemini-3.1-flash-lite` as fallback.
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C), as CH-90 scheduled. It supersedes ADR-028's first decision. ADR-052 adds three rules to the same 0.5.0. Prompt ADR: `extract.md` 0.5.0 on `gemini-3.5-flash-lite`, with `gemini-3.1-flash-lite` as fallback.
 
 **Context.** ADR-028 dropped the worked examples from `extract.md` after S-10. ADR-030 corrected the matcher, and S-10 scored again under the hashed rule reversed: with the examples, the median missed mandatory requirements were 3 (2-4) of 45 against 6 (5-7) without, beyond the control's spread of 2, while the median low precision fell from 0.83 to 0.74 and the tokens rose by about 45%.
 
@@ -1211,6 +1225,31 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 **Provenance.** The owner's update to WP-3.6 on 2026-11-05; CH-94; ADR-050; `docs/designs/iteration-3.md`, section 4.14.
 
+### ADR-052: Prompt revisions with step 12's recordings
+
+**Status:** accepted, 2026-11-05, by the owner, who proposed edits to nine prompts and asked for them to be checked and the sound parts kept. It extends ADR-049's `extract.md` 0.5.0.
+
+**Context.** Step 12 records every run again, so any prompt change made with it costs no extra recording. The owner's proposed edits touched nine prompts. Some changes carry a reason tied to a failure class Bidwright has hit or the design names; others restate what code already enforces, phrase rules as prohibitions where DR-16 favors positive directives, roughly double each prompt's length against Google's warning that verbose prompts make Gemini 3 over-analyze, remove every prompt's notes, or change `extract_oneshot.md` and `discover.md`, which stay fixed as the EX0 control and the research envelope.
+
+**Decision.** Each kept change is phrased as a positive directive of one or two sentences, with a version bump and a note in the prompt's "Why it works" section:
+- `extract.md` 0.5.0: besides the examples ADR-049 brings back, rules 10 to 12 on a definition that sets what the supplier does, a duty in a passive or noun form or a table cell, and a right of the buyer that asks something of the supplier (`OPTIONAL`) or nothing (`NOT_BINDING`); the second reading names the same kinds.
+- `triage.md` 0.2.0: low confidence for a mixed or cut-off section, any pass or fail condition and a right to reject that names its defect as hazards, a passage addressed to the model kept out of the profile, the hazards and the reasons, and a section whose text mostly sets the supplier's duties zoned `OBLIGATION`.
+- `brief.md` 0.3.0: a weight found by arithmetic over other rows is `not_stated`, each factor stays with its own row, column and stage, a pass or fail gate stays apart from the scored factors, and the topics name no buyer, tender or contract fact.
+- `consolidate.md` 0.2.0: the parts of an obligation to compare before a duplicate or a discrepancy, a narrowed scope that is no conflict, a precedence rule cited only where it covers the documents, and one question per buyer decision.
+- `draft.md` 0.3.0: a proposal stays a proposal, and a record's qualifiers stay in.
+- `risk.md` 0.3.0: besides section 4.7's changes, five lenses that point the search, and a trigger that is an early sign rather than the event restated.
+- `approach.md`, `discover.md` and `extract_oneshot.md` keep their committed text: `approach.md` is SO0's control, and the other two stay fixed as above.
+
+**Consequences.** Every recorded call of the six prompts changes once, with step 12's recordings. The hero baseline is written again from the new hero recording, as step 12 already required. No schema or code check changes for the four prompts outside `risk`.
+
+**Options.** Adopting the edits as proposed, which would break the conventions above; keeping every prompt as committed, which would discard rules aimed at known misses, such as GR-0042, an obligation inside a definition (ADR-028).
+
+**Confirmation.** `test_prompts.py`'s version checks; the replay suite on the new recordings; the EX ladder for `extract.md` and the RK ladder for `risk.md` (step 19).
+
+**Reverse if.** A ladder rung, or the scorecard on the development and hero packages, shows a revised prompt missing more requirements, hazards or risk seeds, or losing precision beyond its margin.
+
+**Provenance.** The owner's proposed edits, 2026-11-05; ADR-028; ADR-049; DR-16; `docs/designs/iteration-3.md`, step 12.
+
 ## Failure modes hit
 
 Only failures that actually happened, logged as they happen. Scripted test faults never count.
@@ -1238,3 +1277,4 @@ Only failures that actually happened, logged as they happen. Scripted test fault
 | 2026-11-05 | The same rerun's research, building the development PDF's research pack | One of the 26 sources NotebookLM returned was a university's published request for proposal for an electronic signature service. Its 17 excerpts reached the extraction call, the model cited two of them, and the first pack built held them all, though the data rule keeps real tenders out of prompts and out of the repository. | `outputs/20261105T092319Z-dev-rfp-db9eeb00-free/research.json`, source `PS-005` | `bidwright research pack` gains `--leave-out`, which leaves a source out with its excerpts and every answer citing them, and names for review any kept source whose title or URL reads like a published solicitation. The development PDF's pack was built again without `PS-005`, and 1 item and 1 need remain. Open: in research mode `live`, a tender that the web search finds still reaches the extraction prompt before anyone sees it. |
 | 2026-11-05 | `discover` 0.3.0, extracting the hero package's research pack from DR-18's job on `free`, read while preparing step 15 | Five of the pack's seven entries cited excerpts on another subject: an audit-logging pattern, a WCAG 2.2 standard, a data-migration pitfall and two needs each cited excerpts from social value guidance or an author's byline, sharing no content word with them, so the hero run's appendix named a GOV.UK social value page (tier 1) as the source of an accessibility standard. The extraction had seen 12 of the report's 46 paragraphs and excerpts from four procurement and social value answers only, wrote those entries from the report, and attached ids that existed; code checked only that an id existed, was clean and was not tier 4 alone. The fallback `gemini-3.1-flash-lite` made the call. | `research_packs/local-government-case-management/domain_brief.json` at commit d42e67f; `outputs/20261105T095746Z-pack-local-government-case-management-free` | Code drops an item or a need whose statement shares no content word with the excerpts it cites, the rule `risk` applies to a generic risk, in every extraction and every pack load. `discover.md` 0.4.0 asks for an entry only where excerpts state it, and sends a point only the report makes to `open_questions`. The pack was built again, as version 2: 3 items and 3 needs, each sharing its subject's words with the excerpts it cites (`outputs/20261105T104246Z-pack-local-government-case-management-free`). Open: a shared word is not support; an entry that shares one stray word still passes until Iteration 3's `assess` checks entailment. |
 | 2026-11-05 | `discover_extract`, the development PDF's live research run on `free`, read while preparing step 15 | The extraction call saw none of the job's report: its task holds the answers and every clean excerpt first, here 3 answers cut to 2,000 characters each and 128 excerpts, and the report gets what is left of the 16,000-token budget, which was no paragraph of 68. `research.json` noted the cut. The items it kept rest on the answers and their excerpts, which is what an item may cite; four more were dropped as resting on tier-4 sources only. The hero pack's builds saw 12 and 17 of 46 paragraphs. | `outputs/20261105T092319Z-dev-rfp-db9eeb00-free/research.json`, its notes | Open: the order is as designed (section 4.4 of the Iteration 2 design), and items must cite excerpts, not the report. Whether to cap the excerpts or raise the budget is a design choice for Iteration 3, when `options` and `blueprint` first read the domain brief; `docs/architecture.md` lists it as a known limit. |
+| 2026-11-05 | `decide` 0.1.0, the first live recording of the solution path, the development PDF on `free` (step 12) | Every need came out `GAP` and `assess` made no call. For the signing need, `search_capabilities` returned the partner e-signature record (CAP-012) and the audit-trail record (CAP-004) first, yet the model chose `PROCEED_WITH_GAP` with no claim, reading rule 7 ("Write no claim without evidence for a gap") as no claim beside a gap; rule 3 defined `PROCEED_WITH_GAP` as a need the knowledge base cannot support, which left a partly supported need no route. | `outputs/20261106T001315Z-dev-rfp-db9eeb00-free/spans.jsonl` | `decide.md` 0.2.0: a partly supported need takes `PROCEED_WITH_GAP` with claims for its supported parts, which the capability map makes `PARTIAL` or `PARTNER`, and a partner's record counts as evidence. The demo was recorded again. |

@@ -1,0 +1,35 @@
+{
+ "key": "sha256:81f143c21e0a4e0b2603619d65a3c1ffe4ec0ca7754cd6b81c18949febd85b1a",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"title\": \"Our Approach\",\n  \"text\": \"We would deliver signature audit, retention, migration, and integration capabilities [APP-001]. We would ensure high availability and incident response for the service [APP-002]. We would deliver the service live for students by the target date [APP-003].\",\n  \"cited_ids\": [\n    \"APP-001\",\n    \"APP-002\",\n    \"APP-003\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1282,
+   "tokens_out": 114,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"title\": \"Our Approach\",\n  \"text\": \"We would deliver signature audit, retention, migration, and integration capabilities [APP-001]. We would ensure high availability and incident response for the service [APP-002]. We would deliver the service live for students by the target date [APP-003].\",\n  \"cited_ids\": [\n    \"APP-001\",\n    \"APP-002\",\n    \"APP-003\"\n  ]\n}",
+     "thought_signature": "EmAKXgFpFH0Tiwa4LqK5YdHZ6z3mWHQFMlt1fD760lmDJQzoR2KdbLrKMzCx3se2EsZfTnuAeIiLd7QmNA5L1RsUjEhVpDRjfNLVYg2NTwpuvNROHSRGC3LngRGw_XUdT6g="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:32:34Z"
+}

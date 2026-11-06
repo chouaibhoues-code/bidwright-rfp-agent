@@ -1,0 +1,35 @@
+{
+ "key": "sha256:ff8db6a4641f072cebc0f03cae4bf2bcbea48e548bf02679fcdcb761fd7636ad",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"title\": \"How we would deliver\", \"text\": \"For donor and volunteer management, we would deploy core system records, data residency, historic data migration, and volunteer session reminders [APP-001]. For training and operational readiness, we would train the Trust staff and ensure go-live readiness before the deadline [APP-002]. For alternative instruction handling, we would manage instructions through an alternative manual process [APP-003].\", \"cited_ids\": [\"APP-001\", \"APP-002\", \"APP-003\"]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1297,
+   "tokens_out": 120,
+   "tokens_cached": 0,
+   "tokens_thinking": 991,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"title\": \"How we would deliver\", \"text\": \"For donor and volunteer management, we would deploy core system records, data residency, historic data migration, and volunteer session reminders [APP-001]. For training and operational readiness, we would train the Trust staff and ensure go-live readiness before the deadline [APP-002]. For alternative instruction handling, we would manage instructions through an alternative manual process [APP-003].\", \"cited_ids\": [\"APP-001\", \"APP-002\", \"APP-003\"]}",
+     "thought_signature": "EskcCsYcAWkUfRP97EWLwRzW_7v8ew7nza0HvcLUDjMARw9LDXmf1PkrDd-nza_a5O8B4IPQUGokoOkyZp0Fe3Bpv3cqgwVfK1tpzeCQFjWHpMtGZFemNhf1Y_hF1UQrxr1ndiVFn4Hnk4tO9QhXi3FfPdUkaiRTdlr3yDO2HcBFS-wWdxr63nqi2AUHJKkgMUFnAilLJ2o-7iFe5EIOLo9-aojc4Qrcwa4Fv0vLmr-tyuYt9LNY-orF0cU0M1zQ8HBIZLgSDT113cO5C5BM6-YW_eq3QFIIDDW9ndvN6lq2VoNxFyjwTp2QPBdOTM8n19Myj16jMuUfeXWrLdG9XY2lKS8GTl8cva9Co4nZK2CC2H7iKf9Kzy5wQdUAO4yNhFiPqcO7Sq3-9lPQoz3Z9qB_VSbbutIpammibtTmgmnfsILvXHNg3ewnZ7w2F8HENtChvdmUYO3Am6c8padoZMIdz5_GKPpMV2NCOFczhicEsV0fdMnBCAULL03aMZQkzKUZMie86mm0cbTbyMTqCxkrxgvItziT7qH6-UhrV4-utUt0_TI-qNz8Y8YoVi52oLiDXEryxcAWdbZF0z-wgcJWj5lp4aMZhpoaX2R8cyifNqFUY6xxM0g-WyGiPBtHokI8dh7jj5j1y_l1r14h4PWOfiZOvzeDBnd9lDQ7t87uGzd3mH9HQfvWpM2HlPNeNn5v79GJxSHVdcNfN_aIlXkj4eU42qmWEvW8DucZBDWwCHst0ZnVq2YdvRezSmzrQhhb3cBOr3YMCydGDFtY0fof8SS_mcw2L9GFn1-EM37scg1aRJkoqVzxiCIdq_909a_KK0nYHlBJVsdC-Kxi91g84hC7z5IDCKhtrRiAOGIEwhisQ759R4TeAMkZnZvWoHSSFKkpGKlPYiL8d10EgulwCI1MF0K_fQMK5mqtm8Uq4lbW_pI0jElUtzgsBpB5kLXklQBMF3QEGm5OGkRydRRG-T8KU9nYicUCrblywapy6hu3D4QRDii3UsCx68eHyCW0Z7rz7D4HPqV0zNg_-5_aUw7qhg-y4kUW_20sTZ_D61CvckeguTLOWAsPjIFEM22C6lDBm9sODYDi_s7SwQtV7jaRyWXuYMdJp8MR2VabfUtDte6P46tIWXbAsPkbSjn3QIhQo2UJUeRdU8tXzjpu5oNrXk5ODbD9WtGuD1H9KhH2JlaSWpHEsYEJMqHt8qvXxYaurKWN1iLRcXcdQAJL_RB9gbCoOGuqpDPJJwgwSncMOjCkfjhsug7m9qzzC9-RVdfVdSWZFjp4QeFa6qxuyUI245h6ZdHkBGdRI7Q7mbfpLsLGPnYZPt2-loU77cYsjkWpLij8u_54oBzhEqLn_exXs4ZnBLN6BViWeXQD0ZkHfWW5TZ_qz7l-Il69ukHcN5Wy9AczBIHJS13oxn3qe0cXvrrnLhNxthkV_LZBRB5v7-u8mK9Z3kQeOsejqkHeUjEZnLewBXFT0SMyKvX8lIwuvQsRmqYmAIj3OS0wUTp0h6MuBK8d12SwjY0A8ECpO1wyK9-OkkS0vELVHiu4l9nyXkqJPnSx6iEZjv5FjbABGFB540hNxXNfZ51FCDcVPj5y3NvNVWC1LDE4DI_k6r0Jf8bOpNzJECmRoXcS9jd7ALAwq5AAplxzqfAmkM2v8_YBwnvIcLvySiejH52ELsV7K-ioQxExuGUVnDGawI59jI44iWnxSr4dI83Axl_gu0v5mxRVwdMrUEIbgy6sOOKXwvd8g_9m1lc8RGNHHU2DnGwpWuqI6WBf0fWVoF8yMbSifqmQBR90z3IyTZPc6p9SLHEawzzY_EtJ_pb8TUVB10jx2sOyak8xG0e5fF9n_2ywOdseNNwKRpxTBPfgekbzqFoSpW5UpT9mr3G48-y2-J9X33dsoaW-lWrx3ZBfd4hZWktBjL0aCsYUzu0z2kV5mcbOHvTEsYidMfnwO6JadsTfyU10OJZf1tU7fAkW-dR_lagRvt-tgE6wtN3IkkBLZadMqS9aM0EMrIbXnZH7Q8sLXLr8bQoaDvslavWZHTQ1EIGJS7HNcqrq06UMApIM625UHaX64P6U4uQK93qP83QfPHm75f74K0H9kPvbMbzDMQHc007_8D_6_xM-OJv5Mwt2QvbP8rgsAvR5TOl4Bt67S6aBNEaCLQg87MhX9iEvPq_VRIJQeW6u4aeYN8US550CKdVQY4MACd1m_NKHVBHXGelF_VE3jnsl8yRlNgdYNEQq05ZNkVxE80FpFpGOgcwcpOpRcDWn5_pTNvPDVvDN7hsQ97v0RKkfA6IhygYMI_s1raAHoW3oeMr7MmjB1FXkZserMgx4QyDV7zDw2JTGYVFMg16OvDOpNVKUHyZqM7cGHrs8q_Hh7kTvbXCnbWiSmrkuf3ihATr5xrhPKyEZGXvs7Npovv3Bha-LoHRjxf088ZQplbpSQSJTmJiPGQ2rESjhgdQWwYsbZjoPP9Vy2-ypa-RPtmpGoLnbi4umXybm9b_Cx-GJEA1gW8Pqu15DsVGugdoRub1N6mFmXCwOIKvYVtMp21mIyIDcagLmI-LyFVQQVL3Z65K7iwcvVwrlYHstdiQjI2M3qTPP37OsQW3Do_eNvCFnczBAmUJ38i2bqq4W2khDNkeZzgzoqPkkqWJYvNR6MLwSERjzFHyGeeU2u0YeopoqHTPOc8OrA1bvqAsLim0zkLTIHbGO2Lqb1Ub3Qg_84-uprsx9unmh71ethAlyDLFdfl5TcbfncYruXZKwfehTNqyHDW2M36LY-406kzNNQ9ivhKwyFaBGFa2khTcsrNbAA0dfAgN6juVqnDaSPK-gW-GP8FbG97-BQ_cVRAAi_s0hqLWB1RlZM_tQ1ih81wtFfEknhjFKHPChRdJuUielKT4LlpUr-6sqwLod4TX3wAR3yRZwUFNqXo_4H0KsDJEkROXKEklUhrX_fDganHJNQ2KQacKQrjy4XLyQxcW6w4QdTk1x6dBUMTUGJ5Z9ZOMlHG6c6XAvyfeH3yRVz61LhS2RAyLYmlWnSAr8sQ3WoEaDbfCE1hcYC1vVG1SC3_BuhogyAYZ-qTD3BKUPU_706ZQ3HXlZ26zt08_PfAUDqIxf_0dnn_D5YNNgHFpZsXO-o-Fctmu1ztery1FW-lyQK25ipMYhN8xVh4HrTgV-ruVGmKbCx70zPY2s8RVTL7uumnUvPjlKevVpfN6z88O4YmXNHxm6w_z1ArJpE57O-OYuBzuMtEzeTsgDu-eSv7vHgC2R16DJ3MfKSgvfHHlxhS6TzQ3X7O7o4pN1K_TGO0-p1nZ151TGMMefKPPB9SqJ-iBoLMpP8mRZhbR3qALyMXQxgv-VZLkefDCzxPplAkSNBeuim-zgsRO-t4l532tHP5Zcf-MvkYsI1P91tW8XxOHRVwC5UUrbV2td6yibmQ1ldhTbmYTExrXGioQaDfXSnr3YQXW-Y5fQ8-T4mBWqD198UrYG09HIG6YJZUSji7jN14v4T2Wbn3Y6wdAtumRm60D27bhky3ak7gCBrpk2qOB96omkKJTJ_PQ2_Mu2hlAKJw0rTfSVhIbYuFn4h0pLX3IpTiEn91XqHvAC4r4uuG5ZDw34BukfZ-NOlAW_xG8joSig-ojqCp7-bLneMooG-K9DnNonJuoIvJGT_SBNnoMQachQyOqEPFYvy8VQBZOJ3Z85-LctfhBofuuD8ZZ2rcVTQ0Cka06Xgyq-GNxTOxG_2nJkVpzkhjaMB7MrK3t6DVruzGFnRjoRACMzFUSEsETZi3eVNJjws1r9CcegnvIyupzzL4p38PX_Yw-GoUGtMBhb7bcrb1fhz0a3iFjjvoqscOf1pGHojWTJheIPD8gmn59rCiVjJwialyCUGGTx0x2i0IVuEnYrM6L8sM1avPn3zAebE-AW8wjCioK0IPksYa2gYHWYsKKluFVwKkPI3qPEtwUKV-12FIsEk6jBxhFYW2gaisQ4OGD-eLD9k6DYcFoH2vukW-iQrkP9SmkKfh_W5pXjsnh2BUR_n6AdfoVw0lufsTWN1zo9ktLKSUpi0K22Yp21GQDFZC_xTCyawWM4T5L-lNAnttcq0ovfISCiUXa0XsmXoCRvi8DERf1cMtyfwXLFFPx_WoPPbjCdGwO_jhP9tomikWatu7-xw4dQsTXJHHVPqxKFk4yUYOpSwobrNOy_s4QXztnmzXWfSlBsAtkqqYmDx8yTsAxPSY2zpsOosUb4iu4qtsJzTReFxtdtqcYmebmgHPRgwzIHhzDVzVSeRgl1gi4MhHGT-Jx7VGFyRpTot7C_jacd3XFINuxqcyDhRIRCnHMpOJplrLcqyEPsE1FG6G_xPxpfHlZghiNYsXXk2wMKkRmI0nRjtULggQt0Jusm78h5HsbA_Ll2WBnjkbia2yIm5kAxoMQIzmq_URii4i6dKvlJzaEEokpw4ToIe856N3NhbZhvvMaR15-0i2DN7_afg1ha46oACHkv7uqzAjo_2vb9G6S6lA3lFjGHYo6RHyRXf5-U7AjXrYE-1pjck7ay5f4Fj5Oc-t9sXmSK6oZDwAHYIVxnRRR_6fSzB4YCjYheLNyFz4cPYEBr-wUExNtrD-4j0EjFKzCdxZDLmctEQAQQOK5J0KoqLrXdKN4P44pgpxYnXpy5psSP1ZPk9jbm63YtwnUZbuTF-CY_7jIma5eSP6KxUDOIPW-lrVjsXstY6M0ps1eLW9e5gIS31O_I8rv75fun_3FRu3NeRP9mlDetUrMolTKi7IK4w18tCGiggfBl3ZaJQ032sgJsPLszKWmt-Qbleik0Bvm9a4t8RLaOHTO_Plq6Btw7oV327DwsrE0oYTzd6xoiUu97ytx0Mvwe0sndg2jGn3No5GrK"
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:24:59Z"
+}

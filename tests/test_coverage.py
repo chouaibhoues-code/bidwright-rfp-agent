@@ -10,7 +10,7 @@ from bidwright.graph.build import execute
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Request, Response
 from bidwright.schemas import CandidateRow, CoverageReport, RunManifest
-from tests.node_fakes import _DATA, DEV_RFP, RuleBackend
+from tests.node_fakes import _DATA, DEV_RFP, RuleBackend, fake_backends
 
 
 def _row(src: str, *dispositions: str) -> CandidateRow:
@@ -89,7 +89,7 @@ def _run(tmp_path: Path, model: RuleBackend, name: str) -> Path:
         outputs=tmp_path,
         mode="record",
         cassettes=CassetteStore(tmp_path / f"cassettes-{name}"),
-        backends={"gemini": model},
+        backends=fake_backends(model),
         run_id=name,
         batch_size=20,  # the scenarios are written for two first-pass packs, B01 and B02
         second_pass=False,  # and count the coverage calls alone

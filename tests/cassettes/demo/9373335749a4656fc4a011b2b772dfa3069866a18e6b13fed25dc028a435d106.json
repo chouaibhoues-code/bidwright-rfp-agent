@@ -1,0 +1,35 @@
+{
+ "key": "sha256:9373335749a4656fc4a011b2b772dfa3069866a18e6b13fed25dc028a435d106",
+ "provider": "gemini",
+ "model": "gemini-3.1-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Service availability and support incident response requirements\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [\n    {\n      \"text\": \"Is the incident response requirement for severity-one incidents intended to be mandatory ('shall') rather than 'should'?\",\n      \"requirement_ids\": [\"REQ-0011\"],\n      \"lint_finding_ids\": [],\n      \"reason\": \"The requirement is currently marked as optional, which may not align with service level expectations.\"\n    },\n    {\n      \"text\": \"What specific criteria or definitions constitute a 'severity-one incident'?\",\n      \"requirement_ids\": [\"REQ-0011\"],\n      \"lint_finding_ids\": [],\n      \"reason\": \"The definition is missing, making it impossible to measure compliance.\"\n    }\n  ],\n  \"references\": []\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2054,
+   "tokens_out": 199,
+   "tokens_cached": 0,
+   "tokens_thinking": 368,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"topic\": \"Service availability and support incident response requirements\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [\n    {\n      \"text\": \"Is the incident response requirement for severity-one incidents intended to be mandatory ('shall') rather than 'should'?\",\n      \"requirement_ids\": [\"REQ-0011\"],\n      \"lint_finding_ids\": [],\n      \"reason\": \"The requirement is currently marked as optional, which may not align with service level expectations.\"\n    },\n    {\n      \"text\": \"What specific criteria or definitions constitute a 'severity-one incident'?\",\n      \"requirement_ids\": [\"REQ-0011\"],\n      \"lint_finding_ids\": [],\n      \"reason\": \"The definition is missing, making it impossible to measure compliance.\"\n    }\n  ],\n  \"references\": []\n}",
+     "thought_signature": "EswLCskLAWkUfRNkdysTS5i1JASRzYXf4ObRTQ2sbJucj3KC-4wmsl-bAG_HVXfnqssB4Cr8Yjw3pw6C5eogfPWq7Krlfd29SkR4_a0hM_AMfAbCMWipX0HYan53nrws6QTQ47tcQZKjKH3Gz0BUJGMzJotZYJYc6eb5IHHAEHt429W8CzX89EocuVq_emdxtnre3pGKkalFPgZgJ1STnMq8L-AJpGJgwiTKla8totHi_AtLewNCR0Zx8OwnfHdSuK98FXa3p4La7OSpqqXi0nL3IumvnX5_ZbTcIlKftaQzeABjykSYTxzTNVfkE9uGIu_YtXx6FuZWxXJu1lA0wyV0ETt_y_ztQHGY2qNqHzj8KGmQcnV2IXmMXagsXdyzuf-UkQpQlT2mJi8gTrOe-mkHrtJ0OeuXnuu7lFlQfG1b72zgHOp-_PFrvl-mf0F16aJO0xiVFt0jzEu6s2Y24vYW69NOvO_kkwRh-4NmEqgSyA-pSIFXEEA_bAlnLMZiozuRBoVf146C0u7nnRCThI0ZSeDNAL8LB42oZkh4sxeVRDE0u22Rq44qrZq7TqDdkvwNZoiwMqyR9rXlg3AkPVmprgwPpeDe-qTa5fZpiubdiOQKh0bEaWTV-qUiE80aPagHbCtIqXBM9XJ-zvktHobj7j9Jcd_-uoBnxtKtMGWpK0TBXav3HzQ2xFK0G7zkJzSeqP4ZZXutJQ_sCGZozzaqDhaZaWrFdy6jvI5k4mp054QQRtVZf6hj0WuLhv4udvTvWqxk_JoJPEFuUzs6WD5Ts0AnAcTOh_VtsEdlIIBut75vgN0CtQh-f4g8tbyu9a0tVMumdyY7m15pelwQxTi6aEb15Krrp6zbJ-DuTvhlWPfSRcBMlVsWzkmdQbeiZLbTEp6V-yDiRXgeZ9WKM462pKjRZtHtoDgLRUECmntLnz9ZlZ6DB80Q48h4Cw0RMi3fGiwV8udo0COgW9Ye3595CPERFYP9gEddQynYMtHmXrzQoD3hGnf3c8oQBXQKm1TapYsfbuF4S2agsO16BGxRlzek-yXcwW2zpDTWgCy5WISQ0-tYiUM8qzHJbR4kCq6C9e-XTMQzPDFwRO6I-GVKTXcYG1gkY5u2ULDzlnYYSwnTGlOURxVDhIpa77ha9OsdgHL41YPX940IesatP3vS511Gnj0WRHldzxYzXSs-Z_S4qWIei7YX8zfl_s9hqC5W8ZBsI7SHauO-hIKnIkX8f4uwIOUxXdpo7-K6ZmnO-LHQNW1wVwT-je1J0NTQzzYesWWaCZgKvzyF5349xxirGzix1kuJhIdy_uLe-cnF_Z5mDnVvTFfxLd_m61X7Efoor8ahaEOIP9-NkmktXDXA7VB8utjoxtOGjMYFZIfCzzcns_KflGukyoUXSnfANvVaeYrpMGffUyJ4hmkUHIVK4yC4vGfZj5sa8A2pbs6ZA2oVPY1C0m6jBpKamuD_tl-qqOWFAIH3Mw4mY8zztADCo1nW8hkQ48A1AJuZt66bj1v24e3tRIV6Ac0NWJMU25rvmvM6Samv_v5KRcPam0Ss5qGlM5Tlijv-X1zoe0m_r3FEoO4jAUe77F9667LIqwp8vw-088B0m8knrfJIYRjkeMHR0Wr0wverot7qaqFjONZWU-GMyXBF6WGJD5IFVn_ZeIuSgYdPW1dpQd1F_ers6it5PKyP0e419YvAjn6P-kHb_-WxAuNT3Qf4cWXqnpPiY7Jr_X950kCNuZr9c0YC7hE5NHQI927biF3Nff0RCsg4WS63L0w1zbrI5VRQ7fv5evB7ODmVHjG9p1Pot132x5-mPgPVBt-DEdc1vowHlASp8RdMMgTtLi0uZfJNwTelW3Oor077Tk8lAC-jbFkEav6N0Fw7J-_Fsd7VXjw2nN5xafDejIxaA9VjhjIVBw97JhGdPZutlIMvmvqEPYGkayAqK4PWilMvDyEcvmbI2JXR_wOaqfQbe5O2NLA="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:14:09Z"
+}

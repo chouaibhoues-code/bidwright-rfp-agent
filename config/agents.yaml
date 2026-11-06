@@ -7,7 +7,7 @@ triage:
   kind: function
   input: TriageInput
   output: TriageResult
-  prompt: triage@0.1.0
+  prompt: triage@0.2.0
   model_role: extract
   tools: []
 
@@ -15,7 +15,7 @@ brief:
   kind: function
   input: BriefInput
   output: BriefResult
-  prompt: brief@0.2.0
+  prompt: brief@0.3.0
   model_role: extract
   tools: []
 
@@ -34,7 +34,7 @@ extract:
   kind: function
   input: ExtractBatch
   output: ExtractResult
-  prompt: extract@0.4.0
+  prompt: extract@0.5.0
   model_role: extract
   tools: []
 
@@ -50,9 +50,9 @@ risk:
   kind: agent
   input: RiskInput
   output: RiskRegister
-  prompt: risk@0.2.0
+  prompt: risk@0.3.0
   model_role: reason
-  tools: [search_rfp, date_calc, reflect]
+  tools: [search_rfp, date_calc, sla_calc, reflect]
   limits: {max_turns: 4, max_tool_calls: 6, stop_on_no_progress: true, reflect: false}
 
 # Iteration 3 (ADR-039, ADR-040): one loop per need; ask_research reads the run's own research.
@@ -60,7 +60,7 @@ decide:
   kind: agent
   input: DecideTask
   output: DecideResult
-  prompt: decide@0.1.0
+  prompt: decide@0.2.0
   model_role: reason
   tools: [search_capabilities, search_rfp, read_section, ask_research, reflect]
   limits: {max_turns: 4, max_tool_calls: 6, stop_on_no_progress: true, reflect: false}
@@ -125,7 +125,7 @@ draft:
   kind: function
   input: DraftTask
   output: DraftResult
-  prompt: draft@0.2.0
+  prompt: draft@0.3.0
   model_role: reason
   tools: []
 
@@ -133,6 +133,6 @@ consolidate:
   kind: function
   input: ClusterTask
   output: ConsolidationResult
-  prompt: consolidate@0.1.0
+  prompt: consolidate@0.2.0
   model_role: reason
   tools: []

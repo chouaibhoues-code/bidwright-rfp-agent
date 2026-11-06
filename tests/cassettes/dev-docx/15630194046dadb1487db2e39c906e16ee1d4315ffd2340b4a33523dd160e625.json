@@ -1,0 +1,26 @@
+{
+ "key": "sha256:15630194046dadb1487db2e39c906e16ee1d4315ffd2340b4a33523dd160e625",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"CAP-013 explicitly states that donor, gift and volunteer records are provided along with consent tracking and session reminders, matching the core of the claim. However, it does not mention the contact details, gift history, specific consent channels and dates, volunteer hours per club, spreadsheet import capability, UK data residency, optional mobile app, or 99% availability required by the buyer.\", \"disposition\":\"PARTIALLY_SUPPORTED\", \"supporting_ids\":[\"CAP-013\"], \"missing\":\"Details of donor contact information and gift history, consent records including email/post/telephone with dates, volunteer hour tracking per club, ability to import existing donor spreadsheet, storing personal data in the United Kingdom, optional mobile app for volunteers, and system availability of 99% per month.\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1729,
+   "tokens_out": 166,
+   "tokens_cached": 1408,
+   "tokens_thinking": 456,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:24:05Z"
+}

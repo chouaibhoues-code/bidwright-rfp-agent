@@ -1,0 +1,35 @@
+{
+ "key": "sha256:4c32911abafc516835b855326786cef72533f2078a447ede1822ad031a3763cf",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"System go-live deadline and staff training\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [],\n  \"references\": [\n    {\n      \"requirement_id\": \"REQ-0011\",\n      \"target\": \"the system goes live\",\n      \"resolved_ids\": [\n        \"REQ-0012\"\n      ]\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2034,
+   "tokens_out": 102,
+   "tokens_cached": 0,
+   "tokens_thinking": 654,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"topic\": \"System go-live deadline and staff training\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [],\n  \"references\": [\n    {\n      \"requirement_id\": \"REQ-0011\",\n      \"target\": \"the system goes live\",\n      \"resolved_ids\": [\n        \"REQ-0012\"\n      ]\n    }\n  ]\n}",
+     "thought_signature": "EtkRCtYRAWkUfROgdNr2IHRwTLcchm1rKpv4GuNFVTIiS0Zju4RuK8Otrf_RRms9XyvphpHnL6c7doKvCQmVI6bZ4a0gyx9wzdUhhw8W9dcDverMNbr1kMv-baDCkrBjiW81XVZWsj8BvJkuSgjcjARbXIkSka7rHJJnHBDncWIGkNftu0BbhiZ1TNj8UEWxxQgyk5UbGPGDG69hcsYHC4VTMOhOJVQXEBpKjYgafcQWhcmKslu_pnS0wIntB3LZmiBzP9wlZby8ykvRUNBa5uS8hhLOiTLYgkErczpY2fvwWUwgXaoo2hJ_Wgq3-l5qydGGg6uchsI2zAXsB96LFmOmIsj4AdDuK1C65z_xvLCWeTa2QIOBph5tZT1YPyXr06Pzgjq_b7nCwr7aWjztde3uMJSS0Cs-0rt2DgfYdqBlMaBbkiHYVvKALG61W0iYwdCbAEwKS-Ti6Noy1DonBjnE1WqhFD8HFoaaQh7WUJWZrlmqLMOVMOsWMekUggyGoIrW5--cMymDR1xUdWdS0qwE5GYMgY7v60lEMpFT7AyblzG4TjQFTuClLyFHukWBIGO5WwEkS1cMFeRaUYQ34TSNJaUTwHqkC5h1_D73wPB3js1yIyE3IgdobFHG3azSCqMsyXc12AAIRs9IcsO4ZUpUayUz4KDW49X2lrGU3aHHTygOc_cCLcACk7rzVERKnl8GXZ0Nh_b-wfwP2aLX1tFUS4_eNRfLGISPwjBLsa-iVTXwJE_H8KzlOgNx4BEo1_CixoF_u8vHuDRb5w7Pm-fu9TTnmgetA7uaJYS_soXu8ZTWiKk9lSSFjfq3TtnT5qWg670Zbe75diDm-SUEv-frwEbYizraN9Pyn_BjoRMm3k97-jdFLtbjwHVn5JmE-k9-b2pJ4zOOz9u1zbfbbEcrsmhx-4WRvCQYmBWyBRq9pWCNu3sFpjBKLRycfnUwEiswxe0PtsNEFxmp6e8XD3O6LhEMDx-PbN6PCIdoAkOf1xk6hMyfZaKjSQi-XOEtHB5yF82j5vEB6P0jcoyu-kYWT9KcO2-3sbhoPUH-egdl-LqU4sGiPo5B3np4HZbblwQh4uDmW_ak6iAQeq4mcMper0UZNrWu5SFqFhn3tfKVRVtbFdSASoN3nlYkLWOLJdWQxfnTu_qsWfWYNx9qycN4mlAzuxiA9RRJcu0DepOLc4KPudb7CZ_fi3Qmohponx34BuJhlNW2JlnDSoSbCwDmU7iMIsQJuj5fvwa1VjSYKfvgWU2uQP1E_gPntF6EGNXr5dDWdfYAmPP0leFCN0Q698QBaIk4iybhxCjRqLfuxgAJOt89P8_53uyEPVWyh4LwI2hJQ2sQaTSpzUV1W978s_pf2NNxy3sS7u3HgvqSXVHr_-fMKHy8AkuR0w0ow4UFHMgnc9aPgvUCzSStlWCY8khNDr59vnMQ72EptjlIRWN27WTSUAuRc5aTuKkNhF4dR9HjsFfLWajlNuhcw6ZWRYAx9REDAzHLM3TRKo2nZOUXTP2NoqVpx_mTQgYBprzCit1phy_AhG3xsBEKoMo8L1IDaZDYUFiSsvGdhaD0rQC_gxHOzVv9RDiSN9OvfTQlKgq4QGRnxIjNCWGZZD49mbQ0glaK8gmv_h73pAMhXmiv0tWI9Z9Q3yhXI9tCzw-yVYADj0fHZJiNjH7aQWAZFoLlh3c1f39Sf0c1NY7Xvx5oJ3Rvkb-TozlJi4fQV3CyCQeLkrrNL0zlDRU48jSXW4QgNN7_YXeQ0WjSOrZrgbutJE2C2utaNVDX2uTZZenB3VIKir8aE1HdGNW5ke5sg2ZPYmA2B_xBtx1zruA0cJfykavIcEAIlWrCh1R8-cJviWUHmyJIanMj7vpHvnX52gjCSahgvo1ZcVmrM1WctCd7FHJTlTRhOr01mVafzEcV57dPrNoj7DNc7M0V3QG_mr8aeawHr7kXAnHmJLis37Yr8tnepn5Rz3bhlke21q9L_hbwRRCiPqZDeMoLij5d9_t9_Jdw6DFZfFKYjErGxWr7WNhIpmLcvdFkmeNMThRwLGO2GmZTE6oS5Sb3VyryQ5-CDM6TyjOfUVirh4vVlhgWG1SUUCMC8G2ESe9vtAxmkPQLzHsKI3p-N3DjR_6VPdWdXYfB_vooFViKRK42PFmBq0CZJzmNu3NSjttkI4g-hW5cbEvKu2J0SwwWcwXM0G5mcOWn5AKt0xBaM-xiHYoYWsP_oQyxghbfZ73Z-QCG63yUn5Y8Xd8C8_xmTYSDkiHCtsyljJyomMHcmourF6G7ZpvQXVB_BqAPN1mbEy1HOwqTvjU71_m3-gCyG0fHZV6YUS-Ri2ZWnLu7HJXpBteu2RlF6R4Mv-ePEIXQPhvSRiiWzYnc_JEZH_mR_gcce_Fr8DPh-tjUIIan9YnB_A7KpTSB_us7NaAHNXNWDu-XvwgMpY8_T0wY19vC27PQzKP7zm49mmQ-W-kFCw-SvmrO7a-fOdGyC0EcjMnI4YY94Oj8zcg8xJgp-ZR6HqpUiJ32SJ0sjNNOYH7Mu1hRIBIImxT8-djGOfxCere6EF89enVq1Wy75Bj0jXYDcgLA5IBqsImCWs1378QBimPK7wFQCSS0jaG54zyLNHfJt5l-Gp68p4mfZdK6U92v02H-T5-ycwjSRcFRmZ1j64HGgJd5H_17QooYkOk-l_aQqOlJRMwdoGR3gELTEZMFCweHbkV8Y5B3CatxGoKVXpY0msfFPUkqHCoDCHEmOtei7O3Lw6rtjsuS5cZL8g6G1t9RS8-pot2hmNyGI-42uLKg0poHUCVv667-QWECGNARsGTbW6rEz1XUrPDFAb8tj2HqSEq5w27wxrr8Q0pHP3j0WctbmOv59RZU5OKbZaLTUVSzwDJ9MGIGK6aOQGZBL7xB6d556LXzPXKpmhfqN5tWBwIqM4KIYhKU2r9pjg9725a4HOICNpjj8bdutc7SKGgHSp6rr-msFvasLI68FA7W8o8-F8JV56cvaaQbf-3YjVbzdIYXnVohu31u"
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:22:29Z"
+}

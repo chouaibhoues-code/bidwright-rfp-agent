@@ -36,7 +36,7 @@ from bidwright.schemas import (
     RunManifest,
 )
 from tests.mcp_fakes import CITED_TEXT, WCAG, WCAG_URL, http_server, serving
-from tests.node_fakes import DEV_RFP, RuleBackend
+from tests.node_fakes import DEV_RFP, RuleBackend, fake_backends
 
 CONFIG = load_config()
 PATTERNS = compile_patterns(CONFIG.ingest.suspect_patterns, "config/ingest.yaml")
@@ -83,7 +83,7 @@ def _live_run(tmp_path: Path, url: str, packs: Path) -> Path:
         source=DEV_RFP,
         profile="free",
         outputs=tmp_path / "runs",
-        backends={"gemini": RuleBackend()},
+        backends=fake_backends(RuleBackend()),
         run_id="live",
         research="live",
         provider=_provider(url),
@@ -208,7 +208,7 @@ def test_a_pack_from_an_existing_notebook_job_reads_it_in_a_run_of_its_own(
         request,
         config=_config(packs),
         outputs=tmp_path / "outputs",
-        backends={"gemini": RuleBackend()},
+        backends=fake_backends(RuleBackend()),
         provider=_provider(fake_url),
         today=lambda: TODAY,
     )

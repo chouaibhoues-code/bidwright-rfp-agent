@@ -1,0 +1,54 @@
+{
+ "key": "sha256:29cbfc708d095e2a6c42a9de9c14cf42aa39d0594113a7501ee72ef1dff31c3e",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "ask_research",
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_13152159999069217707",
+    "name": "search_capabilities",
+    "arguments": {
+     "query": "live implementation timeline 2027"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 2019,
+   "tokens_out": 23,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_13152159999069217707",
+      "args": {
+       "query": "live implementation timeline 2027"
+      },
+      "name": "search_capabilities"
+     },
+     "thought_signature": "EmAKXgFpFH0TjY1fAXYIQIqkKhFBCyQ73Scp0DVfZyr-UUo8o6HQFJ6q1Z3g-RNUgC8uMOQlYlZSYrSSeQvXfOjWkYqvupqO_x5wNsYeEbfL_DAWy5uEa-_s1s1HSKN-iTg="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:18:47Z"
+}

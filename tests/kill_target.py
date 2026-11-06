@@ -19,7 +19,7 @@ import bidwright.llm.cache
 import bidwright.llm.limits
 from bidwright.config import Config, load_config
 from bidwright.llm.types import Request, Response
-from tests.node_fakes import DEV_RFP, USAGE, RuleBackend, data_of
+from tests.node_fakes import DEV_RFP, USAGE, RuleBackend, data_of, fake_backends
 
 RUN_ID = "killed"
 SCRIPTS = ("extract", "consolidate")
@@ -110,7 +110,7 @@ def main(argv: list[str]) -> int:
         profile="free",
         outputs=outputs,
         docling_mode="replay",
-        backends={"gemini": ScriptedRun(script, marker=marker)},
+        backends=fake_backends(ScriptedRun(script, marker=marker)),
         run_id=RUN_ID,
         config=one_worker(),
     )

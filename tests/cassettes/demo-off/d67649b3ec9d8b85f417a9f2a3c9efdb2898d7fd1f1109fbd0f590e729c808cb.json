@@ -1,0 +1,53 @@
+{
+ "key": "sha256:d67649b3ec9d8b85f417a9f2a3c9efdb2898d7fd1f1109fbd0f590e729c808cb",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_8655525351639700727",
+    "name": "search_capabilities",
+    "arguments": {
+     "query": "live 2027-01-11 schedule implementation"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 2011,
+   "tokens_out": 29,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_8655525351639700727",
+      "args": {
+       "query": "live 2027-01-11 schedule implementation"
+      },
+      "name": "search_capabilities"
+     },
+     "thought_signature": "EmAKXgFpFH0TR86lVxf74W94XI-W_yQPxmC7D-GZY0BFfPbT-tqzTNqrZd0w8MZDpDoQyQTuHbxsaSJ-qohLcYkiQMaamCP8MtVFisppcwe6TBrxC0H0hUV4ZhNf2nmlc7Q="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:30:35Z"
+}

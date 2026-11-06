@@ -1,0 +1,26 @@
+{
+ "key": "sha256:df60f64e9d5b4855bfebb1b120b212733c6583cdc92214fec01277d6ec4d1114",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"ROLE-001 states that a delivery lead leads an implementation from the contract start until three months after go‑live, which exactly matches the claim.\",\"disposition\":\"SUPPORTED\",\"supporting_ids\":[\"ROLE-001\"],\"missing\":\"\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1603,
+   "tokens_out": 60,
+   "tokens_cached": 1408,
+   "tokens_thinking": 250,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:31:38Z"
+}

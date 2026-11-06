@@ -14,7 +14,7 @@ from bidwright.llm.ollama import OllamaBackend
 from bidwright.preflight import CONSENT, Refused
 from bidwright.schemas import RunManifest
 from tests.llm_fakes import FakeBackend
-from tests.node_fakes import DEV_RFP, RuleBackend
+from tests.node_fakes import DEV_RFP, RuleBackend, fake_backends
 
 GEMINI = "generativelanguage.googleapis.com"
 REGISTER = load_config().egress
@@ -101,11 +101,13 @@ def test_a_remote_trace_endpoint_on_a_client_run_falls_back_to_spans_jsonl(
         source=client_document,
         profile="free",
         outputs=tmp_path / "out",
-        backends={"gemini": RuleBackend()},
+        backends=fake_backends(RuleBackend()),
         consent=CONSENT,
         run_id="client-trace",
     )
-    assert result.status == "COMPLETED", result.reason
+    # A client run's assess role takes the generator's family (section 4.3), so it ends
+    # DEGRADED with that reason alone.
+    assert (result.status, result.reason) == ("DEGRADED", "assess: SAME_FAMILY")
     manifest = RunManifest.model_validate_json(
         (result.run_dir / "run_manifest.json").read_text(encoding="utf-8")
     )
@@ -123,7 +125,7 @@ def test_a_client_run_on_the_paid_tier_is_refused_before_its_folder_exists(
             source=client_document,
             profile="paid",
             outputs=tmp_path / "out",
-            backends={"gemini": GenaiBackend(api_key="unused", paid=True)},
+            backends=fake_backends(GenaiBackend(api_key="unused", paid=True)),
         )
     assert not (tmp_path / "out").exists()
 

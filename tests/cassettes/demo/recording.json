@@ -5,6 +5,15 @@
  "research": "pack",
  "batch_size": 40,
  "second_pass": true,
- "run_id": "20261105T074715Z-dev-rfp-db9eeb00-free",
- "status": "COMPLETED"
+ "need_cap": 24,
+ "claims_per_need": 3,
+ "tech_claim_cap": 15,
+ "gate": "auto",
+ "bid_policy": null,
+ "solution": "manifest",
+ "risk_mode": "agent",
+ "reflect": false,
+ "run_id": "20261106T001835Z-dev-rfp-db9eeb00-free",
+ "status": "COMPLETED",
+ "assess_route": "primary"
 }

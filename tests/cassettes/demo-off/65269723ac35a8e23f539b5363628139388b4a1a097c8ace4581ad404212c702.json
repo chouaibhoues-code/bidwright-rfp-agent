@@ -1,0 +1,26 @@
+{
+ "key": "sha256:65269723ac35a8e23f539b5363628139388b4a1a097c8ace4581ad404212c702",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"CAP-004 states that every change to a case is logged with the user, the time and the previous value, which directly matches the claim about audit records of signature events.\",\"disposition\":\"SUPPORTED\",\"supporting_ids\":[\"CAP-004\"],\"missing\":\"\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1740,
+   "tokens_out": 66,
+   "tokens_cached": 1408,
+   "tokens_thinking": 159,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:20:41Z"
+}

@@ -47,6 +47,7 @@ from tests.node_fakes import (
     context,
     dev_ingest,
     dev_requirements,
+    fake_backends,
     gateway,
     text,
     tools,
@@ -332,7 +333,7 @@ def test_a_cluster_call_is_named_by_its_group_and_lists_its_passages(tmp_path: P
 
 
 def test_the_prompt_layers_are_rules_examples_and_task() -> None:
-    prompt = load_prompt("triage")  # extract carries no examples since S-10 (ADR-028)
+    prompt = load_prompt("triage")
     assert prompt.examples and prompt.examples in prompt.system
     layers = prompt_tokens(prompt, 4)
     assert layers.rules == estimate_tokens(len(prompt.system) - len(prompt.examples), 4)
@@ -341,7 +342,8 @@ def test_the_prompt_layers_are_rules_examples_and_task() -> None:
     assert layers.evidence == 0
     budgets = load_config().limits.context.budgets
     assert layers.rules + layers.examples + layers.task < budgets["triage"]
-    assert prompt_tokens(load_prompt("extract"), 4).examples == 0
+    assert prompt_tokens(load_prompt("extract"), 4).examples > 0, "back since ADR-049"
+    assert prompt_tokens(load_prompt("extract_oneshot"), 4).examples == 0
     with pytest.raises(KeyError, match="no_such_task"):
         prompt_tokens(prompt, 4, task="no_such_task")
 
@@ -452,14 +454,15 @@ def test_draft_records_its_section_call_and_its_repair(tmp_path: Path) -> None:
 
 
 def test_every_model_call_of_a_run_has_a_context_manifest(tmp_path: Path) -> None:
-    """A whole run on the rule backend: each node's manifests match its ledger entries one
-    for one, and the three new nodes' manifests name their inputs."""
+    """A whole run on the rule backend, on the default `manifest` path: each node's manifests
+    match its ledger entries one for one, the solution path's nodes included, and the
+    manifests of `draft` and `risk` name their inputs."""
     result = execute(
         docling_mode="replay",
         source=DEV_RFP,
         profile="free",
         outputs=tmp_path,
-        backends={"gemini": RuleBackend()},
+        backends=fake_backends(RuleBackend()),
         run_id="manifests",
         research="off",
     )
@@ -472,9 +475,10 @@ def test_every_model_call_of_a_run_has_a_context_manifest(tmp_path: Path) -> Non
     calls: dict[str, int] = {}
     for entry in ledger:
         calls[entry["node"]] = calls.get(entry["node"], 0) + 1
-    for node in ("approach", "risk", "draft"):
+    for node in ("decide", "assess", "options", "blueprint", "risk", "draft"):
         assert len(_call_ids(run_dir, node)) == calls[node], node
-    assert _call_ids(run_dir, "approach") == ["A01"]
+    assert "approach" not in calls, "blueprint writes approach.json on this path"
+    assert _call_ids(run_dir, "blueprint") == ["P01", "P02"]
     assert _call_ids(run_dir, "draft") == ["S01", "S02", "S03"]
     items = json.loads((run_dir / "approach.json").read_text(encoding="utf-8"))["items"]
     assert _manifest(run_dir, "draft", "S02").included_record_ids == [a["id"] for a in items]

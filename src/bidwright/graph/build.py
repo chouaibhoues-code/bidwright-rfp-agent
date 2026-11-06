@@ -163,7 +163,7 @@ from bidwright.schemas import (
     SubmissionHazard,
     ZoneRecord,
 )
-from bidwright.tools import date_tool, search_tool
+from bidwright.tools import date_tool, search_tool, sla_tool
 from bidwright.verify import QuoteCheck
 
 SECTIONS = ("understanding", "approach", "risks_and_assumptions")
@@ -763,7 +763,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         sources = {r.id: r.src_ids for r in requirements}
         if rt.reflect:
             limits = limits.model_copy(update={"reflect": True})
-        listed: list[Any] = [search_tool(index, sources), date_tool()]
+        listed: list[Any] = [search_tool(index, sources), date_tool(), sla_tool()]
         if rt.reflect:
             listed.append(reflect_for(config))
         gateway = ToolGateway.for_agent(
@@ -775,6 +775,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             reflect=rt.reflect,
         )
         items = [ApproachItem.model_validate(a) for a in state["approach"]["items"]]
+        view = sol.risk_view(dict(state))
         if rt.risk_mode in ("oneshot", "fixed"):
             outcome = risk_baseline(
                 ctx,
@@ -783,11 +784,16 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
                 rt.risk_mode,
                 index=index,
                 manifests=manifests(state, "risk"),
+                solution=view,
             )
         else:
-            outcome = risk(ctx, requirements, items, gateway, limits, manifests(state, "risk"))
+            outcome = risk(
+                ctx, requirements, items, gateway, limits, manifests(state, "risk"), view
+            )
         rows = [r.model_dump(mode="json") for r in outcome.risks]
         _jsonl(rt.run_dir / "risks.jsonl", rows)
+        # risk_rejected.jsonl, written here only: each risk the checks dropped, with its reason.
+        _jsonl(rt.run_dir / "risk_rejected.jsonl", outcome.rejected)
         span = otel_trace.get_current_span()
         set_attribute(span, "bidwright.stop_reason", outcome.stop_reason)
         set_attribute(span, "bidwright.turns", outcome.turns)
@@ -900,14 +906,20 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
     def traced(name: str, node: NodeFunction) -> NodeFunction:
         kind = (
             OpenInferenceSpanKindValues.AGENT
-            if name in ("risk", "discover_start", "discover_ask")
+            if name in ("risk", "decide", "discover_start", "discover_ask")
             else OpenInferenceSpanKindValues.CHAIN
         )
 
         def run(state: Any) -> dict[str, Any]:
             # A fan-out worker's span names its call, as its context manifest
-            # `context/<node>-<call id>.json` does, so a passage leads to its span.
-            call_id = state.get("call_id") or (state.get("task") or {}).get("cluster_id")
+            # `context/<node>-<call id>.json` does, so a passage leads to its span: a pack's
+            # call id, a cluster's id, a need's id for `decide`, a claim's for `assess`.
+            call_id = (
+                state.get("call_id")
+                or (state.get("task") or {}).get("cluster_id")
+                or (state.get("claim") or {}).get("id")
+                or (state.get("need") or {}).get("need_id")
+            )
             attributes = {"bidwright.node": name, "bidwright.call_id": call_id}
             with maybe_span(ctx.tracing, f"node.{name}", kind, **attributes):
                 return node(state)

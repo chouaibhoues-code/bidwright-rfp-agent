@@ -1,0 +1,35 @@
+{
+ "key": "sha256:faf89a8cd531473d98dd2b2887cc3d11b7bc52bedaaaf451df593eb97cb5fc48",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base includes a service desk analyst role for resolving incidents, but has no records supporting the 99.5% availability target, planned maintenance notice period, or one-hour response time for severity-one incidents.\",\n  \"claims\": [\n    {\n      \"kind\": \"role\",\n      \"text\": \"Service desk analysts are available to answer calls from customer staff and resolve incidents against agreed targets.\",\n      \"evidence_ids\": [\n        \"ROLE-005\"\n      ],\n      \"src_ids\": [\n        \"SRC-0030\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence of 99.5% service availability, planned maintenance notice periods, or one-hour response times for severity-one incidents.\",\n  \"question\": null\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1912,
+   "tokens_out": 196,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base includes a service desk analyst role for resolving incidents, but has no records supporting the 99.5% availability target, planned maintenance notice period, or one-hour response time for severity-one incidents.\",\n  \"claims\": [\n    {\n      \"kind\": \"role\",\n      \"text\": \"Service desk analysts are available to answer calls from customer staff and resolve incidents against agreed targets.\",\n      \"evidence_ids\": [\n        \"ROLE-005\"\n      ],\n      \"src_ids\": [\n        \"SRC-0030\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence of 99.5% service availability, planned maintenance notice periods, or one-hour response times for severity-one incidents.\",\n  \"question\": null\n}",
+     "thought_signature": "EmAKXgFpFH0TubENTUolmqo1Q_9IAzfbIriPTFwhiYp-n8zy1LGHOLMJnBL784C1c_yiyP7qiPxTsgG_-5dhsu5e75-swb_SfHpLqDBgMc627wFQXaoFd0duOTu2R_hcUE4="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:19:40Z"
+}

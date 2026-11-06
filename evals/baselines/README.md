@@ -18,3 +18,10 @@ the gate blocks a baseline scored on other gold. Gold v3 adds the factor seeds a
 domain seeds and changes no requirement, so the scores held: 3 of 45 missed (GR-0030, GR-0042
 and GR-0045). The new factor line reads "not run", because the replay stops after
 `consolidate`, before `brief`.
+
+It was written again on 2026-11-05 from the hero recording of Iteration 3's step 12, made on
+`free` with `extract.md` 0.5.0, whose worked examples ADR-049 brought back, and the prompt
+revisions of ADR-052. The replay missed 2 of 45 (GR-0042, an obligation inside a definition,
+and GR-0045), against 3 before, and its F1 fell 4.3 points, to 0.79, as ADR-049 expected of
+the examples' cost in precision. One recording is one sample; the EX ladder measures the
+prompts with repeats (step 19).

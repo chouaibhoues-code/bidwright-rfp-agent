@@ -1,0 +1,54 @@
+{
+ "key": "sha256:7198f7480033f1c6a44bde9717151445cf68e27b4bf44d495e7f835155612211",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "ask_research",
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_14466184650031326989",
+    "name": "search_capabilities",
+    "arguments": {
+     "query": "service availability 99.5 support incident response severity one"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 2108,
+   "tokens_out": 27,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_14466184650031326989",
+      "args": {
+       "query": "service availability 99.5 support incident response severity one"
+      },
+      "name": "search_capabilities"
+     },
+     "thought_signature": "EmAKXgFpFH0TkNaA6ZarBzXPkBq2VygEa8fEa3kE7zxHuXKY6HG3B_eoCx8kKo2CUtK_RgbMZE8DkK9KIcelDY_AhYRESxWqw7H-v2BfxsBAUAelvO3T6M_7IQSZDV6CjXs="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:19:01Z"
+}

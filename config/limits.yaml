@@ -2,13 +2,14 @@
 # profile runs the free models under the paid key (CH-82) with the free run limits and a
 # higher concurrency; its rate limits below are the paid project's, read in AI Studio (V-03).
 runs:
+# Iteration 3, step 12 (section 6.1): raised for the solution path's calls.
   dev:
-    free:  {requests: 60, tokens: 300000, active_minutes: 20}
-    local: {requests: 60, tokens: 300000, active_minutes: 60}
-    paid:  {requests: 60, tokens: 300000, active_minutes: 20}
+    free:  {requests: 150, tokens: 600000, active_minutes: 30}
+    local: {requests: 150, tokens: 600000, active_minutes: 90}
+    paid:  {requests: 150, tokens: 600000, active_minutes: 30}
   hero:
-    free:  {requests: 250, tokens: 2000000, active_minutes: 90}
-    paid:  {requests: 250, tokens: 2000000, active_minutes: 90}
+    free:  {requests: 450, tokens: 3000000, active_minutes: 120}
+    paid:  {requests: 450, tokens: 3000000, active_minutes: 120}
 call:
   # Per profile. A 4B model on CPU needs more than 60 s for a cold load or a long answer (S-04),
   # and gemini-3.8-flash answered in 55-60 s under load, then hit the 60 s deadline (504).
@@ -66,6 +67,5 @@ breaker: {failures: 5, cooldown_minutes: 30}
 # Iteration 3 (ADR-039): the needs decide takes a run, RFP needs first, and the claims each
 # need may draft. Needs past the cap are listed GAP and the run ends DEGRADED.
 solution: {need_cap: 24, claims_per_need: 3, tech_claim_cap: 15}
-# The switches of Iteration 3's section 4.11, for runs that name none. solution stays oneshot,
-# the v0.2 path, until step 12's recordings hold the solution path's calls; then manifest.
-switches: {solution: oneshot, risk_mode: agent, reflect: false}
+# The switches of Iteration 3's section 4.11, for runs that name none (SO3, RK1, no reflect).
+switches: {solution: manifest, risk_mode: agent, reflect: false}

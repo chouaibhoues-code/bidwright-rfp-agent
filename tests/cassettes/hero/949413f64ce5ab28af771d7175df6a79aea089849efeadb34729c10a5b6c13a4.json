@@ -1,0 +1,35 @@
+{
+ "key": "sha256:949413f64ce5ab28af771d7175df6a79aea089849efeadb34729c10a5b6c13a4",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "ConsolidationResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"topic\": \"Service levels, support, and incident management\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [],\n  \"references\": [\n    {\n      \"requirement_id\": \"REQ-0091\",\n      \"target\": \"the table below\",\n      \"resolved_ids\": [\n        \"REQ-0094\",\n        \"REQ-0095\"\n      ]\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2840,
+   "tokens_out": 110,
+   "tokens_cached": 0,
+   "tokens_thinking": 1104,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"topic\": \"Service levels, support, and incident management\",\n  \"duplicates\": [],\n  \"discrepancies\": [],\n  \"questions\": [],\n  \"references\": [\n    {\n      \"requirement_id\": \"REQ-0091\",\n      \"target\": \"the table below\",\n      \"resolved_ids\": [\n        \"REQ-0094\",\n        \"REQ-0095\"\n      ]\n    }\n  ]\n}",
+     "thought_signature": "EskcCsYcAWkUfROb1xfftYEHkzLUeq2KtegQuaotduJxy2Jhc0mZ7HZiKcFoDpQWaACd02T7dtuZiQqP2lNBCXc8Ut-PdLmUF7S57JhBwrdS-UWKPBkspITRkIfmmXYU_YVYv0IgrNDOd0x-swi16tlLHbBhHQbcLOMzkgeQLia5nBuAfWXCKT__dGDU562htqfkD7wu2s1hhSqnTJZq2jFtx9EtA3bAfntusoUcyEZrcK7BqjjvmHwPzXJ3WVnGlRr4O5TmmJiv96R5NeoVKH7JS_AbEGSwBdAwZ7kbwlAe163J56Hpptd2q2g-I_syEYUuNP6hMROohyoA5ISvBvxPfg55FmgCIIIFwTUfdnZBMv8HkxS8XlhGWmxONPBvBnQ4OxRdn_I1pAjIFkvSXqYljY50ubpqKKQMJjHbZdpW49tFthAZjP-6TKt2va_8nBR0o86X6IQdchx_EEZvbUyV-JqeDcmVaPrE5DCj_w9aeG5xJyHJ-c5nMOE1fpmx5QPQTs65wKoqQrA_fAnl1_ohWOoH4GF58LtrxzHHh4eH_d-zXFGnTTovX_V0MfLRlBMSvwMwEeJJea7tUhPoHxhEDh71aXAKLdWN2yKj9JcRYFp-q634AZyjWTxEc7W32hzs1PNn8q-qTzyXjcfJIWa1azoKdYbqzf9H18ndX10BxZ3h2KWwjGbeDohNT2S0bp1IH0PVE5VuRQYR9vbXN1ydfGqecOyUd1DxqoD2ZklIcKbz3Bp-kKywDdfHztS903DDLdAIbppSTQiIyFrISaW7jxM9UsYRlffKT_L4o6YbaO01dZKn0V-NHHTVGTEXnS47wJKjXtR-c0vOmBwt33OrioTZcgwLdBkA3Gz16SVqlMuXYK_UAvkJXCcqL9GR17rrADRMV70scqWd_3Cxih4P1caaeLG5cjgPiRN2BrUaCUb0BB6dDfTJb-I1nWhkTTfSuDHzHHe-cXpvFB7ORzOeU8_TvWNn9QxSy5Ck109aQ-tRHYHzi_oa5_s0KuPqwFhlp_mLGDajwH41JOToI4dbY1XicwA5QEvkHNrVKXjzMjT87Iw9UR0XyYHogJfOSZLFssAEBPkr5caN9zmYd1EWZRjia1h5JK2GGI7Jht5muXvek8jPRH0m7lOmOaIz-YSYbYyuuwbXN7aCUcKjaFkaRcmfogLXx-7Z3JGKx6gPWOZCFGXlkSZagc-RONGxxGwkfNJ-zX2fAHPGBPoNdlGtTi59DXA3o3NrJ9W-2CSELx5GJG6ahwQDWheAMcLY2_-oVt4Bduh-wEG4DRCSxiReIaWfyUzNAVuVOpha3z9aJC8cMACMR3HB5B-0GFrWegz8hwfi7VM7k5TUCoKoji5ErJYzr3snykzP8d3ttdTF-EbX2KdJCAiXN3QXiQgkv8EbSTetuOO8QGbBZEK1SBMP3EP1SMWze-VpI2VvkqAY9gQKnXgHgT-IoKINjv-pVBg8QcNBGsYhb2LbVNWcllkbaTE4E-zGMS7cgaVH7wc3aFUZigm46AbkEisDbBslNryLl1o-7lnQJqJy9Z3XaZNlS355Z_9Psxwv9ZxVKJgNdpmsUFIV6JjEoOt3_0iTnJDZXRRW7V-6NK5u3YhVKK56zxHvgUEpHPLRCj1lOcQPEuyRuel-PoIALzTTWNMO-FRDU6oZxNTpK04Rw_m76L561BYTU75cCnC_lPsmjBxSLbVwygEukshJJmD-27sqmvq92ZmUXkHGH4U7fYZr1V--GC3taGciPJCK7H0Hu-R97Xi7mnzQavJzlWBMh2UIHcPZcwCBYVLfvw2qcxJVfbjH_pClYw_NM89Dle_TbSj8Zei-YCJNXVDeUkGoPv1HqX8zvlMt-6vTyW3dIBJHp4SkshcppQeKR7H4GRoc_9QBvUC3E20Dhqc_nJoqgQrlEzGLGp7ev3L6n7tbxi9ucJCwsIYUEd788E8w_a8E8cjfKBG8viniuTGNhDwvy6_AH80hQv8YDm-sUWt07Z3_-DLvC1u1MVCHEingE-jddrw1mGZFz7w1QDQbcv_4ZhZbIzDKMX4kAwfz61JrmVufzK15kDN2r54AVHXpQf7xgtDwVSLwURDw_6Q29kiLCoo9QpflYn-7Ngpxt4mOm3w7I8SprTfFpcVngpU1D68HZ3DyZPe5qNTOtXU7yRBS3BiFrd0iZXZ-hipTJ41uAleCvWGrES_UnOsKowdmVNfH5Ocgi9wsUz7_3usYANNPxHRStZQRBdoMHjD6LA1yh5-tnDUg8u_TSf-JwDa0URAHNPJd9uP7hp2EgNxGZjW5LozOt4WzXLbVGEPYrK9h2O3tknPwMbNpjquhLPXogUgLcflc1uzkh2Jit3RHBCc4sdF_uf2_m42CTzOIZAx1u5SrPIc7gSAapY5hQUqEF3Sq5Tt28Eq8jIS--hTxEQyK2c3H-iaAsCq7cT4qquDRq8D4wFSWcpJ4javUhP9DVfTqJYi8SaHKFvNkxH8A2U6XvDPW29skpbusk5e_rqnSuIP-Zmq2YhKM2qXuRiOFpMdDxyzhBfNp00I1mpw64_IxO9jH4VobHUBJk9SNnsfdLGWxf19CMFjCrkPhXNeCB4slwqE27UpDahBRXsTmtT9vfcsdfJHGVo5WGAhMc_tyeEMI9rFV8B8LMpAXOxAdDTVu4_G-iSneC9R1_bb7qxrE1ScsmHEp2_1OU8knLYvLcDmL_iuQ9ATNAtnEVVC-IekAmnxW58R2EO5FQjL_tBA7dfa2rdjZtCbZFZMiBAaKjRgTRiPvl1Uvmp2z_zcWz1ty9-k9tJ-AYLwGLwLuss0vUrPujSUntEJ_5qaSFFyxYNIZJJSdRN89uJ5aTzohXSB17374s2qf6jje1UL-syikQzkrwnYWb8nEJnDHlG41Q04F7E_z-QbV0Iy9g4u6T751bsdXr8SynbYF8M2HfUyCUoHlWH12XJjco1d8yUGbgblEGAVCmtT0g9walqZssAMBHi-cf02bdnY5GFiC7WC7h5MOpC6JpMuJLAQQiPkJAcod-4YVILrpFWoJsG3P6B4PdTU1aH52lpsXOoKqeTl7yuWWHfEE0ekazQqQGM4d00W78G8vsMiHLXCX2lS_Sm6vEGJsr-yO13m48FW1WawmRshI0MJ2D32eE9AstPsOIPJnLUmTGg9j86xMKNTSVFcsdFtIflRY8M3956TswVmjIEN4H9RVRhqrKkU8jpCx2mUbXaU3B-o5LOTbxgHZo0YPFwCg7git0_8vPG8sJ3mIHAfLUuAFzuvHYOAw5NEw9iB24D_pkEWuuqqcRfVlwOhAOCZ63OsM4hIywehwH_xeP3_7vmPwslAuk4xlal5jH9F54hv6FmaipVlnQ-WJkZemyUcBGnZziEuhdjuGX6J9CLPH31zBeuiz2QgHa9VeKgJ2t25FLD4XA2i1ioFvx5oRcOVYTHxNzwWZ_ExOK7_NImGmtXILU1imAAW9ykdPKjjIDrS3VY8SNkTlx_qGj5D9n6oM029I5uW6Zv3H1t4SxkxFKG3EyxwcN8IeOdlZaIXXD10b6vyVjha-9F0zZ8HMOkrTHmh4DzEa6H0i09n2dTbq4_zb-2i2m4w3nT3zMgW2XdYbpgee5ZsOCN36rFXa7PRI3-dNpH46yIcXztExZaJaJyVb8cE0pJtLrW5nKmU-sH0xZZ5XT3SLukLC4hNaGo7pvXGtDPGtH-1eB8EExSM1DYElW-68qacM0RPl12mG_2L-djC-5CD5euClwjB-4xwrt7xhq2TyV3f3437rmyWDpUZYTrkjlRyi5QGW_24Z7RaKz4OIEc05B5pkUpmU_HCP9tz3nm2m_uFjxvYBJMOR56reDBc0ciERdPHgmMoLAT2WmYKXLlKv0oIwdBMUKbBoZaXUNHFiEICi_OA7H_rjPH28OeDD4V_RcBnGF9eWuDuHKBxgqy3fPhlwz7XcYHoqgK0I8SUhbrjecUBShTpVIfVG0Bd8TBl2wQXoK8sZqB0x07h-5pDNlG-SaXMkiY47Mx_MM-ajOH3kmkXxzuq7bqUNsnHFON1tAAFLrrO4ToAChgMUPTmEjakcC1vNWDqfPreeEwRg0RI-g0EZXwmdzj6kbUJ9_JA__OGkK6xzoODssn_FPpbTtgP5kYjAgC9LNU7zchb1dTjQAnuNHvCo_tGMqVfJ4Ye161TjgrII6JoJlBCC2yVCO_cq9-mN2rs6wbaD9_6siWPPsXfaNh5uvAWaX2lcjqdsgjNU9lraYBCyQ3sjuO08pBaimbX1UlGiObyFf17iZNBJQemS6zetPVQw0jHFi55_0rRUdvXrFcuyM_dawcOn-e_2aPY5MCXa8OpGGVBb6DMm-WJ_U9La18cZvAVK5K2egsrc4eGohnKAKx4R_8nDdTg78gmpbKEcU-Ex76nRxnyneY2Jj2w3QZ629AoV0ybO_K0oDVckveoZFp61PwMjChTKBdjCQ0F-qGxUCr-t_z4SttfwE4guOWxKRpsUyJrLhMJ2EdIC_uDIVOCvGEvGEmVfMr_c6aToYATvl3VvqUJDpu9JTkA900FHrUC4jkLOw7MHWoEFMkfFCfOrD361e6OJ2IDpBpcBlWOkRG8pIG57x5xBUMQgm6nFJ0EHY0vw-tBuvOt0-8ovkRj9qWKQMbH0FqR1wNhp7JigY_RRyBUJucegv_ZnjOouKDGs-NiNNQ_-xXBDHNhKv3heCYtDAtnsn-tlkw7B1e9ocwAfTLMWVRZ72L-hpXxxwdUas0uP8CFiwuT-2P_lsuhoV5TR05tL_K4zxCmLit17Cz1XnRhyhPzZf5vxlaXSfAym-cGWhuVx8nq4HKGJ_Lou8x-X-p-TEjajY25Nz74JXjx3Hd-9AhFT74nK5L6M8IVXP-wwD73H"
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:35:18Z"
+}

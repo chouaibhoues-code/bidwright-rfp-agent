@@ -1,0 +1,26 @@
+{
+ "key": "sha256:e92ce68b37ff99a34a0d42bf1e6fd17694591263cc3901d0b2a52c0e794a7c87",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"ROLE-005 states that service desk analysts answer calls from customer staff and resolve incidents against agreed targets, which matches the claim, but it does not mention the required 99.5% monthly availability or the one‑hour response time for severity‑one incidents. Therefore the claim does not address the buyer’s specific need.\",\"disposition\":\"NOT_APPLICABLE\",\"supporting_ids\":[],\"missing\":\"\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1626,
+   "tokens_out": 94,
+   "tokens_cached": 0,
+   "tokens_thinking": 540,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:19:42Z"
+}

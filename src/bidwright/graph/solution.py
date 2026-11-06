@@ -38,7 +38,7 @@ from bidwright.graph.decide import (
     write_decisions,
 )
 from bidwright.graph.gate import GateInputs, solution_gate
-from bidwright.graph.nodes import MALFORMED_TWICE, CallManifests, write_approach
+from bidwright.graph.nodes import MALFORMED_TWICE, CallManifests, RiskView, write_approach
 from bidwright.graph.options import options_task, propose, settle, write_options
 from bidwright.graph.signal import SignalInputs
 from bidwright.graph.techcheck import Sources, techcheck, write_techcheck
@@ -59,6 +59,7 @@ from bidwright.schemas import (
     ClaimView,
     ClarificationQuestion,
     ContractFlag,
+    Discrepancy,
     DomainBrief,
     EvidenceAssessment,
     NeedDecision,
@@ -70,6 +71,10 @@ from bidwright.schemas import (
     ResearchRecord,
     RfpProfile,
     Risk,
+    RiskClaimView,
+    RiskDiscrepancyView,
+    RiskGapView,
+    RiskPackageView,
     SolutionManifest,
     SolutionOptions,
     SubmissionHazard,
@@ -573,6 +578,60 @@ def after_gate(rt: Any, state: dict[str, Any]) -> str:
 def after_risk(rt: Any, state: dict[str, Any]) -> str:
     full = rt.solution == "manifest" and state.get("manifest") and not state.get("blueprint_failed")
     return "solution_gate" if full else "draft"
+
+
+def risk_view(state: dict[str, Any]) -> RiskView:
+    """What `risk` sees of the solution path (section 4.7). The discrepancies come from
+    `consolidate` on every path; the rest is empty until a manifest or a map exists. A
+    technology claim no verdict covers reads `NOT_CHECKED`."""
+    discrepancies = [
+        RiskDiscrepancyView(
+            kind=d.kind, requirement_ids=d.requirement_ids, description=d.description
+        )
+        for d in _models(Discrepancy, state.get("discrepancies"))
+    ]
+    needs = [n.need_id for n in plan_of(state.get("needs")).needs] if state.get("needs") else []
+    cmap = state.get("capability_map")
+    rows = CapabilityMap.model_validate(cmap).rows if cmap else []
+    gaps = [
+        RiskGapView(need_id=r.need_id, text=r.text, status=r.status)
+        for r in rows
+        if r.status == "GAP"
+    ]
+    known = set(needs) | {r.need_id for r in rows}
+    if not state.get("manifest"):
+        return RiskView(gaps=gaps, discrepancies=discrepancies, affectable=frozenset(known))
+    manifest = SolutionManifest.model_validate(state["manifest"])
+    verdicts = {
+        v.claim_id: v.verdict for v in _models(TechValidation, state.get("tech_validations"))
+    }
+    packages = [
+        RiskPackageView(
+            code=p.code,
+            name=p.name,
+            predecessors=p.predecessors,
+            low_days=p.effort.low_days if p.effort else None,
+            high_days=p.effort.high_days if p.effort else None,
+        )
+        for p in manifest.work_packages
+    ]
+    claims = [
+        RiskClaimView(
+            text=c.text,
+            verdict=verdicts.get(
+                c.id, "NOT_CHECKABLE" if c.kind == "NOT_CHECKABLE" else "NOT_CHECKED"
+            ),
+        )
+        for c in manifest.tech_claims
+    ]
+    return RiskView(
+        work_packages=packages,
+        assumptions=[a.text for a in manifest.assumptions],
+        tech_claims=claims,
+        gaps=gaps,
+        discrepancies=discrepancies,
+        affectable=frozenset(known | {p.code for p in manifest.work_packages}),
+    )
 
 
 # --- what render and the status read ---------------------------------------------------------

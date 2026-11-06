@@ -1,0 +1,53 @@
+{
+ "key": "sha256:94356ee407096b59b3055f78071112d42d88e29ee866c25c8aabc0150da46330",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "date_calc",
+   "search_rfp",
+   "sla_calc"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_12459848397029235162",
+    "name": "search_rfp",
+    "arguments": {
+     "query": "REQ-0012"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 3437,
+   "tokens_out": 22,
+   "tokens_cached": 0,
+   "tokens_thinking": 13,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_12459848397029235162",
+      "args": {
+       "query": "REQ-0012"
+      },
+      "name": "search_rfp"
+     },
+     "thought_signature": "EqIBCp8BAWkUfRNZ2DpsfDHqi56hUTbfCHHrEZhdilMuRhmngPuqlWZGw9f1hKc8RaCD3G7VDKXkT1zGLEQIj0c3bVWjFHcWJE7Xe9eAMTUo_NZ7f_OECEmPnqTqb27RBNkTRbnsF-rdTalu9h7g47uMFi5IIr8ZOa5xCs2Tbpj1xoKnsLh62wj-MMaJx6naB_a4qIteOqxj4ItP5xTOcYKubR0A"
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:32:17Z"
+}

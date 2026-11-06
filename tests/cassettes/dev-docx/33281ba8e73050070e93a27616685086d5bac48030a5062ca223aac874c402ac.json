@@ -1,0 +1,26 @@
+{
+ "key": "sha256:33281ba8e73050070e93a27616685086d5bac48030a5062ca223aac874c402ac",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"CAP-008 explicitly states that the system is hosted in two data centers in the United Kingdom, 80 kilometers apart, with data replicated between them, directly matching the claim.\", \"disposition\":\"SUPPORTED\", \"supporting_ids\":[\"CAP-008\"], \"missing\":\"\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1726,
+   "tokens_out": 68,
+   "tokens_cached": 1408,
+   "tokens_thinking": 127,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:23:05Z"
+}

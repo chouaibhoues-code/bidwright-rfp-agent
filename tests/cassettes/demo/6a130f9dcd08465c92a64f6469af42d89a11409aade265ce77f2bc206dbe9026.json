@@ -1,0 +1,35 @@
+{
+ "key": "sha256:6a130f9dcd08465c92a64f6469af42d89a11409aade265ce77f2bc206dbe9026",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "BriefResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"factors\": [\n    {\n      \"name\": \"Technical approach\",\n      \"weight\": \"40%\",\n      \"scoring\": \"not_stated\",\n      \"src_ids\": [\n        \"SRC-0035\"\n      ]\n    },\n    {\n      \"name\": \"Service levels and support\",\n      \"weight\": \"20%\",\n      \"scoring\": \"not_stated\",\n      \"src_ids\": [\n        \"SRC-0036\"\n      ]\n    },\n    {\n      \"name\": \"Integration and migration\",\n      \"weight\": \"20%\",\n      \"scoring\": \"not_stated\",\n      \"src_ids\": [\n        \"SRC-0037\"\n      ]\n    },\n    {\n      \"name\": \"Price\",\n      \"weight\": \"20%\",\n      \"scoring\": \"not_stated\",\n      \"src_ids\": [\n        \"SRC-0038\"\n      ]\n    }\n  ],\n  \"scoring_method\": {\n    \"text\": \"Proposals are scored on the criteria below.\",\n    \"src_ids\": [\n      \"SRC-0033\"\n    ]\n  },\n  \"needs\": [],\n  \"scope_in\": [],\n  \"scope_out\": [],\n  \"constraints\": [\n    {\n      \"text\": \"Proposals must be submitted through the portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC.\",\n      \"src_ids\": [\n        \"SRC-0015\"\n      ]\n    }\n  ],\n  \"never\": [],\n  \"ask\": [],\n  \"always\": [],\n  \"topics\": [\n    \"cloud electronic signature services\",\n    \"document workflow automation\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2650,
+   "tokens_out": 427,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"factors\": [\n    {\n      \"name\": \"Technical approach\",\n      \"weight\": \"40%\",\n      \"scoring\": \"not_stated\",\n      \"src_ids\": [\n        \"SRC-0035\"\n      ]\n    },\n    {\n      \"name\": \"Service levels and support\",\n      \"weight\": \"20%\",\n      \"scoring\": \"not_stated\",\n      \"src_ids\": [\n        \"SRC-0036\"\n      ]\n    },\n    {\n      \"name\": \"Integration and migration\",\n      \"weight\": \"20%\",\n      \"scoring\": \"not_stated\",\n      \"src_ids\": [\n        \"SRC-0037\"\n      ]\n    },\n    {\n      \"name\": \"Price\",\n      \"weight\": \"20%\",\n      \"scoring\": \"not_stated\",\n      \"src_ids\": [\n        \"SRC-0038\"\n      ]\n    }\n  ],\n  \"scoring_method\": {\n    \"text\": \"Proposals are scored on the criteria below.\",\n    \"src_ids\": [\n      \"SRC-0033\"\n    ]\n  },\n  \"needs\": [],\n  \"scope_in\": [],\n  \"scope_out\": [],\n  \"constraints\": [\n    {\n      \"text\": \"Proposals must be submitted through the portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC.\",\n      \"src_ids\": [\n        \"SRC-0015\"\n      ]\n    }\n  ],\n  \"never\": [],\n  \"ask\": [],\n  \"always\": [],\n  \"topics\": [\n    \"cloud electronic signature services\",\n    \"document workflow automation\"\n  ]\n}",
+     "thought_signature": "EmAKXgFpFH0TylOnUToDKuhW9C11YCRcJEDlCaQ8DOfKUMZiSBRhEKr-WGFZO1mWLNdSAfI0VMumM5Uu5C9ceo4itLFmEa7-NdumT0o9LDe7qlhljPvC0ELhygIirHULibo="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:14:30Z"
+}

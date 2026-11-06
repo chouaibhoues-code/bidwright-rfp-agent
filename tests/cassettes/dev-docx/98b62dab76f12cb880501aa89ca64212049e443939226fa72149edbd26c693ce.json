@@ -1,0 +1,39 @@
+{
+ "key": "sha256:98b62dab76f12cb880501aa89ca64212049e443939226fa72149edbd26c693ce",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "```json\n{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base shows role-based training capabilities and delivery roles, but does not provide a specific commitment or guarantee that the system will go live by 2027-06-30.\",\n  \"claims\": [\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Role-based training for customer staff is delivered on site or by video, with guides for each role.\",\n      \"evidence_ids\": [\n        \"CAP-016\",\n        \"ROLE-004\"\n      ],\n      \"src_ids\": [\n        \"SRC-0025\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence confirming that the system will go live by the specific deadline of 2027-06-30.\"\n}\n```",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2532,
+   "tokens_out": 200,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "```json\n{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base shows role-based training capabilities and delivery roles, but does not provide a specific commitment or guarantee that the system will go live by 2027-06-30.\",\n  \"claims\": [\n    {\n      \"kind\": \"capability\",\n      \"text\": \"Role-based training for customer staff is delivered on site or by video, with guides for each role.\",\n      \"evidence_ids\": [\n        \"CAP-016\",\n        \"ROLE-004\"\n      ],\n      \"src_ids\": [\n        \"SRC-0025\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence confirming that the system will go live by the specific deadline of 2027-06-30.\"\n}\n```",
+     "thought_signature": "EmAKXgFpFH0TUHju_SvkXOKMljvPg624EGikL0EkrXkhdvOiRbuJ1Rnx8lq0o5LU5GG1nRZp22oNYh1gKNe2ldIyMGoMj4i5u-dkH-kqvS0fe9T978K7St_q2-boSVIWmzY="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:23:03Z"
+}

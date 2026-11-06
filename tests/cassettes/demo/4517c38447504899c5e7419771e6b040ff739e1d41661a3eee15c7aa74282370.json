@@ -1,0 +1,54 @@
+{
+ "key": "sha256:4517c38447504899c5e7419771e6b040ff739e1d41661a3eee15c7aa74282370",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "ask_research",
+   "read_section",
+   "search_capabilities",
+   "search_rfp"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_14941270548753674067",
+    "name": "search_capabilities",
+    "arguments": {
+     "query": "proposal submission portal PDF page limit"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 2055,
+   "tokens_out": 21,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_14941270548753674067",
+      "args": {
+       "query": "proposal submission portal PDF page limit"
+      },
+      "name": "search_capabilities"
+     },
+     "thought_signature": "EmAKXgFpFH0T-DwwjuOvgMSMTen9CeT1R0hVDQofNr4fNI7vYE5EwjUAYV-TRqwhFkWxmWE_cJH92ntcTIcRQ26s1ZpE9AegB709qsUpqKh_tWixLwBEjmE52X_tq4plW5I="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:18:36Z"
+}

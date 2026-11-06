@@ -8,21 +8,21 @@ What each LLM call in the current tag may do, from `config/agents.yaml`, `config
 
 | Name | Kind | Input | Output | Prompt | Model role | Tools | Limits |
 |---|---|---|---|---|---|---|---|
-| `triage` | function | `TriageInput` | `TriageResult` | `triage@0.1.0` | extract | None | None |
-| `brief` | function | `BriefInput` | `BriefResult` | `brief@0.2.0` | extract | None | None |
+| `triage` | function | `TriageInput` | `TriageResult` | `triage@0.2.0` | extract | None | None |
+| `brief` | function | `BriefInput` | `BriefResult` | `brief@0.3.0` | extract | None | None |
 | `discover` | agent | `DiscoveryTask` | `DiscoveryExtract` | `discover@0.4.0` | reason | `ask_research`, `start_research` | max_turns 4, max_tool_calls 8, stop_on_no_progress True |
-| `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.4.0` | extract | None | None |
+| `extract` | function | `ExtractBatch` | `ExtractResult` | `extract@0.5.0` | extract | None | None |
 | `approach` | function | `ApproachInput` | `ApproachResult` | `approach@0.2.0` | reason | None | None |
-| `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.2.0` | reason | `search_rfp`, `date_calc`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
-| `decide` | agent | `DecideTask` | `DecideResult` | `decide@0.1.0` | reason | `search_capabilities`, `search_rfp`, `read_section`, `ask_research`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
+| `risk` | agent | `RiskInput` | `RiskRegister` | `risk@0.3.0` | reason | `search_rfp`, `date_calc`, `sla_calc`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
+| `decide` | agent | `DecideTask` | `DecideResult` | `decide@0.2.0` | reason | `search_capabilities`, `search_rfp`, `read_section`, `ask_research`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
 | `assess` | function | `AssessmentTask` | `AssessmentResult` | `assess@0.1.0` | assess | None | None |
 | `options` | function | `OptionsTask` | `OptionsResult` | `options@0.1.0` | reason | None | None |
 | `blueprint` | function | `BlueprintPlanTask` | `BlueprintPlan` | `blueprint@0.1.0` | reason | None | None |
 | `blueprint_detail` | function | `BlueprintDetailTask` | `BlueprintDetail` | `blueprint_detail@0.1.0` | reason | None | None |
 | `techcheck` | function | `TechVerdictTask` | `TechVerdict` | `techcheck@0.1.0` | assess | `resolve-library-id`, `query-docs` | None |
 | `risk_oneshot` | function | `RiskFixedInput` | `RiskRegister` | `risk_oneshot@0.1.0` | reason | None | None |
-| `draft` | function | `DraftTask` | `DraftResult` | `draft@0.2.0` | reason | None | None |
-| `consolidate` | function | `ClusterTask` | `ConsolidationResult` | `consolidate@0.1.0` | reason | None | None |
+| `draft` | function | `DraftTask` | `DraftResult` | `draft@0.3.0` | reason | None | None |
+| `consolidate` | function | `ClusterTask` | `ConsolidationResult` | `consolidate@0.2.0` | reason | None | None |
 
 A function declares no limits: it makes one call and one repair, fixed in the node code, and with the second pass on, `extract` makes one more call per pack, with one format repair. An agent's limits bound its tool loop.
 
@@ -34,18 +34,18 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | `assess` | 0.1.0 | assess | Plain rules, five dispositions defined, the reason before the label | `AssessmentResult` | cerebras: reasoning_effort medium; groq: reasoning_effort medium; gemini: thinking low; ollama: think False | never |
 | `blueprint` | 0.1.0 | reason | Skeleton first, the plan before its detail; every fact tied to its sources | `BlueprintPlan` | gemini: thinking medium; ollama: think False | never |
 | `blueprint_detail` | 0.1.0 | reason | The detail of each work package from the settled plan, adding no new fact | `BlueprintDetail` | gemini: thinking medium; ollama: think False | never |
-| `brief` | 0.2.0 | extract | plain rules and a factor table, positive directives | `BriefResult` | gemini: thinking low; ollama: think False | 2026-11-05 |
-| `consolidate` | 0.1.0 | reason | ordered steps in the task, positive directives | `ConsolidationResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
-| `decide` | 0.1.0 | reason | Typed decision first, then claims, after a bounded tool loop | `DecideResult` | gemini: thinking low; ollama: think False | never |
+| `brief` | 0.3.0 | extract | plain rules and a factor table, positive directives | `BriefResult` | gemini: thinking low; ollama: think False | 2026-11-05 |
+| `consolidate` | 0.2.0 | reason | ordered steps in the task, positive directives | `ConsolidationResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
+| `decide` | 0.2.0 | reason | Typed decision first, then claims, after a bounded tool loop | `DecideResult` | gemini: thinking low; ollama: think False | never |
 | `discover` | 0.4.0 | reason | plain rules with positive directives; the research envelope of M18 for the query | `DiscoveryExtract` | gemini: thinking low; ollama: think False | 2026-11-05 |
-| `draft` | 0.2.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
-| `extract` | 0.4.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
+| `draft` | 0.3.0 | reason | CO-STAR with strict sourcing | `DraftResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
+| `extract` | 0.5.0 | extract | plain rules and decision table, positive directives | `ExtractResult` | gemini: thinking medium; ollama: think False | 2026-11-04 |
 | `extract_oneshot` | 0.4.0 | extract | plain instruction | `ExtractResult` | gemini: thinking medium; ollama: think False | never |
 | `options` | 0.1.0 | reason | Distinct options compared before scoring, in one call; the baseline first | `OptionsResult` | gemini: thinking medium; ollama: think False | never |
-| `risk` | 0.2.0 | reason | Multi-Perspective pre-mortem in one call | `RiskRegister` | gemini: thinking low; ollama: think False | 2026-11-04 |
+| `risk` | 0.3.0 | reason | Multi-Perspective pre-mortem in one call | `RiskRegister` | gemini: thinking low; ollama: think False | 2026-11-04 |
 | `risk_oneshot` | 0.1.0 | reason | Plain instruction, no tools, one call (the RK0 and RK1-F baselines) | `RiskRegister` | gemini: thinking low; ollama: think False | never |
 | `techcheck` | 0.1.0 | assess | A strict three-way verdict; unsure means INSUFFICIENT_DOCS; the quote copied from the documentation | `TechVerdict` | cerebras: reasoning_effort medium; groq: reasoning_effort medium; gemini: thinking low; ollama: think False | never |
-| `triage` | 0.1.0 | extract | plain rules and a zone table, positive directives | `TriageResult` | gemini: thinking low; ollama: think False | 2026-11-04 |
+| `triage` | 0.2.0 | extract | plain rules and a zone table, positive directives | `TriageResult` | gemini: thinking low; ollama: think False | 2026-11-04 |
 
 ## Models by profile and role
 

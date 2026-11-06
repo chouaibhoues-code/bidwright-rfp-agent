@@ -10,7 +10,7 @@ import pytest
 from bidwright.graph.build import execute
 from bidwright.preflight import CONSENT, Refused, check_corpus, corpus_name
 from bidwright.schemas import RunManifest
-from tests.node_fakes import DEV_RFP, RuleBackend
+from tests.node_fakes import DEV_RFP, RuleBackend, fake_backends
 
 
 @pytest.fixture
@@ -54,7 +54,7 @@ def test_free_refuses_a_non_corpus_file_at_the_run_entry(stranger: Path, tmp_pat
             source=stranger,
             profile="free",
             outputs=tmp_path / "out",
-            backends={"gemini": RuleBackend()},
+            backends=fake_backends(RuleBackend()),
         )
     assert not (tmp_path / "out").exists()
 
@@ -70,11 +70,13 @@ def test_the_override_runs_a_non_corpus_file_and_the_manifest_records_it(
         source=twin,
         profile="free",
         outputs=tmp_path / "out",
-        backends={"gemini": RuleBackend()},
+        backends=fake_backends(RuleBackend()),
         consent=CONSENT,
         run_id="override",
     )
-    assert result.status == "COMPLETED", result.reason
+    # A client run's assess role takes the generator's family (section 4.3), so it ends
+    # DEGRADED with that reason alone.
+    assert (result.status, result.reason) == ("DEGRADED", "assess: SAME_FAMILY")
     manifest = RunManifest.model_validate_json(
         (result.run_dir / "run_manifest.json").read_text(encoding="utf-8")
     )

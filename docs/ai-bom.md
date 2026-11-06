@@ -26,18 +26,18 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `assess` | 0.1.0 | assess | `sha256:2aa0d0fe6317` |
 | `blueprint` | 0.1.0 | reason | `sha256:834762b36438` |
 | `blueprint_detail` | 0.1.0 | reason | `sha256:2b4a3a6bf768` |
-| `brief` | 0.2.0 | extract | `sha256:58dc56bb634a` |
-| `consolidate` | 0.1.0 | reason | `sha256:0e4706513b48` |
-| `decide` | 0.1.0 | reason | `sha256:7fad296ecb75` |
+| `brief` | 0.3.0 | extract | `sha256:0a1a5294d35e` |
+| `consolidate` | 0.2.0 | reason | `sha256:bc56f5fd3b08` |
+| `decide` | 0.2.0 | reason | `sha256:25f4f0a20ca2` |
 | `discover` | 0.4.0 | reason | `sha256:be5de32c2002` |
-| `draft` | 0.2.0 | reason | `sha256:e565f6bb6f35` |
-| `extract` | 0.4.0 | extract | `sha256:11cde3336a38` |
+| `draft` | 0.3.0 | reason | `sha256:4967376a2ee9` |
+| `extract` | 0.5.0 | extract | `sha256:3c17d8534edc` |
 | `extract_oneshot` | 0.4.0 | extract | `sha256:cda10111ce58` |
 | `options` | 0.1.0 | reason | `sha256:0d38b5d27fbf` |
-| `risk` | 0.2.0 | reason | `sha256:10c255fbf785` |
+| `risk` | 0.3.0 | reason | `sha256:a670a3ac716c` |
 | `risk_oneshot` | 0.1.0 | reason | `sha256:482f584a78f0` |
 | `techcheck` | 0.1.0 | assess | `sha256:88c175538fd6` |
-| `triage` | 0.1.0 | extract | `sha256:7e154ae7564a` |
+| `triage` | 0.2.0 | extract | `sha256:ad2ca2513610` |
 
 ## Agentic control factors
 
@@ -48,7 +48,7 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 | `discover` | agent | `ask_research`, `start_research` | max_turns 4, max_tool_calls 8, stop_on_no_progress True |
 | `extract` | function | None | 1 call and 1 repair, fixed in code |
 | `approach` | function | None | 1 call and 1 repair, fixed in code |
-| `risk` | agent | `search_rfp`, `date_calc`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
+| `risk` | agent | `search_rfp`, `date_calc`, `sla_calc`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
 | `decide` | agent | `search_capabilities`, `search_rfp`, `read_section`, `ask_research`, `reflect` | max_turns 4, max_tool_calls 6, stop_on_no_progress True, reflect False |
 | `assess` | function | None | 1 call and 1 repair, fixed in code |
 | `options` | function | None | 1 call and 1 repair, fixed in code |
@@ -77,7 +77,7 @@ Controls on every run, in code:
 | `start_research` | Sends one query, built from the research envelope, to NotebookLM as a deep research job on a notebook code created; `discover` writes the job to `research.json` | `discover` |
 | `search_capabilities` | Reads the run's own index of the supplier's knowledge base; writes nothing | `decide` |
 | `read_section` | Reads one section of the run's passages, as its text view shows them; writes nothing | `decide` |
-| `sla_calc` | Computes service-level downtime and percentages; reads and writes nothing | No agent |
+| `sla_calc` | Computes service-level downtime and percentages; reads and writes nothing | `risk` |
 | `reflect` | Sends one thought, with code's counters, to the pinned sequential-thinking server, a local subprocess that sends nothing on; offered by G6 only after a failed call or a turn with no progress, twice an invocation, and off unless an agent's limits turn it on | `risk`, `decide` |
 | `resolve-library-id` | Called by code, never a model: sends a library's name and a query built from a technology claim to Context7, and reads back the library's id | `techcheck` |
 | `query-docs` | Called by code, never a model: sends a library id and that query to Context7, and reads back its documentation, which `techcheck` writes to `tech_docs.jsonl` | `techcheck` |

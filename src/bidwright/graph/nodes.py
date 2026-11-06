@@ -61,8 +61,12 @@ from bidwright.schemas import (
     Requirement,
     RequirementView,
     Risk,
+    RiskClaimView,
+    RiskDiscrepancyView,
     RiskFixedInput,
+    RiskGapView,
     RiskInput,
+    RiskPackageView,
     RiskProposal,
     RiskRegister,
     SubmissionHazard,
@@ -787,6 +791,30 @@ def write_approach(run_dir: Path, outcome: ApproachOutcome) -> dict[str, Any]:
 
 
 @dataclass
+class RiskView:
+    """What `risk` sees beside the requirements and the approach (section 4.7): the
+    manifest's work packages, assumptions and technology claims with their verdicts, the
+    capability map's `GAP` rows, and the discrepancies; and the work package codes and need
+    ids a risk's `affects` may name. Every list is empty on a path with no manifest."""
+
+    work_packages: list[RiskPackageView] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    tech_claims: list[RiskClaimView] = field(default_factory=list)
+    gaps: list[RiskGapView] = field(default_factory=list)
+    discrepancies: list[RiskDiscrepancyView] = field(default_factory=list)
+    affectable: frozenset[str] = frozenset()
+
+    def fields(self) -> dict[str, Any]:
+        return {
+            "work_packages": self.work_packages,
+            "assumptions": self.assumptions,
+            "tech_claims": self.tech_claims,
+            "gaps": self.gaps,
+            "discrepancies": self.discrepancies,
+        }
+
+
+@dataclass
 class RiskOutcome:
     risks: list[Risk]
     questions: list[OpenQuestion]
@@ -803,6 +831,7 @@ def risk(
     gateway: ToolGateway,
     limits: AgentLimits,
     manifests: CallManifests | None = None,
+    solution: RiskView | None = None,
 ) -> RiskOutcome:
     """A tool loop of at most `max_turns` turns, then a final structured call with no tools.
     Its calls are `R01` onward, one per turn, then `R-final`, a format repair `R-final-repair`
@@ -812,6 +841,7 @@ def risk(
     ends the loop only once both thoughts are spent. Without it the loop is `v0.2`'s."""
     prompt = ctx.prompts["risk"]
     chosen = predictions(requirements)
+    solution = solution or RiskView()
     view = RiskInput(
         requirements=requirement_views(chosen),
         approach=[
@@ -819,6 +849,7 @@ def risk(
             for a in approach_items
         ],
         hazards=[r.id for r in chosen if r.hazard],
+        **solution.fields(),
     )
     data = view.model_dump_json()
     rendered = prompt.render(data, run_id=ctx.run_id)
@@ -913,14 +944,7 @@ def risk(
         if isinstance(second.parsed, RiskRegister):
             parsed = second.parsed
             accepted, rejected = _screen(parsed.risks, ctx.passages)
-    risks = [
-        Risk(
-            id=f"RSK-{n:03d}",
-            **proposal.model_dump(exclude={"evidence_src_ids"}),
-            evidence_src_ids=ids,
-        )
-        for n, (proposal, ids) in enumerate(accepted, start=1)
-    ]
+    risks = _risks(accepted, solution)
     questions = [
         OpenQuestion(text=q.text, src_ids=[s for s in q.src_ids if s in ctx.passages])
         for q in parsed.open_questions
@@ -993,12 +1017,14 @@ def risk_baseline(
     *,
     index: "PassageIndex | None" = None,
     manifests: CallManifests | None = None,
+    solution: RiskView | None = None,
 ) -> RiskOutcome:
     """RK0 (`oneshot`) and RK1-F (`fixed`): one `risk_oneshot.md` call with no tools, then the
     checks of the loop and its one retry after generic risks. Calls are `R-<mode>`, a format
     repair `R-<mode>-repair` and the retry `R-<mode>-generic`; they run as node `risk`."""
     prompt = ctx.prompts["risk_oneshot"]
     chosen = predictions(requirements)
+    solution = solution or RiskView()
     dates: list[DateFact] = []
     passages: list[PassageView] = []
     if mode == "fixed":
@@ -1012,6 +1038,7 @@ def risk_baseline(
             for a in approach_items
         ],
         hazards=[r.id for r in chosen if r.hazard],
+        **solution.fields(),
         dates=dates,
         passages=passages,
     )
@@ -1053,14 +1080,7 @@ def risk_baseline(
         if isinstance(second.parsed, RiskRegister):
             parsed = second.parsed
             accepted, rejected = _screen(_resolved_evidence(parsed.risks, by_id), ctx.passages)
-    risks = [
-        Risk(
-            id=f"RSK-{n:03d}",
-            **proposal.model_dump(exclude={"evidence_src_ids"}),
-            evidence_src_ids=ids,
-        )
-        for n, (proposal, ids) in enumerate(accepted, start=1)
-    ]
+    risks = _risks(accepted, solution)
     questions = [
         OpenQuestion(text=q.text, src_ids=[s for s in q.src_ids if s in ctx.passages])
         for q in parsed.open_questions
@@ -1075,16 +1095,24 @@ def _progress_keys(tool: str, result: ToolResult) -> list[str]:
         return [hit["src_id"] for hit in result.data]
     if tool == "date_calc" and isinstance(result.data, dict):
         return [f"date:{json.dumps(result.data.get('result'))}"]
+    if tool == "sla_calc" and isinstance(result.data, dict):
+        return [f"sla:{json.dumps(result.data.get('result'))}"]
     return []
 
 
 def _screen(
     proposals: Sequence[RiskProposal], passages: dict[str, Passage]
 ) -> tuple[list[tuple[RiskProposal, list[str]]], list[dict[str, Any]]]:
-    """Reject generic risks, and risks that carry a rating or a probability."""
+    """Reject a risk with an empty field of the six (section 4.7), a generic risk, and a
+    risk that carries a rating or a probability. Each rejection keeps the whole proposal."""
     accepted, rejected = [], []
     for proposal in proposals:
         evidence = [s for s in proposal.evidence_src_ids if s in passages]
+        empty = _empty_fields(proposal)
+        if empty:
+            reason = f"incomplete: no {', '.join(empty)}"
+            rejected.append(_risk_rejection(proposal, evidence, reason))
+            continue
         cited = " ".join(display_text(passages[s].text) for s in evidence)
         shared = content_stems(f"{proposal.condition} {proposal.event}") & content_stems(cited)
         exposure = proposal.residual_exposure.strip().lower().rstrip(".")
@@ -1102,8 +1130,42 @@ def _screen(
         else:
             accepted.append((proposal, evidence))
             continue
-        rejected.append({"event": proposal.event, "evidence_src_ids": evidence, "reason": reason})
+        rejected.append(_risk_rejection(proposal, evidence, reason))
     return accepted, rejected
+
+
+SIX_FIELDS = ("condition", "event", "effect", "owner_role", "trigger")
+
+
+def _empty_fields(proposal: RiskProposal) -> list[str]:
+    """The six fields a risk must fill: five texts, and at least one response."""
+    empty = [name.replace("_", " ") for name in SIX_FIELDS if not getattr(proposal, name).strip()]
+    if not any(r.strip() for r in proposal.responses):
+        empty.append("response")
+    return empty
+
+
+def _risk_rejection(proposal: RiskProposal, evidence: list[str], reason: str) -> dict[str, Any]:
+    return {
+        "event": proposal.event,
+        "evidence_src_ids": evidence,
+        "reason": reason,
+        "risk": proposal.model_dump(mode="json"),
+    }
+
+
+def _risks(accepted: Sequence[tuple[RiskProposal, list[str]]], solution: RiskView) -> list[Risk]:
+    """The accepted risks as records; `affects` keeps only codes and ids that exist."""
+    return [
+        Risk(
+            id=f"RSK-{n:03d}",
+            **proposal.model_dump(exclude={"evidence_src_ids", "affects", "responses"}),
+            responses=[r for r in proposal.responses if r.strip()],
+            evidence_src_ids=ids,
+            affects=list(dict.fromkeys(a for a in proposal.affects if a in solution.affectable)),
+        )
+        for n, (proposal, ids) in enumerate(accepted, start=1)
+    ]
 
 
 # --- draft ----------------------------------------------------------------------------------

@@ -1,0 +1,26 @@
+{
+ "key": "sha256:eab238b1c504496324bebd8ce07e6c6c6a90b4a1ea4666e32715aed10df088e9",
+ "provider": "cerebras",
+ "model": "gpt-oss-120b",
+ "request": {
+  "schema_name": "AssessmentResult",
+  "tools": [],
+  "settings": {
+   "reasoning_effort": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"reason\":\"CAP-006 explicitly states \\\"A documented REST API and webhooks for exchanging data with other line-of-business systems,\\\" which exactly matches the claim.\", \"disposition\":\"SUPPORTED\", \"supporting_ids\":[\"CAP-006\"], \"missing\":\"\"}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1722,
+   "tokens_out": 62,
+   "tokens_cached": 1408,
+   "tokens_thinking": 423,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  }
+ },
+ "recorded": "2026-11-06T00:19:42Z"
+}

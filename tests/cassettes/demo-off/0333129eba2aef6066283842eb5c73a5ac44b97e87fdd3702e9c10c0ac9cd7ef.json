@@ -1,0 +1,35 @@
+{
+ "key": "sha256:0333129eba2aef6066283842eb5c73a5ac44b97e87fdd3702e9c10c0ac9cd7ef",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base provides a delivery lead role to manage implementations, but there is no record guaranteeing that the service will be live by 2027-01-11.\",\n  \"claims\": [\n    {\n      \"kind\": \"role\",\n      \"text\": \"A delivery lead is provided to lead the implementation from the contract start until three months after go-live.\",\n      \"evidence_ids\": [\n        \"ROLE-001\"\n      ],\n      \"src_ids\": [\n        \"SRC-0032\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence confirming a live service date by 2027-01-11.\",\n  \"question\": null\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2091,
+   "tokens_out": 182,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"decision\": \"PROCEED_WITH_GAP\",\n  \"reason\": \"The knowledge base provides a delivery lead role to manage implementations, but there is no record guaranteeing that the service will be live by 2027-01-11.\",\n  \"claims\": [\n    {\n      \"kind\": \"role\",\n      \"text\": \"A delivery lead is provided to lead the implementation from the contract start until three months after go-live.\",\n      \"evidence_ids\": [\n        \"ROLE-001\"\n      ],\n      \"src_ids\": [\n        \"SRC-0032\"\n      ]\n    }\n  ],\n  \"gap\": \"No evidence confirming a live service date by 2027-01-11.\",\n  \"question\": null\n}",
+     "thought_signature": "EmAKXgFpFH0TUzC1tDkD-0JaP_Jn_qd8voS93em-zarcWqRhWjNH11-NLNH4RUzbtmTz_pQa--vn1t6HfAE3yeDPsqV_RyJQRfD1zAEFtWt99HpFalPlIz5RFq1SLAzq6eE="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:30:38Z"
+}

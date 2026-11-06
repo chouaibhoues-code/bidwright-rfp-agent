@@ -1,0 +1,53 @@
+{
+ "key": "sha256:b1f5688d1853a31e356774a8b77245c656d1f699987e31c3acb222f8d5e210b0",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": null,
+  "tools": [
+   "date_calc",
+   "search_rfp",
+   "sla_calc"
+  ],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "",
+  "tool_calls": [
+   {
+    "id": "call_17233882125726831337",
+    "name": "search_rfp",
+    "arguments": {
+     "query": "procurement portal PDF"
+    }
+   }
+  ],
+  "usage": {
+   "tokens_in": 3289,
+   "tokens_out": 20,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "function_call": {
+      "id": "call_17233882125726831337",
+      "args": {
+       "query": "procurement portal PDF"
+      },
+      "name": "search_rfp"
+     },
+     "thought_signature": "EmAKXgFpFH0T15lwdRcdfm86DC5ypsCs7f5-_wGKYtOh8vdGSE6AOirGroOO1pPvlxaPy7PjsUrRDGdy8xafL2j_-e_rgY5P_XSyQTiocg3a47a-IXnj-YDapttOOtlcLLA="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:21:18Z"
+}

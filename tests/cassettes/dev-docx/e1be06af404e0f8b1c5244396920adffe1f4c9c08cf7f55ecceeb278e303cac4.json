@@ -1,0 +1,35 @@
+{
+ "key": "sha256:e1be06af404e0f8b1c5244396920adffe1f4c9c08cf7f55ecceeb278e303cac4",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"decision\": \"PROCEED_WITH_GAP\", \"reason\": \"The knowledge base shows role-based training capabilities and delivery roles, but does not provide a specific commitment or guarantee that the system will go live by 2027-06-30.\", \"claims\": [{\"kind\": \"capability\", \"text\": \"Role-based training for customer staff is delivered on site or by video, with guides for each role.\", \"evidence_ids\": [\"CAP-016\", \"ROLE-004\"], \"src_ids\": [\"SRC-0025\"]}], \"gap\": \"No evidence confirming that the system will go live by the specific deadline of 2027-06-30.\", \"question\": null}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2253,
+   "tokens_out": 158,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"decision\": \"PROCEED_WITH_GAP\", \"reason\": \"The knowledge base shows role-based training capabilities and delivery roles, but does not provide a specific commitment or guarantee that the system will go live by 2027-06-30.\", \"claims\": [{\"kind\": \"capability\", \"text\": \"Role-based training for customer staff is delivered on site or by video, with guides for each role.\", \"evidence_ids\": [\"CAP-016\", \"ROLE-004\"], \"src_ids\": [\"SRC-0025\"]}], \"gap\": \"No evidence confirming that the system will go live by the specific deadline of 2027-06-30.\", \"question\": null}",
+     "thought_signature": "EmAKXgFpFH0TLlgrktAx7cxe8aLoNLMm_W53JQBfMLjDAHrA0E2wxyq7TlAioipYiOzfvySt8Ts1HPyiF0XouRC51KM5ShnM002-lbzoU1IIqmob4U8rkcAC5uPDpwI967M="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:23:04Z"
+}

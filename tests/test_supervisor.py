@@ -23,7 +23,7 @@ from bidwright.obs.ledger import read_ledger
 from bidwright.preflight import Refused
 from bidwright.purge import RunInUse, purge_run
 from bidwright.schemas import BudgetSnapshot, RunManifest
-from tests.node_fakes import DEV_RFP, RuleBackend
+from tests.node_fakes import DEV_RFP, RuleBackend, fake_backends
 
 
 def _drained() -> RunControl:
@@ -39,7 +39,7 @@ def _run(tmp_path: Path, model: Backend | None = None, **kwargs: Any) -> RunResu
         "source": DEV_RFP,
         "profile": "free",
         "outputs": tmp_path / "out",
-        "backends": {"gemini": model or RuleBackend()},
+        "backends": fake_backends(model or RuleBackend()),
         "run_id": "run",
         **kwargs,
     }

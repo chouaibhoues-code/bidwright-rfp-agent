@@ -127,8 +127,11 @@ def test_flash_price_doubles_after_2026(config: Config) -> None:
 
 
 def test_run_limits_exist_for_the_dev_rfp(config: Config) -> None:
-    assert config.limits.run("dev", "free").requests == 60
-    assert config.limits.run("dev", "local").active_minutes == 60
+    """The limits of Iteration 3's section 6.1, raised at step 12 for the solution path."""
+    assert config.limits.run("dev", "free").requests == 150
+    assert config.limits.run("dev", "free").tokens == 600_000
+    assert config.limits.run("dev", "local").active_minutes == 90
+    assert config.limits.run("hero", "free").requests == 450
     with pytest.raises(KeyError):
         config.limits.run("dev", "unknown")
 

@@ -1,0 +1,35 @@
+{
+ "key": "sha256:ed4b4a1dd201050556bf03e609d0b06b726e3c2447dd82d16a57b97300145ebe",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DecideResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"decision\":\"PROCEED_WITH_GAP\",\"reason\":\"The knowledge base contains no records regarding proposal submission procedures or compliance with specific portal formatting and deadline instructions.\",\"claims\":[],\"gap\":\"No evidence or records regarding the proposal submission process, portal formatting, or deadline compliance.\",\"question\":null}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2096,
+   "tokens_out": 60,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"decision\":\"PROCEED_WITH_GAP\",\"reason\":\"The knowledge base contains no records regarding proposal submission procedures or compliance with specific portal formatting and deadline instructions.\",\"claims\":[],\"gap\":\"No evidence or records regarding the proposal submission process, portal formatting, or deadline compliance.\",\"question\":null}",
+     "thought_signature": "EmAKXgFpFH0TlcLT5-LfqND65db-saDf7qJf_WCkHjZc435DI6OB8xY6_ulOTocJoLWYwHfseH6_po30n0VcxhLccyZkzQ8Hug1mayZedj2yK5u3qLzIrzVoHzCYOoN_wGo="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:29:48Z"
+}

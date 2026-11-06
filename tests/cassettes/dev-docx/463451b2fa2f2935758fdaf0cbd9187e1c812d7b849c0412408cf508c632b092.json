@@ -1,0 +1,35 @@
+{
+ "key": "sha256:463451b2fa2f2935758fdaf0cbd9187e1c812d7b849c0412408cf508c632b092",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "TriageResult",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"zones\": [\n    {\n      \"section_path\": \"Request for Proposal: Donor and Volunteer Management System\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"BACKGROUND\",\n      \"confidence\": 0.8,\n      \"reason\": \"Provides the name and reference of the buyer and procurement.\"\n    },\n    {\n      \"section_path\": \"1 Introduction\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"BACKGROUND\",\n      \"confidence\": 0.9,\n      \"reason\": \"Describes the Trust and invites proposals without binding terms.\"\n    },\n    {\n      \"section_path\": \"2 Background\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"BACKGROUND\",\n      \"confidence\": 0.95,\n      \"reason\": \"Gives context about the buyer's current records and plans.\"\n    },\n    {\n      \"section_path\": \"3 Instructions\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"INSTRUCTION\",\n      \"confidence\": 0.95,\n      \"reason\": \"Sets submission method, deadline, page limit, and questions rule.\"\n    },\n    {\n      \"section_path\": \"4 Requirements\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"OBLIGATION\",\n      \"confidence\": 0.95,\n      \"reason\": \"States what the system must deliver and record.\"\n    },\n    {\n      \"section_path\": \"5 Timeline\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"OBLIGATION\",\n      \"confidence\": 0.9,\n      \"reason\": \"Specifies supplier duties for training and live dates.\"\n    },\n    {\n      \"section_path\": \"6 Evaluation\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"EVALUATION\",\n      \"confidence\": 0.95,\n      \"reason\": \"Details the scoring criteria for proposals.\"\n    }\n  ],\n  \"profile\": {\n    \"buyer\": \"The Fennick Lantern Trust\",\n    \"procurement\": \"a cloud system to manage its donors, volunteers and events\",\n    \"submission_deadline\": \"17:00 GMT on 2027-02-12\",\n    \"submission_format\": \"one document of no more than 15 pages sent by e-mail\",\n    \"evaluation_method\": \"scores proposals on the criteria below\",\n    \"contract_length\": \"not_stated\"\n  },\n  \"hazards\": [\n    {\n      \"kind\": \"DEADLINE\",\n      \"src_ids\": [\n        \"SRC-0013\"\n      ],\n      \"summary\": \"Proposals must be sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12.\"\n    },\n    {\n      \"kind\": \"FORMAT\",\n      \"src_ids\": [\n        \"SRC-0013\"\n      ],\n      \"summary\": \"Proposals must be submitted as one document of no more than 15 pages.\"\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2404,
+   "tokens_out": 816,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"zones\": [\n    {\n      \"section_path\": \"Request for Proposal: Donor and Volunteer Management System\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"BACKGROUND\",\n      \"confidence\": 0.8,\n      \"reason\": \"Provides the name and reference of the buyer and procurement.\"\n    },\n    {\n      \"section_path\": \"1 Introduction\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"BACKGROUND\",\n      \"confidence\": 0.9,\n      \"reason\": \"Describes the Trust and invites proposals without binding terms.\"\n    },\n    {\n      \"section_path\": \"2 Background\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"BACKGROUND\",\n      \"confidence\": 0.95,\n      \"reason\": \"Gives context about the buyer's current records and plans.\"\n    },\n    {\n      \"section_path\": \"3 Instructions\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"INSTRUCTION\",\n      \"confidence\": 0.95,\n      \"reason\": \"Sets submission method, deadline, page limit, and questions rule.\"\n    },\n    {\n      \"section_path\": \"4 Requirements\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"OBLIGATION\",\n      \"confidence\": 0.95,\n      \"reason\": \"States what the system must deliver and record.\"\n    },\n    {\n      \"section_path\": \"5 Timeline\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"OBLIGATION\",\n      \"confidence\": 0.9,\n      \"reason\": \"Specifies supplier duties for training and live dates.\"\n    },\n    {\n      \"section_path\": \"6 Evaluation\",\n      \"doc_id\": \"dev-docx-rfp-1fc7453f\",\n      \"zone\": \"EVALUATION\",\n      \"confidence\": 0.95,\n      \"reason\": \"Details the scoring criteria for proposals.\"\n    }\n  ],\n  \"profile\": {\n    \"buyer\": \"The Fennick Lantern Trust\",\n    \"procurement\": \"a cloud system to manage its donors, volunteers and events\",\n    \"submission_deadline\": \"17:00 GMT on 2027-02-12\",\n    \"submission_format\": \"one document of no more than 15 pages sent by e-mail\",\n    \"evaluation_method\": \"scores proposals on the criteria below\",\n    \"contract_length\": \"not_stated\"\n  },\n  \"hazards\": [\n    {\n      \"kind\": \"DEADLINE\",\n      \"src_ids\": [\n        \"SRC-0013\"\n      ],\n      \"summary\": \"Proposals must be sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12.\"\n    },\n    {\n      \"kind\": \"FORMAT\",\n      \"src_ids\": [\n        \"SRC-0013\"\n      ],\n      \"summary\": \"Proposals must be submitted as one document of no more than 15 pages.\"\n    }\n  ]\n}",
+     "thought_signature": "EmAKXgFpFH0TUiY3nN1hSBbvabYIIV_ihDuZJAojfwtTTW2ARGPsn86d29uyXIZToPHZWLLtRBt68gj_sydXALZpAfUVC_lvkHcLoKPL8AQwWckZ3k5uvSHLnDu3vkUJAm0="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-06T00:22:03Z"
+}

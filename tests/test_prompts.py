@@ -192,7 +192,7 @@ def test_the_triage_prompt_renders_its_outline_example() -> None:
 def test_the_brief_prompt_renders_its_example_without_statuses() -> None:
     brief = load_prompt("brief")
     assert brief.meta.output_schema == "BriefResult" and brief.meta.role == "extract"
-    assert brief.meta.version == "0.2.0" and brief.meta.examples == "brief"
+    assert brief.meta.version == "0.3.0" and brief.meta.examples == "brief"
     assert "The sections of a brief call:" in brief.examples and '"Price"' in brief.examples
     assert '"status"' not in brief.examples, "code sets every status"
     assert brief.decoding == {"gemini": {"thinking": "low"}, "ollama": {"think": False}}
@@ -221,14 +221,19 @@ def test_the_discover_prompt_keeps_its_envelope_out_of_what_the_model_sees() -> 
     assert discover.decoding == {"gemini": {"thinking": "low"}, "ollama": {"think": False}}
 
 
-def test_the_extract_prompts_are_at_0_4_0_without_examples_and_share_their_tasks() -> None:
-    """S-10 dropped the worked examples from both extract prompts (ADR-028)."""
+def test_extract_is_at_0_5_0_with_its_examples_and_the_one_shot_at_0_4_0_without() -> None:
+    """ADR-049 gives `extract.md` its worked batch back; `extract_oneshot.md`, the EX0
+    control, stays at 0.4.0 without one. Both keep the same tasks."""
     extract = load_prompt("extract")
+    assert extract.meta.version == "0.5.0" and extract.meta.examples == "clauses"
+    assert "SRC-0901" in extract.examples and "OUT_OF_SCOPE" in extract.examples
+    assert "<examples>" in extract.system and "SRC-0901" in extract.system
+    oneshot = load_prompt("extract_oneshot")
+    assert oneshot.meta.version == "0.4.0"
+    assert oneshot.meta.examples is None and oneshot.examples == ""
+    assert "<examples>" not in oneshot.system and "SRC-0901" not in oneshot.system
     for prompt_id in ("extract", "extract_oneshot"):
         prompt = load_prompt(prompt_id)
-        assert prompt.meta.version == "0.4.0", prompt_id
-        assert prompt.meta.examples is None and prompt.examples == "", prompt_id
-        assert "<examples>" not in prompt.system and "A batch:" not in prompt.system, prompt_id
         assert set(prompt.tasks) == set(extract.tasks), prompt_id
         asked = prompt.task_text("second_pass", data_tag="data-x", ids='["SRC-0001"]')
         assert "SRC-0001" in asked and "the first reading missed" in asked
@@ -338,3 +343,32 @@ def test_the_risk_oneshot_prompt_shows_given_passages_and_its_elements() -> None
     assert "SRC-0910" in oneshot.system
     assert set(oneshot.tasks) == {"task", "repair_generic", "repair_format"}
     assert "REQ-0001" in oneshot.task_text("repair_generic", rejected="REQ-0001")
+
+
+@pytest.mark.parametrize(
+    ("prompt_id", "version"),
+    [
+        ("triage", "0.2.0"),
+        ("brief", "0.3.0"),
+        ("consolidate", "0.2.0"),
+        ("draft", "0.3.0"),
+        ("extract", "0.5.0"),
+        ("risk", "0.3.0"),
+        ("approach", "0.2.0"),
+        ("discover", "0.4.0"),
+        ("extract_oneshot", "0.4.0"),
+    ],
+)
+def test_the_prompts_revised_with_step_12_carry_their_versions(
+    prompt_id: str, version: str
+) -> None:
+    """ADR-052: six prompts move on with step 12's recordings; approach, discover and
+    extract_oneshot keep their committed text."""
+    assert load_prompt(prompt_id).meta.version == version
+
+
+def test_risk_0_3_0_names_sla_calc_affects_and_the_six_fields() -> None:
+    risk = load_prompt("risk")
+    assert "`sla_calc`" in risk.system and "`affects`" in risk.system
+    final = risk.task_text("final_task")
+    assert "trigger" in final and "at least one response" in final
