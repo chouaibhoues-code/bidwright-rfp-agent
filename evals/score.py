@@ -18,14 +18,21 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 
 from bidwright.config import load_config
+from bidwright.graph.nodes import PROBABILITY, RATING_PHRASE, RATING_WORDS, SIX_FIELDS
+from bidwright.graph.options import GATE_SCORE, OPEN_MODES, pass_or_fail, stated_weight
 from bidwright.obs.ledger import read_ledger
 from bidwright.schemas import (
     ApproachItem,
     CandidateRow,
+    CapabilityClaim,
+    CapabilityMap,
     ClarificationQuestion,
     ContractFlag,
     Discrepancy,
+    EvidenceAssessment,
+    FactorView,
     LintFinding,
+    NeedDecision,
     OpportunityBrief,
     Passage,
     QuarantineRecord,
@@ -33,6 +40,9 @@ from bidwright.schemas import (
     RequirementGroup,
     Risk,
     RunManifest,
+    SolutionManifest,
+    SolutionOptions,
+    TechValidation,
 )
 from bidwright.verify import normalize
 from evals.funnel import QUOTE_FAILURES, STAGES, Loss, RunTrail, cue_recall, funnel, lost_at
@@ -45,7 +55,17 @@ from evals.matcher import (
     in_quarantine,
     match,
 )
-from evals.seeds import SeedInputs, model_texts, seed_results, trap_results
+from evals.seeds import (
+    SUPPORTING,
+    SeedInputs,
+    SolutionInputs,
+    decision_results,
+    gap_results,
+    model_texts,
+    seed_results,
+    tech_results,
+    trap_results,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLD_DIR = ROOT / "evals" / "gold"
@@ -136,6 +156,22 @@ def _load[M: BaseModel](path: Path, model: type[M], invalid: dict[str, int]) -> 
         except ValidationError:
             invalid[path.name] = invalid.get(path.name, 0) + 1
     return rows
+
+
+def _load_if[M: BaseModel](path: Path, model: type[M], invalid: dict[str, int]) -> list[M] | None:
+    """As `_load`, but None when the run has no such file."""
+    return _load(path, model, invalid) if path.exists() else None
+
+
+def _read[M: BaseModel](path: Path, model: type[M], invalid: dict[str, int]) -> M | None:
+    """A JSON file as its model; None when it is missing, and counted when it breaks it."""
+    if not path.exists():
+        return None
+    try:
+        return model.model_validate_json(path.read_text(encoding="utf-8"))
+    except ValidationError:
+        invalid[path.name] = invalid.get(path.name, 0) + 1
+        return None
 
 
 @dataclass
@@ -356,6 +392,134 @@ def _unauthorized(run_dir: Path) -> list[dict[str, Any]]:
     return found
 
 
+# --- the solution lines (Iteration 3, step 14; design section 4.13) ----------------------------
+
+
+def _rated(risk: Risk) -> bool:
+    """A rating or a probability, by the rule `risk`'s own check applies."""
+    exposure = risk.residual_exposure.strip().lower().rstrip(".")
+    everything = " ".join([risk.condition, risk.event, risk.effect, exposure])
+    return bool(
+        exposure in RATING_WORDS or RATING_PHRASE.search(exposure) or PROBABILITY.search(everything)
+    )
+
+
+def risk_check(risks: Sequence[Risk] | None) -> dict[str, Any]:
+    """Risk completeness: the six fields filled on every risk, five texts and a response, and
+    no rating or probability."""
+    if risks is None:
+        return {"state": "not run", "total": 0, "incomplete": [], "rated": [], "complete": None}
+    incomplete = [
+        r.id
+        for r in risks
+        if any(not getattr(r, name).strip() for name in SIX_FIELDS)
+        or not any(response.strip() for response in r.responses)
+    ]
+    rated = [r.id for r in risks if _rated(r)]
+    failing = set(incomplete) | set(rated)
+    return {
+        "state": "scored",
+        "total": len(risks),
+        "incomplete": incomplete,
+        "rated": rated,
+        "complete": _rate(len(risks) - len(failing), len(risks)),
+    }
+
+
+def generic_rejections(run_dir: Path) -> int | None:
+    """The risks `risk` rejected as generic, from `risk_rejected.jsonl`."""
+    path = run_dir / "risk_rejected.jsonl"
+    if not path.exists():
+        return None
+    return sum(1 for row in _jsonl(path) if str(row.get("reason", "")).startswith("generic"))
+
+
+def manifest_results(manifest: SolutionManifest | None) -> dict[str, Any]:
+    """The manifest's own checks, each passed or failed, with its untraced packages and gaps."""
+    if manifest is None:
+        return {"state": "not run", "checks": {}, "failed": [], "untraced": 0, "gaps": 0}
+    return {
+        "state": "scored",
+        "checks": {check.name: check.passed for check in manifest.checks},
+        "failed": sorted(check.name for check in manifest.checks if not check.passed),
+        "untraced": sum(1 for wp in manifest.work_packages if wp.untraced),
+        "gaps": len(manifest.gaps),
+    }
+
+
+def options_results(
+    options: SolutionOptions | None,
+    brief: OpportunityBrief | None,
+    capability_map: CapabilityMap | None,
+    assessments: Sequence[EvidenceAssessment] | None,
+) -> dict[str, Any]:
+    """The options reproduced: each total recomputed from its logged scores and the brief's
+    weights, the gates and the claims needing proof recomputed, and the ranking replayed with
+    ADR-041's tie-break. Weights and pass-or-fail factors are read as `options` reads them."""
+    if options is None or brief is None:
+        return {"state": "not run", "reproduced": None, "mismatches": []}
+    if not options.options:
+        return {"state": "no options", "reproduced": None, "mismatches": []}
+    views = [
+        FactorView(factor_id=f.id, name=f.name, weight=f.weight, scoring=f.scoring, status=f.status)
+        for f in brief.factors
+    ]
+    in_scope = {v.factor_id: v for v in views if v.status == "IN_SCOPE"}
+    gates = {f for f, view in in_scope.items() if pass_or_fail(view)}
+    weighted = {f: stated_weight(view) for f, view in in_scope.items() if f not in gates}
+    stated = bool(weighted) and all(w is not None for w in weighted.values())
+    mismatches: list[str] = []
+    if options.weighting != ("stated" if stated else "equal"):
+        mismatches.append(
+            f"weighting {options.weighting} logged, {'stated' if stated else 'equal'} read"
+        )
+    gap_needs = (
+        {r.need_id for r in capability_map.rows if r.status == "GAP"} if capability_map else set()
+    )
+    supported = {a.claim_id for a in assessments or [] if a.disposition in SUPPORTING}
+    keys: dict[str, tuple[Any, ...]] = {}
+    for option in options.options:
+        by_factor = {s.factor_id: s.score for s in option.scores}
+        total = 0.0
+        if weighted:
+            if stated:
+                weights = {f: float(w) for f, w in weighted.items() if w is not None}
+                mass = sum(weights.values())
+                total = (
+                    sum(by_factor.get(f, 0) * w for f, w in weights.items()) / mass if mass else 0.0
+                )
+            else:
+                total = sum(by_factor.get(f, 0) for f in weighted) / len(weighted)
+        total = round(total, 4)
+        if abs(total - option.total) > 1e-4:
+            mismatches.append(f"{option.id}: total {option.total:g} logged, {total:g} recomputed")
+        failed = sorted(f for f in gates if by_factor.get(f, 0) < GATE_SCORE)
+        if failed != sorted(option.failed_gates):
+            mismatches.append(
+                f"{option.id}: failed gates {option.failed_gates} logged, {failed} recomputed"
+            )
+        proof = sorted({c for a in option.approach for c in a.claim_ids if c not in supported})
+        if assessments is not None and proof != sorted(option.needs_proof):
+            mismatches.append(
+                f"{option.id}: needs proof {option.needs_proof} logged, {proof} recomputed"
+            )
+        modes = {a.need_id: a.delivery_mode for a in option.approach}
+        keys[option.id] = (
+            bool(failed),
+            -total,
+            sum(modes.get(need) not in OPEN_MODES for need in gap_needs),
+            len(proof),
+            sum(a.delivery_mode == "CUSTOM" for a in option.approach),
+            int(option.id.split("-")[1]),
+        )
+    ranked = sorted(keys, key=lambda option_id: keys[option_id])
+    for rank, option_id in enumerate(ranked, start=1):
+        logged = next(o.rank for o in options.options if o.id == option_id)
+        if logged != rank:
+            mismatches.append(f"{option_id}: rank {logged} logged, {rank} replayed")
+    return {"state": "scored", "reproduced": not mismatches, "mismatches": mismatches}
+
+
 def score_run(run_dir: Path, gold_dir: Path = GOLD_DIR) -> dict[str, Any]:
     a = analyze(run_dir, gold_dir)
     result = a.result
@@ -383,20 +547,38 @@ def score_run(run_dir: Path, gold_dir: Path = GOLD_DIR) -> dict[str, Any]:
     mapped = {i for item in approach for i in item.requirement_ids}
     binding = [r for r in a.records if r.disposition == "BINDING"]
     invalid = a.invalid
-    risks = _load(run_dir / "risks.jsonl", Risk, invalid)
+    risks = _load_if(run_dir / "risks.jsonl", Risk, invalid)
+    groups = _load(run_dir / "requirement_groups.jsonl", RequirementGroup, invalid)
     seeds = seed_results(
         a.gold.lines,
         SeedInputs(
             clauses=a.by_clause,
             passages=a.passages,
             match=result,
-            risks=risks,
+            risks=risks or [],
             questions=_load(run_dir / "questions.jsonl", ClarificationQuestion, invalid),
             discrepancies=_load(run_dir / "discrepancies.jsonl", Discrepancy, invalid),
             flags=_load(run_dir / "contract_flags.jsonl", ContractFlag, invalid),
             findings=_load(run_dir / "lint_findings.jsonl", LintFinding, invalid),
-            groups=_load(run_dir / "requirement_groups.jsonl", RequirementGroup, invalid),
+            groups=groups,
         ),
+    )
+    solution = SolutionInputs(
+        approach=approach if approach_file.exists() else None,
+        claims=_load_if(run_dir / "claims.jsonl", CapabilityClaim, invalid),
+        assessments=_load_if(run_dir / "assessments.jsonl", EvidenceAssessment, invalid),
+        decisions=_load_if(run_dir / "decisions.jsonl", NeedDecision, invalid),
+        manifest=_read(run_dir / "manifest.json", SolutionManifest, invalid),
+        validations=_load_if(run_dir / "tech_validations.jsonl", TechValidation, invalid),
+    )
+    gaps = gap_results(a.gold.lines, solution)
+    decisions = decision_results(a.gold.lines, solution.decisions, groups, result)
+    checked_risks = risk_check(risks)
+    options = options_results(
+        _read(run_dir / "options.json", SolutionOptions, invalid),
+        _read(run_dir / "brief.json", OpportunityBrief, {}),  # factor_results counts it
+        _read(run_dir / "capability_map.json", CapabilityMap, invalid),
+        solution.assessments,
     )
     traps = trap_results(
         [line for line in a.gold.lines if line["kind"] == "trap"],
@@ -458,7 +640,6 @@ def score_run(run_dir: Path, gold_dir: Path = GOLD_DIR) -> dict[str, Any]:
         "traps": traps,
         "trap_actions_obeyed": sum(1 for t in traps.values() if t["obeyed"]),
         "seeds": {kind: found for kind, found in seeds.items() if kind != "risk_seed"},
-        "gap_seeds": None,  # scored from Iteration 3
         "verbatim_rate": _rate(statuses.count("VERBATIM_VERIFIED"), len(statuses)),
         "normalized_rate": _rate(statuses.count("NORMALIZED_MATCH"), len(statuses)),
         **_citation(a),
@@ -473,6 +654,23 @@ def score_run(run_dir: Path, gold_dir: Path = GOLD_DIR) -> dict[str, Any]:
         "factors": factors,
         "risk_seed_recall": _rate(sum(risk_seeds.values()), len(risk_seeds)),
         "risk_seeds": risk_seeds,
+        # The solution lines (Iteration 3, step 14): None when the run lacks their files.
+        "gap_seeds": {k: gaps[k] for k in ("state", "claimed", "asserted", "unverified")},
+        "seeded_gaps_claimed": gaps["seeded_gaps_claimed"],
+        "gap_assertions": gaps["gap_assertions"],
+        "unverified_recall": gaps["unverified_recall"],
+        "unverified_precision": gaps["unverified_precision"],
+        "joint_error": gaps["joint_error"],
+        "decisions": decisions,
+        "decision_accuracy": decisions["accuracy"],
+        "decision_contrast": decisions["contrast"],
+        "manifest_checks": manifest_results(solution.manifest),
+        "tech_seeds": tech_results(a.gold.lines, solution.manifest, solution.validations),
+        "risk_check": checked_risks,
+        "risk_completeness": checked_risks["complete"],
+        "generic_risks_rejected": generic_rejections(run_dir),
+        "options_check": options,
+        "options_reproduced": options["reproduced"],
         "requests": manifest.totals.requests,
         "tokens": manifest.totals.tokens_in
         + manifest.totals.tokens_out
@@ -481,6 +679,74 @@ def score_run(run_dir: Path, gold_dir: Path = GOLD_DIR) -> dict[str, Any]:
         "shadow_cost_usd": manifest.totals.shadow_cost_usd,
         "models": sorted({entry.model for entry in ledger}),
     }
+
+
+def _solution_rows(
+    s: Mapping[str, Any], row: Callable[[str, object], str], rate: Callable[[float | None], str]
+) -> list[str]:
+    """The scorecard's solution lines (Iteration 3). A score that older score files lack, or
+    that the run could not have, reads "not run"."""
+
+    def count(value: object) -> str:
+        return "not run" if value is None else str(value)
+
+    gaps: Mapping[str, Any] = s.get("gap_seeds") or {"state": "not run"}
+    if gaps["state"] == "no gap seeds":
+        gap_line = unverified_line = "no gap seeds"
+    else:
+        claimed = sorted(g for g, where in (gaps.get("claimed") or {}).items() if where)
+        gap_line = (
+            f"{count(s.get('seeded_gaps_claimed'))} / {count(s.get('gap_assertions'))}"
+            f"  {' '.join(claimed)}"
+        ).rstrip()
+        unverified_line = (
+            f"{rate(s.get('unverified_precision'))} / {rate(s.get('unverified_recall'))}"
+            f" / {count(s.get('joint_error'))}"
+            if gaps.get("unverified") is not None
+            else "not run"
+        )
+    decisions: Mapping[str, Any] = s.get("decisions") or {"state": "not run"}
+    if decisions["state"] == "not run":
+        decision_line = "not run"
+    elif decisions["state"] == "no decision seeds":
+        decision_line = f"no decision seeds / {decisions.get('contrast')}"
+    else:
+        decision_line = (
+            f"{rate(decisions.get('accuracy'))} ({decisions.get('scored', 0)} needs)"
+            f" / {decisions.get('contrast')}"
+        )
+    checks: Mapping[str, Any] = s.get("manifest_checks") or {"state": "not run"}
+    check_line = (
+        f"{len(checks['failed'])}/{len(checks['checks'])} / {checks['untraced']} / {checks['gaps']}"
+        if checks["state"] == "scored"
+        else checks["state"]
+    )
+    tech: Mapping[str, Any] = s.get("tech_seeds") or {"state": "not run"}
+    tech_line = (
+        f"{tech['right']} / {tech['wrong']} / {tech['not_judged']}  ({len(tech['unmatched'])}"
+        " seeds unmatched)"
+        if tech["state"] == "scored"
+        else tech["state"]
+    )
+    options: Mapping[str, Any] = s.get("options_check") or {"state": "not run"}
+    if options["state"] != "scored":
+        options_line = options["state"]
+    elif options["reproduced"]:
+        options_line = "yes"
+    else:
+        options_line = f"no: {options['mismatches'][0]}"
+    return [
+        row("Seeded gaps claimed (QS-5) / gap assertions", gap_line),
+        row("UNVERIFIED precision / recall / joint error", unverified_line),
+        row("Decision accuracy / distinct decisions", decision_line),
+        row("Manifest checks failed / untraced packages / gaps", check_line),
+        row("Technology seeds right / wrong / not judged", tech_line),
+        row(
+            "Risks complete / generic risks rejected",
+            f"{rate(s.get('risk_completeness'))} / {count(s.get('generic_risks_rejected'))}",
+        ),
+        row("Options reproduced", options_line),
+    ]
 
 
 def scorecard(scores: dict[str, Any]) -> str:
@@ -582,6 +848,7 @@ def scorecard(scores: dict[str, Any]) -> str:
         row("Evaluation factors matched / wrong status / extra", factor_line),
         row("Binding requirements mapped to approach", rate(s["approach_mapping"])),
         row("Risk seeds found", f"{rate(s['risk_seed_recall'])}  {' '.join(risk_found)}".rstrip()),
+        *_solution_rows(s, row, rate),
         "COST",
         row(
             "Requests / tokens / cost / shadow cost",

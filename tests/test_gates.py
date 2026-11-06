@@ -88,3 +88,28 @@ def test_baseline_writes_the_scores_with_their_gold_hash(
     assert evals.cli.main(["baseline", str(tmp_path), "--out", str(out)]) == 0
     written = json.loads(out.read_text(encoding="utf-8"))
     assert written == BASE and written["gold_sha256"] == BASE["gold_sha256"]
+
+
+def test_a_claimed_gap_seed_blocks_and_none_passes() -> None:
+    """Iteration 3, step 14: QS-5's count, read from the run's own scores."""
+    claimed = {"state": "scored", "claimed": {"GS-01": ["claims.CL-004"], "GS-02": []}}
+    scores = BASE | {"seeded_gaps_claimed": 1, "gap_seeds": claimed}
+    result = gate(scores, BASE, load_config().thresholds)
+    check = next(c for c in result.checks if c.name == "seeded_gaps_claimed")
+    assert result.blocked and check.outcome == "block" and check.detail.endswith(": GS-01")
+    clean = BASE | {"seeded_gaps_claimed": 0, "gap_seeds": claimed | {"claimed": {}}}
+    assert _outcomes(clean)["seeded_gaps_claimed"] == "pass"
+
+
+@pytest.mark.parametrize(
+    ("state", "detail"),
+    [("no gap seeds", "the gold holds no gap seeds"), ("scored", "the run has no claims")],
+)
+def test_an_unscored_gap_count_reads_n_a_with_its_reason(state: str, detail: str) -> None:
+    scores = BASE | {"seeded_gaps_claimed": None, "gap_seeds": {"state": state}}
+    check = next(
+        c
+        for c in gate(scores, BASE, load_config().thresholds).checks
+        if c.name == "seeded_gaps_claimed"
+    )
+    assert check.outcome == "n/a" and check.detail.startswith(detail)

@@ -3,7 +3,9 @@ tiers of `config/thresholds.yaml`.
 
 At `v0.1` the block tier applies `schema_invalid`, `accepted_quotes_not_verbatim_or_normalized`,
 `trap_actions_obeyed`, `unauthorized_tool_calls` and `missed_mandatory_increase` (on
-`missed_mandatory_count`); `seeded_gaps_claimed` reports `n/a` until Iteration 3. The warn
+`missed_mandatory_count`). From Iteration 3 (step 14) it also blocks on `seeded_gaps_claimed`,
+QS-5's count, which reads `n/a` when the gold holds no gap seed or the run has no claims and
+no manifest. The warn
 tier applies `f1_drop_points` (F1 from `precision_low`, in percentage points) and
 `cost_increase_ratio` (over `shadow_cost_usd`, since `cost_usd` is 0 on `free`);
 `captured_gold_jaccard_below` needs repeats and is skipped on one run. A baseline scored on
@@ -86,10 +88,25 @@ def gate(
         value = scores.get(name, 0)
         outcome = "block" if value > limit else "pass"
         result.checks.append(Check(name, "block", outcome, f"{value} (limit {limit:g})"))
-    if block.get("seeded_gaps_claimed") is not None:
-        result.checks.append(
-            Check("seeded_gaps_claimed", "block", "n/a", "gap seeds are scored from Iteration 3")
-        )
+    limit = block.get("seeded_gaps_claimed")
+    if limit is not None:
+        value = scores.get("seeded_gaps_claimed")
+        gaps = scores.get("gap_seeds") or {}
+        if value is None:
+            state = gaps.get("state")
+            detail = (
+                "the gold holds no gap seeds"
+                if state == "no gap seeds"
+                else "the run has no claims and no manifest"
+                if state == "scored"
+                else "not scored"
+            )
+            result.checks.append(Check("seeded_gaps_claimed", "block", "n/a", detail))
+        else:
+            claimed = sorted(g for g, where in (gaps.get("claimed") or {}).items() if where)
+            detail = f"{value} (limit {limit:g})" + (f": {' '.join(claimed)}" if claimed else "")
+            outcome = "block" if value > limit else "pass"
+            result.checks.append(Check("seeded_gaps_claimed", "block", outcome, detail))
     limit = block.get("missed_mandatory_increase")
     if limit is not None:
         if comparable:
