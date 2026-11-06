@@ -802,3 +802,88 @@ def test_the_review_page_records_verdicts_through_bidwright_review(
         {"item": "REQ-0001", "verdict": "accept", "note": "Checked against the portal rule."}
     ]
     assert len(at.markdown) == 0
+
+
+def test_the_run_page_shows_the_summary_the_input_pdf_and_a_quote_on_its_page(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The Summary tab holds solution_summary.md as plain text; the Input tab renders the PDF's
+    pages; a requirement shows the page that holds its quote, highlighted."""
+    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(DEV_SAMPLE))
+    at = AppTest.from_file(str(RUN_PAGE)).run(timeout=60)
+    assert len(at.exception) == 0 and len(at.markdown) == 0
+    summary = (DEV_SAMPLE / "solution_summary.md").read_text(encoding="utf-8")
+    assert any(el.value.strip() == summary.strip() for el in at.code)
+    assert len(at.get("image")) == 2, "the Input tab's page and the requirement's page"
+    texts = [el.value for el in at.text]
+    assert "dev_rfp.pdf, page 1 of 4" in texts
+    assert any(t.startswith("dev_rfp.pdf, page ") and t.endswith(":") for t in texts)
+
+
+def test_the_quote_is_found_and_highlighted_on_its_page() -> None:
+    from app.document_view import locate, render_page
+
+    pdf = str(HOME / "inputs" / "dev" / "dev_rfp.pdf")
+    quote = json.loads((DEV_SAMPLE / "requirements.jsonl").read_text("utf-8").splitlines()[0])[
+        "quote"
+    ]
+    found = locate(pdf, quote)
+    assert found is not None
+    index, probe = found
+    assert render_page(pdf, index, probe) != render_page(pdf, index), "the highlight is drawn"
+
+
+def test_a_recorded_verdict_starts_the_choice_and_a_change_records_an_update(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from bidwright.review import record
+
+    run_dir = tmp_path / "run-done"
+    _write_iter3_fixture(run_dir, status="COMPLETED")
+    record(run_dir, [{"item": "REQ-0001", "verdict": "accept", "note": "Fine."}], "Bid manager")
+    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(run_dir))
+    recorded: list[str | None] = []
+
+    def fake_run(command: list[str], stdin_text: str | None = None) -> Any:
+        recorded.append(stdin_text)
+        return subprocess.CompletedProcess(command, 0, "Recorded\n", "")
+
+    monkeypatch.setattr("app.actions.run", fake_run)
+    at = AppTest.from_file(str(REVIEW_PAGE)).run(timeout=15)
+    assert at.radio(key="verdict:REQ-0001").value == "accept"
+    assert at.text_input(key="note:REQ-0001").value == "Fine."
+    at.text_input(key="review_role").input("Bid director")
+    at.checkbox(key="review_auto_sync").uncheck()
+    record_button = next(b for b in at.button if b.label == "Record these verdicts")
+    record_button.click()
+    at = at.run(timeout=15)
+    assert recorded == [], "nothing changed, so nothing is recorded"
+    at.radio(key="verdict:REQ-0001").set_value("reject")
+    at.text_input(key="note:REQ-0001").input("The portal rule is the buyer's, not ours.")
+    next(b for b in at.button if b.label == "Record these verdicts").click()
+    at = at.run(timeout=15)
+    assert len(at.exception) == 0
+    assert [yaml.safe_load(s or "") for s in recorded] == [
+        [
+            {
+                "item": "REQ-0001",
+                "verdict": "reject",
+                "note": "The portal rule is the buyer's, not ours.",
+            }
+        ]
+    ]
+
+
+def test_the_selector_labels_a_run_and_leaves_matrix_runs_out_unless_asked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    shutil.copytree(DEV_SAMPLE, tmp_path / "20261106T000000Z-dev")
+    shutil.copytree(DEV_SAMPLE, tmp_path / "matrices" / "m" / "m-a-r0")
+    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(tmp_path))
+    at = AppTest.from_file(str(MAIN_PAGE)).run(timeout=20)
+    selector = at.sidebar.selectbox(key="run")
+    assert selector.options == ["20261106T000000Z | dev_rfp.pdf | approach | COMPLETED"]
+    at = AppTest.from_file(str(MAIN_PAGE))
+    at.session_state["show_matrix_runs"] = True
+    at.run(timeout=20)
+    assert len(at.sidebar.selectbox(key="run").options) == 2

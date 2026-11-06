@@ -13,7 +13,7 @@ from typing import Any
 
 import streamlit as st
 
-from app.data import RunData, list_runs, load_run_data
+from app.data import RunData, list_runs, load_manifest, load_run_data
 
 RUN_KEY = "run"
 PENDING_KEY = "run_pending_select"
@@ -23,6 +23,8 @@ STICKY_KEYS = (
     "run_kinds",
     "run_status_filter",
     "run_tab_requirement",
+    "run_doc",
+    "run_page",
     "review_role",
     "review_kinds",
     "review_unreviewed_only",
@@ -40,13 +42,20 @@ STICKY_KEYS = (
 
 def keep_sticky() -> None:
     """Save each sticky key again, so its widget's value survives a page without it."""
-    for key in (RUN_KEY, *STICKY_KEYS):
+    for key in (RUN_KEY, MATRIX_KEY, *STICKY_KEYS):
         if key in st.session_state:
             st.session_state[key] = st.session_state[key]
 
 
+MATRIX_KEY = "show_matrix_runs"
+
+
 def run_names() -> dict[str, Path]:
-    return {run.name: run for run in list_runs()}
+    """The runs the selector offers, newest first; a matrix's runs only when asked for."""
+    matrices = bool(st.session_state.get(MATRIX_KEY))
+    return {
+        run.name: run for run in list_runs() if matrices or run.parent.parent.name != "matrices"
+    }
 
 
 def _follow_url() -> None:
@@ -74,8 +83,32 @@ def run_selector() -> None:
         st.session_state[RUN_KEY] = pending
     if st.session_state.get(RUN_KEY) not in names:
         st.session_state[RUN_KEY] = next(iter(names))
-    st.sidebar.selectbox("Run", options=list(names), key=RUN_KEY, on_change=_to_url)
+    st.sidebar.selectbox(
+        "Run", options=list(names), key=RUN_KEY, on_change=_to_url, format_func=run_label
+    )
+    st.sidebar.checkbox("Show matrix runs", key=MATRIX_KEY)
     _to_url()
+
+
+@st.cache_data(ttl=5, show_spinner=False)
+def run_label(name: str) -> str:
+    """A run as the selector lists it: its time, input, path and status."""
+    run_dir = run_names().get(name)
+    if run_dir is None:
+        return name
+    try:
+        manifest = load_manifest(run_dir)
+    except (OSError, ValueError):
+        return name
+    args = manifest.run_args
+    source = Path(str(args.get("source") or "")).name or (
+        manifest.documents[0].file if manifest.documents else "?"
+    )
+    path = (manifest.switches or {}).get("solution") or "approach"
+    until = args.get("until") or "render"
+    stop = "" if until == "render" else f", to {until}"
+    stamp = name[:16] if name[:8].isdigit() else name
+    return f"{stamp} | {source} | {path}{stop} | {manifest.status}"
 
 
 def select_run(name: str) -> None:

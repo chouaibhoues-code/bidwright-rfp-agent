@@ -29,8 +29,10 @@ from app.data import (
     load_passages,
     run_limits,
 )
+from app.document_view import document_browser, show_quote_on_page
 from app.phoenix_view import links_for, span_url
 from app.state import current_run, default, run_names, select_run
+from bidwright.fileio import read_lines
 from bidwright.obs.phoenix import run_spans
 from bidwright.render import STATUS_LINE
 from bidwright.schemas import Requirement, SolutionManifest
@@ -223,11 +225,27 @@ def _kind(req: Requirement) -> str:
     return KINDS[0] if req.hazard else KINDS[1] if req.mandatory else KINDS[2]
 
 
+def _all_requirements(data: RunData) -> list[Requirement]:
+    """The summary's requirements, or, for a run stopped before `render`, the verified records
+    of `requirements.jsonl`."""
+    if data.summary_bundle is not None:
+        return data.summary_bundle.requirements
+    path = data.run_dir / "requirements.jsonl"
+    if not path.is_file():
+        return []
+    rows = [Requirement.model_validate_json(line) for line in read_lines(path)]
+    return [r for r in rows if r.quote_status in ("VERBATIM_VERIFIED", "NORMALIZED_MATCH")]
+
+
 def _requirements(data: RunData) -> None:
-    bundle = data.summary_bundle
-    if bundle is None:
-        st.text("No solution_summary.json yet.")
+    every = _all_requirements(data)
+    if not every:
+        st.text("No requirement yet: the run has not passed verify.")
         return
+    if data.summary_bundle is None:
+        st.text(
+            "The run stopped before render: these are the verified records of requirements.jsonl."
+        )
     default("run_kinds", list(KINDS))
     left, right = st.columns([2, 1])
     left.text_input("Search the statements and quotes", key="run_search")
@@ -235,7 +253,7 @@ def _requirements(data: RunData) -> None:
     words = str(st.session_state.get("run_search") or "").lower().split()
     shown = [
         r
-        for r in bundle.requirements
+        for r in every
         if r.disposition in ("BINDING", "OPTIONAL")
         and _kind(r) in st.session_state["run_kinds"]
         and all(w in f"{r.statement} {r.quote}".lower() for w in words)
@@ -256,7 +274,7 @@ def _requirements(data: RunData) -> None:
         ],
         hide_index=True,
     )
-    st.text(f"{len(shown)} of {len(bundle.requirements)} requirements shown")
+    st.text(f"{len(shown)} of {len(every)} requirements shown")
     if not shown:
         return
     ids = [r.id for r in shown]
@@ -278,6 +296,8 @@ def _source_view(data: RunData, req: Requirement) -> None:
             continue
         st.text(f"{src}, {passage.get('section_path', '')}:")
         st.code(passage.get("text", ""), language=None)
+    if req.quote and not show_quote_on_page(data, req.quote):
+        st.text("The quote's page is not in a PDF input on this machine.")
     batch = next((b for s in req.src_ids if (b := extract_batches(data.run_dir).get(s))), None)
     if batch:
         links = links_for(data)
@@ -288,7 +308,41 @@ def _source_view(data: RunData, req: Requirement) -> None:
             st.text(f"Read by the extract call {batch}.")
 
 
+def _approach(data: RunData) -> None:
+    """The summary's approach part: on the solution path, the manifest's view of it, written by
+    `blueprint`; before it, or on the `oneshot` path, the `approach` node's items."""
+    bundle = data.summary_bundle
+    if bundle is None:
+        return
+    st.subheader("Approach")
+    if bundle.approach:
+        st.dataframe(
+            [
+                {
+                    "id": item.id,
+                    "requirements": ", ".join(item.requirement_ids),
+                    "basis": item.basis,
+                    "evidence": item.evidence_class,
+                    "text": item.text,
+                }
+                for item in bundle.approach
+            ],
+            hide_index=True,
+        )
+    else:
+        st.text("No approach items.")
+    if bundle.unmapped_requirement_ids:
+        st.text("Not yet mapped to an approach item: " + ", ".join(bundle.unmapped_requirement_ids))
+
+
 def _solution(data: RunData) -> None:
+    _approach(data)
+    if data.capability_map is None and data.solution_manifest is None:
+        st.text(
+            "This run predates the solution path, or took its oneshot route: it maps the"
+            " requirements straight to approach items, with no capability map, options or"
+            " manifest."
+        )
     if data.capability_map is not None:
         st.subheader("Capability map")
         st.table([dict(data.capability_map.counts)] if data.capability_map.counts else [])
@@ -357,8 +411,6 @@ def _solution(data: RunData) -> None:
         st.text(f"{data.bid_signal.signal}: a person decides.")
         if data.bid_memo_text:
             st.code(data.bid_memo_text, language=None)
-    if data.capability_map is None and data.solution_manifest is None:
-        st.text("This run took no solution path past the approach.")
 
 
 def _code_key(code: str) -> list[int]:
@@ -477,9 +529,18 @@ def render_run_page() -> None:
         return
     _follow(data)
     st.header("What the run produced")
-    requirements, solution, risks, files = st.tabs(
-        ["Requirements", "Solution", "Risks and questions", "Files"]
+    summary, source, requirements, solution, risks, files = st.tabs(
+        ["Summary", "Input RFP", "Requirements", "Solution", "Risks and questions", "Files"]
     )
+    with summary:
+        path = data.run_dir / "solution_summary.md"
+        if path.is_file():
+            st.text("The solution summary, as the run wrote it (plain text):")
+            st.code(path.read_text(encoding="utf-8"), language=None)
+        else:
+            st.text("No solution_summary.md: the run stopped before render.")
+    with source:
+        document_browser(data)
     with requirements:
         _requirements(data)
     with solution:

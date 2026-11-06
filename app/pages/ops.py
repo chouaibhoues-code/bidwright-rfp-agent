@@ -43,12 +43,7 @@ def _phoenix(data: RunData) -> None:
         st.code((done.stdout or "") + (done.stderr or ""), language=None)
 
 
-def render_ops_page() -> None:
-    st.title("Bidwright: Ops")
-    data = current_run()
-    if data is None:
-        st.text("No run folders with run_manifest.json found under outputs/.")
-        return
+def _run_sections(data: RunData) -> None:
     _phoenix(data)
 
     st.header("Ledger totals")
@@ -105,6 +100,20 @@ def render_ops_page() -> None:
     else:
         st.text("No scores recorded for this run.")
 
+    st.header("Phoenix span replay")
+    st.text(
+        "Replaying a run twice sends its spans twice, so the trace appears twice in Phoenix;"
+        " the send button above replays only a trace Phoenix does not hold."
+    )
+    if st.button("Replay spans.jsonl to Phoenix", disabled=not data.has_spans):
+        try:
+            count, url = replay_spans(data.run_dir)
+            st.text(f"Replayed {count} spans to {url}.")
+        except Refused as exc:
+            st.text(f"Refused: {exc}")
+
+
+def _matrix_sections() -> None:
     st.header("Ablation ladders (keep_or_drop)")
     ladder_reports = load_ladder_reports()
     if ladder_reports:
@@ -133,17 +142,15 @@ def render_ops_page() -> None:
     else:
         st.text("No matrix ledgers found under outputs/matrices/.")
 
-    st.header("Phoenix span replay")
-    st.text(
-        "Replaying a run twice sends its spans twice, so the trace appears twice in Phoenix;"
-        " the send button above replays only a trace Phoenix does not hold."
-    )
-    if st.button("Replay spans.jsonl to Phoenix", disabled=not data.has_spans):
-        try:
-            count, url = replay_spans(data.run_dir)
-            st.text(f"Replayed {count} spans to {url}.")
-        except Refused as exc:
-            st.text(f"Refused: {exc}")
+
+def render_ops_page() -> None:
+    st.title("Bidwright: Ops")
+    data = current_run()
+    if data is None:
+        st.text("No run folders with run_manifest.json found under outputs/.")
+    else:
+        _run_sections(data)
+    _matrix_sections()
 
 
 render_ops_page()

@@ -28,7 +28,7 @@ from bidwright.render import STATUS_LINE
 from bidwright.review import KIND_ORDER, KIND_TITLES, ReviewItem, latest, progress, review_queue
 from bidwright.schemas import ReviewDecision
 
-NO_CHANGE = "(no change)"
+NOT_REVIEWED = "(not reviewed)"
 RECORD_KINDS = [k for k in KIND_ORDER if k != "passage"]
 
 
@@ -182,8 +182,12 @@ def _gate(data: RunData) -> None:
 
 def _item_view(item: ReviewItem, decision: ReviewDecision | None) -> None:
     current = decision is not None and decision.item_sha256 == item.sha256
-    stale = "" if current else " (STALE: the record changed)"
-    status = "not reviewed" if decision is None else f"{decision.verdict} by {decision.role}{stale}"
+    stale = "" if current else " (STALE: the record changed; record a verdict again)"
+    status = (
+        "not reviewed"
+        if decision is None
+        else f"{decision.verdict} by {decision.role}, {decision.decided:%Y-%m-%d %H:%M} UTC{stale}"
+    )
     st.text(f"{item.id} | {item.kind} | {status}")
     st.text(item.title)
     if item.source:
@@ -192,11 +196,29 @@ def _item_view(item: ReviewItem, decision: ReviewDecision | None) -> None:
         if value not in (None, "", [], {}):
             text = ", ".join(map(str, value)) if isinstance(value, list) else str(value)
             st.text(f"{key}: {text}")
-    if decision is not None and decision.note:
-        st.text(f"Note: {decision.note}")
+    # Each choice starts from the verdict and note that count now, so changing one and
+    # recording again updates it.
+    default(f"verdict:{item.id}", decision.verdict if decision is not None else NOT_REVIEWED)
+    default(f"note:{item.id}", decision.note if decision is not None else "")
     left, right = st.columns([1, 2])
-    left.radio("Verdict", [NO_CHANGE, *item.verdicts], key=f"verdict:{item.id}", horizontal=True)
+    left.radio("Verdict", [NOT_REVIEWED, *item.verdicts], key=f"verdict:{item.id}", horizontal=True)
     right.text_input("Note, or the corrected text", key=f"note:{item.id}")
+
+
+def _changed(item: ReviewItem, decision: ReviewDecision | None) -> dict[str, str] | None:
+    """The entry to record for an item, or None when its choice is what already counts."""
+    verdict = st.session_state.get(f"verdict:{item.id}", NOT_REVIEWED)
+    note = str(st.session_state.get(f"note:{item.id}") or "").strip()
+    if verdict == NOT_REVIEWED:
+        return None
+    if (
+        decision is not None
+        and decision.item_sha256 == item.sha256
+        and decision.verdict == verdict
+        and decision.note == note
+    ):
+        return None
+    return {"item": item.id, "verdict": verdict, "note": note}
 
 
 def _queue_form(
@@ -205,6 +227,10 @@ def _queue_form(
     if not items:
         st.text("Nothing to review here.")
         return
+    st.text(
+        "Choose a verdict, or change one already recorded, and record: the latest verdict for"
+        " an item is the one that counts, and every earlier one stays in the file."
+    )
     with st.form(form):
         for item in items:
             with st.container(border=True):
@@ -213,25 +239,21 @@ def _queue_form(
     if not submitted:
         return
     role = str(st.session_state.get("review_role") or "").strip()
-    entries = [
-        {
-            "item": item.id,
-            "verdict": st.session_state[f"verdict:{item.id}"],
-            "note": st.session_state.get(f"note:{item.id}") or "",
-        }
-        for item in items
-        if st.session_state.get(f"verdict:{item.id}", NO_CHANGE) != NO_CHANGE
-    ]
+    entries = [e for item in items if (e := _changed(item, decisions.get(item.id)))]
     if not entries:
-        st.text("No verdict was chosen.")
+        st.text("Nothing changed: every choice is what already counts.")
         return
     if not role:
         st.error("Enter your role above first: a decision names a role, never a name.")
         return
     done = actions.run(actions.review(data.run_dir, role), yaml.safe_dump(entries, sort_keys=False))
-    st.code((done.stdout or "") + (done.stderr or ""), language=None)
+    output = (done.stdout or "") + (done.stderr or "")
     if done.returncode == 0 and st.session_state.get("review_auto_sync"):
-        _sync(data)
+        synced = actions.run(actions.phoenix_sync(data.run_dir))
+        output += (synced.stdout or "") + (synced.stderr or "")
+        st.cache_data.clear()
+    st.session_state["review_output"] = output
+    st.rerun()
 
 
 def _records(data: RunData, queue: list[ReviewItem], decisions: dict[str, ReviewDecision]) -> None:
@@ -306,6 +328,8 @@ def render_review_page() -> None:
     left.text_input("Your role (never a name)", key="review_role")
     right.checkbox("Send verdicts to Phoenix as they are recorded", key="review_auto_sync")
     _progress(queue, decisions)
+    if st.session_state.get("review_output"):
+        st.code(st.session_state.pop("review_output"), language=None)
     gate, records, passages, quarantine = st.tabs(
         ["Solution gate", "Records", "Negative space", "Quarantine report and open questions"]
     )
