@@ -534,7 +534,7 @@ def test_review_form_builds_exact_approve_command_and_stdin_and_blocks_outside_f
     # Fill the form with an approver role, two section-4.8 edits, and an override reason.
     at.text_input(key="gate_role").set_value("Solution Architect")
     at.number_input(key="edit:work_packages[1.1.1].effort.low_days").set_value(7.5)
-    at.text_input(key="edit:assumptions[0].text").set_value("IdP metadata delivered on day 1")
+    at.text_input(key="edit:assumptions[1].text").set_value("IdP metadata delivered on day 1")
     at.text_input(key="gate_override").set_value("Waived by Bid Director")
     at.button[0].click()
     at = at.run(timeout=15)
@@ -557,8 +557,17 @@ def test_review_form_builds_exact_approve_command_and_stdin_and_blocks_outside_f
     parsed_stdin: list[dict[str, Any]] = yaml.safe_load(stdin_text)
     assert parsed_stdin == [
         {"field": "work_packages[1.1.1].effort.low_days", "value": 7.5},
-        {"field": "assumptions[0].text", "value": "IdP metadata delivered on day 1"},
+        {"field": "assumptions[1].text", "value": "IdP metadata delivered on day 1"},
     ]
+    # The gate reads the same edits: its rule accepts each field, and `assumptions[1]` is the
+    # manifest's first assumption, as the review file numbers it.
+    from bidwright.graph.blueprint import apply_edits, edit_path_problem
+    from bidwright.schemas import GateEdit
+
+    assert all(edit_path_problem(e["field"]) is None for e in parsed_stdin)
+    assert data.solution_manifest is not None
+    edited, _ = apply_edits(data.solution_manifest, [GateEdit(**parsed_stdin[1])])
+    assert edited.assumptions[0].text == "IdP metadata delivered on day 1"
 
 
 def test_review_page_for_run_not_waiting_shows_approval_file_and_no_form(

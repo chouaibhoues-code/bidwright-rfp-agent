@@ -87,6 +87,7 @@ def test_unknown_or_traversal_run_id_is_rejected_with_404(
     for bad_id in ("nonexistent", "..", "../private", "dev/../../private"):
         res = client.get(f"/runs/{bad_id}")
         assert res.status_code == 404
+        assert res.json()["status_line"] == STATUS_LINE, "an error carries it too"
 
 
 def test_post_without_x_bidwright_header_and_foreign_host_are_refused(

@@ -6,7 +6,6 @@ Reads a run's files under `outputs/` into `bidwright.schemas` models and reads s
 
 import json
 import os
-import re
 import subprocess
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -35,17 +34,6 @@ from bidwright.schemas import (
     SolutionOptions,
     SolutionSummary,
     TechValidation,
-)
-
-_EDIT_FIELD_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(r"^work_packages\[\d+(?:\.\d+)*\]\.effort\.low_days$"),
-    re.compile(r"^work_packages\[\d+(?:\.\d+)*\]\.effort\.high_days$"),
-    re.compile(r"^work_packages\[\d+(?:\.\d+)*\]\.predecessors$"),
-    re.compile(r"^work_packages\[\d+(?:\.\d+)*\]\.scope$"),
-    re.compile(r"^work_packages\[\d+(?:\.\d+)*\]\.exclusions$"),
-    re.compile(r"^work_packages\[\d+(?:\.\d+)*\]\.acceptance$"),
-    re.compile(r"^assumptions\[\d+\]\.text$"),
-    re.compile(r"^ground_rules\[\d+\]\.text$"),
 )
 
 
@@ -370,16 +358,21 @@ def is_allowed_edit_field(
     field_path: str,
     manifest: SolutionManifest | None = None,
 ) -> bool:
-    """Check whether `field_path` is one of section 4.8's allowed gate-edit field paths."""
-    if manifest is not None:
-        return field_path in allowed_edit_fields(manifest)
-    return any(pattern.match(field_path) for pattern in _EDIT_FIELD_PATTERNS)
+    """Check whether `field_path` is one of section 4.8's allowed gate-edit field paths, by
+    the gate's own rule (`blueprint.edit_path_problem`), and, with a manifest, one of its
+    fields."""
+    from bidwright.graph.blueprint import edit_path_problem
+
+    if edit_path_problem(field_path) is not None:
+        return False
+    return manifest is None or field_path in allowed_edit_fields(manifest)
 
 
 def allowed_edit_fields(
     manifest: SolutionManifest | None,
 ) -> dict[str, tuple[str, Any]]:
-    """Return section 4.8's editable field paths mapped to `(kind, current_value)`."""
+    """Return section 4.8's editable field paths mapped to `(kind, current_value)`. A fact's
+    `<n>` counts from 1, as the gate and its review file count."""
     if manifest is None:
         return {}
     fields: dict[str, tuple[str, Any]] = {}
@@ -395,9 +388,9 @@ def allowed_edit_fields(
         fields[f"work_packages[{wp.code}].scope"] = ("str", wp.scope)
         fields[f"work_packages[{wp.code}].exclusions"] = ("str", wp.exclusions)
         fields[f"work_packages[{wp.code}].acceptance"] = ("str", wp.acceptance)
-    for idx, assumption in enumerate(manifest.assumptions):
+    for idx, assumption in enumerate(manifest.assumptions, start=1):
         fields[f"assumptions[{idx}].text"] = ("str", assumption.text)
-    for idx, rule in enumerate(manifest.ground_rules):
+    for idx, rule in enumerate(manifest.ground_rules, start=1):
         fields[f"ground_rules[{idx}].text"] = ("str", rule.text)
     return fields
 

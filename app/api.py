@@ -15,6 +15,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.data import (
     RunData,
@@ -62,6 +63,16 @@ async def _loopback_guard(
             },
         )
     return await call_next(request)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _with_status_line(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    """ADR-051: every response carries the status line, an error's included, whether a route
+    raised it or the router found no route."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"status_line": STATUS_LINE, "detail": exc.detail},
+    )
 
 
 class ReplayRequest(BaseModel):

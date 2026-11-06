@@ -383,6 +383,9 @@ def test_a_resume_carries_the_assess_route_its_first_part_recorded(tmp_path: Pat
     assert cli.resume_arguments(run_args, tmp_path / "run")["assess_route"] == "fallback"
 
 
+EVERY_ADDRESS = "0.0.0.0"  # noqa: S104 - the address the ui service binds in its container
+
+
 # --- Iteration 3, step 10: bidwright approve ---------------------------------------------------
 
 
@@ -569,6 +572,38 @@ def test_ui_starts_streamlit_with_loopback_and_headless_flags(
     assert "--server.port" in seen and "8501" in seen
     assert "--server.headless" in seen and "true" in seen
     assert "--browser.gatherUsageStats" in seen and "false" in seen
+    assert EVERY_ADDRESS not in seen, "loopback on the host"
+
+
+def test_the_container_ui_binds_every_address_and_starts_the_api_beside_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Section 4.14: the `ui` service runs both servers on 0.0.0.0, and the API stops with
+    the UI."""
+    started: list[list[str]] = []
+    stopped: list[bool] = []
+
+    class FakeServer:
+        def __init__(self, cmd: list[str], **kwargs: object) -> None:
+            started.append(cmd)
+
+        def terminate(self) -> None:
+            stopped.append(True)
+
+    class DummyCompleted:
+        returncode = 0
+
+    ran: list[list[str]] = []
+    monkeypatch.setattr("subprocess.Popen", FakeServer)
+    monkeypatch.setattr("subprocess.run", lambda cmd, **kwargs: ran.append(cmd) or DummyCompleted())
+    assert cli.main(["ui", "--address", EVERY_ADDRESS, "--api"]) == 0
+    assert started and "uvicorn" in started[0] and EVERY_ADDRESS in started[0]
+    assert "streamlit" in ran[0] and ran[0][ran[0].index("--server.address") + 1] == EVERY_ADDRESS
+    assert stopped == [True]
+    import yaml
+
+    compose = yaml.safe_load((cli.HOME / "compose.yaml").read_text(encoding="utf-8"))
+    assert compose["services"]["ui"]["command"] == ["ui", "--address", EVERY_ADDRESS, "--api"]
 
 
 def test_api_starts_uvicorn_on_loopback_8001(

@@ -519,10 +519,13 @@ def _solution_arguments(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def _ui() -> int:
-    """Start the local Streamlit UI over `app/main.py` on `127.0.0.1:8501`."""
+def _ui(address: str = "127.0.0.1", api: bool = False) -> int:
+    """Start the Streamlit UI over `app/main.py` on port 8501. The `ui` service passes
+    `--address 0.0.0.0`, since a container's loopback is not reachable through a published
+    port, and `--api`, which also starts the API on port 8001 and stops it with the UI."""
     import subprocess
 
+    server = subprocess.Popen(_api_command(address), cwd=HOME) if api else None  # noqa: S603
     cmd = [
         sys.executable,
         "-m",
@@ -530,7 +533,7 @@ def _ui() -> int:
         "run",
         str(HOME / "app" / "main.py"),
         "--server.address",
-        "127.0.0.1",
+        address,
         "--server.port",
         "8501",
         "--server.headless",
@@ -538,24 +541,22 @@ def _ui() -> int:
         "--browser.gatherUsageStats",
         "false",
     ]
-    return subprocess.run(cmd, cwd=HOME, check=False).returncode  # noqa: S603
+    try:
+        return subprocess.run(cmd, cwd=HOME, check=False).returncode  # noqa: S603
+    finally:
+        if server is not None:
+            server.terminate()
 
 
-def _api() -> int:
-    """Start the local FastAPI wrapper (`app/api.py`) on `127.0.0.1:8001`."""
+def _api_command(host: str) -> list[str]:
+    return [sys.executable, "-m", "uvicorn", "app.api:app", "--host", host, "--port", "8001"]
+
+
+def _api(host: str = "127.0.0.1") -> int:
+    """Start the FastAPI wrapper (`app/api.py`) on port 8001, on loopback by default."""
     import subprocess
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "uvicorn",
-        "app.api:app",
-        "--host",
-        "127.0.0.1",
-        "--port",
-        "8001",
-    ]
-    return subprocess.run(cmd, cwd=HOME, check=False).returncode  # noqa: S603
+    return subprocess.run(_api_command(host), cwd=HOME, check=False).returncode  # noqa: S603
 
 
 def _spans_replay(args: argparse.Namespace) -> int:
@@ -703,8 +704,11 @@ def main(argv: list[str] | None = None) -> int:
         help="a source id, such as PS-005, to leave out with its excerpts, such as a tender",
     )
     pack.add_argument("--profile", choices=["free", "paid"], default="free")
-    sub.add_parser("ui", help="start the local Streamlit UI on 127.0.0.1:8501")
-    sub.add_parser("api", help="start the local FastAPI wrapper on 127.0.0.1:8001")
+    ui = sub.add_parser("ui", help="start the local Streamlit UI on 127.0.0.1:8501")
+    ui.add_argument("--address", default="127.0.0.1", help="0.0.0.0 inside the container")
+    ui.add_argument("--api", action="store_true", help="also start the API on port 8001")
+    api = sub.add_parser("api", help="start the local FastAPI wrapper on 127.0.0.1:8001")
+    api.add_argument("--host", default="127.0.0.1", help="0.0.0.0 inside the container")
     spans = sub.add_parser("spans", help="manage recorded OpenTelemetry spans")
     spans_sub = spans.add_subparsers(dest="spans_command", required=True)
     spans_replay = spans_sub.add_parser(
@@ -734,9 +738,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "matrix":
         return _matrix(args)
     if args.command == "ui":
-        return _ui()
+        return _ui(args.address, args.api)
     if args.command == "api":
-        return _api()
+        return _api(args.host)
     if args.command == "spans":
         return _spans_replay(args)
     from bidwright.graph.build import execute
