@@ -13,10 +13,12 @@ from evals.render.spec import (
     REPO_ROOT,
     ClauseAt,
     DatumAt,
+    DecisionSeed,
     DomainSeed,
     FactorSeed,
     Seed,
     Spec,
+    TechSeed,
     TrapAt,
 )
 
@@ -31,6 +33,8 @@ SEED_KIND = {
     "duplicate": "duplicate_seed",
     "factor": "factor_seed",
     "domain": "domain_seed",
+    "tech": "tech_seed",
+    "decision": "decision_seed",
 }
 
 
@@ -88,19 +92,27 @@ def _datum_line(spec: Spec, at: DatumAt) -> dict[str, Any]:
 
 
 def _seed_line(spec: Spec, seed: Seed) -> dict[str, Any]:
-    """A seed's line. A factor or domain seed anchors to no clause and names its document."""
-    doc_id = (
-        seed.doc_id
-        if isinstance(seed, FactorSeed | DomainSeed)
-        else spec.document_of(seed.anchors[0]).doc_id
-    )
+    """A seed's line. A factor, domain or tech seed anchors to no clause and names its document."""
+    if isinstance(seed, FactorSeed | DomainSeed | TechSeed):
+        doc_id = seed.doc_id
+    elif isinstance(seed, DecisionSeed):
+        doc_id = spec.document_of(seed.gold_id).doc_id
+    else:
+        doc_id = spec.document_of(seed.anchors[0]).doc_id
     line: dict[str, Any] = {
         "gold_id": seed.id,
         "gold_version": spec.gold_version,
         "doc_id": doc_id,
         "kind": SEED_KIND[seed.type],
     }
-    line |= seed.model_dump(exclude={"id", "type", "doc_id"})
+    if isinstance(seed, DecisionSeed):
+        line |= {
+            "clause_id": seed.gold_id,
+            "anchors": [seed.gold_id],
+            "decision": seed.decision,
+        }
+    else:
+        line |= seed.model_dump(exclude={"id", "type", "doc_id"})
     return line
 
 

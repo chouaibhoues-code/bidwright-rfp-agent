@@ -42,6 +42,31 @@ services:
       - ./outputs:/app/outputs
     depends_on: [phoenix, docling]
 
+  # The UI service (Iteration 3, WP-3.6, ADR-050): runs Streamlit on 127.0.0.1:8501 and mounts
+  # evals/results/ read-only so the Ops page can display run scores without exposing results to
+  # the pipeline's `app` service.
+  ui:
+    <<: *image
+    profiles: [ui]
+    command: ["ui"]
+    ports: ["127.0.0.1:8501:8501", "127.0.0.1:8001:8001"]
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env for live runs}
+      GEMINI_PAID_API_KEY: ${GEMINI_PAID_API_KEY:-}
+      PHOENIX_ENDPOINT: http://phoenix:6006
+      PHOENIX_API_KEY: ${PHOENIX_API_KEY:-}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+      DOCLING_URL: http://docling:5001
+      NOTEBOOKLM_MCP_URL: http://host.docker.internal:8000/mcp
+    volumes:
+      - ./inputs:/app/inputs:ro
+      - ./config:/app/config:ro
+      - ./prompts:/app/prompts:ro
+      - ./research_packs:/app/research_packs:ro
+      - ./outputs:/app/outputs
+      - ./evals/results:/app/evals/results:ro
+    depends_on: [phoenix, docling]
+
   # The parser service (Iteration 1): PDF, DOCX and XLSX through its v1 API, on loopback only.
   # V-08 (2026-11-03) pinned the current release by digest. The demo and test services never
   # reach it: Docling responses replay from tests/cassettes/docling/.

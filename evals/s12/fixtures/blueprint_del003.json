@@ -1,0 +1,15 @@
+{
+  "option": {
+    "option_id": "OPT-4",
+    "name": "Scheduling Option",
+    "summary": "Milestone and schedule planning",
+    "approach": [],
+    "assumptions": []
+  },
+  "needs": [],
+  "claims": [],
+  "scope_in": [{"id": "SC-04", "text": "Schedule baseline"}],
+  "scope_out": [],
+  "constraints": [],
+  "never": []
+}

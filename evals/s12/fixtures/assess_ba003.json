@@ -1,0 +1,13 @@
+{
+  "claim_kind": "capability",
+  "claim_text": "Supplier platform provides a generic REST API that satisfies SAP S/4HANA integration requirement.",
+  "evidence": [
+    {
+      "id": "CAP-001",
+      "kind": "capability",
+      "name": "Generic REST API",
+      "text": "Standard REST API endpoints for JSON payload exchange"
+    }
+  ],
+  "need_text": "Certified integration with buyer SAP S/4HANA ERP environment."
+}

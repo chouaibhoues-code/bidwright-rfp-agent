@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 # Runtime dependencies are added step by step in Iteration 0a; V-08 locks the versions.
 dependencies = [
+    "fastapi>=0.115,<1",
     "google-genai>=1.30,<3",
     "httpx>=0.27,<1",
     "langgraph>=1.0,<2",
@@ -24,6 +25,7 @@ dependencies = [
     "pydantic>=2.10,<3",
     "python-docx>=1.2,<2",
     "pyyaml>=6,<7",
+    "streamlit>=1.40,<2",
     "tzdata>=2025.1",
 ]
 
@@ -74,4 +76,4 @@ select = ["E", "F", "I", "B", "UP", "S"]
 [tool.pyright]
 typeCheckingMode = "standard"
 pythonVersion = "3.12"
-include = ["src", "evals", "tests", "scripts"]
+include = ["src", "evals", "app", "tests", "scripts"]

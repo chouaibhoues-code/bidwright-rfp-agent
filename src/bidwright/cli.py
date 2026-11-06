@@ -37,6 +37,10 @@
                             [--leave-out SOURCE ...] [--profile free|paid]
                          builds research_packs/<domain>/ from a finished live run, or
                          from an existing NotebookLM job in a run of its own, on the host
+    bidwright ui         starts the local Streamlit UI on 127.0.0.1:8501
+    bidwright api        starts the local FastAPI wrapper on 127.0.0.1:8001
+    bidwright spans replay <run> [--endpoint URL]
+                         replays a run's spans.jsonl into Phoenix over OTLP HTTP
 
 The command line parses arguments and prints what the run entry refuses. The rules themselves
 sit at the run entry, in `preflight.py`: on `free`, a file is refused unless its hash is
@@ -515,6 +519,59 @@ def _solution_arguments(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def _ui() -> int:
+    """Start the local Streamlit UI over `app/main.py` on `127.0.0.1:8501`."""
+    import subprocess
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "streamlit",
+        "run",
+        str(HOME / "app" / "main.py"),
+        "--server.address",
+        "127.0.0.1",
+        "--server.port",
+        "8501",
+        "--server.headless",
+        "true",
+        "--browser.gatherUsageStats",
+        "false",
+    ]
+    return subprocess.run(cmd, cwd=HOME, check=False).returncode  # noqa: S603
+
+
+def _api() -> int:
+    """Start the local FastAPI wrapper (`app/api.py`) on `127.0.0.1:8001`."""
+    import subprocess
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "uvicorn",
+        "app.api:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001",
+    ]
+    return subprocess.run(cmd, cwd=HOME, check=False).returncode  # noqa: S603
+
+
+def _spans_replay(args: argparse.Namespace) -> int:
+    """Replay `<run>/spans.jsonl` into Phoenix over OTLP HTTP."""
+    from bidwright.obs.replay import replay_spans
+
+    run_dir = _run_folder(args.run)
+    try:
+        count, url = replay_spans(run_dir, endpoint=args.endpoint)
+    except Refused as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    print(f"Replayed {count} spans from {run_dir} to {url}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="bidwright", description="Bidwright: RFP to proposal.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -646,6 +703,18 @@ def main(argv: list[str] | None = None) -> int:
         help="a source id, such as PS-005, to leave out with its excerpts, such as a tender",
     )
     pack.add_argument("--profile", choices=["free", "paid"], default="free")
+    sub.add_parser("ui", help="start the local Streamlit UI on 127.0.0.1:8501")
+    sub.add_parser("api", help="start the local FastAPI wrapper on 127.0.0.1:8001")
+    spans = sub.add_parser("spans", help="manage recorded OpenTelemetry spans")
+    spans_sub = spans.add_subparsers(dest="spans_command", required=True)
+    spans_replay = spans_sub.add_parser(
+        "replay", help="replay a run's spans.jsonl into Phoenix over OTLP HTTP"
+    )
+    spans_replay.add_argument("run", help="a run id under outputs/, or a run folder")
+    spans_replay.add_argument(
+        "--endpoint",
+        help="collector URL; PHOENIX_ENDPOINT or http://127.0.0.1:6006 when unset",
+    )
     args = parser.parse_args(argv)
 
     os.environ.setdefault("LANGGRAPH_STRICT_MSGPACK", "true")
@@ -664,6 +733,12 @@ def main(argv: list[str] | None = None) -> int:
         return _libraries(args) if args.research_command == "libraries" else _pack(args)
     if args.command == "matrix":
         return _matrix(args)
+    if args.command == "ui":
+        return _ui()
+    if args.command == "api":
+        return _api()
+    if args.command == "spans":
+        return _spans_replay(args)
     from bidwright.graph.build import execute
     from bidwright.llm.client import default_backends
     from bidwright.llm.replay import CassetteStore

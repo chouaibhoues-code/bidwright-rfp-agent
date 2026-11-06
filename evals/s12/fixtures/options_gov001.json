@@ -1,0 +1,22 @@
+{
+  "factors": [
+    {
+      "factor_id": "F-02",
+      "name": "Regulatory Compliance",
+      "weight": "50%",
+      "scoring": "gate",
+      "status": "IN_SCOPE"
+    }
+  ],
+  "needs": [
+    {
+      "need_id": "NEED-S12-OPT02",
+      "origin": "RFP",
+      "text": "Statutory data protection",
+      "status": "COVERED",
+      "claims": []
+    }
+  ],
+  "domain_items": [],
+  "gaps": []
+}

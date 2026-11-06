@@ -1,0 +1,111 @@
+# The 18 PMI-informed domain method cards (Master-Plan §10.3.2, Iteration 3 step 18).
+# Advisory method guidance with evidence class DOMAIN_METHOD: never an obligation,
+# capability proof, policy or gold. Copied verbatim from the owner's original note
+# in the PMI notebook; every family starts PROPOSED / DISABLED until S-12 measures benefit.
+- id: REQ-001
+  family: REQ
+  consumers: [extract]
+  status: PROPOSED
+  text: "For a material obligation ask who owns it, what accepted result will verify it, which source quote controls and which mandatory/preferred modality it uses. Missing attributes justify clarification, not invented acceptance."
+
+- id: REQ-002
+  family: REQ
+  consumers: [extract, consolidate]
+  status: PROPOSED
+  text: "Potentially conflicting requirements need a shared scope/time/data-category check; before that a discrepancy is conditional, not established."
+
+- id: REQ-003
+  family: REQ
+  consumers: [extract, consolidate]
+  status: PROPOSED
+  text: "Related clauses with different exceptions or acceptance criteria remain separate traceable obligations. Source fidelity wins over overaggressive deduplication."
+
+- id: CFG-001
+  family: CFG
+  consumers: [consolidate]
+  status: PROPOSED
+  text: "Protect immutable versions and baseline owner for requirements/solution/price/schedule. Buyer addenda trigger change review, not silent mutation."
+
+- id: CFG-002
+  family: CFG
+  consumers: [consolidate]
+  status: PROPOSED
+  text: "Downstream change impact on plan, cost, risks and verification is a proposed check and requires evidence; a graph relationship itself cannot prove impact."
+
+- id: BA-001
+  family: BA
+  consumers: [decide, blueprint]
+  status: PROPOSED
+  text: "Map explicitly stated current and target states. Mark missing buyer systems, budget, maturity, constraints and stakeholders unknown."
+
+- id: BA-002
+  family: BA
+  consumers: [options]
+  status: PROPOSED
+  text: "Compare solution alternatives on published objective, applicability, dependencies, delivery cost, evidence, risk and transition uncertainty. Weighted choice is hypothetical unless approved policy exists."
+
+- id: BA-003
+  family: BA
+  consumers: [decide, assess]
+  status: PROPOSED
+  text: "Generic API capability does not prove integration with a named buyer legacy system; ask for version-specific test evidence and preserve UNVERIFIED applicability."
+
+- id: DEL-001
+  family: DEL
+  consumers: [blueprint]
+  status: PROPOSED
+  text: "Provisional deliverable-oriented WBS should expose missing work packages, interfaces, owner, dependencies and exclusions; not prove price or schedule feasibility."
+
+- id: DEL-002
+  family: DEL
+  consumers: [blueprint]
+  status: PROPOSED
+  text: "Estimates must state basis, source data, resource assumptions, maturity and uncertainty; an estimate draft is not an approved price."
+
+- id: DEL-003
+  family: DEL
+  consumers: [blueprint]
+  status: PROPOSED
+  text: "Feasible schedules require activity dependencies, lead times, acceptance checkpoints, resources and uncertainties; not just plausible dates."
+
+- id: DEL-004
+  family: DEL
+  consumers: []
+  status: PROPOSED
+  text: "After a real award, hand over approved commitments, contract terms, accepted assumptions, priced obligations, risk ownership, tests and change status; proposal wording alone is not a contractual change."
+
+- id: BEN-001
+  family: BEN
+  consumers: [blueprint]
+  status: PROPOSED
+  text: "State expected benefit as a hypothesis; capture baseline, measurement, owner, time and disbenefits, never assert savings or ROI without verified inputs."
+
+- id: RISK-001
+  family: RISK
+  consumers: [risk]
+  status: PROPOSED
+  text: "Formulate an uncertain risk using condition/cause, future event and consequence on an objective, with assumptions, owner and observable trigger."
+
+- id: RISK-002
+  family: RISK
+  consumers: [risk]
+  status: PROPOSED
+  text: "Risk is not issue; issue is already observed. Unknown data and unconfirmed dependencies are gaps/risks, never fabricated incidents, probabilities or risk ratings."
+
+- id: RISK-003
+  family: RISK
+  consumers: [risk]
+  status: PROPOSED
+  text: "Propose response options and residual exposure with a human risk owner. No auto-approval of risk, commercial impact or policy thresholds."
+
+- id: GOV-001
+  family: GOV
+  consumers: [options]
+  status: PROPOSED
+  text: "Advisory knowledge does not define bid/no-bid thresholds, ToolGateway grants, external approvals, regulatory or contractual compliance. Refer to authorized human and policy."
+
+- id: GOV-002
+  family: GOV
+  consumers: []
+  status: PROPOSED
+  text: "Separate producer knowledge and E90 independent reference. EAS is EvidenceAssessment decision record; E90 is an evaluator node identifier, not 90% target."

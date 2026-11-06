@@ -32,6 +32,7 @@ COPY prompts ./prompts
 COPY knowledge_base ./knowledge_base
 COPY research_packs ./research_packs
 COPY inputs ./inputs
+COPY app ./app
 COPY tests ./tests
 # BIDWRIGHT_ENV names the environment a run records, so a run started here is resumed and
 # purged here (ADR-031): a lock taken in a container is not seen on the host.

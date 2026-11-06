@@ -1,0 +1,15 @@
+{
+  "option": {
+    "option_id": "OPT-2",
+    "name": "Deliverable WBS Option",
+    "summary": "Full WBS breakdown",
+    "approach": [],
+    "assumptions": []
+  },
+  "needs": [],
+  "claims": [],
+  "scope_in": [{"id": "SC-02", "text": "WBS work packages"}],
+  "scope_out": [],
+  "constraints": [],
+  "never": []
+}

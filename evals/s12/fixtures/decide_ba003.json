@@ -1,0 +1,20 @@
+{
+  "need": {
+    "need_id": "NEED-S12-BA003",
+    "origin": "RFP",
+    "topic": "SAP S/4HANA Integration",
+    "text": "",
+    "requirements": [
+      {
+        "id": "REQ-202",
+        "statement": "The solution shall provide certified integration with the buyer SAP S/4HANA ERP environment.",
+        "modality": "shall",
+        "quote": "certified integration with the buyer SAP S/4HANA ERP environment",
+        "src_ids": ["SRC-011"]
+      }
+    ],
+    "excerpts": [],
+    "discrepancy_ids": [],
+    "question_ids": []
+  }
+}

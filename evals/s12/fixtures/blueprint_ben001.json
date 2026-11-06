@@ -1,0 +1,15 @@
+{
+  "option": {
+    "option_id": "OPT-5",
+    "name": "Benefits Hypothesis Option",
+    "summary": "Value and benefits realization plan",
+    "approach": [],
+    "assumptions": []
+  },
+  "needs": [],
+  "claims": [],
+  "scope_in": [{"id": "SC-05", "text": "Benefits realization"}],
+  "scope_out": [],
+  "constraints": [],
+  "never": []
+}

@@ -5,12 +5,12 @@
 ## `bidwright`
 
 ```text
-usage: bidwright [-h] {run,demo,record,stop,approve,resume,purge,matrix,research} ...
+usage: bidwright [-h] {run,demo,record,stop,approve,resume,purge,matrix,research,ui,api,spans} ...
 
 Bidwright: RFP to proposal.
 
 positional arguments:
-  {run,demo,record,stop,approve,resume,purge,matrix,research}
+  {run,demo,record,stop,approve,resume,purge,matrix,research,ui,api,spans}
     run                 run one RFP file or package folder live
     demo                replay the recorded development run, with no keys
     record              run live and record cassettes, on the host
@@ -20,6 +20,9 @@ positional arguments:
     purge               delete a run and its cache entries, or expired runs
     matrix              run a matrix of rungs and repeats
     research            manage the research server
+    ui                  start the local Streamlit UI on 127.0.0.1:8501
+    api                 start the local FastAPI wrapper on 127.0.0.1:8001
+    spans               manage recorded OpenTelemetry spans
 
 options:
   -h, --help            show this help message and exit
@@ -230,6 +233,37 @@ options:
                         a source id, such as PS-005, to leave out with its excerpts, such as a
                         tender
   --profile {free,paid}
+```
+
+## `bidwright ui`
+
+```text
+usage: bidwright ui [-h]
+
+options:
+  -h, --help  show this help message and exit
+```
+
+## `bidwright api`
+
+```text
+usage: bidwright api [-h]
+
+options:
+  -h, --help  show this help message and exit
+```
+
+## `bidwright spans replay`
+
+```text
+usage: bidwright spans replay [-h] [--endpoint ENDPOINT] run
+
+positional arguments:
+  run                  a run id under outputs/, or a run folder
+
+options:
+  -h, --help           show this help message and exit
+  --endpoint ENDPOINT  collector URL; PHOENIX_ENDPOINT or http://127.0.0.1:6006 when unset
 ```
 
 ## `bidwright-eval`

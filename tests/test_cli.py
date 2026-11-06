@@ -548,3 +548,59 @@ def test_the_command_line_offers_the_values_the_run_entry_takes() -> None:
     assert (cli.SOLUTIONS, cli.RISK_MODES) == (list(sol.SOLUTIONS), list(sol.RISK_MODES))
     until = MatrixFile.model_fields["until"].annotation
     assert set(getattr(until, "__args__", ())) == set(build.UNTIL)
+
+
+def test_ui_starts_streamlit_with_loopback_and_headless_flags(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: list[str] = []
+
+    class DummyCompleted:
+        returncode = 0
+
+    def fake_run(cmd: list[str], **kwargs: object) -> DummyCompleted:
+        seen.extend(cmd)
+        return DummyCompleted()
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    assert cli.main(["ui"]) == 0
+    assert "streamlit" in seen
+    assert "--server.address" in seen and "127.0.0.1" in seen
+    assert "--server.port" in seen and "8501" in seen
+    assert "--server.headless" in seen and "true" in seen
+    assert "--browser.gatherUsageStats" in seen and "false" in seen
+
+
+def test_api_starts_uvicorn_on_loopback_8001(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: list[str] = []
+
+    class DummyCompleted:
+        returncode = 0
+
+    def fake_run(cmd: list[str], **kwargs: object) -> DummyCompleted:
+        seen.extend(cmd)
+        return DummyCompleted()
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    assert cli.main(["api"]) == 0
+    assert "uvicorn" in seen and "app.api:app" in seen
+    assert "--host" in seen and "127.0.0.1" in seen
+    assert "--port" in seen and "8001" in seen
+
+
+def test_spans_replay_calls_replay_spans_and_refuses_bad_endpoint(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    code = cli.main(
+        [
+            "spans",
+            "replay",
+            str(cli.HOME / "samples" / "dev"),
+            "--endpoint",
+            "https://collector.example.com:6006",
+        ]
+    )
+    assert code == 2
+    assert "Refused:" in capsys.readouterr().err

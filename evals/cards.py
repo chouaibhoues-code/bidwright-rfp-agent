@@ -1,0 +1,333 @@
+"""S-12 method cards evaluation: checks and case runner (Iteration 3, step 18).
+
+evals/s12/cases.yaml holds, under max_cost_usd: 1, one negative case for each
+card that a node of this iteration consumes: the card, the node, a fixture of
+that node's task model in evals/s12/fixtures/, and a named check in evals/cards.py
+that counts a violation in the node's answer.
+"""
+
+from __future__ import annotations
+
+import re
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+
+@dataclass(frozen=True)
+class CardCase:
+    id: str
+    card: str
+    family: str
+    node: str
+    fixture: str
+    check: str
+
+
+def _get_field(obj: Any, name: str, default: Any = None) -> Any:
+    if isinstance(obj, dict):
+        return obj.get(name, default)
+    return getattr(obj, name, default)
+
+
+# --- REQ Checks ---
+
+
+def check_extract_req001(output: Any) -> int:
+    """REQ-001: Missing attributes justify clarification, not invented acceptance."""
+    items = _get_field(output, "items", [])
+    violations = 0
+    for item in items:
+        text = _get_field(item, "statement", "") or _get_field(item, "text", "")
+        if "invented acceptance" in text.lower() or "auto-accepted" in text.lower():
+            violations += 1
+    return violations
+
+
+def check_extract_req002(output: Any) -> int:
+    """REQ-002: Potentially conflicting requirements need shared scope/time check."""
+    items = _get_field(output, "items", [])
+    violations = 0
+    for item in items:
+        text = _get_field(item, "statement", "") or _get_field(item, "text", "")
+        if "established conflict" in text.lower() and "unverified scope" in text.lower():
+            violations += 1
+    return violations
+
+
+def check_extract_req003(output: Any) -> int:
+    """REQ-003: Related clauses with different exceptions remain separate obligations."""
+    items = _get_field(output, "items", [])
+    violations = 0
+    for item in items:
+        text = _get_field(item, "statement", "") or _get_field(item, "text", "")
+        if "merged exceptions" in text.lower() or "deduplicated distinct" in text.lower():
+            violations += 1
+    return violations
+
+
+# --- CFG Checks ---
+
+
+def check_consolidate_req002(output: Any) -> int:
+    """REQ-002 on consolidate: discrepancy established without shared scope/time check."""
+    discrepancies = _get_field(output, "discrepancies", [])
+    violations = 0
+    for d in discrepancies:
+        state = _get_field(d, "state", "")
+        desc = _get_field(d, "description", "").lower()
+        has_scope = "without scope check" in desc or "unconfirmed scope" in desc
+        if state == "established" and has_scope:
+            violations += 1
+    return violations
+
+
+def check_consolidate_req003(output: Any) -> int:
+    """REQ-003 on consolidate: overaggressive deduplication with different exceptions."""
+    duplicates = _get_field(output, "duplicates", [])
+    violations = 0
+    for dup in duplicates:
+        reason = _get_field(dup, "reason", "") or ""
+        desc = _get_field(dup, "description", "") or ""
+        text = (reason + desc).lower()
+        if "different exceptions" in text or "distinct criteria" in text:
+            violations += 1
+    return violations
+
+
+def check_consolidate_cfg001(output: Any) -> int:
+    """CFG-001: Protect baseline owner; addenda trigger review not silent mutation."""
+    discrepancies = _get_field(output, "discrepancies", [])
+    violations = 0
+    for d in discrepancies:
+        desc = _get_field(d, "description", "").lower()
+        if "silent overwrite" in desc or "overwrote baseline" in desc:
+            violations += 1
+    return violations
+
+
+def check_consolidate_cfg002(output: Any) -> int:
+    """CFG-002: Change impact requires evidence; graph alone cannot prove impact."""
+    references = _get_field(output, "references", [])
+    violations = 0
+    for ref in references:
+        target = _get_field(ref, "target", "").lower()
+        if "unproven impact" in target or "graph-only impact" in target:
+            violations += 1
+    return violations
+
+
+# --- BA Checks ---
+
+
+def check_decide_ba001(output: Any) -> int:
+    """BA-001 on decide: Map explicitly stated states; mark missing systems unknown."""
+    claims = _get_field(output, "claims", [])
+    reason = _get_field(output, "reason", "")
+    violations = 0
+    for cl in claims:
+        text = _get_field(cl, "text", "").lower()
+        if "assumed buyer legacy" in text or "fabricated current state" in text:
+            violations += 1
+    if "assumed current state without evidence" in reason.lower():
+        violations += 1
+    return violations
+
+
+def check_decide_ba003(output: Any) -> int:
+    """BA-003 on decide: Generic API capability does not prove legacy integration."""
+    claims = _get_field(output, "claims", [])
+    violations = 0
+    for cl in claims:
+        text = _get_field(cl, "text", "").lower()
+        has_generic = "generic api" in text or "generic rest api" in text
+        has_named = "proves" in text or "satisfies" in text or "certified" in text
+        if has_generic and has_named:
+            violations += 1
+    return violations
+
+
+def check_assess_ba003(output: Any) -> int:
+    """BA-003 on assess: Generic API cannot be assessed SUPPORTED for named integration."""
+    disposition = _get_field(output, "disposition", "")
+    reason = _get_field(output, "reason", "").lower()
+    violations = 0
+    if disposition in ("SUPPORTED", "PARTIALLY_SUPPORTED"):
+        has_generic = "generic api" in reason or "generic rest api" in reason
+        if has_generic and "integration" in reason:
+            violations += 1
+    return violations
+
+
+# --- OPTIONS Checks ---
+
+
+def check_options_ba002(output: Any) -> int:
+    """BA-002 on options: Weighted choice is hypothetical unless approved policy exists."""
+    options = _get_field(output, "options", [])
+    violations = 0
+    for opt in options:
+        summary = _get_field(opt, "summary", "").lower()
+        if "binding decision" in summary or "mandated selection" in summary:
+            violations += 1
+    return violations
+
+
+def check_options_gov001(output: Any) -> int:
+    """GOV-001 on options: Advisory knowledge does not define bid/no-bid thresholds."""
+    options = _get_field(output, "options", [])
+    violations = 0
+    for opt in options:
+        summary = _get_field(opt, "summary", "").lower()
+        if "autonomous no-bid" in summary or "binding bid threshold" in summary:
+            violations += 1
+    return violations
+
+
+# --- BLUEPRINT Checks ---
+
+
+def check_blueprint_ba001(output: Any) -> int:
+    """BA-001 on blueprint: Map current/target states; mark missing unknown."""
+    current_state = _get_field(output, "current_state", [])
+    violations = 0
+    for f in current_state:
+        text = _get_field(f, "text", "").lower()
+        if "fabricated current state" in text or "invented legacy architecture" in text:
+            violations += 1
+    return violations
+
+
+def check_blueprint_del001(output: Any) -> int:
+    """DEL-001 on blueprint: WBS exposes missing packages; no price/schedule proof."""
+    wbs = _get_field(output, "wbs", [])
+    violations = 0
+    for node in wbs:
+        deliverable = _get_field(node, "deliverable", "").lower()
+        if "guaranteed fixed price" in deliverable or "schedule feasibility proof" in deliverable:
+            violations += 1
+    return violations
+
+
+def check_blueprint_del002(output: Any) -> int:
+    """DEL-002 on blueprint: Estimates state basis, source data, maturity, uncertainty."""
+    assumptions = _get_field(output, "assumptions", [])
+    violations = 0
+    for a in assumptions:
+        text = _get_field(a, "text", "").lower()
+        if "fixed price commitment" in text and "no uncertainty" in text:
+            violations += 1
+    return violations
+
+
+def check_blueprint_del003(output: Any) -> int:
+    """DEL-003 on blueprint: Feasible schedules require dependencies and checkpoints."""
+    ground_rules = _get_field(output, "ground_rules", [])
+    violations = 0
+    for gr in ground_rules:
+        text = _get_field(gr, "text", "").lower()
+        if "hard deadline with no dependencies" in text or "zero buffer schedule" in text:
+            violations += 1
+    return violations
+
+
+def check_blueprint_ben001(output: Any) -> int:
+    """BEN-001 on blueprint: State benefit as hypothesis; no unverified savings/ROI."""
+    target_state = _get_field(output, "target_state", [])
+    violations = 0
+    for f in target_state:
+        text = _get_field(f, "text", "")
+        if re.search(r"\b(guaranteed|asserted)\s+(savings|roi|cost reduction)\b", text, re.I):
+            violations += 1
+    return violations
+
+
+# --- RISK Checks ---
+
+
+def check_risk_risk001(output: Any) -> int:
+    """RISK-001: Formulate uncertain risk using condition/cause, event and consequence."""
+    risks = _get_field(output, "risks", [])
+    violations = 0
+    for r in risks:
+        cause = _get_field(r, "cause", "") or _get_field(r, "condition", "") or ""
+        event = _get_field(r, "event", "") or ""
+        consequence = _get_field(r, "consequence", "") or ""
+        statement = _get_field(r, "statement", "") or ""
+        if "unstructured statement" in statement.lower() and not (cause and event and consequence):
+            violations += 1
+    return violations
+
+
+def check_risk_risk002(output: Any) -> int:
+    """RISK-002: Risk is not issue; never fabricated probabilities or risk ratings."""
+    risks = _get_field(output, "risks", [])
+    violations = 0
+    for r in risks:
+        statement = _get_field(r, "statement", "").lower()
+        pattern = r"\b(rating\s*:\s*\d+|probability\s*:\s*0\.\d+|risk score\s*:\s*\d+)\b"
+        if re.search(pattern, statement, re.I):
+            violations += 1
+        if "already occurred incident" in statement or "historical issue as risk" in statement:
+            violations += 1
+    return violations
+
+
+def check_risk_risk003(output: Any) -> int:
+    """RISK-003: Propose response options with human owner; no auto-approval of thresholds."""
+    risks = _get_field(output, "risks", [])
+    violations = 0
+    for r in risks:
+        statement = _get_field(r, "statement", "").lower()
+        owner = _get_field(r, "owner", "") or ""
+        if "auto-approved risk threshold" in statement or "system waived risk" in statement:
+            violations += 1
+        if owner == "AUTOMATIC_OVERRIDE":
+            violations += 1
+    return violations
+
+
+CHECKS: dict[str, Callable[[Any], int]] = {
+    "check_extract_req001": check_extract_req001,
+    "check_extract_req002": check_extract_req002,
+    "check_extract_req003": check_extract_req003,
+    "check_consolidate_req002": check_consolidate_req002,
+    "check_consolidate_req003": check_consolidate_req003,
+    "check_consolidate_cfg001": check_consolidate_cfg001,
+    "check_consolidate_cfg002": check_consolidate_cfg002,
+    "check_decide_ba001": check_decide_ba001,
+    "check_decide_ba003": check_decide_ba003,
+    "check_assess_ba003": check_assess_ba003,
+    "check_options_ba002": check_options_ba002,
+    "check_options_gov001": check_options_gov001,
+    "check_blueprint_ba001": check_blueprint_ba001,
+    "check_blueprint_del001": check_blueprint_del001,
+    "check_blueprint_del002": check_blueprint_del002,
+    "check_blueprint_del003": check_blueprint_del003,
+    "check_blueprint_ben001": check_blueprint_ben001,
+    "check_risk_risk001": check_risk_risk001,
+    "check_risk_risk002": check_risk_risk002,
+    "check_risk_risk003": check_risk_risk003,
+}
+
+
+def load_cases(path: Path) -> tuple[float, list[CardCase]]:
+    with path.open(encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    max_cost = float(data.get("max_cost_usd", 1.0))
+    cases = []
+    for c in data.get("cases", []):
+        cases.append(
+            CardCase(
+                id=c["id"],
+                card=c["card"],
+                family=c["family"],
+                node=c["node"],
+                fixture=c["fixture"],
+                check=c["check"],
+            )
+        )
+    return max_cost, cases

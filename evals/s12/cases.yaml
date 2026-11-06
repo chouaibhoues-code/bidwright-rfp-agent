@@ -1,0 +1,150 @@
+# S-12 method card evaluation cases (Iteration 3, step 18).
+# Holds one negative case for each card that a node of this iteration consumes.
+# Evaluated with bidwright-eval cards --repeats 5 --profile paid.
+max_cost_usd: 1
+cases:
+  # REQ family
+  - id: S12-CASE-01
+    card: REQ-001
+    family: REQ
+    node: extract
+    fixture: evals/s12/fixtures/extract_req001.json
+    check: check_extract_req001
+
+  - id: S12-CASE-02
+    card: REQ-002
+    family: REQ
+    node: extract
+    fixture: evals/s12/fixtures/extract_req002.json
+    check: check_extract_req002
+
+  - id: S12-CASE-03
+    card: REQ-003
+    family: REQ
+    node: extract
+    fixture: evals/s12/fixtures/extract_req003.json
+    check: check_extract_req003
+
+  # CFG family
+  - id: S12-CASE-04
+    card: REQ-002
+    family: CFG
+    node: consolidate
+    fixture: evals/s12/fixtures/consolidate_req002.json
+    check: check_consolidate_req002
+
+  - id: S12-CASE-05
+    card: REQ-003
+    family: CFG
+    node: consolidate
+    fixture: evals/s12/fixtures/consolidate_req003.json
+    check: check_consolidate_req003
+
+  - id: S12-CASE-06
+    card: CFG-001
+    family: CFG
+    node: consolidate
+    fixture: evals/s12/fixtures/consolidate_cfg001.json
+    check: check_consolidate_cfg001
+
+  - id: S12-CASE-07
+    card: CFG-002
+    family: CFG
+    node: consolidate
+    fixture: evals/s12/fixtures/consolidate_cfg002.json
+    check: check_consolidate_cfg002
+
+  # BA family
+  - id: S12-CASE-08
+    card: BA-001
+    family: BA
+    node: decide
+    fixture: evals/s12/fixtures/decide_ba001.json
+    check: check_decide_ba001
+
+  - id: S12-CASE-09
+    card: BA-003
+    family: BA
+    node: decide
+    fixture: evals/s12/fixtures/decide_ba003.json
+    check: check_decide_ba003
+
+  - id: S12-CASE-10
+    card: BA-003
+    family: BA
+    node: assess
+    fixture: evals/s12/fixtures/assess_ba003.json
+    check: check_assess_ba003
+
+  # OPTIONS / GOV
+  - id: S12-CASE-11
+    card: BA-002
+    family: BA
+    node: options
+    fixture: evals/s12/fixtures/options_ba002.json
+    check: check_options_ba002
+
+  - id: S12-CASE-12
+    card: GOV-001
+    family: GOV
+    node: options
+    fixture: evals/s12/fixtures/options_gov001.json
+    check: check_options_gov001
+
+  # BLUEPRINT / DEL / BEN
+  - id: S12-CASE-13
+    card: BA-001
+    family: BA
+    node: blueprint
+    fixture: evals/s12/fixtures/blueprint_ba001.json
+    check: check_blueprint_ba001
+
+  - id: S12-CASE-14
+    card: DEL-001
+    family: DEL
+    node: blueprint
+    fixture: evals/s12/fixtures/blueprint_del001.json
+    check: check_blueprint_del001
+
+  - id: S12-CASE-15
+    card: DEL-002
+    family: DEL
+    node: blueprint
+    fixture: evals/s12/fixtures/blueprint_del002.json
+    check: check_blueprint_del002
+
+  - id: S12-CASE-16
+    card: DEL-003
+    family: DEL
+    node: blueprint
+    fixture: evals/s12/fixtures/blueprint_del003.json
+    check: check_blueprint_del003
+
+  - id: S12-CASE-17
+    card: BEN-001
+    family: BEN
+    node: blueprint
+    fixture: evals/s12/fixtures/blueprint_ben001.json
+    check: check_blueprint_ben001
+
+  # RISK family
+  - id: S12-CASE-18
+    card: RISK-001
+    family: RISK
+    node: risk
+    fixture: evals/s12/fixtures/risk_risk001.json
+    check: check_risk_risk001
+
+  - id: S12-CASE-19
+    card: RISK-002
+    family: RISK
+    node: risk
+    fixture: evals/s12/fixtures/risk_risk002.json
+    check: check_risk_risk002
+
+  - id: S12-CASE-20
+    card: RISK-003
+    family: RISK
+    node: risk
+    fixture: evals/s12/fixtures/risk_risk003.json
+    check: check_risk_risk003

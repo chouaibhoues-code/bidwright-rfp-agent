@@ -1,0 +1,20 @@
+{
+  "need": {
+    "need_id": "NEED-S12-BA001",
+    "origin": "RFP",
+    "topic": "Legacy GIS Integration",
+    "text": "",
+    "requirements": [
+      {
+        "id": "REQ-201",
+        "statement": "The system must interface with the buyer legacy GIS whose internal database schema is unstated.",
+        "modality": "shall",
+        "quote": "interface with the buyer legacy GIS",
+        "src_ids": ["SRC-010"]
+      }
+    ],
+    "excerpts": [],
+    "discrepancy_ids": [],
+    "question_ids": []
+  }
+}

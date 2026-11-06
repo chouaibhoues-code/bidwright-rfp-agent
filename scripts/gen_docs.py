@@ -209,6 +209,9 @@ def cli_md() -> str:
                 ["research", "pin"],
                 ["research", "libraries"],
                 ["research", "pack"],
+                ["ui"],
+                ["api"],
+                ["spans", "replay"],
             ],
         ),
         (
