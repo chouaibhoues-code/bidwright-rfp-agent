@@ -278,7 +278,9 @@ options:
 ## `bidwright-eval`
 
 ```text
-usage: bidwright-eval [-h] {score,gate,baseline,explain,report,hash-gold,phoenix,external} ...
+usage: bidwright-eval [-h]
+                      {score,gate,baseline,explain,report,hash-gold,techcheck,spotcheck,phoenix,external}
+                      ...
 
 `bidwright-eval`: score frozen runs against gold. It never changes a run.
 
@@ -293,6 +295,13 @@ bidwright-eval report <matrix>       scores every run of outputs/matrices/<matri
                                      writes evals/results/<matrix>/ with each rung's decision
 bidwright-eval phoenix <run_dir>     scores the run and sends the scorecard's headline lines to
                                      its Phoenix trace as annotations (ADR-053)
+bidwright-eval techcheck [--repeats 5] [--profile free|paid]
+                                     judges each technology seed of the hero gold in research
+                                     mode pack, and writes evals/results/techcheck/ (step 16)
+bidwright-eval spotcheck --runs DIR [DIR ...] --n 10 --seed INT
+                                     draws assessments for the owner to label, into
+                                     evals/labels/assess_spotcheck.jsonl; with --score, reports
+                                     the share labeled right (CH-93)
 bidwright-eval hash-gold             records the hashes of the gold files and of
                                      evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
 bidwright-eval external crackedpdfs --data <folder>
@@ -301,13 +310,15 @@ bidwright-eval external crackedpdfs --data <folder>
                                      to evals/results/external/crackedpdfs.md
 
 positional arguments:
-  {score,gate,baseline,explain,report,hash-gold,phoenix,external}
+  {score,gate,baseline,explain,report,hash-gold,techcheck,spotcheck,phoenix,external}
     score               score one run folder
     gate                gate one run folder against a committed baseline
     baseline            write a run's scores as the baseline
     explain             what happened to one gold item in a run
     report              score a matrix's runs and decide each rung
     hash-gold           freeze the current gold files' hashes
+    techcheck           judge each technology seed in research mode pack
+    spotcheck           draw assessments to label, or score the labels
     phoenix             score a run and send its scores to its trace
     external            run one stage against a public benchmark
 

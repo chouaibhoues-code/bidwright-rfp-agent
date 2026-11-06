@@ -11,6 +11,13 @@ bidwright-eval report <matrix>       scores every run of outputs/matrices/<matri
                                      writes evals/results/<matrix>/ with each rung's decision
 bidwright-eval phoenix <run_dir>     scores the run and sends the scorecard's headline lines to
                                      its Phoenix trace as annotations (ADR-053)
+bidwright-eval techcheck [--repeats 5] [--profile free|paid]
+                                     judges each technology seed of the hero gold in research
+                                     mode pack, and writes evals/results/techcheck/ (step 16)
+bidwright-eval spotcheck --runs DIR [DIR ...] --n 10 --seed INT
+                                     draws assessments for the owner to label, into
+                                     evals/labels/assess_spotcheck.jsonl; with --score, reports
+                                     the share labeled right (CH-93)
 bidwright-eval hash-gold             records the hashes of the gold files and of
                                      evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
 bidwright-eval external crackedpdfs --data <folder>
@@ -60,6 +67,61 @@ def write_baseline(scores: dict[str, object], out: Path | None = None) -> Path:
     return path
 
 
+def _techcheck(args: argparse.Namespace) -> int:
+    from bidwright.cli import load_env
+    from bidwright.llm.client import default_backends
+    from evals.techcheck import judge_seeds, tech_seeds
+    from evals.techcheck import report as tech_report
+
+    seeds = tech_seeds()
+    if not seeds:
+        print("The hero gold holds no technology seeds; they arrive with gold v4 (step 15).")
+        return 1
+    load_env(ROOT / ".env")
+    results = judge_seeds(
+        seeds,
+        repeats=args.repeats,
+        profile=args.profile,
+        mode="live",
+        backends=default_backends(paid=args.profile == "paid"),
+    )
+    out = tech_report(results, args.repeats)
+    print((out / "report.md").read_text(encoding="utf-8"), end="")
+    return 0 if json.loads((out / "report.json").read_text(encoding="utf-8"))["passed"] else 1
+
+
+def _spotcheck(args: argparse.Namespace) -> int:
+    from evals import spotcheck
+
+    labels = args.labels or spotcheck.LABELS
+    try:
+        if args.score:
+            result = spotcheck.score(labels)
+            share = result["share_right"]
+            print(
+                f"{result['right']} of {result['labeled']} labeled assessments right"
+                + (f" ({share:.0%})" if share is not None else "")
+                + f"; {result['rows'] - result['labeled']} not labeled yet"
+            )
+            for run in result["runs"]:
+                try:
+                    joint = score_run(Path(run)).get("joint_error")
+                except (LookupError, OSError, ValueError) as exc:
+                    print(f"  {run}: joint error not scored ({exc})")
+                    continue
+                print(f"  {run}: joint error {'not run' if joint is None else joint}")
+            return 0
+        if not args.runs or args.seed is None:
+            print("A draw names --runs and --seed.", file=sys.stderr)
+            return 2
+        path = spotcheck.write(spotcheck.draw(args.runs, args.n, args.seed), labels)
+    except spotcheck.SpotcheckRefused as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    print(f"wrote {path}: set each owner_label to right or wrong, then run --score")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="bidwright-eval",
@@ -81,6 +143,15 @@ def main(argv: list[str] | None = None) -> int:
     matrix = sub.add_parser("report", help="score a matrix's runs and decide each rung")
     matrix.add_argument("matrix", help="the matrix name, as in outputs/matrices/<matrix>/")
     sub.add_parser("hash-gold", help="freeze the current gold files' hashes")
+    tech = sub.add_parser("techcheck", help="judge each technology seed in research mode pack")
+    tech.add_argument("--repeats", type=int, default=5)
+    tech.add_argument("--profile", choices=["free", "paid"], default="free")
+    spot = sub.add_parser("spotcheck", help="draw assessments to label, or score the labels")
+    spot.add_argument("--runs", type=Path, nargs="+", default=[], help="run folders")
+    spot.add_argument("--n", type=int, default=10)
+    spot.add_argument("--seed", type=int, help="the random seed of the draw")
+    spot.add_argument("--score", action="store_true", help="report the owner's labels")
+    spot.add_argument("--labels", type=Path, default=None, help=argparse.SUPPRESS)
     phoenix = sub.add_parser("phoenix", help="score a run and send its scores to its trace")
     phoenix.add_argument("run_dir", type=Path)
     external = sub.add_parser("external", help="run one stage against a public benchmark")
@@ -102,6 +173,10 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(out.read_text(encoding="utf-8"), end="")
         return 1 if failed else 0
+    if args.command == "techcheck":
+        return _techcheck(args)
+    if args.command == "spotcheck":
+        return _spotcheck(args)
     if args.command == "report":
         out = report(args.matrix)
         print((out / "report.md").read_text(encoding="utf-8"), end="")
