@@ -6,13 +6,13 @@
 
 ```text
 usage: bidwright [-h]
-                 {run,demo,record,stop,approve,resume,purge,matrix,research,ui,api,spans,review,phoenix}
+                 {run,demo,record,stop,approve,resume,purge,matrix,research,ui,api,spans,seed,review,phoenix}
                  ...
 
 Bidwright: RFP to proposal.
 
 positional arguments:
-  {run,demo,record,stop,approve,resume,purge,matrix,research,ui,api,spans,review,phoenix}
+  {run,demo,record,stop,approve,resume,purge,matrix,research,ui,api,spans,seed,review,phoenix}
     run                 run one RFP file or package folder live
     demo                replay the recorded development run, with no keys
     record              run live and record cassettes, on the host
@@ -25,6 +25,7 @@ positional arguments:
     ui                  start the local Streamlit UI on 127.0.0.1:8501
     api                 start the local FastAPI wrapper on 127.0.0.1:8001
     spans               manage recorded OpenTelemetry spans
+    seed                freeze a finished run as a ladder's seed
     review              record verdicts on a run's records
     phoenix             annotate a run's Phoenix trace
 

@@ -165,6 +165,21 @@ def _run_folder(name: str) -> Path:
     return candidate if candidate.is_dir() else outputs_root() / name
 
 
+def _seed(args: argparse.Namespace) -> int:
+    """`bidwright seed`: freeze a finished run into `outputs/seeds/<name>/` (step 16)."""
+    from bidwright.graph.seed import freeze
+    from bidwright.purge import outputs_root
+
+    try:
+        target = freeze(_run_folder(args.run), args.name, args.outputs or outputs_root())
+    except Refused as exc:
+        print(f"Refused: {exc}", file=sys.stderr)
+        return 2
+    print(f"Seed frozen: {target}")
+    print(f"  a matrix names it as seed_run: {_home_relative(target)}")
+    return 0
+
+
 def _purge(args: argparse.Namespace) -> int:
     from bidwright.config import load_config
     from bidwright.purge import NotARun, RunInUse, purge_expired, purge_run
@@ -239,6 +254,7 @@ def resume_arguments(run_args: Mapping[str, Any], run_dir: Path) -> dict[str, An
         "extract_context",
         "triage",
         "coverage",
+        "seed_from",
     )
     arguments = {
         "source": _home_path(run_args["source"]),
@@ -249,6 +265,8 @@ def resume_arguments(run_args: Mapping[str, Any], run_dir: Path) -> dict[str, An
     }
     if run_args.get("bid_policy"):
         arguments["bid_policy"] = _home_path(run_args["bid_policy"])
+    if run_args.get("seed_run"):
+        arguments["seed_run"] = _home_path(run_args["seed_run"])
     return arguments
 
 
@@ -798,6 +816,12 @@ def main(argv: list[str] | None = None) -> int:
         "--endpoint",
         help="collector URL; PHOENIX_ENDPOINT or http://127.0.0.1:6006 when unset",
     )
+    seed = sub.add_parser("seed", help="freeze a finished run as a ladder's seed")
+    seed.add_argument("run", help="a run id under outputs/, or a run folder")
+    seed.add_argument("--name", required=True, type=_run_id, help="the seed's name")
+    seed.add_argument(
+        "--outputs", type=Path, default=None, help="where seeds/ goes; outputs/ by default"
+    )
     review = sub.add_parser("review", help="record verdicts on a run's records")
     review.add_argument("run", help="a run id under outputs/, or a run folder")
     review.add_argument("--role", help="the reviewer's role, never a name")
@@ -819,6 +843,8 @@ def main(argv: list[str] | None = None) -> int:
     load_env(HOME / ".env")
     if args.command == "purge":
         return _purge(args)
+    if args.command == "seed":
+        return _seed(args)
     if args.command == "stop":
         return _stop(args)
     if args.command == "resume":

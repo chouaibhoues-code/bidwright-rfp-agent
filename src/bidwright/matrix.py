@@ -68,6 +68,16 @@ FLAGS = (
     "triage",
     "coverage",
 )
+# The flags that change extraction, which a seeded matrix's rungs never set.
+EXTRACTION_FLAGS = (
+    "batch_size",
+    "extract_prompt",
+    "second_pass",
+    "baseline",
+    "extract_context",
+    "triage",
+    "coverage",
+)
 # The flags that take true or false only.
 BOOLEAN_FLAGS = ("reflect", "triage", "coverage", "second_pass")
 EXTRACT_CONTEXTS = ("full", "bare")
@@ -114,6 +124,9 @@ class MatrixFile(BaseModel):
         "render",
     ] = "render"
     max_cost_usd: float = Field(ge=0)
+    # A seeded matrix (section 4.11): the seed folder, under the repository, and its point.
+    seed_run: str | None = None
+    seed_from: Literal["research", "risk"] | None = None
     # The reason prefixes a DEGRADED repeat may carry and still count (section 4.11).
     allow_degraded: list[str] = Field(default_factory=list)
     rungs: list[Rung] = Field(min_length=1)
@@ -226,7 +239,16 @@ def check_rungs(matrix: MatrixFile) -> None:
     from bidwright.graph.solution import RISK_MODES, SOLUTIONS
 
     known = extract_prompt_ids(run_prompts(load_config()))
+    if (matrix.seed_run is None) != (matrix.seed_from is None):
+        raise MatrixRefused("a seeded matrix names both seed_run and seed_from")
     for rung in matrix.rungs:
+        if matrix.seed_run is not None:
+            fixed = sorted(set(rung.flags) & set(EXTRACTION_FLAGS))
+            if fixed:
+                raise MatrixRefused(
+                    f"rung {rung.name} sets {', '.join(fixed)} on a seeded matrix; a seeded"
+                    " rung keeps its seed's extraction"
+                )
         name = rung.flags.get("extract_prompt")
         if name is not None and name not in known:
             raise MatrixRefused(
@@ -306,6 +328,11 @@ def run_matrix(
             f"{root} already holds runs of {matrix.name}; continue them with: {command}"
         )
     root.mkdir(parents=True, exist_ok=True)
+    seeded: dict[str, Any] = (
+        {"seed_run": HOME / matrix.seed_run, "seed_from": matrix.seed_from}
+        if matrix.seed_run is not None
+        else {}
+    )
     outcome = MatrixOutcome(
         matrix.name, "COMPLETED", cleared_usd=_cleared(root) if resume else 0.0, resume=command
     )
@@ -357,6 +384,7 @@ def run_matrix(
                     backends=backends,
                     fallback=False,
                     gate="auto",
+                    **seeded,
                     **rung.flags,
                 )
                 finished = _manifest(run_dir)

@@ -32,7 +32,7 @@ import hashlib
 import json
 import os
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -86,7 +86,15 @@ from bidwright.graph.nodes import (
     section_records,
     write_approach,
 )
-from bidwright.graph.state import BatchState, ClaimState, ClusterState, NeedState, RunState
+from bidwright.graph.seed import Seed, check_seed, copy_seed_files, seed_values
+from bidwright.graph.state import (
+    SEED_UNTIL,
+    BatchState,
+    ClaimState,
+    ClusterState,
+    NeedState,
+    RunState,
+)
 from bidwright.graph.triage import forced_zones, triage
 from bidwright.guard import GuardResult, PolicyBlocked, run_guard
 from bidwright.harness.budget import BudgetExceeded, RunBudget
@@ -243,6 +251,9 @@ class Runtime:
     extract_context: str = "full"
     triage_on: bool = True
     coverage_on: bool = True
+    # A seeded run's seed and the state its checkpoint holds (step 16), or None.
+    seed: Seed | None = None
+    seed_state: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -981,7 +992,30 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
     )
     builder.add_node("decide", traced("decide", on(sol.decide_worker)), input_schema=NeedState)
     builder.add_node("assess", traced("assess", on(sol.assess_worker)), input_schema=ClaimState)
-    builder.add_edge(START, "guard")
+    if rt.seed is not None:
+        seed = rt.seed
+
+        def seed_load(state: RunState) -> dict[str, Any]:
+            """A seeded run's first node: the seed's files and state (section 4.11)."""
+            copy_seed_files(seed, rt.run_dir)
+            values = dict(rt.seed_state or {})
+            found = [Passage.model_validate(p) for p in values.get("passages", [])]
+            ctx.passages = {p.id: p for p in found}
+            if ctx.view is not None:
+                ctx.view.bind(found)
+            rt.index = PassageIndex(rt.run_dir / "search.sqlite")
+            return values
+
+        def after_seed(state: RunState) -> str:
+            return after_brief(state) if seed.seed_from == "research" else "risk"
+
+        builder.add_node("seed_load", traced("seed_load", seed_load))
+        builder.add_edge(START, "seed_load")
+        builder.add_conditional_edges(
+            "seed_load", after_seed, [*AFTER_BRIEF.values(), "decide_plan", "risk", END]
+        )
+    else:
+        builder.add_edge(START, "guard")
     builder.add_edge("guard", "ingest")
     builder.add_edge("ingest", "candidates")
     builder.add_conditional_edges("candidates", after_candidates, ["b0", "triage"])
@@ -1201,6 +1235,8 @@ def execute(
     extract_context: str | None = None,
     triage: bool | None = None,
     coverage: bool | None = None,
+    seed_run: Path | str | None = None,
+    seed_from: str | None = None,
 ) -> RunResult:
     """Run one RFP file or package end to end, or resume a run. A failed run still leaves its
     manifest and ledger.
@@ -1244,6 +1280,29 @@ def execute(
     if (research or config.research.mode) == "live" and mode != "live":
         raise Refused(LIVE_RESEARCH_UNRECORDED.format(mode=mode))
     prompts = run_prompts(config)
+    seed = _seed(
+        seed_run,
+        seed_from,
+        prompts,
+        until=until,
+        baseline=baseline,
+        given={
+            "batch_size": batch_size,
+            "second_pass": second_pass,
+            "extract_prompt": extract_prompt,
+            "extract_context": extract_context,
+            "triage": triage,
+            "coverage": coverage,
+        },
+    )
+    if seed is not None:  # a seeded run keeps its seed's extraction settings
+        fixed = seed.record.extraction
+        extract_prompt = fixed.get("extract_prompt") or extract_prompt
+        batch_size = fixed.get("batch_size") or batch_size
+        second_pass = fixed.get("second_pass")
+        extract_context = fixed.get("extract_context") or extract_context
+        triage = fixed.get("triage")
+        coverage = fixed.get("coverage")
     extract_id = extract_prompt or (chosen.extract_prompt if chosen else "extract")
     check_extract_prompt(extract_id, prompts)
     second = _second_pass(second_pass, chosen is not None, config)
@@ -1349,6 +1408,8 @@ def execute(
         "extract_context": switches["extract_context"],
         "triage": switches["triage"],
         "coverage": switches["coverage"],
+        "seed_run": _relative(seed.folder) if seed is not None else None,
+        "seed_from": seed.seed_from if seed is not None else None,
     }
     hashes = {
         document.path.name: f"sha256:{document.sha256}" for document in preflight.documents
@@ -1370,6 +1431,7 @@ def execute(
         assess_route=route,
         bid_policy_sha256=policy[1] if policy else None,
         switches=switches,
+        seed=seed.record if seed is not None else None,
     )
     budget = RunBudget(config.limits.run(tier, profile))
     control = control or RunControl()
@@ -1490,6 +1552,8 @@ def execute(
             extract_context=switches["extract_context"],
             triage_on=switches["triage"],
             coverage_on=switches["coverage"],
+            seed=seed,
+            seed_state=seed_values(seed) if seed is not None else None,
         )
         # Until the graph returns, the run has not finished: any exit this function does not
         # name below is recorded as a fault, never as COMPLETED.
@@ -1579,6 +1643,47 @@ def execute(
                     models_used(entries),
                 )
     return RunResult(run_id, run_dir, status, reason, route)
+
+
+def _seed(
+    seed_run: Path | str | None,
+    seed_from: str | None,
+    prompts: Mapping[str, Any],
+    *,
+    until: str,
+    baseline: str | None,
+    given: Mapping[str, Any],
+) -> Seed | None:
+    """The run's seed, checked before its folder exists (section 4.11), or None."""
+    if seed_run is None and seed_from is None:
+        return None
+    if seed_run is None or seed_from is None:
+        raise Refused("a seeded run names both seed_run and seed_from")
+    if seed_from not in SEED_UNTIL:
+        raise Refused(f"seed_from takes one of {', '.join(SEED_UNTIL)}, not {seed_from!r}")
+    if until not in SEED_UNTIL[seed_from]:
+        raise Refused(
+            f"a run seeded from {seed_from} runs to one of {', '.join(SEED_UNTIL[seed_from])}"
+        )
+    if baseline is not None:
+        raise Refused("a baseline extracts, so it does not start from a seed")
+    folder = Path(seed_run)
+    if not folder.is_absolute():
+        folder = HOME / folder
+    if not folder.is_dir():
+        raise Refused(f"no seed at {folder}; freeze a run with bidwright seed")
+    seed = check_seed(folder, seed_from, prompts)
+    # A resume passes the settings its first part recorded, which are the seed's.
+    changed = sorted(
+        name
+        for name, value in given.items()
+        if value is not None and value != seed.record.extraction.get(name)
+    )
+    if changed:
+        raise Refused(
+            f"a seeded run keeps its seed's extraction settings; drop {', '.join(changed)}"
+        )
+    return seed
 
 
 def _switches(

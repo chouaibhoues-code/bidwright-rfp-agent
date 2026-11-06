@@ -414,3 +414,27 @@ def test_a_degraded_repeat_counts_only_with_an_allowed_reason(tmp_path: Path) ->
     outcome, _ = _run(path, entry, tmp_path)
     assert [c["run_id"] for c in entry.calls] == ["m-b10-r0", "m-b10-r1", "m-b10-r1"]
     assert [r.attempts for r in outcome.runs] == [1, 2], "the second part was not allowed"
+
+
+def test_a_seeded_matrix_passes_its_seed_and_refuses_an_extraction_switch(tmp_path: Path) -> None:
+    """Step 16 (section 4.11): a seeded rung keeps its seed's extraction."""
+
+    def seeded(rungs: str) -> Path:
+        path = tmp_path / "s.yaml"
+        path.write_text(
+            "name: s\nrfp: inputs/hero\nprofile: free\nrepeats: 1\nmax_cost_usd: 10\n"
+            "seed_run: outputs/seeds/so-seed\nseed_from: research\n"
+            f"rungs:\n{rungs}",
+            encoding="utf-8",
+        )
+        return path
+
+    entry = FakeEntry()
+    _run(seeded("  - {name: so0, flags: {solution: oneshot}}\n"), entry, tmp_path)
+    [call] = entry.calls
+    assert call["seed_from"] == "research" and call["seed_run"].as_posix().endswith(
+        "outputs/seeds/so-seed"
+    )
+    for flag in ("extract_context: bare", "batch_size: 10", "baseline: ex0"):
+        with pytest.raises(MatrixRefused, match="keeps its seed's extraction"):
+            _run(seeded(f"  - {{name: x, flags: {{{flag}}}}}\n"), FakeEntry(), tmp_path / "x")

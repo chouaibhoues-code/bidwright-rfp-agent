@@ -101,3 +101,140 @@ class ClusterState(TypedDict):
     task: dict[str, Any]
     requirements: list[dict[str, Any]]
     lint: list[dict[str, Any]]
+
+
+# Seed runs (Iteration 3, step 16; section 4.11). `SEED_KEYS[point]` lists the state keys the
+# nodes before the seed point write, which `seed_load` restores; `SEED_FILES[point]` the files
+# they write, which it copies (patterns under the run folder); `SEED_PROMPTS[point]` the prompts
+# they use, besides the run's extract prompt, whose hashes the seed must share with the run's.
+# A test replays a development run and checks that the lists hold every key and file.
+_RESEARCH_KEYS = (
+    "guard",
+    "register",
+    "ingest_degraded",
+    "doc_id",
+    "title",
+    "passages",
+    "cues",
+    "terms",
+    "zones",
+    "profile",
+    "hazards",
+    "triage_fallback",
+    "packs",
+    "round",
+    "outcomes",
+    "requirements",
+    "rejected",
+    "candidates",
+    "coverage",
+    "lint",
+    "flags",
+    "lint_skipped",
+    "groups",
+    "group_records",
+    "discrepancies",
+    "questions",
+    "consolidate_fallback",
+    "brief",
+)
+_RISK_KEYS = (
+    "research",
+    "research_failed",
+    "domain_brief",
+    "needs",
+    "decide_outcomes",
+    "decisions",
+    "claims",
+    "decide_questions",
+    "decide_degraded",
+    "assessed",
+    "assessments",
+    "assess_degraded",
+    "capability_map",
+    "options",
+    "options_degraded",
+    "manifest",
+    "blueprint_plan",
+    "blueprint_failed",
+    "tech_validations",
+    "techcheck",
+    "approach",
+)
+_RESEARCH_FILES = (
+    "frozen.txt",
+    "passages.jsonl",
+    "search.sqlite",
+    "parse/*",
+    "guard_report.json",
+    "quarantine.jsonl",
+    "control_register.json",
+    "cues.jsonl",
+    "terms.json",
+    "triage.json",
+    "hazards.json",
+    "candidates.jsonl",
+    "requirements.jsonl",
+    "rejected.jsonl",
+    "coverage.json",
+    "lint_findings.jsonl",
+    "contract_flags.jsonl",
+    "requirement_groups.jsonl",
+    "discrepancies.jsonl",
+    "questions.jsonl",
+    "brief.json",
+    "context/triage-*",
+    "context/extract-*",
+    "context/consolidate-*",
+    "context/brief-*",
+)
+_RISK_FILES = (
+    "research.json",
+    "domain_brief.json",
+    "kb.sqlite",
+    "decisions.jsonl",
+    "claims.jsonl",
+    "assessments.jsonl",
+    "capability_map.json",
+    "options.json",
+    "manifest.json",
+    "approach.json",
+    "tech_docs.jsonl",
+    "tech_validations.jsonl",
+    "context/discover-*",
+    "context/decide-*",
+    "context/assess-*",
+    "context/options-*",
+    "context/blueprint-*",
+    "context/techcheck-*",
+    "context/approach-*",
+)
+SEED_KEYS: dict[str, tuple[str, ...]] = {
+    "research": _RESEARCH_KEYS,
+    "risk": _RESEARCH_KEYS + _RISK_KEYS,
+}
+SEED_FILES: dict[str, tuple[str, ...]] = {
+    "research": _RESEARCH_FILES,
+    "risk": _RESEARCH_FILES + _RISK_FILES,
+}
+SEED_PROMPTS: dict[str, tuple[str, ...]] = {
+    "research": ("triage", "consolidate", "brief"),
+    "risk": (
+        "triage",
+        "consolidate",
+        "brief",
+        "discover",
+        "decide",
+        "assess",
+        "options",
+        "blueprint",
+        "blueprint_detail",
+        "techcheck",
+        "approach",
+    ),
+}
+# The seed points' next nodes, and the last node a seeded run may stop at the earliest.
+SEED_UNTIL: dict[str, tuple[str, ...]] = {
+    "research": ("capability_map", "solution_gate", "render"),
+    "risk": ("solution_gate", "render"),
+}
