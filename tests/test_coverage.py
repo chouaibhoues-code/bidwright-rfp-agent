@@ -1,15 +1,19 @@
 """`coverage`: the gap rule, the stop reasons, and whole runs whose gaps are fixed in a later
-round, never shrink, or never appear."""
+round, never shrink, or never appear; and the extraction switches of Iteration 3, step 16
+(`coverage`, `triage` and `extract_context`), on whole runs."""
 
 import json
 from dataclasses import replace
 from pathlib import Path
 
+import pytest
+
 from bidwright.coverage import degraded_reason, gap_ids, next_step
 from bidwright.graph.build import execute
 from bidwright.llm.replay import CassetteStore
 from bidwright.llm.types import Request, Response
-from bidwright.schemas import CandidateRow, CoverageReport, RunManifest
+from bidwright.preflight import Refused
+from bidwright.schemas import CandidateRow, CoverageReport, RunManifest, TriageRecord
 from tests.node_fakes import _DATA, DEV_RFP, RuleBackend, fake_backends
 
 
@@ -140,3 +144,65 @@ def test_no_gaps_means_no_extra_call(tmp_path: Path) -> None:
     extract_calls = [r for r in model.requests if r.schema_name == "ExtractResult"]
     packs = sorted(p.name for p in (run / "context").glob("extract-*.json"))
     assert len(extract_calls) == len(packs) == 2
+
+
+def _switched(tmp_path: Path, model: RuleBackend, name: str, **switches: object) -> Path:
+    result = execute(
+        docling_mode="replay",
+        source=DEV_RFP,
+        profile="free",
+        outputs=tmp_path,
+        mode="record",
+        cassettes=CassetteStore(tmp_path / f"cassettes-{name}"),
+        backends=fake_backends(model),
+        run_id=name,
+        until="coverage",
+        batch_size=20,
+        second_pass=False,
+        **switches,  # type: ignore[arg-type]
+    )
+    return result.run_dir
+
+
+def test_coverage_off_runs_no_second_round(tmp_path: Path) -> None:
+    """Section 4.11's `coverage: false` sets `max_rounds` to 0, so a gap stays a gap."""
+    run = _switched(tmp_path, GapBackend({"SRC-0020"}, batches={"B01"}), "off", coverage=False)
+    report = CoverageReport.model_validate_json((run / "coverage.json").read_text("utf-8"))
+    assert report.rounds == [] and report.unaccounted == 1
+    assert not (run / "context" / "extract-B03.json").exists(), "no gap pack"
+    manifest = RunManifest.model_validate_json((run / "run_manifest.json").read_text("utf-8"))
+    assert manifest.run_args["coverage"] is False and manifest.switches["coverage"] is False
+
+
+def test_triage_off_zones_every_section_obligation_with_no_call(tmp_path: Path) -> None:
+    model = RuleBackend()
+    run = _switched(tmp_path, model, "no-triage", triage=False)
+    assert not [r for r in model.requests if r.schema_name == "TriageResult"], "no triage call"
+    record = TriageRecord.model_validate_json((run / "triage.json").read_text("utf-8"))
+    assert record.zones and all(
+        z.zone == "OBLIGATION" and z.source == "forced" for z in record.zones
+    )
+    assert json.loads((run / "hazards.json").read_text("utf-8")) == []
+
+
+def test_bare_extraction_sends_ids_and_texts_only(tmp_path: Path) -> None:
+    model = RuleBackend()
+    run = _switched(tmp_path, model, "bare", extract_context="bare")
+    batches = []
+    for request in model.requests:
+        if request.schema_name != "ExtractResult":
+            continue
+        user = next(m.content for m in request.messages if m.role == "user")
+        found = _DATA.search(user)
+        assert found is not None
+        batches.append(json.loads(found.group(2)))
+    assert batches and all(b["context"] == [] and b["terms"] == [] for b in batches)
+    views = [p for b in batches for p in b["passages"]]
+    assert all(p["section_path"] == "" and p.get("lead_in") is None for p in views)
+    manifest = RunManifest.model_validate_json((run / "run_manifest.json").read_text("utf-8"))
+    assert manifest.run_args["extract_context"] == "bare"
+
+
+def test_an_unknown_extract_context_is_refused(tmp_path: Path) -> None:
+    with pytest.raises(Refused, match="extract_context"):
+        _switched(tmp_path, RuleBackend(), "skim", extract_context="skim")

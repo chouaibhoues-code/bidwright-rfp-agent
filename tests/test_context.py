@@ -484,3 +484,24 @@ def test_every_model_call_of_a_run_has_a_context_manifest(tmp_path: Path) -> Non
     assert _manifest(run_dir, "draft", "S02").included_record_ids == [a["id"] for a in items]
     final = _manifest(run_dir, "risk", "R-final")
     assert final.included_record_ids[-len(items) :] == [a["id"] for a in items]
+
+
+def test_bare_packs_hold_each_passage_id_and_text_only(tmp_path: Path) -> None:
+    """Section 4.11's `extract_context: bare`: an empty section path and no lead-in; the caller
+    passes no neighbor and no term."""
+    passages = dev_ingest().passages
+    manager = ContextManager(tmp_path, _limits(), passages)
+    packs = manager.pack(
+        "extract",
+        passages,
+        fixed_tokens=FIXED,
+        budget_tokens=12000,
+        batch_size=20,
+        neighbors=0,
+        terms=[],
+        bare=True,
+    )
+    views = [view for pack in packs for view in pack.passages]
+    assert [v.src_id for v in views] == [p.id for p in passages], "every passage, once"
+    assert all(v.section_path == "" and v.lead_in is None for v in views)
+    assert all(pack.context == [] and pack.terms == [] for pack in packs)

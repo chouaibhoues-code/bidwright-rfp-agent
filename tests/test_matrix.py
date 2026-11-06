@@ -4,6 +4,7 @@ key or gold is needed."""
 
 import csv
 import json
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -41,7 +42,9 @@ class FakeEntry:
     scripted status and cost, `COMPLETED` at no cost once the script runs out."""
 
     def __init__(
-        self, script: list[tuple[str, float]] | None = None, fell_back: tuple[str, ...] = ()
+        self,
+        script: Sequence[tuple[Any, ...]] | None = None,
+        fell_back: tuple[str, ...] = (),
     ) -> None:
         self.calls: list[dict[str, Any]] = []
         self.script = list(script or [])
@@ -49,7 +52,7 @@ class FakeEntry:
 
     def __call__(self, **kwargs: Any) -> RunResult:
         self.calls.append(kwargs)
-        status, cost = self.script.pop(0) if self.script else ("COMPLETED", 0.0)
+        status, cost, *reason = self.script.pop(0) if self.script else ("COMPLETED", 0.0)
         run_dir = kwargs["outputs"] / kwargs["run_id"]
         run_dir.mkdir(parents=True, exist_ok=True)
         manifest = RunManifest(
@@ -62,6 +65,7 @@ class FakeEntry:
             },
             started=datetime(2026, 11, 4, tzinfo=UTC),
             status=status,  # type: ignore[arg-type]
+            status_reason=reason[0] if reason else None,
             totals=RunTotals(cost_usd=cost),
         )
         (run_dir / "run_manifest.json").write_text(manifest.model_dump_json(), encoding="utf-8")
@@ -247,7 +251,7 @@ def test_failed_and_cleared_runs_count_toward_the_cap(tmp_path: Path) -> None:
     assert outcome.spent_usd == 8.0, "the cleared runs' spend stays on the matrix's account"
 
 
-def test_a_run_a_fallback_model_answered_is_left_out_and_run_again(
+def test_a_run_a_fallback_model_answered_runs_again_then_is_left_out(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     path = _matrix(tmp_path, rungs="  - {name: b10, flags: {batch_size: 10}}\n")
@@ -266,10 +270,11 @@ def test_a_run_a_fallback_model_answered_is_left_out_and_run_again(
         "m", outputs=tmp_path / "out", results=tmp_path / "res", hypotheses=tmp_path / "no"
     )
     data = json.loads((out / "report.json").read_text(encoding="utf-8"))
-    assert data["finished"] == 1 and data["fell_back"] == ["m-b10-r1"]
-    assert "Left out, because a fallback model answered a call: m-b10-r1" in (
-        out / "report.md"
-    ).read_text(encoding="utf-8")
+    assert data["finished"] == 1 and data["fell_back"] == []
+    assert data["invalid"] == ["m-b10-r1 (invalid after 3 runs: a fallback model answered a call)"]
+    assert "Left out as invalid under the re-run rule: m-b10-r1" in (out / "report.md").read_text(
+        encoding="utf-8"
+    )
     again = FakeEntry()
     _run(path, again, tmp_path, resume=True)
     assert [c["run_id"] for c in again.calls] == ["m-b10-r1"], "only that run starts again"
@@ -345,3 +350,67 @@ def test_a_rung_may_set_each_solution_switch_value_and_every_run_approves_automa
     assert [c.get("risk_mode") for c in modes] == list(RISK_MODES)
     assert [c.get("reflect") for c in entry.calls[-2:]] == [True, False]
     assert all(c["gate"] == "auto" for c in entry.calls)
+
+
+def test_the_extraction_flags_pass_through_and_bad_values_are_refused(tmp_path: Path) -> None:
+    entry = FakeEntry()
+    rungs = (
+        "  - {name: ex1, flags: {extract_context: bare, triage: false, coverage: off}}\n"
+        "  - {name: ex2, flags: {extract_context: full}}\n"
+    )
+    _run(_matrix(tmp_path, rungs=rungs, repeats=1), entry, tmp_path)
+    first, second = entry.calls
+    assert (first["extract_context"], first["triage"], first["coverage"]) == ("bare", False, False)
+    assert second["extract_context"] == "full" and "triage" not in second
+    for bad, message in (
+        ("{extract_context: skim}", "use full or bare"),
+        ("{triage: maybe}", "not true or false"),
+    ):
+        path = _matrix(tmp_path / bad[1:6], rungs=f"  - {{name: x, flags: {bad}}}\n")
+        with pytest.raises(MatrixRefused, match=message):
+            _run(path, FakeEntry(), tmp_path / bad[1:6])
+
+
+def test_a_policy_blocked_repeat_runs_again_and_a_third_end_is_invalid(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    one = "  - {name: b10, flags: {batch_size: 10}}\n"
+    entry = FakeEntry([("POLICY_BLOCKED", 0.0)] * 3 + [("BUDGET_EXCEEDED", 0.0)])
+    outcome, lines = _run(_matrix(tmp_path, rungs=one), entry, tmp_path)
+    assert [c["run_id"] for c in entry.calls] == ["m-b10-r0"] * 3 + ["m-b10-r1"] * 2
+    first, second = outcome.runs
+    assert first.invalid and first.attempts == 3 and "POLICY_BLOCKED" in first.note
+    assert not second.invalid and second.attempts == 2, "BUDGET_EXCEEDED once, then COMPLETED"
+    assert any("run again, since POLICY_BLOCKED" in line for line in lines)
+
+    def fake_score(run_dir: Path, gold_dir: Path) -> dict[str, Any]:
+        return {"corpus": "hero", "gold_version": 2, "gold_sha256": "a" * 64}
+
+    monkeypatch.setattr(evals.report, "score_run", fake_score)
+    out = report(
+        "m", outputs=tmp_path / "out", results=tmp_path / "res", hypotheses=tmp_path / "no"
+    )
+    data = json.loads((out / "report.json").read_text(encoding="utf-8"))
+    assert data["finished"] == 1 and data["invalid"] == [
+        "m-b10-r0 (invalid after 3 runs: POLICY_BLOCKED)"
+    ]
+    assert "Left out as invalid under the re-run rule" in (out / "report.md").read_text("utf-8")
+
+
+def test_a_degraded_repeat_counts_only_with_an_allowed_reason(tmp_path: Path) -> None:
+    path = tmp_path / "m.yaml"
+    path.write_text(
+        "name: m\nrfp: inputs/hero\nprofile: free\nrepeats: 2\nmax_cost_usd: 10\n"
+        "allow_degraded: ['assess: SAME_FAMILY']\n"
+        "rungs:\n  - {name: b10, flags: {batch_size: 10}}\n",
+        encoding="utf-8",
+    )
+    entry = FakeEntry(
+        [
+            ("DEGRADED", 0.0, "assess: SAME_FAMILY"),
+            ("DEGRADED", 0.0, "assess: SAME_FAMILY; research: no pack"),
+        ]
+    )
+    outcome, _ = _run(path, entry, tmp_path)
+    assert [c["run_id"] for c in entry.calls] == ["m-b10-r0", "m-b10-r1", "m-b10-r1"]
+    assert [r.attempts for r in outcome.runs] == [1, 2], "the second part was not allowed"

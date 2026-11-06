@@ -227,11 +227,49 @@ def triage(
     return TriageOutcome(record=record, hazards=hazards, degraded=degraded)
 
 
+FORCED_ZONE = "OBLIGATION"
+FORCED_REASON = "triage off: every section is zoned OBLIGATION (ADR-048)"
+
+
+def forced_zones(
+    passages: Sequence[Passage],
+    *,
+    run_dir: Path,
+    register: ControlRegister | None = None,
+    view: TextView | None = None,
+) -> TriageOutcome:
+    """Triage off (section 4.11): every section zoned `OBLIGATION`, source `forced`, with
+    no call, no profile and no hazard, written to `triage.json` as `triage` writes it."""
+    views = section_views(passages, register=register, view=view)
+    record = TriageRecord(
+        zones=[
+            ZoneRecord(
+                section_path=v.section_path,
+                doc_id=v.doc_id,
+                zone=FORCED_ZONE,
+                confidence=1.0,
+                reason=FORCED_REASON,
+                source="forced",
+            )
+            for v in views
+        ],
+        profile=RfpProfile(),
+        fallback_sections=0,
+    )
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "triage.json").write_text(
+        record.model_dump_json(indent=1) + "\n", encoding="utf-8", newline="\n"
+    )
+    return TriageOutcome(record=record, hazards=[], degraded=None)
+
+
 __all__ = [
     "FALLBACK_REASON",
+    "FORCED_REASON",
     "TriageOutcome",
     "keyword_zone",
     "merge_hazards",
+    "forced_zones",
     "merge_profiles",
     "section_views",
     "triage",

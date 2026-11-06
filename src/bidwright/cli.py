@@ -236,6 +236,9 @@ def resume_arguments(run_args: Mapping[str, Any], run_dir: Path) -> dict[str, An
         "solution",
         "risk_mode",
         "reflect",
+        "extract_context",
+        "triage",
+        "coverage",
     )
     arguments = {
         "source": _home_path(run_args["source"]),
@@ -916,6 +919,9 @@ def replay_arguments(recording: Mapping[str, Any]) -> dict[str, Any]:
         "solution": recording.get("solution", "oneshot"),
         "risk_mode": recording.get("risk_mode", "agent"),
         "reflect": recording.get("reflect", False),
+        "extract_context": recording.get("extract_context", "full"),
+        "triage": recording.get("triage", True),
+        "coverage": recording.get("coverage", True),
     }
 
 
@@ -946,6 +952,9 @@ def _write_recording(args: argparse.Namespace, cassettes: Any, result: "RunResul
         "solution": args.solution or limits.switches.solution,
         "risk_mode": args.risk_mode or limits.switches.risk_mode,
         "reflect": limits.switches.reflect if args.reflect is None else args.reflect,
+        "extract_context": limits.switches.extract_context,
+        "triage": limits.switches.triage,
+        "coverage": limits.switches.coverage,
         "run_id": result.run_id,
         "status": result.status,
         # The assess role's route (ADR-045), which a replay takes from here.

@@ -6,7 +6,9 @@ A matrix file (`config/matrices/*.yaml`) names an RFP, a profile (`free` or `pai
 number of repeats, the last node each run executes (`until`), a cost cap and its rungs, each
 with flags for `execute`: `batch_size`, `extract_prompt`, `second_pass`, `baseline`, from
 Iteration 2 `research` (`off` or `pack`), and from Iteration 3 the solution switches
-`solution`, `risk_mode` and `reflect`; any other flag is refused. Every run approves its gate
+`solution`, `risk_mode` and `reflect`, and from step 16 the extraction switches
+`extract_context` (`full` or `bare`), `triage` and `coverage` (true or false); any other flag
+is refused. Every run approves its gate
 automatically (`gate="auto"`), which never passes a blocked gate. Every run gets its repeat
 index, which is in every cassette and cache key, and the response cache is on, so a run started
 again answers the calls it already made from the cache. Runs go to
@@ -25,6 +27,11 @@ again answers the calls it already made from the cache. Runs go to
   the run starts again. Without it, a matrix whose folder already holds runs is refused, so
   two matrices never mix.
 - A run that ends `QUOTA_PAUSED` stops the matrix, and the command that resumes it is printed.
+- The re-run rule (section 4.11): a repeat that ends `BUDGET_EXCEEDED` or `POLICY_BLOCKED`,
+  has a call a fallback model answered, or ends `DEGRADED` with a part of its reason (the
+  `; `-separated parts) that starts with none of the matrix's `allow_degraded` prefixes, is
+  cleared and run again, at most twice. After a third such end it is recorded `invalid`,
+  with its reason, and the report leaves it out with a note.
 - Before each run, the `cost_usd` of every run so far is summed, whatever its status, with the
   cost of the runs cleared to start again, which `matrix_manifest.json` keeps as `cleared_usd`.
   The matrix stops when the sum has reached `max_cost_usd`, or when the most a run has cost
@@ -57,7 +64,16 @@ FLAGS = (
     "solution",
     "risk_mode",
     "reflect",
+    "extract_context",
+    "triage",
+    "coverage",
 )
+# The flags that take true or false only.
+BOOLEAN_FLAGS = ("reflect", "triage", "coverage", "second_pass")
+EXTRACT_CONTEXTS = ("full", "bare")
+# The ends a repeat is run again for, and how many times a repeat runs at most.
+RERUN_STATUSES = ("BUDGET_EXCEEDED", "POLICY_BLOCKED")
+MAX_ATTEMPTS = 3
 # The research nodes that call a model, each under the `discover` agent's role.
 DISCOVER_NODES = ("discover_start", "discover_ask", "discover_extract")
 FINISHED = ("COMPLETED", "DEGRADED")
@@ -98,6 +114,8 @@ class MatrixFile(BaseModel):
         "render",
     ] = "render"
     max_cost_usd: float = Field(ge=0)
+    # The reason prefixes a DEGRADED repeat may carry and still count (section 4.11).
+    allow_degraded: list[str] = Field(default_factory=list)
     rungs: list[Rung] = Field(min_length=1)
 
 
@@ -118,6 +136,9 @@ class MatrixRun:
     status: str
     cost_usd: float
     skipped: bool = False
+    attempts: int = 1
+    invalid: bool = False  # ended three times in a way the re-run rule runs again
+    note: str = ""
 
 
 @dataclass
@@ -231,10 +252,34 @@ def check_rungs(matrix: MatrixFile) -> None:
                 raise MatrixRefused(
                     f"rung {rung.name} sets {flag} {value!r}; use one of {', '.join(known_values)}"
                 )
-        if "reflect" in rung.flags and not isinstance(rung.flags["reflect"], bool):
+        for flag in BOOLEAN_FLAGS:
+            if flag in rung.flags and not isinstance(rung.flags[flag], bool):
+                raise MatrixRefused(
+                    f"rung {rung.name} sets {flag} to a value that is not true or false"
+                )
+        context = rung.flags.get("extract_context")
+        if context is not None and context not in EXTRACT_CONTEXTS:
             raise MatrixRefused(
-                f"rung {rung.name} sets reflect to a value that is not true or false"
+                f"rung {rung.name} sets extract_context {context!r}; use full or bare"
             )
+
+
+def rerun_reason(
+    status: str, manifest: RunManifest | None, allow_degraded: list[str]
+) -> str | None:
+    """Why the re-run rule runs a repeat again, or None when it counts as it is."""
+    if status in RERUN_STATUSES:
+        return status
+    if status not in FINISHED or manifest is None:
+        return None
+    if fell_back(manifest):
+        return "a fallback model answered a call"
+    if status == "DEGRADED":
+        parts = [p.strip() for p in (manifest.status_reason or "").split("; ") if p.strip()]
+        other = [p for p in parts if not any(p.startswith(a) for a in allow_degraded)]
+        if other:
+            return "DEGRADED: " + "; ".join(other)
+    return None
 
 
 def run_matrix(
@@ -269,49 +314,69 @@ def run_matrix(
             run_id = f"{matrix.name}-{rung.name}-r{repeat}"
             run_dir = root / run_id
             done = _manifest(run_dir)
-            if resume and done is not None and done.status in FINISHED and not fell_back(done):
+            if (
+                resume
+                and done is not None
+                and done.status in FINISHED
+                and rerun_reason(done.status, done, matrix.allow_degraded) is None
+            ):
                 outcome.runs.append(
                     MatrixRun(run_id, rung.name, repeat, done.status, done.totals.cost_usd, True)
                 )
                 continue
-            spent, largest = _spent(root, outcome.cleared_usd)
-            outcome.spent_usd = spent
-            if spent >= matrix.max_cost_usd or spent + largest > matrix.max_cost_usd:
-                outcome.status = "COST_CAP"
-                say(
-                    f"Stopped before {run_id}: ${spent:g} spent of the ${matrix.max_cost_usd:g}"
-                    f" cap. To go on, raise max_cost_usd, then run: {command}"
+            run: MatrixRun | None = None
+            for attempt in range(1, MAX_ATTEMPTS + 1):
+                spent, largest = _spent(root, outcome.cleared_usd)
+                outcome.spent_usd = spent
+                if spent >= matrix.max_cost_usd or spent + largest > matrix.max_cost_usd:
+                    outcome.status = "COST_CAP"
+                    say(
+                        f"Stopped before {run_id}: ${spent:g} spent of the"
+                        f" ${matrix.max_cost_usd:g} cap. To go on, raise max_cost_usd, then"
+                        f" run: {command}"
+                    )
+                    _write(root, outcome, matrix, path)
+                    return outcome
+                if run_dir.exists():
+                    # A run starts again; the cache keeps its calls, and its spend stays on
+                    # the matrix's account.
+                    done = _manifest(run_dir)
+                    if done is not None:
+                        outcome.cleared_usd = round(outcome.cleared_usd + done.totals.cost_usd, 6)
+                    shutil.rmtree(run_dir)
+                    _write(root, outcome, matrix, path)
+                say(f"{run_id}: running" + (f", attempt {attempt}" if attempt > 1 else ""))
+                result = execute(
+                    source=HOME / matrix.rfp,
+                    profile=matrix.profile,
+                    outputs=root,
+                    run_id=run_id,
+                    until=matrix.until,
+                    repeat=repeat,
+                    cache=True,
+                    backends=backends,
+                    fallback=False,
+                    gate="auto",
+                    **rung.flags,
                 )
-                _write(root, outcome, matrix, path)
-                return outcome
-            if run_dir.exists():
-                # An unfinished run starts again; the cache keeps its calls, and its spend stays
-                # on the matrix's account.
-                if done is not None:
-                    outcome.cleared_usd = round(outcome.cleared_usd + done.totals.cost_usd, 6)
-                shutil.rmtree(run_dir)
-                _write(root, outcome, matrix, path)
-            say(f"{run_id}: running")
-            result = execute(
-                source=HOME / matrix.rfp,
-                profile=matrix.profile,
-                outputs=root,
-                run_id=run_id,
-                until=matrix.until,
-                repeat=repeat,
-                cache=True,
-                backends=backends,
-                fallback=False,
-                gate="auto",
-                **rung.flags,
-            )
-            finished = _manifest(run_dir)
-            cost = finished.totals.cost_usd if finished else 0.0
-            outcome.runs.append(MatrixRun(run_id, rung.name, repeat, result.status, cost))
+                finished = _manifest(run_dir)
+                cost = finished.totals.cost_usd if finished else 0.0
+                reason = rerun_reason(result.status, finished, matrix.allow_degraded)
+                run = MatrixRun(run_id, rung.name, repeat, result.status, cost, attempts=attempt)
+                say(f"{run_id}: {result.status}" + (f" ({result.reason})" if result.reason else ""))
+                if reason is None or result.status == "QUOTA_PAUSED":
+                    break
+                if attempt == MAX_ATTEMPTS:
+                    run.invalid, run.note = True, f"invalid after {attempt} runs: {reason}"
+                    say(f"{run_id}: {run.note}")
+                else:
+                    say(f"{run_id}: run again, since {reason}")
+            if run is None:  # MAX_ATTEMPTS is at least 1, so the loop ran
+                raise RuntimeError(f"{run_id} did not run")
+            outcome.runs.append(run)
             outcome.spent_usd = _spent(root, outcome.cleared_usd)[0]
             _write(root, outcome, matrix, path)
-            say(f"{run_id}: {result.status}" + (f" ({result.reason})" if result.reason else ""))
-            if result.status == "QUOTA_PAUSED":
+            if run.status == "QUOTA_PAUSED":
                 outcome.status = "QUOTA_PAUSED"
                 say(f"The daily quota is spent. After it resets, run: {command}")
                 _write(root, outcome, matrix, path)
@@ -331,5 +396,6 @@ __all__ = [
     "fell_back",
     "load_matrix",
     "matrix_dir",
+    "rerun_reason",
     "run_matrix",
 ]

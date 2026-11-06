@@ -136,6 +136,7 @@ class _Packer:
     neighbors: int
     zones: Mapping[tuple[str, str], str]
     cues: Mapping[str, Sequence[str]]
+    bare: bool = False  # each passage's id and text only, no section path or lead-in
     _views: dict[str, PassageView] = field(default_factory=dict)
     _sizes: dict[str, int] = field(default_factory=dict)
     _context_sizes: dict[str, int] = field(default_factory=dict)
@@ -148,10 +149,10 @@ class _Packer:
 
     def passage_view(self, passage: Passage) -> PassageView:
         if passage.id not in self._views:
-            lead = self.manager.passages.get(passage.lead_in_id or "")
+            lead = None if self.bare else self.manager.passages.get(passage.lead_in_id or "")
             fields: dict[str, Any] = {
                 "src_id": passage.id,
-                "section_path": passage.section_path,
+                "section_path": "" if self.bare else passage.section_path,
                 "text": self.view.text(passage),
                 "lead_in": self.view.text(lead) if lead is not None else None,
                 # PassageView ignores these four until step 11 adds them, since adding them
@@ -285,9 +286,12 @@ class ContextManager:
         zones: Iterable[ZoneRecord] = (),
         cues: Iterable[CueHit] = (),
         first: int = 1,
+        bare: bool = False,
     ) -> list[ContextPack]:
         """Packs in reading order. `first` numbers the first call, so a coverage round's call
-        ids continue the numbering and no manifest file collides."""
+        ids continue the numbering and no manifest file collides. `bare` (section 4.11's
+        `extract_context: bare`) gives each passage's id and text only: its section path
+        is empty and it has no lead-in; the caller passes no neighbors and no terms."""
         prefix = _prefix(node)
         _check_budget(budget_tokens)
         if batch_size is not None and batch_size < 1:
@@ -302,6 +306,7 @@ class ContextManager:
             neighbors=neighbors,
             zones={(z.doc_id, z.section_path): z.zone for z in zones},
             cues={hit.src_id: list(hit.kinds) for hit in cues},
+            bare=bare,
         )
         room = budget_tokens - _fixed(fixed_tokens)
         groups: list[list[Passage]] = []

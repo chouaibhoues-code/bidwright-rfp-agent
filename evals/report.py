@@ -12,7 +12,8 @@ names. With spread(control) the control rung's maximum less its minimum:
 The metrics count down (missed mandatory requirements), and the secondary metric counts up
 (precision). Only runs that finished, `COMPLETED` or `DEGRADED`, on their roles' primary
 models are scored: a run with a call a fallback model answered is listed apart, and
-`bidwright matrix run <file> --resume` runs it again. These are the
+`bidwright matrix run <file> --resume` runs it again. A repeat the runner recorded `invalid`,
+after its third end under section 4.11's re-run rule, is left out with its note. These are the
 spikes' pass marks; the Master-Plan's bootstrap keep-or-drop rule applies to the ablation
 ladders from Iteration 3. Scoring checks the hash of the hypotheses with the gold's.
 """
@@ -147,6 +148,11 @@ def _markdown(name: str, data: Mapping[str, Any]) -> str:
             " `bidwright matrix run <file> --resume` runs them again."
             if data["fell_back"]
             else ""
+        )
+        + (
+            f" Left out as invalid under the re-run rule: {', '.join(data['invalid'])}."
+            if data.get("invalid")
+            else ""
         ),
         "",
         "## Decisions",
@@ -195,10 +201,15 @@ def report(
     manifest = json.loads((root / "matrix_manifest.json").read_text(encoding="utf-8"))
     rows: list[dict[str, Any]] = []
     left_out: list[str] = []
+    invalid: list[str] = []
     by_rung: dict[str, list[dict[str, float]]] = {}
     gold = "not scored"
     for run in manifest["runs"]:
         row: dict[str, Any] = {k: run[k] for k in ("run_id", "rung", "repeat", "status")}
+        if run.get("invalid"):
+            invalid.append(f"{run['run_id']} ({run.get('note') or 'invalid'})")
+            rows.append(row | {"status": f"{run['status']}, invalid"})
+            continue
         if run["status"] in FINISHED:
             manifest_path = root / run["run_id"] / "run_manifest.json"
             if fell_back(RunManifest.model_validate_json(manifest_path.read_text("utf-8"))):
@@ -220,6 +231,7 @@ def report(
         "runs": len(rows),
         "finished": sum(len(v) for v in by_rung.values()),
         "fell_back": left_out,
+        "invalid": invalid,
         "rungs": {
             rung: {
                 metric: summary([s[metric] for s in values if metric in s])

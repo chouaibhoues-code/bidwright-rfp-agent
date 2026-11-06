@@ -207,6 +207,10 @@ class SwitchesConfig(Strict):
     solution: Literal["oneshot", "fixed", "decide", "assess", "manifest"] = "manifest"
     risk_mode: Literal["oneshot", "fixed", "agent"] = "agent"
     reflect: bool = False
+    # The extraction switches (step 16): each passage's context, triage, coverage's rounds.
+    extract_context: Literal["full", "bare"] = "full"
+    triage: bool = True
+    coverage: bool = True
 
 
 class LimitsConfig(Strict):

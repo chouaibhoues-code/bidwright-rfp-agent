@@ -87,7 +87,7 @@ from bidwright.graph.nodes import (
     write_approach,
 )
 from bidwright.graph.state import BatchState, ClaimState, ClusterState, NeedState, RunState
-from bidwright.graph.triage import triage
+from bidwright.graph.triage import forced_zones, triage
 from bidwright.guard import GuardResult, PolicyBlocked, run_guard
 from bidwright.harness.budget import BudgetExceeded, RunBudget
 from bidwright.harness.context import CONTEXT_DIR, ContextManager, prompt_tokens
@@ -194,6 +194,8 @@ class NodeFunction(Protocol):
     def __call__(self, state: Any) -> dict[str, Any]: ...
 
 
+# The `extract_context` switch's values (section 4.11).
+EXTRACT_CONTEXTS = ("full", "bare")
 # The servers research mode `live` reaches (Iteration 3: Context7 for techcheck).
 LIVE_SERVERS = (RESEARCH_DESTINATION, CONTEXT7_DESTINATION)
 
@@ -236,6 +238,11 @@ class Runtime:
     reflect: bool = False
     gate: str = "auto"
     bid_policy: tuple[Any, str] | None = None
+    # The extraction switches (step 16): `bare` packs each passage's id and text only;
+    # triage off zones every section OBLIGATION with no call; coverage off runs no round.
+    extract_context: str = "full"
+    triage_on: bool = True
+    coverage_on: bool = True
 
 
 @dataclass(frozen=True)
@@ -408,17 +415,22 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
 
     def triage_node(state: RunState) -> dict[str, Any]:
         found = passages(state)
-        outcome = triage(
-            ctx,
-            found,
-            manager=ContextManager(rt.run_dir, config.limits.context, found),
-            zones=config.zones,
-            budget_tokens=config.limits.context.budgets["triage"],
-            run_dir=rt.run_dir,
-            register=register_of(state),
-            cues=_cues(state),
-            view=ctx.view,
-        )
+        if not rt.triage_on:
+            outcome = forced_zones(
+                found, run_dir=rt.run_dir, register=register_of(state), view=ctx.view
+            )
+        else:
+            outcome = triage(
+                ctx,
+                found,
+                manager=ContextManager(rt.run_dir, config.limits.context, found),
+                zones=config.zones,
+                budget_tokens=config.limits.context.budgets["triage"],
+                run_dir=rt.run_dir,
+                register=register_of(state),
+                cues=_cues(state),
+                view=ctx.view,
+            )
         return {
             "zones": [z.model_dump(mode="json") for z in outcome.record.zones],
             "profile": outcome.record.profile.model_dump(mode="json"),
@@ -431,6 +443,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
     ) -> list[dict[str, Any]]:
         limits = config.limits
         manager = ContextManager(rt.run_dir, limits.context, passages(state))
+        bare = rt.extract_context == "bare"
         packs = manager.pack(
             "extract",
             members,
@@ -440,8 +453,9 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             ),
             budget_tokens=limits.context.budgets["extract"],
             batch_size=size,
-            neighbors=limits.context.neighbors,
-            terms=[DefinedTerm.model_validate(t) for t in state.get("terms", [])],
+            neighbors=0 if bare else limits.context.neighbors,
+            terms=[] if bare else [DefinedTerm.model_validate(t) for t in state.get("terms", [])],
+            bare=bare,
             zones=[ZoneRecord.model_validate(z) for z in state.get("zones", [])],
             cues=_cues(state),
             first=first,
@@ -516,7 +530,8 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         ]
         limits = config.limits.coverage
         current = state.get("round", 0)
-        step = next_step(rows, so_far, current, 0 if rt.one_batch else limits.max_rounds)
+        rounds = 0 if rt.one_batch or not rt.coverage_on else limits.max_rounds
+        step = next_step(rows, so_far, current, rounds)
         if step.report is not None:
             write_report(rt.run_dir, step.report)
             return {"coverage": step.report.model_dump(mode="json")}
@@ -1183,6 +1198,9 @@ def execute(
     risk_mode: str | None = None,
     reflect: bool | None = None,
     bid_policy: Path | str | None = None,
+    extract_context: str | None = None,
+    triage: bool | None = None,
+    coverage: bool | None = None,
 ) -> RunResult:
     """Run one RFP file or package end to end, or resume a run. A failed run still leaves its
     manifest and ledger.
@@ -1282,7 +1300,15 @@ def execute(
         consent=profile == "free" and consent == CONSENT,
         research=research_servers,
     )
-    switches = _switches(config, solution, risk_mode, reflect)
+    switches = _switches(
+        config,
+        solution,
+        risk_mode,
+        reflect,
+        extract_context=extract_context,
+        triage=triage,
+        coverage=coverage,
+    )
     if gate not in ("wait", "auto"):
         raise Refused(f"the gate takes wait or auto, not {gate!r}")
     policy = load_bid_policy(Path(bid_policy)) if bid_policy else None
@@ -1320,6 +1346,9 @@ def execute(
         "solution": switches["solution"],
         "risk_mode": switches["risk_mode"],
         "reflect": switches["reflect"],
+        "extract_context": switches["extract_context"],
+        "triage": switches["triage"],
+        "coverage": switches["coverage"],
     }
     hashes = {
         document.path.name: f"sha256:{document.sha256}" for document in preflight.documents
@@ -1458,6 +1487,9 @@ def execute(
             reflect=switches["reflect"],
             gate=gate,
             bid_policy=policy,
+            extract_context=switches["extract_context"],
+            triage_on=switches["triage"],
+            coverage_on=switches["coverage"],
         )
         # Until the graph returns, the run has not finished: any exit this function does not
         # name below is recorded as a fault, never as COMPLETED.
@@ -1550,7 +1582,14 @@ def execute(
 
 
 def _switches(
-    config: Config, solution: str | None, risk_mode: str | None, reflect: bool | None
+    config: Config,
+    solution: str | None,
+    risk_mode: str | None,
+    reflect: bool | None,
+    *,
+    extract_context: str | None = None,
+    triage: bool | None = None,
+    coverage: bool | None = None,
 ) -> dict[str, Any]:
     """The run's switches (section 4.11): each argument, or `limits.yaml`'s default."""
     defaults = config.limits.switches
@@ -1558,7 +1597,12 @@ def _switches(
         "solution": solution or defaults.solution,
         "risk_mode": risk_mode or defaults.risk_mode,
         "reflect": defaults.reflect if reflect is None else reflect,
+        "extract_context": extract_context or defaults.extract_context,
+        "triage": defaults.triage if triage is None else triage,
+        "coverage": defaults.coverage if coverage is None else coverage,
     }
+    if chosen["extract_context"] not in EXTRACT_CONTEXTS:
+        raise Refused(f"extract_context takes one of {', '.join(EXTRACT_CONTEXTS)}")
     if chosen["solution"] not in sol.SOLUTIONS:
         raise Refused(f"solution takes one of {', '.join(sol.SOLUTIONS)}")
     if chosen["risk_mode"] not in sol.RISK_MODES:
