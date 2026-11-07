@@ -6,11 +6,14 @@
 # models, and each run's manifest records its profile.
 name: hero-repeats
 rfp: inputs/hero
-profile: free
+# Moved to paid on 2026-11-07, when Google's free daily quota ran out during default-r1.
+profile: paid
 repeats: 5
 until: render
 max_cost_usd: 6
-allow_degraded: []
+# Passages left without a disposition after the coverage loop are part of what QS-2 measures,
+# as on the EX ladder, so such a repeat counts as it ended rather than running again.
+allow_degraded: ["coverage:"]
 rungs:
   - name: default
     flags: {research: pack}

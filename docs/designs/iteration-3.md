@@ -805,6 +805,8 @@ The owner asked on 2026-11-05, after the merge of steps 13 and 17, for pages who
 
 **Tests.** None beyond the scorer's; the results are committed.
 
+- As built: S-12 passed no family, so `hero-repeats.yaml` ran the five repeats on the final defaults. Its `allow_degraded` holds `coverage:`, as the EX ladder's does, and it moved to `paid` when the free daily quota ran out during its second repeat. The response cache answered each repeat's extraction from EX3's repeat of the same index, and the first repeat entirely from the ladders' calls; the report states that the samples are not independent of the ladders'. QS-2, QS-3, QS-5 and QS-8 pass, so no exception was needed.
+
 ### Step 21: The owner's gate and spot-check
 
 **Files.** Create `evals/labels/assess_spotcheck.jsonl` and `evals/results/owner-gate/`, which holds the approved run's `review/solution_gate.approval.yaml`, its `run_manifest.json` and its scores, and none of its other files, which hold the development RFP's planted personal data.
