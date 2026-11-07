@@ -343,3 +343,25 @@ def test_a_case_that_would_not_test_its_card_is_refused(
     path.write_text(yaml.safe_dump({"cases": [case | {field: value}]}), encoding="utf-8")
     with pytest.raises(ValueError, match=message):
         load_cases(path)
+
+
+def test_every_case_renders_its_nodes_prompt_with_the_tasks_own_ids() -> None:
+    """Step 19: `extract`'s task text names `$batch_id` and `consolidate`'s `$cluster_id`, which
+    the nodes pass from their task models; `call_node` passes them the same way, so no case
+    fails before its call."""
+    from bidwright.config import load_config
+    from bidwright.graph.build import run_prompts
+    from bidwright.graph.single import template_values
+    from evals.cards import task_models
+
+    prompts = run_prompts(load_config(), [])
+    models = task_models()
+    _, cases = load_cases(ROOT / "evals" / "s12" / "cases.yaml")
+    for case in cases:
+        task = models[case.node].model_validate_json((ROOT / case.fixture).read_text("utf-8"))
+        prompt = prompts[case.node]
+        rendered = prompt.render(
+            task.model_dump_json(), run_id="s12", **template_values(prompt, task)
+        )
+        if case.node == "extract":
+            assert task.batch_id in rendered.messages[-1].content

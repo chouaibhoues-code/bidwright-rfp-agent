@@ -7,7 +7,8 @@
 # models, and each run's manifest records its profile.
 name: rk-ladder
 rfp: inputs/hero
-profile: free
+# Moved to paid on 2026-11-07, when Google's free daily quota ran out during rk0-r0.
+profile: paid
 seed_run: outputs/seeds/rk-seed
 seed_from: risk
 repeats: 5

@@ -27,6 +27,7 @@ from bidwright.llm.client import Backend, LLMClient, Mode
 from bidwright.llm.replay import CassetteStore
 from bidwright.obs.ledger import LedgerFile
 from bidwright.preflight import HOME, Refused
+from bidwright.prompts import Prompt
 
 SINGLE = "single"
 LEDGER = "ledger.jsonl"
@@ -80,6 +81,18 @@ def single_context(
     )
 
 
+def template_values(prompt: Prompt, task: BaseModel) -> dict[str, str]:
+    """The task template's placeholders the task fills, as each node passes them: `extract`'s
+    `batch_id` and `consolidate`'s `cluster_id` are fields of their task models. `data_tag` is
+    the prompt's own."""
+    names = prompt.tasks["task"].get_identifiers()
+    return {
+        key: value
+        for key in names
+        if key != "data_tag" and isinstance(value := getattr(task, key, None), str)
+    }
+
+
 def call_node(
     node: str,
     task: BaseModel,
@@ -112,7 +125,7 @@ def call_node(
     folder = single_folder(name, outputs)
     prompt = ctx.prompts[node]
     data = task.model_dump_json()
-    rendered = prompt.render(data, run_id=name)
+    rendered = prompt.render(data, run_id=name, **template_values(prompt, task))
     parsed, _ = ctx.structured(
         prompt, list(rendered.messages), schema, node=node, input_hash=rendered.input_hash
     )
