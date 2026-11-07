@@ -100,7 +100,10 @@ def _cards(args: argparse.Namespace) -> int:
     from bidwright.cli import load_env
     from bidwright.llm.client import default_backends
     from evals.cards import run_cards, write_report
+    from evals.score import check_hypotheses, recorded_hashes
 
+    # The family rules come from evals/hypotheses.yaml, so it must still be the frozen copy.
+    check_hypotheses(recorded_hashes())
     load_env(ROOT / ".env")
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     run = run_cards(

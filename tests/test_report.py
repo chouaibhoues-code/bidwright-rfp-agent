@@ -175,11 +175,11 @@ def test_the_report_writes_a_ladder_the_ops_page_reads(
     assert rows["r1"].interval.startswith("[") and rows["r1"].cost_per_avoided_miss == "$0.125"
 
 
-def test_a_tie_at_the_margin_is_dropped_as_adr_048_states() -> None:
-    """ADR-048 keeps a non-inferiority rung when `lo > -m`, strictly: a rung that ties its
-    comparator at zero gap assertions, margin 0, is dropped even when its secondary improves.
-    The owner is asked whether the Master-Plan's "no more than its margin" (`lo >= -m`) holds
-    instead; this test pins the accepted wording until then."""
+def test_a_tie_at_the_margin_is_kept_as_adr_054_states() -> None:
+    """ADR-054: a non-inferiority rung is kept when `lo >= -m`, the Master-Plan's "rise by no
+    more than its margin". A rung that ties its comparator at zero gap assertions, margin 0,
+    is kept when its secondary improves, and dropped when it does not; one whose interval
+    falls below the margin is dropped."""
     spec = {
         "metric": "gap_assertions",
         "kind": "keep_or_drop",
@@ -187,7 +187,63 @@ def test_a_tie_at_the_margin_is_dropped_as_adr_048_states() -> None:
         "margin": 0,
         "secondary": {"metric": "approach_mapping", "direction": "higher"},
     }
+    plan = _plan({"r1": spec})
     control = _runs("gap_assertions", [0] * 5, approach_mapping=[0.6] * 5)
     rung = _runs("gap_assertions", [0] * 5, approach_mapping=[0.9] * 5)
-    [tie] = _decisions("m", {"c0": control, "r1": rung}, _plan({"r1": spec}))
-    assert tie.interval == (0.0, 0.0) and tie.passed is False
+    [tie] = _decisions("m", {"c0": control, "r1": rung}, plan)
+    assert tie.interval == (0.0, 0.0) and tie.passed is True
+    flat = _runs("gap_assertions", [0] * 5, approach_mapping=[0.6] * 5)
+    [same] = _decisions("m", {"c0": control, "r1": flat}, plan)
+    assert same.passed is False, "a tie with no secondary gain is dropped"
+    worse = _runs("gap_assertions", [1] * 5, approach_mapping=[0.9] * 5)
+    [above] = _decisions("m", {"c0": control, "r1": worse}, plan)
+    assert above.interval == (-1.0, -1.0) and above.passed is False
+
+
+def test_within_noise_and_worst_repeat_take_a_direction() -> None:
+    """ADR-055: `within_noise` and `worst_repeat` read `direction: higher` for a metric that
+    counts up, and `worst_repeat` fails on one repeat worse than the control's worst."""
+    control = _runs("risk_seed_recall", [0.5, 0.67, 0.5, 0.67, 0.5])
+    held = _runs("risk_seed_recall", [0.5, 0.5, 0.67, 0.5, 0.5])
+    fell = _runs("risk_seed_recall", [0.17, 0.33, 0.17, 0.33, 0.17])
+    spec = {"metric": "risk_seed_recall", "kind": "within_noise", "direction": "higher"}
+    [ok] = _decisions("m", {"c0": control, "r1": held}, _plan({"r1": spec}))
+    [low] = _decisions("m", {"c0": control, "r1": fell}, _plan({"r1": spec}))
+    assert (ok.passed, low.passed) == (True, False)
+    zero = _runs("seeded_gaps_claimed", [0] * 5)
+    one = _runs("seeded_gaps_claimed", [0, 0, 1, 0, 0])
+    worst = {"metric": "seeded_gaps_claimed", "kind": "worst_repeat"}
+    median = {"metric": "seeded_gaps_claimed", "kind": "within_noise"}
+    [strict] = _decisions("m", {"c0": zero, "r1": one}, _plan({"r1": worst}))
+    [loose] = _decisions("m", {"c0": zero, "r1": one}, _plan({"r1": median}))
+    assert strict.passed is False and "worst repeat 1 against 0" in strict.detail
+    assert loose.passed is True, "the median rule lets one repeat claim a gap"
+    [floor] = _decisions(
+        "m",
+        {"c0": control, "r1": _runs("risk_seed_recall", [0.5, 0.5, 0.33, 0.5, 0.5])},
+        _plan({"r1": worst | {"metric": "risk_seed_recall", "direction": "higher"}}),
+    )
+    assert floor.passed is False, "a repeat below the control's lowest recall"
+
+
+def test_a_rung_with_checks_gets_a_decision_for_each() -> None:
+    """S-12's scorecard check (ADR-055): one rung, three metrics, each its own row; a metric
+    the runs lack reads as not decided."""
+    spec = {
+        "checks": [
+            {"metric": "missed_mandatory_count", "kind": "within_noise"},
+            {"metric": "seeded_gaps_claimed", "kind": "worst_repeat"},
+            {"metric": "risk_seed_recall", "kind": "within_noise", "direction": "higher"},
+        ],
+        "hypothesis": "cards keep the scorecard",
+    }
+    control = _runs("missed_mandatory_count", [3, 4, 3, 3, 4], seeded_gaps_claimed=[0] * 5)
+    rung = _runs("missed_mandatory_count", [3, 3, 4, 3, 3], seeded_gaps_claimed=[0] * 5)
+    misses, gaps, recall = _decisions("m", {"off": control, "on": rung}, _plan({"on": spec}, "off"))
+    assert [d.metric for d in (misses, gaps, recall)] == [
+        "missed_mandatory_count",
+        "seeded_gaps_claimed",
+        "risk_seed_recall",
+    ]
+    assert (misses.passed, gaps.passed, recall.passed) == (True, True, None)
+    assert misses.hypothesis == "cards keep the scorecard"

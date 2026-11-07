@@ -7,10 +7,16 @@ names. With spread(control) the control rung's maximum less its minimum:
 - `within_noise` passes when median(rung) - median(control) <= spread(control);
 - `superiority` passes when median(control) - median(rung) > spread(control);
 - `improvement` passes when median(rung) < median(control) and, on its `secondary` metric,
-  median(control) - median(rung) <= `max_drop`.
+  median(control) - median(rung) <= `max_drop`;
+- `worst_repeat` passes when max(rung) <= max(control): no repeat is worse than the
+  control's worst (ADR-055, for a metric a block rule wants at zero in every repeat).
 
 The metrics count down (missed mandatory requirements), and the secondary metric counts up
-(precision). Only runs that finished, `COMPLETED` or `DEGRADED`, on their roles' primary
+(precision). A hypothesis may give `within_noise` and `worst_repeat` a `direction: higher`
+for a metric that counts up (risk-seed recall), which turns each comparison around. A rung
+may also hold `checks`, a list of `{metric, kind, direction}`, instead of one `metric` and
+`kind`; each check is decided on its own and reported as its own row (S-12's scorecard check,
+ADR-055). Only runs that finished, `COMPLETED` or `DEGRADED`, on their roles' primary
 models are scored: a run with a call a fallback model answered is listed apart, and
 `bidwright matrix run <file> --resume` runs it again. A repeat the runner recorded `invalid`,
 after its third end under section 4.11's re-run rule, is left out with its note. These are the
@@ -25,8 +31,9 @@ kind, `keep_or_drop`:
   `higher`), and `[lo, hi]` its 90% bootstrap interval: each rung's repeats resampled with
   replacement, independently, 10,000 times, with `random.Random` seeded from the first 8
   bytes of the SHA-256 of the matrix name, and the 5th and 95th percentiles taken;
-- with no `margin`, a rung is kept when `lo > 0`; with a margin `m`, when `lo > -m` and the
-  signed difference of the medians of its `secondary` metric is above 0;
+- with no `margin`, a rung is kept when `lo > 0`; with a margin `m`, when `lo >= -m` (the
+  metric rises by no more than its margin, ADR-054) and the signed difference of the medians
+  of its `secondary` metric is above 0;
 - the cost per avoided miss, the difference of the median shadow costs over the difference
   of the median missed mandatory requirements, is reported, `n/a` when no miss is avoided,
   and never decides.
@@ -134,12 +141,23 @@ def decide(
     control: Sequence[float],
     rung: Sequence[float],
     secondary: tuple[Sequence[float], Sequence[float], float] | None = None,
+    direction: str = "lower",
 ) -> tuple[bool, str]:
-    """One rung against its control, by the rule its kind names."""
+    """One rung against its control, by the rule its kind names. `direction: higher` turns
+    `within_noise` and `worst_repeat` around, for a metric that counts up."""
+    if direction not in ("lower", "higher"):
+        raise ValueError(f"direction takes lower or higher, not {direction!r}")
+    sign = 1 if direction == "lower" else -1
     spread = max(control) - min(control)
     base, now = statistics.median(control), statistics.median(rung)
     if kind == "within_noise":
-        return now - base <= spread, f"median {now:g} against {base:g}, spread {spread:g}"
+        return (
+            sign * (now - base) <= spread,
+            f"median {now:g} against {base:g}, spread {spread:g}",
+        )
+    if kind == "worst_repeat":
+        worst, then = (max(rung), max(control)) if sign == 1 else (min(rung), min(control))
+        return sign * (worst - then) <= 0, f"worst repeat {worst:g} against {then:g}"
     if kind == "superiority":
         return base - now > spread, f"median {now:g} against {base:g}, spread {spread:g}"
     if kind == "improvement":
@@ -231,7 +249,7 @@ def keep_or_drop(
         gain = (
             _signed(other["direction"], then, now) if then is not None and now is not None else 0.0
         )
-        kept = lo > -float(margin) and gain > 0
+        kept = lo >= -float(margin) and gain > 0
         detail += f"; margin {float(margin):g}, {other['metric']} gain {gain:g}"
     cost = cost_per_avoided_miss(comparator, runs)
     detail += "; cost per avoided miss " + ("n/a" if cost is None else f"${cost:g}")
@@ -317,27 +335,38 @@ def _decisions(
     control = str(plan["control"])
     decisions = []
     for rung, spec in plan["rungs"].items():
-        metric, kind = spec["metric"], spec["kind"]
-        before = [s[metric] for s in by_rung.get(control, []) if metric in s]
-        after = [s[metric] for s in by_rung.get(str(rung), []) if metric in s]
-        if not before or not after:
-            decisions.append(
-                Decision(str(rung), control, metric, kind, None, "no finished runs to compare")
-            )
-            continue
-        secondary = None
-        if "secondary" in spec:
-            other = spec["secondary"]["metric"]
-            secondary = (
-                [s[other] for s in by_rung[control] if other in s],
-                [s[other] for s in by_rung[str(rung)] if other in s],
-                float(spec["secondary"]["max_drop"]),
-            )
-        passed, detail = decide(kind, before, after, secondary)
-        decisions.append(
-            Decision(str(rung), control, metric, kind, passed, detail, spec.get("hypothesis", ""))
-        )
+        checks = spec.get("checks") or [spec]
+        for check in checks:
+            decisions.append(_check(str(rung), control, by_rung, check, spec))
     return decisions
+
+
+def _check(
+    rung: str,
+    control: str,
+    by_rung: Mapping[str, Sequence[dict[str, float]]],
+    check: Mapping[str, Any],
+    spec: Mapping[str, Any],
+) -> Decision:
+    """One metric of a rung against the control, by the check's kind."""
+    metric, kind = check["metric"], check["kind"]
+    hypothesis = spec.get("hypothesis", "")
+    before = [s[metric] for s in by_rung.get(control, []) if metric in s]
+    after = [s[metric] for s in by_rung.get(rung, []) if metric in s]
+    if not before or not after:
+        return Decision(
+            rung, control, metric, kind, None, "no finished runs to compare", hypothesis
+        )
+    secondary = None
+    if "secondary" in check:
+        other = check["secondary"]["metric"]
+        secondary = (
+            [s[other] for s in by_rung[control] if other in s],
+            [s[other] for s in by_rung[rung] if other in s],
+            float(check["secondary"]["max_drop"]),
+        )
+    passed, detail = decide(kind, before, after, secondary, check.get("direction", "lower"))
+    return Decision(rung, control, metric, kind, passed, detail, hypothesis)
 
 
 def _markdown(name: str, data: Mapping[str, Any]) -> str:

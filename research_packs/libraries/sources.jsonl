@@ -10,3 +10,11 @@
 {"id":"LS-010","library":"openpyxl","library_id":"/websites/openpyxl_readthedocs_io_en_stable","query":"openpyxl read tables","retrieved":"2026-11-05T21:30:06.370730Z"}
 {"id":"LS-011","library":"openpyxl","library_id":"/websites/openpyxl_readthedocs_io_en_stable","query":"openpyxl write save files","retrieved":"2026-11-05T21:30:07.762288Z"}
 {"id":"LS-012","library":"openpyxl","library_id":"/websites/openpyxl_readthedocs_io_en_stable","query":"openpyxl hidden content","retrieved":"2026-11-05T21:30:08.987267Z"}
+{"id":"LS-013","library":"pdfplumber","library_id":"/jsvine/pdfplumber","query":"pdfplumber extract images","retrieved":"2026-11-07T01:36:59.564618Z"}
+{"id":"LS-014","library":"pdfplumber","library_id":"/jsvine/pdfplumber","query":"pdfplumber structure tree tagged","retrieved":"2026-11-07T01:37:01.052882Z"}
+{"id":"LS-015","library":"pdfplumber","library_id":"/jsvine/pdfplumber","query":"pdfplumber extract_text_lines","retrieved":"2026-11-07T01:37:02.510458Z"}
+{"id":"LS-016","library":"pdfplumber","library_id":"/jsvine/pdfplumber","query":"pdfplumber table extraction settings strategies","retrieved":"2026-11-07T01:37:03.937245Z"}
+{"id":"LS-017","library":"pdfplumber","library_id":"/jsvine/pdfplumber","query":"pdfplumber extract_words bounding boxes","retrieved":"2026-11-07T01:37:05.268277Z"}
+{"id":"LS-018","library":"pdfplumber","library_id":"/jsvine/pdfplumber","query":"pdfplumber PageImage save format","retrieved":"2026-11-07T01:37:06.728609Z"}
+{"id":"LS-019","library":"pdfplumber","library_id":"/jsvine/pdfplumber","query":"pdfplumber repair malformed","retrieved":"2026-11-07T01:37:07.976212Z"}
+{"id":"LS-020","library":"pdfplumber","library_id":"/jsvine/pdfplumber","query":"pdfplumber draw_rect stroke width","retrieved":"2026-11-07T01:37:09.375291Z"}

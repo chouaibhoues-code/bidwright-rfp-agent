@@ -1,0 +1,24 @@
+# The RK ladder: risk generation from one-shot baseline to agent with reflection (Iteration 3, step 19).
+# Seeded from outputs/seeds/rk-seed (first SO3 repeat, frozen).
+# Metric is risk_seed_recall (higher), secondary is generic_risks_rejected (lower).
+# Cap: $3, 5 repeats.
+# Starts on `free`; when a run pauses on the daily quota, `profile` becomes `paid` and the
+# matrix resumes with --resume (the owner's rule of 2026-11-06). Both profiles run the same
+# models, and each run's manifest records its profile.
+name: rk-ladder
+rfp: inputs/hero
+profile: free
+seed_run: outputs/seeds/rk-seed
+seed_from: risk
+repeats: 5
+max_cost_usd: 3
+allow_degraded: []
+rungs:
+  - name: rk0
+    flags: {risk_mode: oneshot}
+  - name: rk1-f
+    flags: {risk_mode: fixed}
+  - name: rk1
+    flags: {risk_mode: agent}
+  - name: rk1-t
+    flags: {risk_mode: agent, reflect: true}

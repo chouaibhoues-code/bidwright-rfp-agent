@@ -25,21 +25,22 @@ cases:
     fixture: evals/s12/fixtures/extract_req003.json
     check: check_extract_req003
 
-  # CFG family
+  # REQ family, on consolidate
   - id: S12-CASE-04
     card: REQ-002
-    family: CFG
+    family: REQ
     node: consolidate
     fixture: evals/s12/fixtures/consolidate_req002.json
     check: check_consolidate_req002
 
   - id: S12-CASE-05
     card: REQ-003
-    family: CFG
+    family: REQ
     node: consolidate
     fixture: evals/s12/fixtures/consolidate_req003.json
     check: check_consolidate_req003
 
+  # CFG family
   - id: S12-CASE-06
     card: CFG-001
     family: CFG

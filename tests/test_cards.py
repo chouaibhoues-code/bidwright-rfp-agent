@@ -307,9 +307,39 @@ def test_bidwright_eval_cards_runs_each_case_off_and_on_and_stops_at_the_cap(
     assert run.violations["C1"] == {"off": [1, 1], "on": [1, 1]}, "a rating each time"
     with_cards = [r for r in backend.requests if "<method_cards>" in r.messages[0].content]
     assert len(with_cards) == 4 and len(backend.requests) == 8
-    assert family_results(run)["RISK"]["passed"] is False, "the cards changed nothing here"
-    out = write_report(run, tmp_path / "res")
+    plan = {"control": "off", "rungs": {"RISK": {"metric": "violations", "kind": "superiority"}}}
+    assert family_results(run, plan)["RISK"]["passed"] is False, "the cards changed nothing"
+    assert family_results(run, {"rungs": {}})["RISK"]["passed"] is None, "no hypothesis"
+    out = write_report(run, tmp_path / "res", plan)
     assert "| RISK | 1 | [1, 1] | [1, 1] | fail |" in (out / "report.md").read_text("utf-8")
     capped = cards_run("s12-capped", 0.000001)
     assert capped.stopped is not None and "cap" in capped.stopped
     assert capped.violations["C1"] == {"off": [1], "on": []}
+    assert family_results(capped, plan)["RISK"]["on"] == [], "a capped run still reports"
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("family", "CFG", "is family REQ, not CFG"),
+        ("node", "risk", "risk does not consume REQ-002"),
+        ("card", "REQ-099", "no method card REQ-099"),
+    ],
+)
+def test_a_case_that_would_not_test_its_card_is_refused(
+    tmp_path: Path, field: str, value: str, message: str
+) -> None:
+    """A case's 'on' state inlines its family's cards on its node, so a case labeled with
+    another family, or on a node that does not consume its card, measures nothing."""
+    case = {
+        "id": "X1",
+        "card": "REQ-002",
+        "family": "REQ",
+        "node": "consolidate",
+        "fixture": "evals/s12/fixtures/consolidate_req002.json",
+        "check": "check_consolidate_req002",
+    }
+    path = tmp_path / "cases.yaml"
+    path.write_text(yaml.safe_dump({"cases": [case | {field: value}]}), encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        load_cases(path)

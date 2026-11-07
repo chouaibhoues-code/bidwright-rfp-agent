@@ -10,7 +10,8 @@ node's real answer schema (`ExtractResult`, `ConsolidationResult`, `DecideResult
 `bidwright-eval cards --repeats 5 --profile P` runs each case once a repeat with
 its family off and on through `graph/single.py`'s `call_node`, stops at the cost
 cap, and writes evals/results/s12-cards/: per family, its cases' violations summed
-per repeat, and S-12's decision, `superiority` over the off runs' spread.
+per repeat, and S-12's decision by the rule the family's rung of the `s12-cards` block in
+evals/hypotheses.yaml names (`superiority` over the off runs' spread).
 """
 
 from __future__ import annotations
@@ -330,21 +331,36 @@ CHECKS: dict[str, Callable[[Any], int]] = {
 
 
 def load_cases(path: Path) -> tuple[float, list[CardCase]]:
+    """The cases, each refused unless its card exists, its family is the card's family and
+    its node consumes the card: a case whose 'on' state inlines other cards than the one it
+    tests would measure nothing (S12-CASE-04 and -05 were labeled CFG while testing REQ
+    cards, so their 'on' state never carried REQ-002 or REQ-003)."""
+    from bidwright.kb import load_cards
+
+    cards = {card.id: card for card in load_cards()}
     with path.open(encoding="utf-8") as f:
         data = yaml.safe_load(f)
     max_cost = float(data.get("max_cost_usd", 1.0))
     cases = []
     for c in data.get("cases", []):
-        cases.append(
-            CardCase(
-                id=c["id"],
-                card=c["card"],
-                family=c["family"],
-                node=c["node"],
-                fixture=c["fixture"],
-                check=c["check"],
-            )
+        case = CardCase(
+            id=c["id"],
+            card=c["card"],
+            family=c["family"],
+            node=c["node"],
+            fixture=c["fixture"],
+            check=c["check"],
         )
+        card = cards.get(case.card)
+        if card is None:
+            raise ValueError(f"{case.id}: no method card {case.card}")
+        if case.family != card.family:
+            raise ValueError(f"{case.id}: {case.card} is family {card.family}, not {case.family}")
+        if case.node not in card.consumers:
+            raise ValueError(f"{case.id}: {case.node} does not consume {case.card}")
+        if case.check not in CHECKS:
+            raise ValueError(f"{case.id}: no check {case.check}")
+        cases.append(case)
     return max_cost, cases
 
 
@@ -448,11 +464,26 @@ def _calls(folder: Path, read: Callable[[Path], list[dict[str, Any]]]) -> list[d
     return read(folder) if (folder / "ledger.jsonl").exists() else []
 
 
-def family_results(run: CardsRun) -> dict[str, dict[str, Any]]:
-    """Per family, its cases' violations summed per repeat, off and on, and S-12's decision:
-    a family passes when its violations fall beyond the off runs' spread (`superiority`)."""
+PLAN = "s12-cards"
+
+
+def s12_plan(path: Path | None = None) -> dict[str, Any]:
+    """The `s12-cards` block of `evals/hypotheses.yaml`, hashed with the gold before the
+    first run: each family's rung names the rule that decides it."""
+    from evals.report import HYPOTHESES
+
+    source = path or HYPOTHESES
+    plans = yaml.safe_load(source.read_text(encoding="utf-8")) if source.exists() else {}
+    return dict((plans or {}).get(PLAN) or {})
+
+
+def family_results(run: CardsRun, plan: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+    """Per family, its cases' violations summed per repeat, off and on, and S-12's decision
+    by the rule the family's hypothesis names (`superiority`: the violations fall beyond the
+    off runs' spread). A family with no hypothesis is not decided."""
     from evals.report import decide
 
+    rungs = (plan if plan is not None else s12_plan()).get("rungs") or {}
     found: dict[str, dict[str, Any]] = {}
     for family in sorted(set(run.families.values())):
         ids = [c for c, f in run.families.items() if f == family]
@@ -460,12 +491,22 @@ def family_results(run: CardsRun) -> dict[str, dict[str, Any]]:
         for state in STATES:
             per_repeat = []
             for repeat in range(run.repeats):
-                counts = [run.violations[c][state][repeat] for c in ids]
-                if len(counts) == len(ids) and all(n is not None for n in counts):
+                counts = [
+                    run.violations[c][state][repeat]
+                    if repeat < len(run.violations[c][state])
+                    else None
+                    for c in ids
+                ]
+                if all(n is not None for n in counts):
                     per_repeat.append(sum(n for n in counts if n is not None))
             sums[state] = per_repeat
-        if sums["off"] and sums["on"]:
-            passed, detail = decide("superiority", sums["off"], sums["on"])
+        spec = rungs.get(family)
+        if spec is None:
+            passed, detail = None, f"no {PLAN} hypothesis for {family}"
+        elif sums["off"] and sums["on"]:
+            passed, detail = decide(
+                spec["kind"], sums["off"], sums["on"], direction=spec.get("direction", "lower")
+            )
         else:
             passed, detail = None, "no repeat with an answer for every case"
         found[family] = {"cases": ids, "off": sums["off"], "on": sums["on"]}
@@ -473,10 +514,10 @@ def family_results(run: CardsRun) -> dict[str, dict[str, Any]]:
     return found
 
 
-def write_report(run: CardsRun, out: Path = RESULTS) -> Path:
+def write_report(run: CardsRun, out: Path = RESULTS, plan: dict[str, Any] | None = None) -> Path:
     import json
 
-    families = family_results(run)
+    families = family_results(run, plan)
     data = {
         "repeats": run.repeats,
         "spent_usd": run.spent_usd,
@@ -491,7 +532,8 @@ def write_report(run: CardsRun, out: Path = RESULTS) -> Path:
         "",
         f"{run.repeats} repeats; ${run.spent_usd:g} spent"
         + (f"; {run.stopped}" if run.stopped else "")
-        + ". A family passes when its violations fall beyond the off runs' spread.",
+        + ". A family passes by its rule in evals/hypotheses.yaml (`superiority`: its"
+        " violations fall beyond the off runs' spread).",
         "",
         "| Family | Cases | Violations off | Violations on | Result | Detail |",
         "|---|---|---|---|---|---|",

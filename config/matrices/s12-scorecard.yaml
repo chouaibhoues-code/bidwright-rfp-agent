@@ -1,0 +1,23 @@
+# S-12's scorecard check (ADR-055, Iteration 3, step 19): the hero package in step 20's
+# configuration, with no method-card family (`off`) and with every family whose S-12 cases
+# passed (`on`). evals/hypotheses.yaml decides `on` on missed mandatory requirements and
+# risk-seed recall within noise, and on no repeat claiming more seeded gaps than the off runs'
+# worst. Before the first run, step 19 sets `on`'s methods to the families that passed
+# `bidwright-eval cards`; if `on` fails, one rung per passing family is added (the fallback
+# rungs the hypotheses name) and the matrix resumes. When `on` holds, its repeats are step
+# 20's statistical scenarios. Until step 19 sets it, `on` lists every family.
+# Starts on `free`; when a run pauses on the daily quota, `profile` becomes `paid` and the
+# matrix resumes with --resume (the owner's rule of 2026-11-06). Both profiles run the same
+# models, and each run's manifest records its profile.
+name: s12-scorecard
+rfp: inputs/hero
+profile: free
+repeats: 5
+until: render
+max_cost_usd: 6
+allow_degraded: []
+rungs:
+  - name: "off"
+    flags: {research: pack, methods: []}
+  - name: "on"
+    flags: {research: pack, methods: [req, cfg, ba, gov, del, ben, risk]}

@@ -13,7 +13,7 @@ Model and prompt ADRs also give the evaluation evidence and the model's expected
 
 ## ADRs
 
-ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05. ADR-039 to ADR-050 were proposed by the Iteration 3 design doc, `docs/designs/iteration-3.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-05: ADR-039 to ADR-049 with D-10's option C, and ADR-050 with D-11's option A. ADR-051 records the owner's addition of a loopback API to WP-3.6, the same day. ADR-052 records which of the owner's proposed prompt edits step 12 keeps, the same day. ADR-053 records the owner's UI and Phoenix requests, the same day.
+ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 record the product and architecture decisions of the plan, from the change log in `context/Master-Plan.md`, which marks each entry as an ADR or a process decision. ADR-017 to ADR-021 were proposed by the Iteration 1 design doc, `docs/designs/iteration-1.md`, and accepted by the owner at its Stage 9 review on 2026-11-03 (D-02). ADR-022 to ADR-025 record what the first architecture review of `docs/architecture.md` changed, on 2026-11-03. ADR-026 records the owner's decision on client documents (D-05), the same day. ADR-027 and ADR-028 record Iteration 1's spike decisions on 2026-11-04, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found in the release step's held-out scoring. ADR-031 to ADR-037 were proposed by the Iteration 2 design doc, `docs/designs/iteration-2.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-04 (D-07). ADR-038 records the owner's decision on published tenders among live research's sources (D-08), on 2026-11-05. ADR-039 to ADR-050 were proposed by the Iteration 3 design doc, `docs/designs/iteration-3.md`, revised through its Stage 9 review's two rounds, and accepted by the owner on 2026-11-05: ADR-039 to ADR-049 with D-10's option C, and ADR-050 with D-11's option A. ADR-051 records the owner's addition of a loopback API to WP-3.6, the same day. ADR-052 records which of the owner's proposed prompt edits step 12 keeps, the same day. ADR-053 records the owner's UI and Phoenix requests, the same day. ADR-054 and ADR-055 record the owner's decisions of 2026-11-06 on the ladders' margin test and on S-12's scorecard check.
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -1146,7 +1146,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-048: How the ablation runs
 
-**Status:** accepted, 2026-11-05, by the owner (D-10, option C). It departs from the Master-Plan once: the SO rungs read a frozen run of the EX3 configuration to `brief`, and the RK rungs a frozen full run.
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C). It departs from the Master-Plan once: the SO rungs read a frozen run of the EX3 configuration to `brief`, and the RK rungs a frozen full run. Its margin test, `lo > -m`, is superseded by ADR-054 (2026-11-06).
 
 **Context.** The Master-Plan's keep-or-drop rule (CH-54) decides each rung from 5 repeats against the last configuration kept. An EX3 run stopped at `coverage` holds no groups or brief for the solution path, and the full `risk` reads a manifest.
 
@@ -1271,6 +1271,46 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** Iteration 4's `review` gate supersedes the decisions file, or a deployment replaces Phoenix with another collector.
 
 **Provenance.** The owner's request of 2026-11-05; ADR-050; ADR-051; the Master-Plan's Gold review; Phoenix's REST API and OpenInference attributes, checked through Context7 and against the local Phoenix 21 on 2026-11-05 (`docs/verification_log.md`).
+
+### ADR-054: A non-inferiority rung may rise by no more than its margin
+
+**Status:** accepted, 2026-11-06, by the owner. It supersedes ADR-048's margin test, `lo > -m`; the rest of ADR-048 stands.
+
+**Context.** ADR-048 keeps a rung that has a margin `m` when the low end of its interval, `lo`, is above `-m`. The Master-Plan's rule (CH-54) lets the metric rise by no more than its stated margin, which allows a rise equal to the margin. The two differ only at the boundary, and the boundary is where the SO ladder sits: with a margin of 0, a rung that ties its comparator at zero gap assertions in every repeat, the best result possible, has `lo = 0` and was dropped however much better it mapped requirements. On the EX ladder, margin 1, a rung whose interval reached exactly one more miss was dropped too.
+
+**Decision.** With a margin `m`, a rung is kept when `lo >= -m` and the signed difference of the medians of its secondary metric is above 0. Without a margin, the test stays `lo > 0`.
+
+**Consequences.** A tie at margin 0 with a better secondary metric is kept; a tie with no secondary gain is still dropped, so the secondary metric decides between equals. No ladder had been scored under the old test.
+
+**Options.** ADR-048's strict test, which drops a perfect tie at margin 0; a small positive margin on the SO ladder, which would let a kept rung assert a gap.
+
+**Confirmation.** `tests/test_report.py`, `test_a_tie_at_the_margin_is_kept_as_adr_054_states`.
+
+**Reverse if.** A ladder keeps a rung under the inclusive test that a further set of repeats finds worse than its comparator.
+
+**Provenance.** The owner's decision of 2026-11-06; CH-54; ADR-048.
+
+### ADR-055: S-12's scorecard check runs on the hero package, combined and shared with step 20
+
+**Status:** accepted, 2026-11-06, by the owner, after a sequential-thinking review of four designs. It replaces the scorecard half of S-12 in `docs/designs/iteration-3.md`, section 4.11, which ran on the development PDF.
+
+**Context.** S-12 switches a method-card family on only when its negative cases improve beyond noise and the scorecard does not get worse. The design ran the scorecard check on the development PDF under `within_noise` on missed mandatory requirements and seeded gaps claimed, but the development gold holds no gap seeds, so the second metric was empty on every repeat and no family could ever switch on. The report's `within_noise` also read one metric per rung and assumed that lower is better. With a control at zero claims, its median test would let 2 of 5 repeats claim a gap, which QS-5 then blocks at step 20.
+
+**Decision.**
+- `config/matrices/s12-scorecard.yaml` runs the hero package in step 20's configuration (to `render`, research mode `pack`, the defaults the ladders set, automatic approval), 5 repeats, with two rungs: `off`, with no family, and `on`, with every family whose S-12 cases passed.
+- The `s12-scorecard` block of `evals/hypotheses.yaml` decides `on` with three checks: missed mandatory requirements `within_noise`; seeded gaps claimed `worst_repeat`, no repeat above the control's worst; and risk-seed recall `within_noise` with `direction: higher`. A rung may hold `checks`, a list of metrics each decided on its own, and `within_noise` and `worst_repeat` take a `direction`.
+- When all three pass, those families switch on, each with an ADR, and step 20 scores QS-2, QS-3, QS-5 and QS-8 on the `on` repeats. When one fails, the block's fallback rungs run, one per passing family under the same checks; only the families that hold switch on, and step 20 runs on the final defaults.
+- `bidwright-eval cards` decides each family by its rung in the `s12-cards` block and refuses to run when the hypotheses differ from the frozen copy. A case whose family is not its card's family, or whose node does not consume its card, is refused, since its `on` state would never carry the card it tests.
+
+**Consequences.** The check measures the combination of cards that would ship, including effects that start in extraction and reach the solution; it costs about 10 full hero runs when the combination holds, 5 of which step 20 needed anyway, against 5 for each passing family plus a control with a rung per family. Step 20's evidence comes from the runs that decided the switch. The switch's test is "no worse than off" and the QS thresholds were fixed beforehand, so the selection effect is small; the report states it.
+
+**Options.** One full hero rung per passing family; each family judged at its own stage on seeded runs, cheaper per family but never testing the combination and blind to downstream effects of the REQ cards; a gap seed in the development gold, which no development clause supports without rendering the RFP again; missed mandatory requirements alone, which cannot see a solution-side card claiming a gap.
+
+**Confirmation.** `tests/test_report.py`, `test_within_noise_and_worst_repeat_take_a_direction` and `test_a_rung_with_checks_gets_a_decision_for_each`; `tests/test_cards.py`, `test_a_case_that_would_not_test_its_card_is_refused`; the `s12-scorecard` report at step 19.
+
+**Reverse if.** A single family has to be switched on or off on its own evidence before the combination is tested, which per-family rungs give directly.
+
+**Provenance.** The owner's decision of 2026-11-06; the Master-Plan's S-12 rule; section 4.11.
 
 ## Failure modes hit
 

@@ -1,0 +1,24 @@
+# The EX ladder: extraction context, triage, coverage and the second pass (Iteration 3, step 19).
+# Runs on the hero package to `coverage`. Metric is missed_mandatory_count (lower, margin 1),
+# secondary is precision_low (higher). Cap: $6, 5 repeats.
+# Starts on `free`; when a run pauses on the daily quota, `profile` becomes `paid` and the
+# matrix resumes with --resume (the owner's rule of 2026-11-06). Both profiles run the same
+# models, and each run's manifest records its profile.
+name: ex-ladder
+rfp: inputs/hero
+profile: free
+repeats: 5
+until: coverage
+max_cost_usd: 6
+allow_degraded: []
+rungs:
+  - name: ex0
+    flags: {baseline: ex0}
+  - name: ex1
+    flags: {extract_context: bare, triage: false, coverage: false, second_pass: false}
+  - name: ex2
+    flags: {extract_context: full, triage: false, coverage: false, second_pass: false}
+  - name: ex3
+    flags: {second_pass: false}
+  - name: ex4
+    flags: {second_pass: true}

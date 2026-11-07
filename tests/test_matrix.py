@@ -14,7 +14,7 @@ import pytest
 import evals.report
 from bidwright import cli
 from bidwright.graph.build import RunResult
-from bidwright.matrix import MatrixRefused, fell_back, load_matrix, run_matrix
+from bidwright.matrix import MatrixRefused, check_rungs, fell_back, load_matrix, run_matrix
 from bidwright.schemas import RunManifest, RunTotals
 from evals.report import decide, report
 
@@ -133,7 +133,28 @@ def test_the_committed_matrix_files_load() -> None:
     names = {
         load_matrix(path).name for path in sorted((cli.HOME / "config" / "matrices").glob("*.yaml"))
     }
-    assert names == {"release-heldout", "s03-batch", "s10-examples", "s13-second-pass"}
+    assert names == {
+        "release-heldout",
+        "s03-batch",
+        "s10-examples",
+        "s13-second-pass",
+        "ex-ladder",
+        "so-ladder",
+        "rk-ladder",
+        "s12-scorecard",
+        "hero-repeats",
+    }
+
+
+@pytest.mark.parametrize(
+    "name", ["ex-ladder", "so-ladder", "rk-ladder", "s12-scorecard", "hero-repeats"]
+)
+def test_the_iteration_3_matrices_pass_their_checks_and_start_on_the_free_tier(name: str) -> None:
+    """Step 19 (the owner's rule of 2026-11-06): each starts on `free`, and every rung is one
+    `execute` would accept."""
+    matrix = load_matrix(cli.HOME / "config" / "matrices" / f"{name}.yaml")
+    check_rungs(matrix)
+    assert matrix.profile == "free"
 
 
 @pytest.mark.parametrize(
