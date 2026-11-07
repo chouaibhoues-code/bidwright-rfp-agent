@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-label="04 Evaluation and observability">
+<title>04 Evaluation and observability | UNREVIEWED_DRAFT</title>
+<rect width="1600" height="1000" fill="white"/>
+<rect x="60" y="330" width="720" height="415" rx="10" fill="#F8FAFC" stroke="#D6E0E8" stroke-width="1.5"/>
+<rect x="820" y="330" width="720" height="415" rx="10" fill="#F8FAFC" stroke="#D6E0E8" stroke-width="1.5"/>
+<polyline points="340,438.0 410,438.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="410,438.0 400.0,443.0 400.0,433.0" fill="#6D8193"/>
+<polyline points="800.0,267 800,303 580,303 580.0,388" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="580.0,388 575.0,378.0 585.0,378.0" fill="#6D8193"/>
+<polyline points="580.0,488 580,511 420,511 420.0,535" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="420.0,535 415.0,525.0 425.0,525.0" fill="#6D8193"/>
+<polyline points="1020,211.0 1180,211 1180.0,388" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1180.0,388 1175.0,378.0 1185.0,378.0" fill="#6D8193"/>
+<polyline points="1180.0,488 1180,511 1000,511 1000.0,535" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1000.0,535 995.0,525.0 1005.0,525.0" fill="#6D8193"/>
+<polyline points="1180.0,488 1180,511 1360,511 1360.0,535" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1360.0,535 1355.0,525.0 1365.0,525.0" fill="#6D8193"/>
+<polyline points="420.0,705 420,770 420,770 420.0,800" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="420.0,800 415.0,790.0 425.0,790.0" fill="#6D8193"/>
+<rect x="1190" y="42" width="350" height="38" rx="10" fill="#E1F3EC" stroke="#5C9D89" stroke-width="1.5"/>
+<text x="1200" y="64.5" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#173047">ITERATION 3 TARGET | UNREVIEWED_DRAFT</text>
+<rect x="580" y="155" width="440" height="112" rx="10" fill="#FFFFFF" stroke="#9DAFBD" stroke-width="1.5"/>
+<text x="597" y="194.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Frozen run artifacts</text>
+<text x="597" y="221.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Run ID, records, ledger and traces</text>
+<text x="597" y="243.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Prompt versions and model route</text>
+<rect x="90" y="388" width="250" height="100" rx="10" fill="#FFFFFF" stroke="#9DAFBD" stroke-width="1.5"/>
+<text x="103" y="423.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Gold + hypotheses</text>
+<text x="103" y="448.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Hashed known answers</text>
+<text x="103" y="468.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Fixed before experiments</text>
+<rect x="410" y="388" width="340" height="100" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="424.0" y="422.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">bidwright-eval</text>
+<text x="424.0" y="448.0" font-family="Arial, sans-serif" font-size="16" font-weight="400" fill="#173047">Match records, score seeds</text>
+<text x="424.0" y="469.0" font-family="Arial, sans-serif" font-size="16" font-weight="400" fill="#173047">Attribute misses to their stage</text>
+<rect x="90" y="535" width="660" height="170" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="110" y="592.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Scorecard + loss funnel + regression gate</text>
+<text x="110" y="619.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Headline: missed mandatory requirements and submission hazards</text>
+<text x="110" y="641.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Grounding, trap actions and unauthorized calls</text>
+<text x="110" y="663.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Unsupported capabilities, manifest checks and technology verdicts</text>
+<rect x="850" y="388" width="660" height="100" rx="10" fill="#FFFFFF" stroke="#9DAFBD" stroke-width="1.5"/>
+<text x="863.0" y="421.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Ledger + events + spans</text>
+<text x="863.0" y="448.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Tokens by category, retries, status history, model/provider route</text>
+<text x="863.0" y="470.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Active latency, charged cost and paid-rate shadow cost</text>
+<rect x="850" y="535" width="300" height="170" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="868" y="592.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Ops + run manifest</text>
+<text x="868" y="619.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Reconcile node/model totals</text>
+<text x="868" y="641.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Read scores and ladder reports</text>
+<text x="868" y="663.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Track run state and failures</text>
+<rect x="1210" y="535" width="300" height="170" rx="10" fill="#F2F5F8" stroke="#9AA9B6" stroke-width="1.5"/>
+<text x="1228" y="592.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Phoenix / local spans</text>
+<text x="1228" y="619.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">OTLP trace tree</text>
+<text x="1228" y="641.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Node, model and tool spans</text>
+<text x="1228" y="663.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Fallback: spans.jsonl</text>
+<rect x="60" y="800" width="720" height="120" rx="10" fill="#F0ECF9" stroke="#A18BC7" stroke-width="1.5"/>
+<text x="78" y="843.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Controlled agent comparisons</text>
+<text x="78" y="870.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">EX / SO / RK ladders; frozen seeds for solution and risk</text>
+<text x="78" y="892.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Five repeats, intervals and keep/drop decisions; costs beside quality</text>
+<rect x="820" y="800" width="720" height="120" rx="10" fill="#FFF0D5" stroke="#D2A052" stroke-width="1.5"/>
+<text x="838" y="843.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Release evidence | targets, not measured results</text>
+<text x="838" y="870.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Five live hero repeats: QS-2 median ≤2/45 misses; QS-3 no trap action</text>
+<text x="838" y="892.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">QS-5 no seeded gap claimed; QS-8 median Jaccard ≥0.85; ten owner labels</text>
+<text x="60" y="70" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#173047">Bidwright | evidence that the system works</text>
+<text x="60" y="110" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#566A7D">Quality and operational telemetry are separate streams, joined by the same run identity</text>
+<text x="60" y="975" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#566A7D">BIDWRIGHT / Submission diagrams / Accepted Iteration 3 design / Verify against the final build</text>
+<text x="82" y="359" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#566A7D">QUALITY / SEPARATE EVALUATION HARNESS</text>
+<text x="842" y="359" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#566A7D">OPERATIONS / TELEMETRY</text>
+<text x="60" y="948" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#566A7D">Replay time is not live provider latency. Shadow cost is not a charge. Report remaining misses and accepted exceptions explicitly.</text>
+</svg>

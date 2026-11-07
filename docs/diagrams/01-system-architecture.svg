@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-label="01 System architecture">
+<title>01 System architecture | UNREVIEWED_DRAFT</title>
+<rect width="1600" height="1000" fill="white"/>
+<rect x="60" y="310" width="960" height="385" rx="10" fill="#F8FAFC" stroke="#D6E0E8" stroke-width="1.5"/>
+<rect x="1080" y="310" width="460" height="385" rx="10" fill="#F8FAFC" stroke="#D6E0E8" stroke-width="1.5"/>
+<rect x="60" y="750" width="960" height="174" rx="10" fill="#F8FAFC" stroke="#D6E0E8" stroke-width="1.5"/>
+<rect x="1080" y="750" width="460" height="174" rx="10" fill="#F8FAFC" stroke="#D6E0E8" stroke-width="1.5"/>
+<polyline points="200.0,267 200.0,287 350,287 350,350 350,365" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="350,365 345.0,355.0 355.0,355.0" fill="#6D8193"/>
+<polyline points="580.0,267 580.0,293 440,293 440,350 440,365" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="440,365 435.0,355.0 445.0,355.0" fill="#6D8193"/>
+<polyline points="960.0,267 960.0,299 660,299 660,350 660,365" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="660,365 655.0,355.0 665.0,355.0" fill="#6D8193"/>
+<polyline points="1340.0,267 1340.0,305 880,305 880,350 880,365" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="880,365 875.0,355.0 885.0,355.0" fill="#6D8193"/>
+<polyline points="980,393.0 1040,393 1040,402 1100,402.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1100,402.0 1090.0,407.0 1090.0,397.0" fill="#6D8193"/>
+<polyline points="980,435.0 1055,435 1055,508 1100,508.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1100,508.0 1090.0,513.0 1090.0,503.0" fill="#6D8193"/>
+<polyline points="980,477.0 1035,477 1035,622 1100,622.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1100,622.0 1090.0,627.0 1090.0,617.0" fill="#6D8193"/>
+<polyline points="535.0,505 535,524 677.5,524 677.5,545" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="677.5,545 672.5,535.0 682.5,535.0" fill="#6D8193"/>
+<polyline points="212.5,545 212.5,524 300,524 300,505" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="300,505 305.0,515.0 295.0,515.0" fill="#6D8193"/>
+<polyline points="375,601.0 335,601.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="335,601.0 345.0,596.0 345.0,606.0" fill="#6D8193"/>
+<polyline points="677.5,657 677.5,720 495,720 495.0,805" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="495.0,805 490.0,795.0 500.0,795.0" fill="#6D8193"/>
+<polyline points="315,851.0 360,851.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="360,851.0 350.0,856.0 350.0,846.0" fill="#6D8193"/>
+<polyline points="630,851.0 675,851.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="675,851.0 665.0,856.0 665.0,846.0" fill="#6D8193"/>
+<polyline points="677.5,657 677.5,720 1310,720 1310.0,805" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1310.0,805 1305.0,795.0 1315.0,795.0" fill="#6D8193"/>
+<rect x="1190" y="42" width="350" height="38" rx="10" fill="#E1F3EC" stroke="#5C9D89" stroke-width="1.5"/>
+<text x="1200" y="64.5" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#173047">ITERATION 3 TARGET | UNREVIEWED_DRAFT</text>
+<rect x="60" y="155" width="280" height="112" rx="10" fill="#FFFFFF" stroke="#9DAFBD" stroke-width="1.5"/>
+<text x="74" y="196.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Synthetic RFP package</text>
+<text x="74" y="221.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">PDF / DOCX / XLSX</text>
+<text x="74" y="241.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Addenda and precedence</text>
+<rect x="440" y="155" width="280" height="112" rx="10" fill="#FFFFFF" stroke="#9DAFBD" stroke-width="1.5"/>
+<text x="454" y="196.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Supplier knowledge base</text>
+<text x="454" y="221.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Capabilities, case studies</text>
+<text x="454" y="241.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Certifications and roles</text>
+<rect x="820" y="155" width="280" height="112" rx="10" fill="#FFFFFF" stroke="#9DAFBD" stroke-width="1.5"/>
+<text x="834" y="196.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Hashed research packs</text>
+<text x="834" y="221.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Domain context + library docs</text>
+<text x="834" y="241.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Pack mode avoids live lookup</text>
+<rect x="1200" y="155" width="280" height="112" rx="10" fill="#FFFFFF" stroke="#9DAFBD" stroke-width="1.5"/>
+<text x="1214" y="196.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Versioned configuration</text>
+<text x="1214" y="221.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Prompts, schemas, models</text>
+<text x="1214" y="241.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Limits and tool allowlists</text>
+<rect x="90" y="365" width="890" height="140" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="108" y="407.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">CLI + LangGraph workflow</text>
+<text x="108" y="434.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Guard and parsing → requirements → research → solution → review → drafting</text>
+<text x="108" y="456.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Supervisor: lock, checkpoints, stop/resume, answered-call journal</text>
+<text x="108" y="478.0" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#173047">Context manager + budget/recovery + tool gateway enforce controls outside the model</text>
+<rect x="90" y="545" width="245" height="112" rx="10" fill="#FFF0D5" stroke="#D2A052" stroke-width="1.5"/>
+<text x="105" y="586.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Run / Review / Ops</text>
+<text x="105" y="611.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Loopback UI + API</text>
+<text x="105" y="631.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Read files; controls use CLI</text>
+<rect x="375" y="545" width="605" height="112" rx="10" fill="#FFFFFF" stroke="#9DAFBD" stroke-width="1.5"/>
+<text x="391" y="585.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Run artifacts | UNREVIEWED_DRAFT</text>
+<text x="391" y="611.0" font-family="Arial, sans-serif" font-size="16" font-weight="400" fill="#173047">Solution summary, matrix, manifest, risks and review files</text>
+<text x="391" y="632.0" font-family="Arial, sans-serif" font-size="16" font-weight="400" fill="#173047">Ledger, status/events, tool calls, context manifests and spans</text>
+<rect x="1100" y="365" width="420" height="74" rx="10" fill="#F2F5F8" stroke="#9AA9B6" stroke-width="1.5"/>
+<text x="1112" y="397.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Docling | local parser</text>
+<text x="1112" y="422.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Sanitized file bytes; live/record only</text>
+<rect x="1100" y="465" width="420" height="86" rx="10" fill="#F0ECF9" stroke="#A18BC7" stroke-width="1.5"/>
+<text x="1108" y="493.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">LLM providers</text>
+<text x="1108" y="518.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Generate: Gemini / Ollama</text>
+<text x="1108" y="538.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Assess (fixed/run): Cerebras / Groq / same family</text>
+<rect x="1100" y="577" width="420" height="90" rx="10" fill="#F2F5F8" stroke="#9AA9B6" stroke-width="1.5"/>
+<text x="1110.0" y="607.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Research MCP servers | live</text>
+<text x="1110.0" y="632.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">NotebookLM: domain topics, never RFP text</text>
+<text x="1110.0" y="652.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Context7: technology documentation</text>
+<rect x="85" y="805" width="230" height="92" rx="10" fill="#FFFFFF" stroke="#9DAFBD" stroke-width="1.5"/>
+<text x="96.0" y="836.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Hashed gold + specs</text>
+<text x="96.0" y="861.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Known answers</text>
+<text x="96.0" y="881.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">No producer access</text>
+<rect x="360" y="805" width="270" height="92" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="371.0" y="836.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">bidwright-eval</text>
+<text x="371.0" y="861.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Reads finished run artifacts</text>
+<text x="371.0" y="881.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Scores quality and safety</text>
+<rect x="675" y="805" width="320" height="92" rx="10" fill="#FFFFFF" stroke="#9DAFBD" stroke-width="1.5"/>
+<text x="686.0" y="836.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Scorecards + reports</text>
+<text x="686.0" y="861.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Misses, loss funnel</text>
+<text x="686.0" y="881.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Regression and comparisons</text>
+<rect x="1100" y="805" width="420" height="92" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="1111.0" y="836.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">Ops totals + Phoenix</text>
+<text x="1111.0" y="861.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Ledger reconciliation and OTLP traces</text>
+<text x="1111.0" y="881.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Local spans.jsonl when no collector</text>
+<text x="60" y="70" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#173047">Bidwright | system architecture</text>
+<text x="60" y="110" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#566A7D">Local orchestration, explicit service boundaries, and evaluation kept outside the producer</text>
+<text x="60" y="975" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#566A7D">BIDWRIGHT / Submission diagrams / Accepted Iteration 3 design / Verify against the final build</text>
+<text x="82" y="339" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#566A7D">LOCAL APPLICATION / PRODUCER</text>
+<text x="1102" y="339" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#566A7D">SERVICES / PROFILE DEPENDENT</text>
+<text x="82" y="779" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#566A7D">SEPARATE EVALUATION HARNESS</text>
+<text x="1102" y="779" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#566A7D">OBSERVABILITY</text>
+<text x="60" y="945" font-family="Arial, sans-serif" font-size="14" font-weight="400" fill="#566A7D">Research is external context, never supplier capability evidence. The producer never reads evaluation gold or corpus specs.</text>
+</svg>

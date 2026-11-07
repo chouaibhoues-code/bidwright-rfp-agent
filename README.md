@@ -67,11 +67,14 @@ A suggested reading order: this README, then [`docs/brief.md`](docs/brief.md), t
 | File | Holds |
 |---|---|
 | [`docs/brief.md`](docs/brief.md) | The request as read, success measures, scope, the questions a client would be asked, evidence, risks and open decisions, on one page |
+| [`docs/submission.md`](docs/submission.md) | The Iteration 3 submission handoff: deliverable evidence, final checks, packaging, demo link and follow-up preparation |
+| [`docs/demo_script_ui.md`](docs/demo_script_ui.md) | The walk-through script for the 60-minute follow-up session: the running system through the Run, Review and Ops pages, the human gate decided live, the trade-offs and likely questions |
 | [`DECISIONS.md`](DECISIONS.md) | Architecture and product decisions as short ADRs, and the failure modes hit while building |
 | [`ASSUMPTIONS.md`](ASSUMPTIONS.md) | What is assumed, what breaks if it is false, and how it is checked |
 | [`TIMELOG.md`](TIMELOG.md) | Rough hours per part |
 | `prompts/` | Versioned prompts, each with its "why it works" notes |
 | [`docs/architecture.md`](docs/architecture.md) | The architecture of the current tag, under the arc42 headings, with the quality scenarios |
+| [`docs/diagrams/`](docs/diagrams/README.md) | Four editable draw.io views for the Iteration 3 submission, with SVG previews |
 | [`docs/decision-matrix.md`](docs/decision-matrix.md) | The architecture choices against a published taxonomy of agent design options |
 | [`docs/security.md`](docs/security.md) | The threat model, mapped to the OWASP agentic and LLM lists |
 | [`docs/governance.md`](docs/governance.md), [`docs/ai-bom.md`](docs/ai-bom.md) | Roles, the trust layer, the NIST AI RMF mapping and the handling of sensitive information; the AI bill of materials, generated from the code |
@@ -79,5 +82,5 @@ A suggested reading order: this README, then [`docs/brief.md`](docs/brief.md), t
 | [`docs/agents.md`](docs/agents.md), [`docs/reference/`](docs/reference/cli.md) | Generated from the code: roles, prompts, models, tools, the runtime graph, the CLI and the schemas |
 | [`docs/designs/`](docs/designs/iteration-2.md) | One design doc per iteration, with its build plan |
 | [`research_packs/`](research_packs/README.md) | Recorded domain research for research mode `pack`, one folder per domain |
-| [`docs/verification_log.md`](docs/verification_log.md), [`docs/demo_script.md`](docs/demo_script.md) | Technical claims checked against documentation; the demo's structure |
+| [`docs/verification_log.md`](docs/verification_log.md), [`docs/demo_script.md`](docs/demo_script.md) | Technical claims checked against documentation; the five live changes for the follow-up session, each rehearsed with its tests and revert |
 | [`context/`](context/Master-Plan.md) | Project management: the plan, open decisions, the backlog and the research register |

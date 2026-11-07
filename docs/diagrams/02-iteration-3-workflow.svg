@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-label="02 Iteration 3 workflow">
+<title>02 Iteration 3 workflow | UNREVIEWED_DRAFT</title>
+<rect width="1600" height="1000" fill="white"/>
+<polyline points="300,260.0 365,260.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="365,260.0 355.0,265.0 355.0,255.0" fill="#6D8193"/>
+<polyline points="605,260.0 670,260.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="670,260.0 660.0,265.0 660.0,255.0" fill="#6D8193"/>
+<polyline points="910,260.0 975,260.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="975,260.0 965.0,265.0 965.0,255.0" fill="#6D8193"/>
+<polyline points="1215,260.0 1280,260.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1280,260.0 1270.0,265.0 1270.0,255.0" fill="#6D8193"/>
+<polyline points="1400.0,320 1400.0,430" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1400.0,430 1395.0,420.0 1405.0,420.0" fill="#6D8193"/>
+<polyline points="1280,490.0 1215,490.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1215,490.0 1225.0,485.0 1225.0,495.0" fill="#6D8193"/>
+<polyline points="975,490.0 910,490.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="910,490.0 920.0,485.0 920.0,495.0" fill="#6D8193"/>
+<polyline points="670,490.0 605,490.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="605,490.0 615.0,485.0 615.0,495.0" fill="#6D8193"/>
+<polyline points="365,490.0 300,490.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="300,490.0 310.0,485.0 310.0,495.0" fill="#6D8193"/>
+<polyline points="180.0,550 180.0,660" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="180.0,660 175.0,650.0 185.0,650.0" fill="#6D8193"/>
+<polyline points="300,720.0 365,720.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="365,720.0 355.0,725.0 355.0,715.0" fill="#6D8193"/>
+<polyline points="605,720.0 670,720.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="670,720.0 660.0,725.0 660.0,715.0" fill="#6D8193"/>
+<polyline points="910,720.0 975,720.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="975,720.0 965.0,725.0 965.0,715.0" fill="#6D8193"/>
+<polyline points="1215,720.0 1280,720.0" fill="none" stroke="#6D8193" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="1280,720.0 1270.0,725.0 1270.0,715.0" fill="#6D8193"/>
+<polyline points="60,720.0 30,720 30,490 60,490.0" fill="none" stroke="#9D6F35" stroke-width="2" stroke-linejoin="round" stroke-dasharray="7 5"/>
+<polygon points="60,490.0 50.0,495.0 50.0,485.0" fill="#9D6F35"/>
+<polyline points="790.0,660 790,585 325,585 325,490 300,490.0" fill="none" stroke="#9D6F35" stroke-width="2" stroke-linejoin="round" stroke-dasharray="7 5"/>
+<polygon points="300,490.0 310.0,485.0 310.0,495.0" fill="#9D6F35"/>
+<polyline points="790.0,780 790,825 180,825 180.0,780" fill="none" stroke="#9D6F35" stroke-width="2" stroke-linejoin="round" stroke-dasharray="7 5"/>
+<polygon points="180.0,780 185.0,790.0 175.0,790.0" fill="#9D6F35"/>
+<rect x="1190" y="42" width="350" height="38" rx="10" fill="#E1F3EC" stroke="#5C9D89" stroke-width="1.5"/>
+<text x="1200" y="64.5" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#173047">ITERATION 3 TARGET | UNREVIEWED_DRAFT</text>
+<rect x="60" y="200" width="240" height="120" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="74" y="245.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">01 Guard + ingest</text>
+<text x="74" y="270.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Sanitize files</text>
+<text x="74" y="290.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Parse and freeze passages</text>
+<rect x="365" y="200" width="240" height="120" rx="10" fill="#F0ECF9" stroke="#A18BC7" stroke-width="1.5"/>
+<text x="379" y="245.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">02 Extract + verify</text>
+<text x="379" y="270.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">LLM reads every passage</text>
+<text x="379" y="290.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Code checks quotes and values</text>
+<rect x="670" y="200" width="240" height="120" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="682.5" y="232.5" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">03 Cover +</text>
+<text x="682.5" y="257.5" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">consolidate</text>
+<text x="682.5" y="282.5" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Coverage repair and lint</text>
+<text x="682.5" y="302.5" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Group related requirements</text>
+<rect x="975" y="200" width="240" height="120" rx="10" fill="#F0ECF9" stroke="#A18BC7" stroke-width="1.5"/>
+<text x="989" y="245.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">04 Opportunity brief</text>
+<text x="989" y="270.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Factors, weights, scope</text>
+<text x="989" y="290.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Checked research topics</text>
+<rect x="1280" y="200" width="240" height="120" rx="10" fill="#E1F3EC" stroke="#5C9D89" stroke-width="1.5"/>
+<text x="1294" y="245.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">05 Domain research</text>
+<text x="1294" y="270.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Pack / live / off</text>
+<text x="1294" y="290.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">External and unverified</text>
+<rect x="60" y="430" width="240" height="120" rx="10" fill="#F0ECF9" stroke="#A18BC7" stroke-width="1.5"/>
+<text x="74" y="475.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">10 Blueprint</text>
+<text x="74" y="500.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Sourced manifest + WBS</text>
+<text x="74" y="520.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Binding coverage or gaps</text>
+<rect x="365" y="430" width="240" height="120" rx="10" fill="#F0ECF9" stroke="#A18BC7" stroke-width="1.5"/>
+<text x="379" y="475.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">09 Options</text>
+<text x="379" y="500.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Generate alternatives</text>
+<text x="379" y="520.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Code weights and ranks</text>
+<rect x="670" y="430" width="240" height="120" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="684" y="475.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">08 Capability map</text>
+<text x="684" y="500.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Code sets coverage status</text>
+<text x="684" y="520.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Evidence and gaps stay visible</text>
+<rect x="975" y="430" width="240" height="120" rx="10" fill="#F0ECF9" stroke="#A18BC7" stroke-width="1.5"/>
+<text x="989" y="475.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">07 Blind assessment</text>
+<text x="989" y="500.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">One call per cited claim</text>
+<text x="989" y="520.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">No evidence → UNVERIFIED</text>
+<rect x="1280" y="430" width="240" height="120" rx="10" fill="#E1F3EC" stroke="#5C9D89" stroke-width="1.5"/>
+<text x="1294" y="475.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">06 Decide</text>
+<text x="1294" y="500.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Plan, then one agent per need</text>
+<text x="1294" y="520.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Join decisions and claims</text>
+<rect x="60" y="660" width="240" height="120" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="74" y="705.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">11 Techcheck</text>
+<text x="74" y="730.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Documentation-based verdicts</text>
+<text x="74" y="750.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">INVALIDATED → one revision</text>
+<rect x="365" y="660" width="240" height="120" rx="10" fill="#E1F3EC" stroke="#5C9D89" stroke-width="1.5"/>
+<text x="379" y="705.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">12 Risk agent</text>
+<text x="379" y="730.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Manifest, hazards and gaps</text>
+<text x="379" y="750.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Search + date/SLA arithmetic</text>
+<rect x="670" y="660" width="240" height="120" rx="10" fill="#FFF0D5" stroke="#D2A052" stroke-width="1.5"/>
+<text x="684" y="705.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">13 Human gate</text>
+<text x="684" y="730.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">WAITING_HUMAN</text>
+<text x="684" y="750.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Approve, edit or reject</text>
+<rect x="975" y="660" width="240" height="120" rx="10" fill="#F0ECF9" stroke="#A18BC7" stroke-width="1.5"/>
+<text x="989" y="705.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">14 Draft</text>
+<text x="989" y="730.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Three short sections</text>
+<text x="989" y="750.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">From checked solution records</text>
+<rect x="1280" y="660" width="240" height="120" rx="10" fill="#EAF3F8" stroke="#769BB4" stroke-width="1.5"/>
+<text x="1294" y="705.0" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#173047">15 Validate + render</text>
+<text x="1294" y="730.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Summary and review artifacts</text>
+<text x="1294" y="750.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">UNREVIEWED_DRAFT</text>
+<rect x="60" y="866" width="710" height="75" rx="10" fill="#F8FAFC" stroke="#D3DEE6" stroke-width="1.5"/>
+<text x="75" y="908.5" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Research off: brief → decide. Blueprint failure: fall back to approach → risk; report degradation.</text>
+<rect x="810" y="866" width="710" height="75" rx="10" fill="#F8FAFC" stroke="#D3DEE6" stroke-width="1.5"/>
+<text x="825" y="898.5" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">Reject / blocked automatic approval → POLICY_BLOCKED, no draft. Method cards and reflect start</text>
+<text x="825" y="918.5" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#173047">disabled.</text>
+<text x="60" y="70" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#173047">Bidwright | the end-to-end workflow</text>
+<text x="60" y="110" font-family="Arial, sans-serif" font-size="17" font-weight="400" fill="#566A7D">Numbered execution path; dashed lines show revision and human-edit feedback</text>
+<text x="60" y="975" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#566A7D">BIDWRIGHT / Submission diagrams / Accepted Iteration 3 design / Verify against the final build</text>
+<text x="60" y="165" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#566A7D">01 / READ AND VERIFY THE RFP</text>
+<text x="60" y="394" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#566A7D">02 / DEVELOP A SOLUTION FROM EVIDENCE ←</text>
+<text x="365" y="624" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#566A7D">03 / VALIDATE, REVIEW AND DRAFT</text>
+<text x="530" y="573" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#9D6F35">Choose another option</text>
+<text x="360" y="809" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#9D6F35">Edited fields: recheck technology + risk</text>
+</svg>
