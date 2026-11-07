@@ -29,7 +29,8 @@ so a run started again answers the calls it already made from the cache. Runs go
 - A run that ends `QUOTA_PAUSED` stops the matrix, and the command that resumes it is printed.
 - The re-run rule (section 4.11): a repeat that ends `BUDGET_EXCEEDED` or `POLICY_BLOCKED`,
   has a call a fallback model answered, or ends `DEGRADED` with a part of its reason (the
-  `; `-separated parts) that starts with none of the matrix's `allow_degraded` prefixes, is
+  `; `-separated parts, leaving out the "stopped after ... by request" part an `until` adds)
+  that starts with none of the matrix's `allow_degraded` prefixes, is
   cleared and run again, at most twice. After a third such end it is recorded `invalid`,
   with its reason, and the report leaves it out with a note.
 - Before each run, the `cost_usd` of every run so far is summed, whatever its status, with the
@@ -42,6 +43,7 @@ This module never imports `evals`: scoring is `bidwright-eval report <matrix>`.
 """
 
 import json
+import re
 import shutil
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field
@@ -89,6 +91,8 @@ MAX_ATTEMPTS = 3
 DISCOVER_NODES = ("discover_start", "discover_ask", "discover_extract")
 FINISHED = ("COMPLETED", "DEGRADED")
 MANIFEST = "matrix_manifest.json"
+# The part of a status reason that `execute` adds when a run stops at its `until`.
+REQUESTED_STOP = re.compile(r"stopped after \w+ by request")
 
 
 class Rung(BaseModel):
@@ -309,6 +313,9 @@ def rerun_reason(
         return "a fallback model answered a call"
     if status == "DEGRADED":
         parts = [p.strip() for p in (manifest.status_reason or "").split("; ") if p.strip()]
+        # A run stopped early by its `until` says so in its reason, but that part is the
+        # request, not a shortfall: alone it leaves the run COMPLETED.
+        parts = [p for p in parts if not REQUESTED_STOP.fullmatch(p)]
         other = [p for p in parts if not any(p.startswith(a) for a in allow_degraded)]
         if other:
             return "DEGRADED: " + "; ".join(other)

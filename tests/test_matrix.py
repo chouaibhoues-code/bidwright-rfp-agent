@@ -437,6 +437,28 @@ def test_a_degraded_repeat_counts_only_with_an_allowed_reason(tmp_path: Path) ->
     assert [r.attempts for r in outcome.runs] == [1, 2], "the second part was not allowed"
 
 
+def test_the_part_a_requested_stop_adds_is_not_a_shortfall(tmp_path: Path) -> None:
+    """Step 19: a run that stops at its `until` says so in its reason; that part alone never
+    sends a DEGRADED repeat to run again, and the other parts still decide."""
+    path = tmp_path / "m.yaml"
+    path.write_text(
+        "name: m\nrfp: inputs/hero\nprofile: free\nrepeats: 2\nuntil: coverage\n"
+        "max_cost_usd: 10\nallow_degraded: ['coverage:']\n"
+        "rungs:\n  - {name: b10, flags: {batch_size: 10}}\n",
+        encoding="utf-8",
+    )
+    stop = "stopped after coverage by request"
+    entry = FakeEntry(
+        [
+            ("DEGRADED", 0.0, f"coverage: 1 passages without a disposition; {stop}"),
+            ("DEGRADED", 0.0, f"triage: fell back to extract-all; {stop}"),
+        ]
+    )
+    outcome, _ = _run(path, entry, tmp_path)
+    assert [c["run_id"] for c in entry.calls] == ["m-b10-r0", "m-b10-r1", "m-b10-r1"]
+    assert [r.attempts for r in outcome.runs] == [1, 2], "triage's fallback was not allowed"
+
+
 def test_a_seeded_matrix_passes_its_seed_and_refuses_an_extraction_switch(tmp_path: Path) -> None:
     """Step 16 (section 4.11): a seeded rung keeps its seed's extraction."""
 
