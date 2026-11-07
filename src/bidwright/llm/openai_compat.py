@@ -4,6 +4,8 @@ The SDK's own retries are off: the client retries with its own backoff and budge
 `reasoning_effort` goes to the provider as is. A 429 that names a daily limit raises
 `QuotaExhausted`, which a retry cannot help: Groq's `x-ratelimit-remaining-requests` counts
 requests a day, and both providers' error messages name the limit they hit (C7-02, C7-03).
+A request that carries an output ceiling sends it as `max_completion_tokens`, which Cerebras
+charges to the per-minute token limit before the call runs (step 19).
 """
 
 import json
@@ -64,6 +66,8 @@ class OpenAICompatBackend:
         effort = request.settings.get("reasoning_effort")
         if effort is not None:
             params["reasoning_effort"] = effort
+        if request.max_completion_tokens is not None:
+            params["max_completion_tokens"] = request.max_completion_tokens
         try:
             completion = self._client.with_options(
                 timeout=request.timeout_s

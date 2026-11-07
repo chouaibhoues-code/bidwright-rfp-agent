@@ -2,10 +2,11 @@
 
 The client picks the model for a role from `config/models.yaml`, applies a prompt's decoding
 block over the role's defaults, retries transient failures with full-jitter backoff (a
-provider's `Retry-After` wins), falls back once to the role's fallback model when one is
-configured (unless `fallback=False`, as in matrix runs, where a second model would change what
-is measured), records or replays cassettes, validates structured output against its Pydantic
-model, and reports one `LedgerEntry` per call. The entry's `retries` counts the failed
+provider's `Retry-After` wins, and a 429 without one waits the backoff cap, since a per-minute
+limit clears only as its window moves on), falls back once to the role's fallback model when
+one is configured (unless `fallback=False`, as in matrix runs, where a second model would
+change what is measured), records or replays cassettes, validates structured output against
+its Pydantic model, and reports one `LedgerEntry` per call. The entry's `retries` counts the failed
 provider attempts, across the primary and the fallback model, and `retry_reasons` says why
 each one failed: `rate_limited`, `timeout`, `server_error`, `transport`, or `quota` for a
 spent daily quota. `before_attempt` runs before every attempt, which is where the run budget
@@ -13,7 +14,8 @@ is checked (ADR-022).
 
 Two optional parts sit in front of a provider (Iteration 1, step 9). The limiter
 (`llm/limits.py`) is called after `before_attempt` with the model and the request's estimated
-input tokens, its characters divided by `chars_per_token`; it waits for the per-minute limits
+input tokens, the characters of its messages, schema and tools divided by `chars_per_token`,
+plus the limits row's output ceiling when it sets one (step 19); it waits for the per-minute limits
 and raises `QuotaExhausted` on a spent daily allowance, which moves the call to its fallback
 model. The response cache (`llm/cache.py`) is read before a live attempt and written after one;
 a hit is reported as replayed and skips the budget's attempt count and the limiter. Both apply
@@ -43,11 +45,12 @@ that role's shadow model through `shadow_roles`. After each answer, the client r
 tokens the provider counted to the limiter, which keeps a day's tokens for rows with `tpd`.
 """
 
+import json
 import os
 import random
 import time
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import Literal
 
@@ -332,6 +335,13 @@ class LLMClient:
             raise ProviderError(f"no backend configured for provider {role_config.provider!r}")
         call = self.config.limits.call
         tokens = _estimated_tokens(request, self.config.limits.context.chars_per_token)
+        quota = self.config.limits.quota_for(
+            role_config.provider, tier_for(self.profile), request.model
+        )
+        if quota is not None and quota.max_completion_tokens is not None:
+            # The provider charges the ceiling before the call runs, so the limiter does too.
+            request = replace(request, max_completion_tokens=quota.max_completion_tokens)
+            tokens += quota.max_completion_tokens
         circuit = model_key(role_config.provider, tier_for(self.profile), request.model)
         retries = 0
         while True:
@@ -351,11 +361,16 @@ class LLMClient:
                 attempts.reasons.append(exc.reason)
                 if retries >= call.retries:
                     raise UnrecoverableFault(f"{request.model}: {exc}") from exc
-                wait = (
-                    exc.retry_after_s
-                    if isinstance(exc, RateLimited) and exc.retry_after_s is not None
-                    else self._rng() * min(call.backoff_cap_s, call.backoff_base_s * 2**retries)
-                )
+                if isinstance(exc, RateLimited):
+                    # A per-minute limit clears only as its window moves on, which a short
+                    # jittered wait cannot outlast: with no Retry-After, wait the cap.
+                    wait = (
+                        exc.retry_after_s
+                        if exc.retry_after_s is not None
+                        else float(call.backoff_cap_s)
+                    )
+                else:
+                    wait = self._rng() * min(call.backoff_cap_s, call.backoff_base_s * 2**retries)
                 retries += 1
                 self._sleep(wait)
                 continue
@@ -434,8 +449,14 @@ def _meta(role_config: RoleConfig, request: Request) -> dict[str, object]:
 
 
 def _estimated_tokens(request: Request, chars_per_token: int) -> int:
-    """The request's input tokens as the limiter counts them: its characters, divided."""
+    """The request's input tokens as the limiter counts them: the characters of its messages,
+    its response schema and its tool definitions, which the provider reads as input too,
+    divided."""
     chars = sum(len(message.content) for message in request.messages)
+    if request.schema is not None:
+        chars += len(json.dumps(request.schema))
+    for tool in request.tools:
+        chars += len(tool.name) + len(tool.description) + len(json.dumps(tool.parameters))
     return -(-chars // chars_per_token)
 
 

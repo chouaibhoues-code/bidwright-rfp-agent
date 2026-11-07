@@ -1,5 +1,6 @@
 """Offline checks that each provider adapter maps the provider's fields as documented."""
 
+import dataclasses
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -285,6 +286,15 @@ def test_openai_compat_sends_reasoning_effort_when_the_role_sets_it() -> None:
     assert completions.params["reasoning_effort"] == "medium"
     _compat("cerebras", completions).call(_compat_request({}))
     assert "reasoning_effort" not in completions.params
+
+
+def test_openai_compat_sends_the_output_ceiling_only_when_the_request_carries_one() -> None:
+    completions = _Completions()
+    capped = dataclasses.replace(_compat_request({}), max_completion_tokens=4096)
+    _compat("cerebras", completions).call(capped)
+    assert completions.params["max_completion_tokens"] == 4096
+    _compat("cerebras", completions).call(_compat_request({}))
+    assert "max_completion_tokens" not in completions.params
 
 
 @pytest.mark.parametrize(

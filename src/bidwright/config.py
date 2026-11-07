@@ -147,6 +147,12 @@ class ModelQuota(Strict):
     # Tokens a day (input, output and thinking, as each call reports them), when the provider
     # sets a cap; enforced with `daily: enforce` as `rpd` is (ADR-045).
     tpd: int | None = Field(default=None, gt=0)
+    # The output ceiling a call asks for, when the provider charges it to the per-minute token
+    # limit before the call runs, as Cerebras does with `max_completion_tokens` (or its own
+    # upper-bound estimate when none is sent). The adapter sends it, and the limiter counts it
+    # with the input. It is left out of the cache key, as the timeout is: below it, no answer
+    # changes.
+    max_completion_tokens: int | None = Field(default=None, gt=0)
     # `enforce`: the limiter stops at the daily limit less the reserve. `observe`: it only
     # counts, and the provider's own daily 429 stops the calls (ADR-029).
     daily: Literal["enforce", "observe"] = "enforce"

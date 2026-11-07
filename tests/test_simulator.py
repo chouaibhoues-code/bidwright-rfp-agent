@@ -34,6 +34,15 @@ def test_fi01_backoff_honors_retry_after() -> None:
     assert completion.retry_reasons == ("rate_limited",)
 
 
+def test_fi01_a_429_without_retry_after_waits_the_backoff_cap() -> None:
+    """Step 19: a per-minute limit clears only as its window moves on, so a 429 that names no
+    delay waits the cap (30 s), not a jittered few seconds."""
+    sleeps: list[float] = []
+    client = _client([{"call": 1, "fault": "http_429"}], sleeps)
+    completion = client.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert completion.retries == 1 and sleeps == [30.0]
+
+
 def test_fi01_timeouts_back_off_with_full_jitter_under_the_cap() -> None:
     sleeps: list[float] = []
     script = [{"call": 1, "fault": "timeout"}, {"call": 2, "fault": "server_error"}]

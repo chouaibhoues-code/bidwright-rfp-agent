@@ -7,7 +7,8 @@
 # models, and each run's manifest records its profile.
 name: so-ladder
 rfp: inputs/hero
-profile: free
+# Moved to paid on 2026-11-07, when Google's free daily quota ran out during so1-r2.
+profile: paid
 seed_run: outputs/seeds/so-seed
 seed_from: research
 repeats: 5

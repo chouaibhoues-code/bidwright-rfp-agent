@@ -24,6 +24,11 @@ provider reported to the day's count file, and `acquire` stops a call once the d
 reach `tpd` less the reserve, with `daily: enforce`. And a provider whose limits have one tier
 only, such as Cerebras's trial, is counted under that tier on every profile, since one account
 holds one quota whatever the profile.
+
+Step 19 adds a row's `max_completion_tokens`: a provider that charges the output ceiling to its
+per-minute token limit before a call runs, as Cerebras does, gets that ceiling on every live
+request, and the client asks `acquire` for the estimated input tokens plus the ceiling, so the
+per-minute pacing counts what the provider counts.
 """
 
 import json

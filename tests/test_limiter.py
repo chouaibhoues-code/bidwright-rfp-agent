@@ -256,3 +256,45 @@ def test_the_client_reports_each_answers_tokens_to_the_limiter(tmp_path: Path) -
     )
     client.complete("assess", MESSAGES, ExtractResult, **CALL)
     assert limiter.tokens("cerebras", CEREBRAS_MODEL) == 1200, "1,000 in and 200 out"
+
+
+class _RecordingLimiter(Limiter):
+    """A limiter that remembers the tokens each `acquire` asked for."""
+
+    asked: list[int]
+
+    def acquire(self, provider: str, model: str, tokens: int) -> None:
+        self.asked.append(tokens)
+        super().acquire(provider, model, tokens)
+
+
+def test_an_output_ceiling_goes_on_the_request_and_into_the_per_minute_count(
+    tmp_path: Path,
+) -> None:
+    """Step 19: Cerebras charges `max_completion_tokens` before a call runs, so the client sends
+    the row's ceiling and the limiter counts it with the estimated input; the cache key stays
+    the one a call without the ceiling has."""
+    ceiling = _trial(tpd=1_000_000)
+    row = ceiling.providers["cerebras"].tiers["trial"][CEREBRAS_MODEL]
+    ceiling.providers["cerebras"].tiers["trial"][CEREBRAS_MODEL] = row.model_copy(
+        update={"max_completion_tokens": 4096}
+    )
+    asked: dict[str, list[int]] = {}
+    keys: dict[str, set[str]] = {}
+    for name, limits in (("plain", _trial(tpd=1_000_000)), ("ceiling", ceiling)):
+        limiter = _RecordingLimiter(limits, "free", tmp_path / name)
+        limiter.asked = []
+        backend = FakeBackend(provider="cerebras")
+        cache = tmp_path / name / "cache"
+        config = load_config().model_copy(update={"limits": limits})
+        client = LLMClient(
+            config, "free", {"cerebras": backend}, limiter=limiter, cache=CassetteStore(cache)
+        )
+        client.complete("assess", MESSAGES, ExtractResult, **CALL)
+        [request] = backend.requests
+        asked[name] = limiter.asked
+        keys[name] = {path.name for path in cache.rglob("*.json")}
+        expected = 4096 if name == "ceiling" else None
+        assert request.max_completion_tokens == expected
+    assert asked["ceiling"][0] == asked["plain"][0] + 4096
+    assert keys["plain"] and keys["plain"] == keys["ceiling"], "the ceiling is not in the key"

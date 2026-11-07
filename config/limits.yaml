@@ -44,11 +44,16 @@ providers:
   # and 30K input tokens a minute and 1M tokens a day, and lists no daily request cap, so rpd is
   # what 5 a minute allows; its credits run until 2026-12-03 (D-03). Groq's free plan gives
   # openai/gpt-oss-120b 30 requests and 8K tokens a minute, 1K requests and 200K tokens a day.
+  # Cerebras charges a request its input tokens plus `max_completion_tokens` (or its own
+  # upper-bound estimate when none is sent) against the per-minute limit before it runs, so
+  # each call asks for 4,096 at most: about three times the largest assess answer seen
+  # (1,386 tokens with its reasoning), and 5 calls of about 6K tokens fit 30K a minute.
   cerebras:
     quota_day_tz: UTC
     tiers:
       trial:
-        gpt-oss-120b: {rpm: 5, tpm: 30000, rpd: 7200, tpd: 1000000, reserve: 0.0}
+        gpt-oss-120b: {rpm: 5, tpm: 30000, rpd: 7200, tpd: 1000000, reserve: 0.0,
+          max_completion_tokens: 4096}
   groq:
     quota_day_tz: UTC
     tiers:

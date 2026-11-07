@@ -4,6 +4,7 @@ key or gold is needed."""
 
 import csv
 import json
+import re
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -150,11 +151,16 @@ def test_the_committed_matrix_files_load() -> None:
     "name", ["ex-ladder", "so-ladder", "rk-ladder", "s12-scorecard", "hero-repeats"]
 )
 def test_the_iteration_3_matrices_pass_their_checks_and_start_on_the_free_tier(name: str) -> None:
-    """Step 19 (the owner's rule of 2026-11-06): each starts on `free`, and every rung is one
-    `execute` would accept."""
-    matrix = load_matrix(cli.HOME / "config" / "matrices" / f"{name}.yaml")
+    """Step 19 (the owner's rule of 2026-11-06): each starts on `free` and moves to `paid` only
+    once the daily quota has run out, which the file then says, and every rung is one `execute`
+    would accept."""
+    path = cli.HOME / "config" / "matrices" / f"{name}.yaml"
+    matrix = load_matrix(path)
     check_rungs(matrix)
-    assert matrix.profile == "free"
+    moved = re.search(
+        r"^# Moved to paid on \d{4}-\d{2}-\d{2}, when ", path.read_text("utf-8"), re.M
+    )
+    assert matrix.profile == "free" or (matrix.profile == "paid" and moved)
 
 
 @pytest.mark.parametrize(

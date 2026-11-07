@@ -69,6 +69,8 @@ class Request:
     tools: tuple[ToolSpec, ...] = ()
     settings: dict[str, Any] = field(default_factory=dict)
     timeout_s: float = 60.0
+    # The limits row's output ceiling, set by the client on live attempts; not in the key.
+    max_completion_tokens: int | None = None
 
 
 @dataclass(frozen=True)
