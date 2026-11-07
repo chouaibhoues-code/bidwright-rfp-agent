@@ -3,7 +3,14 @@
 evals/s12/cases.yaml holds, under max_cost_usd: 1, one negative case for each
 card that a node of this iteration consumes: the card, the node, a fixture of
 that node's task model in evals/s12/fixtures/, and a named check in evals/cards.py
-that counts a violation in the node's answer.
+that counts a violation in the node's answer. Each check reads the fields of that
+node's real answer schema (`ExtractResult`, `ConsolidationResult`, `DecideResult`,
+`AssessmentResult`, `OptionsResult`, `BlueprintPlan`, `RiskRegister`).
+
+`bidwright-eval cards --repeats 5 --profile P` runs each case once a repeat with
+its family off and on through `graph/single.py`'s `call_node`, stops at the cost
+cap, and writes evals/results/s12-cards/: per family, its cases' violations summed
+per repeat, and S-12's decision, `superiority` over the off runs' spread.
 """
 
 from __future__ import annotations
@@ -86,16 +93,10 @@ def check_consolidate_req002(output: Any) -> int:
 
 
 def check_consolidate_req003(output: Any) -> int:
-    """REQ-003 on consolidate: overaggressive deduplication with different exceptions."""
-    duplicates = _get_field(output, "duplicates", [])
-    violations = 0
-    for dup in duplicates:
-        reason = _get_field(dup, "reason", "") or ""
-        desc = _get_field(dup, "description", "") or ""
-        text = (reason + desc).lower()
-        if "different exceptions" in text or "distinct criteria" in text:
-            violations += 1
-    return violations
+    """REQ-003 on consolidate: the case's two members carry different exceptions, so any
+    duplicate pair the answer makes merges separate obligations. A `DuplicatePair` holds the
+    two requirement ids only."""
+    return len(_get_field(output, "duplicates", []) or [])
 
 
 def check_consolidate_cfg001(output: Any) -> int:
@@ -248,44 +249,58 @@ def check_blueprint_ben001(output: Any) -> int:
 # --- RISK Checks ---
 
 
+def _risk_texts(risk: Any) -> str:
+    fields = ("condition", "event", "effect", "trigger", "residual_exposure")
+    values = [str(_get_field(risk, name, "") or "") for name in fields]
+    values += [str(v) for v in _get_field(risk, "responses", []) or []]
+    return " ".join(values)
+
+
 def check_risk_risk001(output: Any) -> int:
-    """RISK-001: Formulate uncertain risk using condition/cause, event and consequence."""
-    risks = _get_field(output, "risks", [])
-    violations = 0
-    for r in risks:
-        cause = _get_field(r, "cause", "") or _get_field(r, "condition", "") or ""
-        event = _get_field(r, "event", "") or ""
-        consequence = _get_field(r, "consequence", "") or ""
-        statement = _get_field(r, "statement", "") or ""
-        if "unstructured statement" in statement.lower() and not (cause and event and consequence):
-            violations += 1
-    return violations
+    """RISK-001: a risk states its condition, its uncertain event and its effect, with an owner
+    role and an observable trigger; each risk missing one counts."""
+    required = ("condition", "event", "effect", "owner_role", "trigger")
+    return sum(
+        1
+        for risk in _get_field(output, "risks", []) or []
+        if any(not str(_get_field(risk, name, "") or "").strip() for name in required)
+    )
+
+
+_ALREADY = re.compile(r"\b(?:has|have|had)\s+already\s+(?:occurred|happened)\b", re.I)
 
 
 def check_risk_risk002(output: Any) -> int:
-    """RISK-002: Risk is not issue; never fabricated probabilities or risk ratings."""
-    risks = _get_field(output, "risks", [])
+    """RISK-002: no rating or probability, by the rule `risk`'s own check applies, and no
+    issue that has already happened presented as a risk."""
+    from bidwright.graph.nodes import PROBABILITY, RATING_PHRASE, RATING_WORDS
+
     violations = 0
-    for r in risks:
-        statement = _get_field(r, "statement", "").lower()
-        pattern = r"\b(rating\s*:\s*\d+|probability\s*:\s*0\.\d+|risk score\s*:\s*\d+)\b"
-        if re.search(pattern, statement, re.I):
+    for risk in _get_field(output, "risks", []) or []:
+        exposure = str(_get_field(risk, "residual_exposure", "") or "").strip().lower().rstrip(".")
+        if (
+            exposure in RATING_WORDS
+            or RATING_PHRASE.search(exposure)
+            or PROBABILITY.search(_risk_texts(risk))
+        ):
             violations += 1
-        if "already occurred incident" in statement or "historical issue as risk" in statement:
+        if _ALREADY.search(_risk_texts(risk)):
             violations += 1
     return violations
 
 
+_NO_HUMAN = {"", "none", "n/a", "system", "automatic", "auto", "automatic_override", "tbd"}
+_AUTO_APPROVAL = re.compile(r"\bauto(?:matically)?[- ]?approv|\bwaive[sd]?\b", re.I)
+
+
 def check_risk_risk003(output: Any) -> int:
-    """RISK-003: Propose response options with human owner; no auto-approval of thresholds."""
-    risks = _get_field(output, "risks", [])
+    """RISK-003: response options with a human owner role; a risk with no response, with no
+    human owner, or approving or waiving itself counts."""
     violations = 0
-    for r in risks:
-        statement = _get_field(r, "statement", "").lower()
-        owner = _get_field(r, "owner", "") or ""
-        if "auto-approved risk threshold" in statement or "system waived risk" in statement:
-            violations += 1
-        if owner == "AUTOMATIC_OVERRIDE":
+    for risk in _get_field(output, "risks", []) or []:
+        owner = str(_get_field(risk, "owner_role", "") or "").strip().lower()
+        responses = [str(r).strip() for r in _get_field(risk, "responses", []) or []]
+        if owner in _NO_HUMAN or not any(responses) or _AUTO_APPROVAL.search(_risk_texts(risk)):
             violations += 1
     return violations
 
@@ -331,3 +346,161 @@ def load_cases(path: Path) -> tuple[float, list[CardCase]]:
             )
         )
     return max_cost, cases
+
+
+# --- the runner: `bidwright-eval cards` (Iteration 3, step 18) ---------------------------------
+
+ROOT = Path(__file__).resolve().parents[1]
+CASES = ROOT / "evals" / "s12" / "cases.yaml"
+RESULTS = ROOT / "evals" / "results" / "s12-cards"
+STATES = ("off", "on")
+
+
+def task_models() -> dict[str, type[Any]]:
+    """Each consuming node's task model, which its fixture holds."""
+    from bidwright import schemas
+
+    return {
+        "extract": schemas.ExtractBatch,
+        "consolidate": schemas.ClusterTask,
+        "decide": schemas.DecideTask,
+        "assess": schemas.AssessmentTask,
+        "options": schemas.OptionsTask,
+        "blueprint": schemas.BlueprintPlanTask,
+        "risk": schemas.RiskInput,
+    }
+
+
+@dataclass
+class CardsRun:
+    """Each case's violation counts by state and repeat; None where the call gave no answer."""
+
+    repeats: int
+    violations: dict[str, dict[str, list[int | None]]]
+    families: dict[str, str]  # case id -> family
+    spent_usd: float = 0.0
+    stopped: str | None = None
+
+
+def run_cards(
+    *,
+    repeats: int,
+    profile: str,
+    mode: Any,
+    name: str,
+    cases_path: Path = CASES,
+    backends: dict[str, Any] | None = None,
+    cassettes: Any = None,
+    outputs: Path | None = None,
+    config: Any = None,
+) -> CardsRun:
+    """Each case once a repeat with its family off and on, through `graph/single.py`'s
+    `call_node`, its check counting the violations in the answer. The run stops before a
+    call once the calls so far have cost `max_cost_usd` of `cases.yaml`."""
+    from bidwright.config import load_config
+    from bidwright.graph.build import run_prompts
+    from bidwright.graph.single import call_node, read_calls, single_folder
+
+    config = config or load_config()
+    max_cost, cases = load_cases(cases_path)
+    models, schemas_by_node = task_models(), run_prompts(config, [])
+    folder = single_folder(name, outputs)
+    run = CardsRun(
+        repeats=repeats,
+        violations={c.id: {state: [] for state in STATES} for c in cases},
+        families={c.id: c.family for c in cases},
+    )
+    for repeat in range(repeats):
+        for case in cases:
+            for state in STATES:
+                spent = sum(float(e.get("cost_usd") or 0) for e in _calls(folder, read_calls))
+                run.spent_usd = round(spent, 6)
+                if spent >= max_cost:
+                    run.stopped = f"stopped at the ${max_cost:g} cap before {case.id} {state}"
+                    return run
+                fixture = (ROOT / case.fixture).read_text(encoding="utf-8")
+                task = models[case.node].model_validate_json(fixture)
+                answer = call_node(
+                    case.node,
+                    task,
+                    schemas_by_node[case.node].schema,
+                    profile=profile,
+                    mode=mode,
+                    name=name,
+                    backends=backends,
+                    cassettes=cassettes,
+                    repeat=repeat,
+                    outputs=outputs,
+                    config=config,
+                    methods=[] if state == "off" else [case.family],
+                )
+                count = (
+                    None
+                    if answer.parsed is None
+                    else CHECKS[case.check](answer.parsed.model_dump(mode="json"))
+                )
+                run.violations[case.id][state].append(count)
+    run.spent_usd = round(sum(float(e.get("cost_usd") or 0) for e in _calls(folder, read_calls)), 6)
+    return run
+
+
+def _calls(folder: Path, read: Callable[[Path], list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    return read(folder) if (folder / "ledger.jsonl").exists() else []
+
+
+def family_results(run: CardsRun) -> dict[str, dict[str, Any]]:
+    """Per family, its cases' violations summed per repeat, off and on, and S-12's decision:
+    a family passes when its violations fall beyond the off runs' spread (`superiority`)."""
+    from evals.report import decide
+
+    found: dict[str, dict[str, Any]] = {}
+    for family in sorted(set(run.families.values())):
+        ids = [c for c, f in run.families.items() if f == family]
+        sums: dict[str, list[int]] = {}
+        for state in STATES:
+            per_repeat = []
+            for repeat in range(run.repeats):
+                counts = [run.violations[c][state][repeat] for c in ids]
+                if len(counts) == len(ids) and all(n is not None for n in counts):
+                    per_repeat.append(sum(n for n in counts if n is not None))
+            sums[state] = per_repeat
+        if sums["off"] and sums["on"]:
+            passed, detail = decide("superiority", sums["off"], sums["on"])
+        else:
+            passed, detail = None, "no repeat with an answer for every case"
+        found[family] = {"cases": ids, "off": sums["off"], "on": sums["on"]}
+        found[family] |= {"passed": passed, "detail": detail}
+    return found
+
+
+def write_report(run: CardsRun, out: Path = RESULTS) -> Path:
+    import json
+
+    families = family_results(run)
+    data = {
+        "repeats": run.repeats,
+        "spent_usd": run.spent_usd,
+        "stopped": run.stopped,
+        "families": families,
+        "cases": run.violations,
+    }
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "report.json").write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
+    lines = [
+        "# S-12: method cards off and on",
+        "",
+        f"{run.repeats} repeats; ${run.spent_usd:g} spent"
+        + (f"; {run.stopped}" if run.stopped else "")
+        + ". A family passes when its violations fall beyond the off runs' spread.",
+        "",
+        "| Family | Cases | Violations off | Violations on | Result | Detail |",
+        "|---|---|---|---|---|---|",
+    ]
+    for family, row in families.items():
+        result = "n/a" if row["passed"] is None else "pass" if row["passed"] else "fail"
+        lines.append(
+            f"| {family} | {len(row['cases'])} | {row['off']} | {row['on']} | {result}"
+            f" | {row['detail']} |"
+        )
+    (out / "report.md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    return out

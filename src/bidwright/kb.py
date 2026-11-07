@@ -5,6 +5,11 @@ models. Ids are unique within the base, and every reference from a capability's 
 case study's or role's capabilities resolves. In Iteration 1 only the tests read the base;
 `decide` is its first reader, in Iteration 3.
 
+`load_cards` (Iteration 3, step 18) reads the owner's 18 method cards from
+`knowledge_base/methods/cards.yaml`: advisory method guidance, never an obligation, capability
+proof, policy or gold. `cards_by_node` gives each consuming node the cards of the enabled
+families, in file order.
+
 `KnowledgeIndex` (Iteration 3, step 3) is an FTS5 index over every record, built once a run as
 `kb.sqlite` in the run folder, with the tokenizer and query escaping of `search_rfp`'s index
 (`retrieval.py`). A record's name is a capability's name, a case study's client and sector, a
@@ -24,6 +29,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from bidwright.retrieval import MAX_K, TOKENIZER, match_expression
 
 KB_DIR = Path(__file__).resolve().parents[2] / "knowledge_base" / "capabilities"
+CARDS = Path(__file__).resolve().parents[2] / "knowledge_base" / "methods" / "cards.yaml"
+CARD_FAMILIES = ("REQ", "CFG", "BA", "DEL", "BEN", "RISK", "GOV")
+CardFamily = Literal["REQ", "CFG", "BA", "DEL", "BEN", "RISK", "GOV"]
 
 CapabilityId = Annotated[str, Field(pattern=r"^CAP-\d{3}$")]
 CaseStudyId = Annotated[str, Field(pattern=r"^CS-\d{3}$")]
@@ -33,6 +41,55 @@ RoleId = Annotated[str, Field(pattern=r"^ROLE-\d{3}$")]
 
 class Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class MethodCard(Strict):
+    """One of the owner's method cards, as `cards.yaml` holds it."""
+
+    id: str = Field(pattern=r"^(REQ|CFG|BA|DEL|BEN|RISK|GOV)-\d{3}$")
+    family: CardFamily
+    consumers: list[str] = Field(default_factory=list)
+    status: Literal["PROPOSED", "ENABLED"]
+    text: str = Field(min_length=1, max_length=300)
+
+    @model_validator(mode="after")
+    def _the_id_names_the_family(self) -> "MethodCard":
+        if not self.id.startswith(f"{self.family}-"):
+            raise ValueError(f"card {self.id} is not of family {self.family}")
+        return self
+
+
+def load_cards(path: Path = CARDS) -> list[MethodCard]:
+    with path.open(encoding="utf-8") as handle:
+        cards = [MethodCard.model_validate(row) for row in yaml.safe_load(handle)]
+    seen = [c.id for c in cards]
+    if len(set(seen)) != len(seen):
+        raise ValueError(f"{path}: a card id appears twice")
+    return cards
+
+
+def normalize_families(families: list[str] | tuple[str, ...]) -> list[str]:
+    """Card families as `methods` takes them, uppercased; an unknown family is refused."""
+    chosen = list(dict.fromkeys(str(f).upper() for f in families))
+    unknown = [f for f in chosen if f not in CARD_FAMILIES]
+    if unknown:
+        raise ValueError(
+            f"unknown card families {unknown}; methods takes {', '.join(CARD_FAMILIES)}"
+        )
+    return chosen
+
+
+def cards_by_node(
+    cards: list[MethodCard], families: list[str] | tuple[str, ...]
+) -> dict[str, list[MethodCard]]:
+    """Each consuming node's cards of the enabled families, in file order."""
+    enabled = set(normalize_families(families))
+    found: dict[str, list[MethodCard]] = {}
+    for card in cards:
+        if card.family in enabled:
+            for node in card.consumers:
+                found.setdefault(node, []).append(card)
+    return found
 
 
 class Capability(Strict):

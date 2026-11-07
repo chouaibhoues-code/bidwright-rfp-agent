@@ -18,6 +18,10 @@ bidwright-eval spotcheck --runs DIR [DIR ...] --n 10 --seed INT
                                      draws assessments for the owner to label, into
                                      evals/labels/assess_spotcheck.jsonl; with --score, reports
                                      the share labeled right (CH-93)
+bidwright-eval cards [--repeats 5] [--profile free|paid]
+                                     runs S-12: each method-card case of evals/s12/cases.yaml
+                                     with its family off and on, and writes
+                                     evals/results/s12-cards/ (step 18)
 bidwright-eval hash-gold             records the hashes of the gold files and of
                                      evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
 bidwright-eval external crackedpdfs --data <folder>
@@ -90,6 +94,27 @@ def _techcheck(args: argparse.Namespace) -> int:
     return 0 if json.loads((out / "report.json").read_text(encoding="utf-8"))["passed"] else 1
 
 
+def _cards(args: argparse.Namespace) -> int:
+    from datetime import UTC, datetime
+
+    from bidwright.cli import load_env
+    from bidwright.llm.client import default_backends
+    from evals.cards import run_cards, write_report
+
+    load_env(ROOT / ".env")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    run = run_cards(
+        repeats=args.repeats,
+        profile=args.profile,
+        mode="live",
+        name=f"s12-cards-{args.profile}-{stamp}",
+        backends=default_backends(paid=args.profile == "paid"),
+    )
+    out = write_report(run)
+    print((out / "report.md").read_text(encoding="utf-8"), end="")
+    return 1 if run.stopped else 0
+
+
 def _spotcheck(args: argparse.Namespace) -> int:
     from evals import spotcheck
 
@@ -146,6 +171,9 @@ def main(argv: list[str] | None = None) -> int:
     tech = sub.add_parser("techcheck", help="judge each technology seed in research mode pack")
     tech.add_argument("--repeats", type=int, default=5)
     tech.add_argument("--profile", choices=["free", "paid"], default="free")
+    cards = sub.add_parser("cards", help="run S-12: each card case with its family off and on")
+    cards.add_argument("--repeats", type=int, default=5)
+    cards.add_argument("--profile", choices=["free", "paid"], default="paid")
     spot = sub.add_parser("spotcheck", help="draw assessments to label, or score the labels")
     spot.add_argument("--runs", type=Path, nargs="+", default=[], help="run folders")
     spot.add_argument("--n", type=int, default=10)
@@ -177,6 +205,8 @@ def main(argv: list[str] | None = None) -> int:
         return _techcheck(args)
     if args.command == "spotcheck":
         return _spotcheck(args)
+    if args.command == "cards":
+        return _cards(args)
     if args.command == "report":
         out = report(args.matrix)
         print((out / "report.md").read_text(encoding="utf-8"), end="")

@@ -164,6 +164,7 @@ def agents_md() -> str:
         graph = build_graph(Runtime(ctx=ctx, config=config, source=rfp, run_dir=Path(tmp)))
         mermaid = graph.get_graph().draw_mermaid().strip()
 
+    lines += _cards_table()
     lines += [
         "",
         "## Runtime graph",
@@ -186,6 +187,32 @@ def _help(main: Callable[[list[str]], Any], argv: list[str]) -> str:
     with contextlib.redirect_stdout(out), contextlib.suppress(SystemExit):
         main(argv)
     return out.getvalue().rstrip()
+
+
+def _cards_table() -> list[str]:
+    """The owner's method cards and the nodes each one serves (Iteration 3, step 18), from
+    `knowledge_base/methods/cards.yaml`; `config/limits.yaml`'s `methods` names the families on."""
+    from bidwright.config import load_config
+    from bidwright.kb import load_cards
+
+    enabled = set(load_config().limits.methods.enabled)
+    lines = [
+        "",
+        "## Method cards",
+        "",
+        "Advisory method guidance in `knowledge_base/methods/cards.yaml`. A family listed in"
+        " `config/limits.yaml`'s `methods` has its cards appended to its consumers' system"
+        " instruction; S-12 measures each family before an ADR switches it on. A card with no"
+        " consumer is enforced in code instead.",
+        "",
+        "| Card | Family | Consumers | Status | Inlined |",
+        "|---|---|---|---|---|",
+    ]
+    for card in load_cards():
+        consumers = ", ".join(f"`{c}`" for c in card.consumers) or "none (code)"
+        inlined = "yes" if card.family in enabled and card.consumers else "no"
+        lines.append(f"| {card.id} | {card.family} | {consumers} | {card.status} | {inlined} |")
+    return lines
 
 
 def cli_md() -> str:
@@ -212,6 +239,9 @@ def cli_md() -> str:
                 ["ui"],
                 ["api"],
                 ["spans", "replay"],
+                ["seed"],
+                ["review"],
+                ["phoenix", "sync"],
             ],
         ),
         (
@@ -226,6 +256,10 @@ def cli_md() -> str:
                 ["report"],
                 ["hash-gold"],
                 ["external"],
+                ["phoenix"],
+                ["techcheck"],
+                ["spotcheck"],
+                ["cards"],
             ],
         ),
     ]

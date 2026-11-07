@@ -438,3 +438,17 @@ def test_a_seeded_matrix_passes_its_seed_and_refuses_an_extraction_switch(tmp_pa
     for flag in ("extract_context: bare", "batch_size: 10", "baseline: ex0"):
         with pytest.raises(MatrixRefused, match="keeps its seed's extraction"):
             _run(seeded(f"  - {{name: x, flags: {{{flag}}}}}\n"), FakeEntry(), tmp_path / "x")
+
+
+def test_a_rung_may_name_card_families_and_an_unknown_one_is_refused(tmp_path: Path) -> None:
+    """Step 18: the `methods` flag, the families a rung inlines; execute uppercases them."""
+    entry = FakeEntry()
+    rungs = '  - {name: "off", flags: {methods: []}}\n  - {name: risk, flags: {methods: [risk]}}\n'
+    _run(_matrix(tmp_path, rungs=rungs, repeats=1), entry, tmp_path)
+    assert [c["methods"] for c in entry.calls] == [[], ["risk"]]
+    for bad, message in (("[nope]", "unknown card families"), ("risk", "not a list")):
+        path = _matrix(
+            tmp_path / bad.strip("[]"), rungs=f"  - {{name: x, flags: {{methods: {bad}}}}}\n"
+        )
+        with pytest.raises(MatrixRefused, match=message):
+            _run(path, FakeEntry(), tmp_path / bad.strip("[]"))

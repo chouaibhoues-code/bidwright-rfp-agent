@@ -928,6 +928,8 @@ class ContextManifest(Record):
     dropped_src_ids: list[SrcId] = Field(default_factory=list)  # always empty: overflow splits
     # Iteration 2: the records or excerpts a call was given, when its evidence is not passages.
     included_record_ids: list[str] = Field(default_factory=list)
+    # Iteration 3, step 18: the method cards the call's system instruction carried.
+    cards: list[str] = Field(default_factory=list)
     tokens_by_layer: LayerTokens = Field(default_factory=LayerTokens)
     budget_tokens: int = Field(ge=1)
     utilization: float = Field(ge=0)

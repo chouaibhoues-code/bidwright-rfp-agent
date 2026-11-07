@@ -32,8 +32,8 @@ import hashlib
 import json
 import os
 import subprocess
-from collections.abc import Callable, Mapping
-from dataclasses import asdict, dataclass
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol, cast
@@ -106,7 +106,7 @@ from bidwright.harness.reflect import reflect_for
 from bidwright.harness.supervisor import STOP_REASON, RunSupervisor, environment, read_manifest
 from bidwright.harness.view import TextView
 from bidwright.ingest import doc_id_for, ingest_package
-from bidwright.kb import load_kb
+from bidwright.kb import cards_by_node, load_cards, load_kb, normalize_families
 from bidwright.lint import run_lint, write_lint
 from bidwright.llm.cache import response_cache, run_journal
 from bidwright.llm.client import ROUTES, LLMClient, Mode, Route, choose_route, route_config
@@ -129,7 +129,7 @@ from bidwright.preflight import (
     needs_docling,
     package_documents,
 )
-from bidwright.prompts import Prompt, load_prompt, load_prompt_ref
+from bidwright.prompts import Prompt, load_prompt, load_prompt_ref, with_cards
 from bidwright.register import RegisterInput, build_register
 from bidwright.render import DomainResearch, RenderBlocked, RunRecords, render
 from bidwright.research.nlm import notebooklm_provider
@@ -254,6 +254,8 @@ class Runtime:
     # A seeded run's seed and the state its checkpoint holds (step 16), or None.
     seed: Seed | None = None
     seed_state: dict[str, Any] | None = None
+    # Each node's method-card ids (step 18), which its context manifests record.
+    cards: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -434,7 +436,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             outcome = triage(
                 ctx,
                 found,
-                manager=ContextManager(rt.run_dir, config.limits.context, found),
+                manager=ContextManager(rt.run_dir, config.limits.context, found, cards=rt.cards),
                 zones=config.zones,
                 budget_tokens=config.limits.context.budgets["triage"],
                 run_dir=rt.run_dir,
@@ -453,7 +455,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
         state: RunState, members: list[Passage], size: int | None, first: int
     ) -> list[dict[str, Any]]:
         limits = config.limits
-        manager = ContextManager(rt.run_dir, limits.context, passages(state))
+        manager = ContextManager(rt.run_dir, limits.context, passages(state), cards=rt.cards)
         bare = rt.extract_context == "bare"
         packs = manager.pack(
             "extract",
@@ -646,6 +648,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             config.limits.context,
             list(ctx.passages.values()),
             requirement_sources={r.id: r.src_ids for r in requirements},
+            cards=rt.cards,
         )
         task = ClusterTask.model_validate(state["task"])
         draft = consolidate_cluster(
@@ -693,7 +696,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             [ZoneRecord.model_validate(z) for z in state.get("zones", [])],
             requirements_of(state),
             RfpProfile.model_validate(profile) if profile else RfpProfile(),
-            manager=ContextManager(rt.run_dir, config.limits.context, found),
+            manager=ContextManager(rt.run_dir, config.limits.context, found, cards=rt.cards),
             budget_tokens=config.limits.context.budgets["brief"],
             run_dir=rt.run_dir,
             first_discrepancy=len(state.get("discrepancies", [])) + 1,
@@ -725,7 +728,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
                 config=config.research,
                 agent=config.agents.agents["discover"],
                 run_dir=rt.run_dir,
-                manager=ContextManager(rt.run_dir, config.limits.context, found),
+                manager=ContextManager(rt.run_dir, config.limits.context, found, cards=rt.cards),
                 passages=found,
                 patterns=compile_patterns(config.ingest.suspect_patterns, "config/ingest.yaml"),
                 mode=rt.research_mode,
@@ -774,7 +777,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
 
     def manifests(state: RunState, node: str) -> CallManifests:
         """Where `approach`, `risk` and `draft` record a manifest for each model call."""
-        manager = ContextManager(rt.run_dir, config.limits.context, passages(state))
+        manager = ContextManager(rt.run_dir, config.limits.context, passages(state), cards=rt.cards)
         return CallManifests(manager, config.limits.context.budgets[node])
 
     def approach_node(state: RunState) -> dict[str, Any]:
@@ -1170,10 +1173,17 @@ def check_extract_prompt(name: str, prompts: dict[str, Prompt]) -> None:
         raise Refused(f"no extract prompt {name!r}: a run loads {', '.join(known)}")
 
 
-def run_prompts(config: Config) -> dict[str, Prompt]:
-    """Each agent's pinned prompt, plus the extraction baselines' prompts."""
+def run_prompts(config: Config, methods: Sequence[str] | None = None) -> dict[str, Prompt]:
+    """Each agent's pinned prompt, plus the extraction baselines' prompts. The cards of the
+    enabled families, `methods` or `limits.yaml`'s by default, are appended to their
+    consumers' prompts (step 18)."""
     prompts = {name: load_prompt_ref(agent.prompt) for name, agent in config.agents.agents.items()}
     prompts["extract_oneshot"] = load_prompt("extract_oneshot")
+    families = list(config.limits.methods.enabled if methods is None else methods)
+    if families:
+        for node, cards in cards_by_node(load_cards(), families).items():
+            if node in prompts:
+                prompts[node] = with_cards(prompts[node], [(c.id, c.text) for c in cards])
     return prompts
 
 
@@ -1237,6 +1247,7 @@ def execute(
     coverage: bool | None = None,
     seed_run: Path | str | None = None,
     seed_from: str | None = None,
+    methods: Sequence[str] | None = None,
 ) -> RunResult:
     """Run one RFP file or package end to end, or resume a run. A failed run still leaves its
     manifest and ledger.
@@ -1279,7 +1290,13 @@ def execute(
     config = config or load_config()
     if (research or config.research.mode) == "live" and mode != "live":
         raise Refused(LIVE_RESEARCH_UNRECORDED.format(mode=mode))
-    prompts = run_prompts(config)
+    try:
+        families = normalize_families(
+            list(config.limits.methods.enabled if methods is None else methods)
+        )
+    except ValueError as exc:
+        raise Refused(str(exc)) from exc
+    prompts = run_prompts(config, families)
     seed = _seed(
         seed_run,
         seed_from,
@@ -1410,6 +1427,7 @@ def execute(
         "coverage": switches["coverage"],
         "seed_run": _relative(seed.folder) if seed is not None else None,
         "seed_from": seed.seed_from if seed is not None else None,
+        "methods": families,
     }
     hashes = {
         document.path.name: f"sha256:{document.sha256}" for document in preflight.documents
@@ -1554,6 +1572,7 @@ def execute(
             coverage_on=switches["coverage"],
             seed=seed,
             seed_state=seed_values(seed) if seed is not None else None,
+            cards={node: list(p.cards) for node, p in prompts.items() if p.cards},
         )
         # Until the graph returns, the run has not finished: any exit this function does not
         # name below is recorded as a fault, never as COMPLETED.

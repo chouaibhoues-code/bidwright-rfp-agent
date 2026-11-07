@@ -137,7 +137,9 @@ def _domain(state: dict[str, Any]) -> DomainBrief | None:
 
 
 def _manifests(rt: Any, node: str) -> CallManifests:
-    manager = ContextManager(rt.run_dir, rt.config.limits.context, list(rt.ctx.passages.values()))
+    manager = ContextManager(
+        rt.run_dir, rt.config.limits.context, list(rt.ctx.passages.values()), cards=rt.cards
+    )
     return CallManifests(manager, rt.config.limits.context.budgets[node])
 
 

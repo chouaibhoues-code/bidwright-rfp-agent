@@ -249,6 +249,7 @@ class ContextManager:
         passages: Sequence[Passage],
         *,
         requirement_sources: Mapping[str, Sequence[str]] | None = None,
+        cards: Mapping[str, Sequence[str]] | None = None,
     ) -> None:
         self.run_dir = run_dir
         self.limits = limits
@@ -263,6 +264,8 @@ class ContextManager:
             self._sections.setdefault((passage.doc_id, passage.section_path), []).append(passage.id)
         self._position = {s: n for ids in self._documents.values() for n, s in enumerate(ids)}
         self.requirement_sources = {k: list(v) for k, v in (requirement_sources or {}).items()}
+        # Each node's method-card ids, which its calls' manifests record (step 18).
+        self.cards = {k: list(v) for k, v in (cards or {}).items()}
 
     def around(self, src_id: str, distance: int) -> list[str]:
         """The passages up to `distance` places before and after one, in its document."""
@@ -605,6 +608,7 @@ class ContextManager:
             terms=terms,
             dropped_src_ids=[],
             included_record_ids=list(records),
+            cards=list(self.cards.get(node, [])),
             tokens_by_layer=layers,
             budget_tokens=budget_tokens,
             utilization=round((_fixed(layers) + evidence) / budget_tokens, 4),

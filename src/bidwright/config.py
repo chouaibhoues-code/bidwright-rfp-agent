@@ -213,6 +213,15 @@ class SwitchesConfig(Strict):
     coverage: bool = True
 
 
+class MethodsConfig(Strict):
+    """The method-card families a run inlines by default (Iteration 3, step 18): none
+    until S-12 measures a family and an ADR switches it on."""
+
+    enabled: list[Literal["REQ", "CFG", "BA", "DEL", "BEN", "RISK", "GOV"]] = Field(
+        default_factory=list
+    )
+
+
 class LimitsConfig(Strict):
     runs: dict[str, dict[str, RunLimits]]
     call: CallLimits
@@ -228,6 +237,7 @@ class LimitsConfig(Strict):
     breaker: BreakerConfig
     solution: SolutionLimits
     switches: SwitchesConfig = Field(default_factory=SwitchesConfig)
+    methods: MethodsConfig = Field(default_factory=MethodsConfig)
 
     def run(self, corpus: str, profile: str) -> RunLimits:
         try:

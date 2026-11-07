@@ -15,8 +15,8 @@ delimiter tags seeded from the run id, so the same run always gets the same tags
 import hashlib
 import json
 import re
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
 from string import Template
@@ -94,6 +94,7 @@ class Prompt:
     notes: str
     path: Path
     examples: str = ""  # the rendered examples, already inside `system`, kept for token counts
+    cards: tuple[str, ...] = ()  # the method cards appended to `system` (step 18)
 
     @property
     def ref(self) -> str:
@@ -148,6 +149,28 @@ def delimiter_tag(run_id: str, data: str = "") -> str:
         if tag not in data:
             return tag
     raise ValueError("every candidate delimiter tag occurs in the data")
+
+
+CARDS_LEAD = (
+    "Method guidance from the bid team's own practice. Apply it where it fits; it is never"
+    " evidence, an obligation or a reason to invent anything."
+)
+
+
+def with_cards(prompt: Prompt, cards: Sequence[tuple[str, str]]) -> Prompt:
+    """The prompt with the cards appended to its system instruction in a `<method_cards>`
+    element, after the examples (Iteration 3, step 18). The hash covers the system
+    instruction, so a call with cards never shares a cassette or cache key with one
+    without; no cards leave the prompt as it is."""
+    if not cards:
+        return prompt
+    lines = "\n".join(f"{card_id}: {text}" for card_id, text in cards)
+    block = f"<method_cards>\n{CARDS_LEAD}\n{lines}\n</method_cards>"
+    return replace(
+        prompt,
+        system=f"{prompt.system}\n\n{block}",
+        cards=tuple(card_id for card_id, _ in cards),
+    )
 
 
 def load_prompt(prompt_id: str, root: Path = PROMPTS_DIR) -> Prompt:

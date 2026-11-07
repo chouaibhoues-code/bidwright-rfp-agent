@@ -812,6 +812,7 @@ The stored form of `triage.json`.
 | `terms` | list[str] | no | [] |  |
 | `dropped_src_ids` | list[str (pattern ^SRC-\d{4}$)] | no | [] |  |
 | `included_record_ids` | list[str] | no | [] |  |
+| `cards` | list[str] | no | [] |  |
 | `tokens_by_layer` | LayerTokens | no | LayerTokens(rules=0, examples=0, evidence=0, task=0) |  |
 | `budget_tokens` | int (ge 1) | yes |  |  |
 | `utilization` | float (ge 0) | yes |  |  |

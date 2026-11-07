@@ -275,11 +275,57 @@ options:
   --endpoint ENDPOINT  collector URL; PHOENIX_ENDPOINT or http://127.0.0.1:6006 when unset
 ```
 
+## `bidwright seed`
+
+```text
+usage: bidwright seed [-h] --name NAME [--outputs OUTPUTS] run
+
+positional arguments:
+  run                a run id under outputs/, or a run folder
+
+options:
+  -h, --help         show this help message and exit
+  --name NAME        the seed's name
+  --outputs OUTPUTS  where seeds/ goes; outputs/ by default
+```
+
+## `bidwright review`
+
+```text
+usage: bidwright review [-h] [--role ROLE] [--item ITEM]
+                        [--verdict {accept,correct,reject,flag,clear,missed}] [--note NOTE]
+                        [--from {-}]
+                        run
+
+positional arguments:
+  run                   a run id under outputs/, or a run folder
+
+options:
+  -h, --help            show this help message and exit
+  --role ROLE           the reviewer's role, never a name
+  --item ITEM           a record id, such as REQ-0003
+  --verdict {accept,correct,reject,flag,clear,missed}
+  --note NOTE           the correction, or the reason
+  --from {-}            a YAML list of {item, verdict, note}
+```
+
+## `bidwright phoenix sync`
+
+```text
+usage: bidwright phoenix sync [-h] run
+
+positional arguments:
+  run         a run id under outputs/, or a run folder
+
+options:
+  -h, --help  show this help message and exit
+```
+
 ## `bidwright-eval`
 
 ```text
 usage: bidwright-eval [-h]
-                      {score,gate,baseline,explain,report,hash-gold,techcheck,spotcheck,phoenix,external}
+                      {score,gate,baseline,explain,report,hash-gold,techcheck,cards,spotcheck,phoenix,external}
                       ...
 
 `bidwright-eval`: score frozen runs against gold. It never changes a run.
@@ -302,6 +348,10 @@ bidwright-eval spotcheck --runs DIR [DIR ...] --n 10 --seed INT
                                      draws assessments for the owner to label, into
                                      evals/labels/assess_spotcheck.jsonl; with --score, reports
                                      the share labeled right (CH-93)
+bidwright-eval cards [--repeats 5] [--profile free|paid]
+                                     runs S-12: each method-card case of evals/s12/cases.yaml
+                                     with its family off and on, and writes
+                                     evals/results/s12-cards/ (step 18)
 bidwright-eval hash-gold             records the hashes of the gold files and of
                                      evals/hypotheses.yaml in evals/gold/MANIFEST.sha256
 bidwright-eval external crackedpdfs --data <folder>
@@ -310,7 +360,7 @@ bidwright-eval external crackedpdfs --data <folder>
                                      to evals/results/external/crackedpdfs.md
 
 positional arguments:
-  {score,gate,baseline,explain,report,hash-gold,techcheck,spotcheck,phoenix,external}
+  {score,gate,baseline,explain,report,hash-gold,techcheck,cards,spotcheck,phoenix,external}
     score               score one run folder
     gate                gate one run folder against a committed baseline
     baseline            write a run's scores as the baseline
@@ -318,6 +368,7 @@ positional arguments:
     report              score a matrix's runs and decide each rung
     hash-gold           freeze the current gold files' hashes
     techcheck           judge each technology seed in research mode pack
+    cards               run S-12: each card case with its family off and on
     spotcheck           draw assessments to label, or score the labels
     phoenix             score a run and send its scores to its trace
     external            run one stage against a public benchmark
@@ -409,4 +460,52 @@ positional arguments:
 options:
   -h, --help     show this help message and exit
   --data DATA    the benchmark's folder, outside the repository
+```
+
+## `bidwright-eval phoenix`
+
+```text
+usage: bidwright-eval phoenix [-h] run_dir
+
+positional arguments:
+  run_dir
+
+options:
+  -h, --help  show this help message and exit
+```
+
+## `bidwright-eval techcheck`
+
+```text
+usage: bidwright-eval techcheck [-h] [--repeats REPEATS] [--profile {free,paid}]
+
+options:
+  -h, --help            show this help message and exit
+  --repeats REPEATS
+  --profile {free,paid}
+```
+
+## `bidwright-eval spotcheck`
+
+```text
+usage: bidwright-eval spotcheck [-h] [--runs RUNS [RUNS ...]] [--n N] [--seed SEED] [--score]
+
+options:
+  -h, --help            show this help message and exit
+  --runs RUNS [RUNS ...]
+                        run folders
+  --n N
+  --seed SEED           the random seed of the draw
+  --score               report the owner's labels
+```
+
+## `bidwright-eval cards`
+
+```text
+usage: bidwright-eval cards [-h] [--repeats REPEATS] [--profile {free,paid}]
+
+options:
+  -h, --help            show this help message and exit
+  --repeats REPEATS
+  --profile {free,paid}
 ```

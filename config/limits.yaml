@@ -68,5 +68,8 @@ breaker: {failures: 5, cooldown_minutes: 30}
 # need may draft. Needs past the cap are listed GAP and the run ends DEGRADED.
 solution: {need_cap: 24, claims_per_need: 3, tech_claim_cap: 15}
 # The switches of Iteration 3's section 4.11, for runs that name none (SO3, RK1, no reflect).
+# The method-card families every run inlines (Iteration 3, step 18): none until S-12 and an
+# ADR switch a family on.
+methods: {enabled: []}
 switches: {solution: manifest, risk_mode: agent, reflect: false, extract_context: full,
   triage: true, coverage: true}

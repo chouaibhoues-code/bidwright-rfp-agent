@@ -7,11 +7,11 @@ number of repeats, the last node each run executes (`until`), a cost cap and its
 with flags for `execute`: `batch_size`, `extract_prompt`, `second_pass`, `baseline`, from
 Iteration 2 `research` (`off` or `pack`), and from Iteration 3 the solution switches
 `solution`, `risk_mode` and `reflect`, and from step 16 the extraction switches
-`extract_context` (`full` or `bare`), `triage` and `coverage` (true or false); any other flag
-is refused. Every run approves its gate
-automatically (`gate="auto"`), which never passes a blocked gate. Every run gets its repeat
-index, which is in every cassette and cache key, and the response cache is on, so a run started
-again answers the calls it already made from the cache. Runs go to
+`extract_context` (`full` or `bare`), `triage` and `coverage` (true or false), and from step 18
+`methods`, the method-card families a run inlines; any other flag is refused. Every run
+approves its gate automatically (`gate="auto"`), which never passes a blocked gate. Every run
+gets its repeat index, which is in every cassette and cache key, and the response cache is on,
+so a run started again answers the calls it already made from the cache. Runs go to
 `outputs/matrices/<matrix>/<matrix>-<rung>-r<repeat>/`.
 
 - Before anything starts, a rung that `execute` would refuse is refused: an `extract_prompt`
@@ -67,6 +67,7 @@ FLAGS = (
     "extract_context",
     "triage",
     "coverage",
+    "methods",
 )
 # The flags that change extraction, which a seeded matrix's rungs never set.
 EXTRACTION_FLAGS = (
@@ -279,6 +280,16 @@ def check_rungs(matrix: MatrixFile) -> None:
                 raise MatrixRefused(
                     f"rung {rung.name} sets {flag} to a value that is not true or false"
                 )
+        if "methods" in rung.flags:
+            from bidwright.kb import normalize_families
+
+            chosen = rung.flags["methods"]
+            if not isinstance(chosen, list):
+                raise MatrixRefused(f"rung {rung.name} sets methods to a value that is not a list")
+            try:
+                normalize_families(chosen)
+            except ValueError as exc:
+                raise MatrixRefused(f"rung {rung.name}: {exc}") from exc
         context = rung.flags.get("extract_context")
         if context is not None and context not in EXTRACT_CONTEXTS:
             raise MatrixRefused(

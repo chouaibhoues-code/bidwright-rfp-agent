@@ -87,6 +87,31 @@ A function declares no limits: it makes one call and one repair, fixed in the no
 | G5 question cap | `ask_research` from `discover` | Fewer than 6 questions this run, or a recorded question, which is answered from `research.json` | Return to the model: "no questions left; finish" |
 | G3 outbound overlap | `start_research`, `ask_research`, `resolve-library-id`, `query-docs` | Each text the tool would send (a Context7 call's query and library name each on its own) shares fewer than 8 consecutive normalized words with every passage of the run | Deny, with a security event attributed `injection-dominant` when the passage is marked `suspect` and `indeterminate` otherwise |
 
+## Method cards
+
+Advisory method guidance in `knowledge_base/methods/cards.yaml`. A family listed in `config/limits.yaml`'s `methods` has its cards appended to its consumers' system instruction; S-12 measures each family before an ADR switches it on. A card with no consumer is enforced in code instead.
+
+| Card | Family | Consumers | Status | Inlined |
+|---|---|---|---|---|
+| REQ-001 | REQ | `extract` | PROPOSED | no |
+| REQ-002 | REQ | `extract`, `consolidate` | PROPOSED | no |
+| REQ-003 | REQ | `extract`, `consolidate` | PROPOSED | no |
+| CFG-001 | CFG | `consolidate` | PROPOSED | no |
+| CFG-002 | CFG | `consolidate` | PROPOSED | no |
+| BA-001 | BA | `decide`, `blueprint` | PROPOSED | no |
+| BA-002 | BA | `options` | PROPOSED | no |
+| BA-003 | BA | `decide`, `assess` | PROPOSED | no |
+| DEL-001 | DEL | `blueprint` | PROPOSED | no |
+| DEL-002 | DEL | `blueprint` | PROPOSED | no |
+| DEL-003 | DEL | `blueprint` | PROPOSED | no |
+| DEL-004 | DEL | none (code) | PROPOSED | no |
+| BEN-001 | BEN | `blueprint` | PROPOSED | no |
+| RISK-001 | RISK | `risk` | PROPOSED | no |
+| RISK-002 | RISK | `risk` | PROPOSED | no |
+| RISK-003 | RISK | `risk` | PROPOSED | no |
+| GOV-001 | GOV | `options` | PROPOSED | no |
+| GOV-002 | GOV | none (code) | PROPOSED | no |
+
 ## Runtime graph
 
 Drawn from the compiled LangGraph graph. The dotted edges are conditional: the `Send` fan-outs, one `extract` worker per pack and one `consolidate` worker per cluster the model step takes; the stops that `until` and `--baseline b0` choose; the research mode's branches after `brief`; and each live research node's fallback to `discover_load`.

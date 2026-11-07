@@ -12,6 +12,7 @@ cassette key with its repeat index, the ledger's cost and shadow cost, and the r
 the profile's `dev` tier.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -53,6 +54,7 @@ def single_context(
     repeat: int = 0,
     outputs: Path | None = None,
     config: Config | None = None,
+    methods: Sequence[str] | None = None,
 ) -> RunContext:
     """A `RunContext` whose calls go to `outputs/single/<name>/ledger.jsonl`, for a node's own
     code to call as it would in a run."""
@@ -68,7 +70,13 @@ def single_context(
     budget = RunBudget(config.limits.run("dev", profile))
     budget.start()
     return RunContext(
-        name, client, budget, run_prompts(config), {}, repeat=repeat, ledger_file=ledger_file
+        name,
+        client,
+        budget,
+        run_prompts(config, methods),
+        {},
+        repeat=repeat,
+        ledger_file=ledger_file,
     )
 
 
@@ -85,6 +93,7 @@ def call_node(
     repeat: int = 0,
     outputs: Path | None = None,
     config: Config | None = None,
+    methods: Sequence[str] | None = None,
 ) -> SingleCall:
     """One call of `node`'s prompt on `task`, recorded in `outputs/single/<name>/ledger.jsonl`."""
     ctx = single_context(
@@ -96,6 +105,7 @@ def call_node(
         repeat=repeat,
         outputs=outputs,
         config=config,
+        methods=methods,
     )
     if node not in ctx.prompts:
         raise Refused(f"no prompt for node {node!r}; a run loads {', '.join(sorted(ctx.prompts))}")
