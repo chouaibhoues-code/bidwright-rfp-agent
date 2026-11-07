@@ -1,0 +1,287 @@
+{
+ "repeats": 5,
+ "rule": "a false seed INVALIDATED in at least 4 of 5 repeats, and no true seed ever INVALIDATED",
+ "passed": false,
+ "seeds": [
+  {
+   "seed": "TS-01",
+   "library": "pdfplumber",
+   "holds": false,
+   "verdicts": [
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED"
+   ],
+   "invalidated": 5,
+   "passed": true
+  },
+  {
+   "seed": "TS-02",
+   "library": "pdfplumber",
+   "holds": false,
+   "verdicts": [
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED"
+   ],
+   "invalidated": 5,
+   "passed": true
+  },
+  {
+   "seed": "TS-03",
+   "library": "pdfplumber",
+   "holds": false,
+   "verdicts": [
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED"
+   ],
+   "invalidated": 5,
+   "passed": true
+  },
+  {
+   "seed": "TS-04",
+   "library": "pdfplumber",
+   "holds": false,
+   "verdicts": [
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED"
+   ],
+   "invalidated": 5,
+   "passed": true
+  },
+  {
+   "seed": "TS-05",
+   "library": "pdfplumber",
+   "holds": false,
+   "verdicts": [
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED"
+   ],
+   "invalidated": 5,
+   "passed": true
+  },
+  {
+   "seed": "TS-06",
+   "library": "pdfplumber",
+   "holds": false,
+   "verdicts": [
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED"
+   ],
+   "invalidated": 5,
+   "passed": true
+  },
+  {
+   "seed": "TS-07",
+   "library": "pdfplumber",
+   "holds": false,
+   "verdicts": [
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS"
+   ],
+   "invalidated": 0,
+   "passed": false
+  },
+  {
+   "seed": "TS-08",
+   "library": "pdfplumber",
+   "holds": false,
+   "verdicts": [
+    "INSUFFICIENT_DOCS",
+    "INVALIDATED",
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS",
+    "INVALIDATED"
+   ],
+   "invalidated": 2,
+   "passed": false
+  },
+  {
+   "seed": "TS-09",
+   "library": "pdfplumber",
+   "holds": false,
+   "verdicts": [
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INSUFFICIENT_DOCS",
+    "INVALIDATED"
+   ],
+   "invalidated": 4,
+   "passed": true
+  },
+  {
+   "seed": "TS-10",
+   "library": "pdfplumber",
+   "holds": false,
+   "verdicts": [
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED",
+    "INVALIDATED"
+   ],
+   "invalidated": 5,
+   "passed": true
+  },
+  {
+   "seed": "TS-11",
+   "library": "pdfplumber",
+   "holds": true,
+   "verdicts": [
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS",
+    "VALIDATED",
+    "VALIDATED"
+   ],
+   "invalidated": 0,
+   "passed": true
+  },
+  {
+   "seed": "TS-12",
+   "library": "pdfplumber",
+   "holds": true,
+   "verdicts": [
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED"
+   ],
+   "invalidated": 0,
+   "passed": true
+  },
+  {
+   "seed": "TS-13",
+   "library": "pdfplumber",
+   "holds": true,
+   "verdicts": [
+    "VALIDATED",
+    "INSUFFICIENT_DOCS",
+    "VALIDATED",
+    "VALIDATED",
+    "INSUFFICIENT_DOCS"
+   ],
+   "invalidated": 0,
+   "passed": true
+  },
+  {
+   "seed": "TS-14",
+   "library": "pdfplumber",
+   "holds": true,
+   "verdicts": [
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "INSUFFICIENT_DOCS",
+    "VALIDATED"
+   ],
+   "invalidated": 0,
+   "passed": true
+  },
+  {
+   "seed": "TS-15",
+   "library": "pdfplumber",
+   "holds": true,
+   "verdicts": [
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED"
+   ],
+   "invalidated": 0,
+   "passed": true
+  },
+  {
+   "seed": "TS-16",
+   "library": "pdfplumber",
+   "holds": true,
+   "verdicts": [
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED"
+   ],
+   "invalidated": 0,
+   "passed": true
+  },
+  {
+   "seed": "TS-17",
+   "library": "pdfplumber",
+   "holds": true,
+   "verdicts": [
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS",
+    "INSUFFICIENT_DOCS"
+   ],
+   "invalidated": 0,
+   "passed": true
+  },
+  {
+   "seed": "TS-18",
+   "library": "pdfplumber",
+   "holds": true,
+   "verdicts": [
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED"
+   ],
+   "invalidated": 0,
+   "passed": true
+  },
+  {
+   "seed": "TS-19",
+   "library": "pdfplumber",
+   "holds": true,
+   "verdicts": [
+    "VALIDATED",
+    "VALIDATED",
+    "INSUFFICIENT_DOCS",
+    "VALIDATED",
+    "VALIDATED"
+   ],
+   "invalidated": 0,
+   "passed": true
+  },
+  {
+   "seed": "TS-20",
+   "library": "pdfplumber",
+   "holds": true,
+   "verdicts": [
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED",
+    "VALIDATED"
+   ],
+   "invalidated": 0,
+   "passed": true
+  }
+ ]
+}

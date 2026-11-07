@@ -1,0 +1,481 @@
+{
+ "repeats": 5,
+ "spent_usd": 0.543031,
+ "stopped": null,
+ "families": {
+  "BA": {
+   "cases": [
+    "S12-CASE-08",
+    "S12-CASE-09",
+    "S12-CASE-10",
+    "S12-CASE-11",
+    "S12-CASE-13"
+   ],
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "passed": false,
+   "detail": "median 0 against 0, spread 0"
+  },
+  "BEN": {
+   "cases": [
+    "S12-CASE-17"
+   ],
+   "off": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    1,
+    2,
+    0,
+    0,
+    0
+   ],
+   "passed": false,
+   "detail": "median 0 against 0, spread 1"
+  },
+  "CFG": {
+   "cases": [
+    "S12-CASE-06"
+   ],
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "passed": false,
+   "detail": "median 0 against 0, spread 0"
+  },
+  "DEL": {
+   "cases": [
+    "S12-CASE-14",
+    "S12-CASE-15",
+    "S12-CASE-16"
+   ],
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "passed": false,
+   "detail": "median 0 against 0, spread 0"
+  },
+  "GOV": {
+   "cases": [
+    "S12-CASE-12"
+   ],
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "passed": false,
+   "detail": "median 0 against 0, spread 0"
+  },
+  "REQ": {
+   "cases": [
+    "S12-CASE-01",
+    "S12-CASE-02",
+    "S12-CASE-03",
+    "S12-CASE-04",
+    "S12-CASE-05"
+   ],
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "passed": false,
+   "detail": "median 0 against 0, spread 0"
+  },
+  "RISK": {
+   "cases": [
+    "S12-CASE-18",
+    "S12-CASE-19",
+    "S12-CASE-20"
+   ],
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "passed": false,
+   "detail": "median 0 against 0, spread 0"
+  }
+ },
+ "cases": {
+  "S12-CASE-01": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-02": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-03": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-04": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-05": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-06": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-08": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-09": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-10": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-11": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-12": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-13": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-14": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-15": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-16": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-17": {
+   "off": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    1,
+    2,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-18": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-19": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "S12-CASE-20": {
+   "off": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "on": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "not_testable": [
+  {
+   "id": "S12-CASE-07",
+   "card": "CFG-002",
+   "family": "CFG",
+   "node": "consolidate",
+   "reason": "ConsolidationResult holds duplicates, discrepancies, questions and reference links, and no statement of downstream change impact on plan, cost, risks or verification, so no answer can show the violation; the drift check (Iteration 4) implements CFG-002 in code."
+  }
+ ]
+}

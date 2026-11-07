@@ -116,7 +116,8 @@ def report(results: Sequence[SeedVerdicts], repeats: int, out: Path = RESULTS) -
         "seeds": rows,
     }
     out.mkdir(parents=True, exist_ok=True)
-    (out / "report.json").write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
+    text = json.dumps(data, indent=1) + "\n"
+    (out / "report.json").write_text(text, encoding="utf-8", newline="\n")
     lines = [
         "# techcheck on the technology seeds",
         "",

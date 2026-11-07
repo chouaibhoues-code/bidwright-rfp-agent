@@ -70,6 +70,43 @@ A scorer that cannot fail shows nothing. `tests/test_scorer_selftest.py` checks 
 
 `bidwright matrix run` runs a matrix file's rungs and repeats in order, with the response cache on and the repeat index in every key; it resumes after a spent quota and stops before a run expected to pass the matrix's cost cap. Every matrix run stays on its roles' primary models, because a fallback model would change what is measured: a spent quota pauses the matrix, a call that exhausts its retries faults its run, and a run that a fallback model answered is left out of the report and run again on `--resume`. `bidwright-eval report` scores every finished run and decides each rung by the rule `evals/hypotheses.yaml` names, fixed before the first matrix run: `within_noise`, `superiority` or `improvement`, each measured against the spread of the control rung's repeats. S-03 (pack size), S-10 (the prompt's examples) and S-13 (a second extraction pass) run this way on the hero package.
 
+## Results of Iteration 3's ladders (step 19)
+
+The three ladders ran on 2026-11-07 on the hero package, gold v4, 5 repeats a rung, each starting on `free` and moving to `paid` when Google's free daily quota ran out (CH-102); both profiles run the same models, and every repeat ran on its roles' primary models. Each report under `evals/results/` reproduces from its runs with `bidwright-eval report <matrix>`. A rung is kept when the 90% bootstrap interval of the difference of its median from its comparator's lies wholly on the favorable side; with a margin, a rung whose interval holds zero is kept when it rises by no more than the margin and its secondary metric improves (ADR-054, ADR-056).
+
+**EX: extraction, to `coverage`** (25 runs, $0). Missed mandatory requirements, median (range):
+
+| Rung | Adds | Missed | Low precision | Zone accuracy | Passages with no disposition | Requests | Tokens |
+|---|---|---|---|---|---|---|---|
+| EX0 | One call over the whole RFP | 36 (30-43) | 1.00 | 0.90-1.00 | 0 of 5 runs | 3 | 65K |
+| EX1 | Batched `extract`, bare context, no triage, no coverage loop | 1 (1-4) | 0.72 | 0.67-0.69 | 3 of 5 runs | 8 | 84K |
+| EX2 | Full context | 2 (2-3) | 0.71 | 0.67-0.68 | 1 of 5 runs | 7 | 89K |
+| EX3 | Triage and the coverage loop | 1 (1-2) | 0.70 | 0.79-0.89 | 0 of 5 runs | 8 | 92K |
+| EX4 | The second pass | 1 (1-2) | 0.70 | 0.79-0.89 | 0 of 5 runs | 13 | 156K |
+
+No run of EX1, EX3 or EX4 missed one of the 9 submission hazards. EX0 returned 3 to 16 records, all of them gold, so its low precision sat at its ceiling. Under the rule as designed, which judged a rung with a margin by non-inferiority alone, every rung was dropped against EX0 for failing to raise that precision (`report-designed-rule.md`); under ADR-056, adopted after these results were seen, EX1 is kept (d 35, interval [29, 42]) and EX2, EX3 and EX4 are dropped against it, their intervals holding zero and their low precision 1 to 2 points lower. ADR-057 sets the defaults to EX3, with the second pass off: EX1 leaves passages without a disposition and zones worse, which the ladder's metric cannot see, and EX4 equals EX3 on every paired repeat at 5 more calls a run.
+
+**SO: the solution, seeded from one EX3 run frozen at `brief`** (30 runs, $1.08):
+
+| Rung | Adds | Gap assertions | Seeded gaps claimed | Binding requirements mapped | Requests |
+|---|---|---|---|---|---|
+| SO0 | One call from the requirements to an approach | 3 (1-3) | not run | 100% | 8 |
+| SO1-F | Fixed retrieval, one call | 3 (1-3) | 0 | 100% | 27 |
+| SO1 | `decide` with tools | 3 (1-3) | 0 | 100% | 75 |
+| SO1-T | SO1 with `reflect` | 3 (1-3) | 0 | 100% | 96 |
+| SO2 | Independent `assess` | 3 (1-3) | 0 | 100% | 90 |
+| SO3 | The manifest: `options` and `blueprint` | 0 (0-0) | 0 | 64% (56-98%) | 90 |
+
+The gap assertions of SO0 to SO2 sit in the approach text, and the approach call is the same for the same repeat in each of those rungs, so the response cache gave the same answer; those rungs differ in their claims, none of which asserted a seeded gap. SO3 is kept (d 3, interval [1, 3]) and the others are dropped, so the manifest stays the default and `reflect` stays off (ADR-058). The manifest's lower mapping of binding requirements to work packages is a weakness this step does not fix.
+
+**RK: the risk register, seeded from the first SO3 repeat frozen at `risk`** (20 runs, $0.25). Risk seeds found, of 6, per repeat: RK0, one call, 1, 1, 0, 0, 0; RK1-F, the fixed control, 1, 1, 1, 1, 0; RK1, the agent, 0, 1, 1, 1, 2; RK1-T, the agent with `reflect`, 1, 2, 1, 1, 1. RK1-F and RK1 gain one seed at the median with an interval of [0, 1/6], which does not exclude zero, so both are dropped, and RK1-T is dropped against RK1. `risk_mode` defaults to `oneshot`, 5 calls against the agent's 8 (ADR-059). Every setting finds at most 2 of the 6 risk seeds, a limit of the risk step that this step reports and does not fix.
+
+**S-12: the method cards.** The first run, with the checks the cases arrived with, counted 0 violations in all 200 calls, cards off and on: 15 of its 20 checks searched for phrases no model writes ("invented acceptance", "silent overwrite"), so it measured nothing (`evals/results/s12-cards-step18-checks/`). After the owner's decision, the checks compare each answer with its task, each is tested on a violating and a clean answer, the fixtures invite each card's violation, and CFG-002 is listed as not testable, since `consolidate`'s answer has no field for change impact. The second run, 190 calls ($0.54), counted no violation in 18 of the 19 cases, off or on; BEN-001 counted 1 with the cards off and 3 with them on, over 5 repeats. One answer per case with the cards off, kept in `audit-off-answers.json`, shows the model already doing what the cards ask: it keeps the two retention periods apart, marks the SAP integration a gap, and returns `UNVERIFIED` on a generic API. No family passes, every family stays off, and S-12's scorecard check has no family to test, so step 20 runs `hero-repeats.yaml` on the final defaults (ADR-055).
+
+**The technology seeds** (`bidwright-eval techcheck --repeats 5`, `evals/results/techcheck/`). The rule, each false seed `INVALIDATED` in at least 4 of 5 repeats and no true seed ever `INVALIDATED`, fails: 8 of the 10 false seeds pass, and no true seed was ever `INVALIDATED`, but TS-07 (`extract_words` discards bounding boxes) drew `INSUFFICIENT_DOCS` in 5 of 5 repeats and TS-08 (`PageImage.save` defaults to JPEG) was `INVALIDATED` in 2 of 5. `techcheck` errs toward "insufficient", which leaves a claim unvalidated at the gate rather than passing it; the prompt was not tuned after these results.
+
+**Spend.** Step 19 cost about $2.6 on the paid tier: the ladders, S-12's two runs and its audit, the technology seeds and the four recordings made again with the new defaults; the free tier's calls cost $0. With Iteration 2's $1.05, the paid spend is about $3.7 of D-01's $40.
+
 ## Results at `v0.2`
 
 Four live runs of the `v0.2` pipeline on 2026-11-05, on `free`, each scored against gold v3 and committed under `evals/results/runs/`. On that day the primary model, `gemini-3.5-flash-lite`, returned server errors on most attempts, its circuit breaker opened, and the fallback, `gemini-3.1-flash-lite`, answered nearly every call; the last two runs used the fallback alone.

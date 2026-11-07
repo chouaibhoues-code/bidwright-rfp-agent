@@ -703,7 +703,8 @@ def write_report(
         "not_testable": not_testable(cases_path),
     }
     out.mkdir(parents=True, exist_ok=True)
-    (out / "report.json").write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
+    text = json.dumps(data, indent=1) + "\n"
+    (out / "report.json").write_text(text, encoding="utf-8", newline="\n")
     lines = [
         "# S-12: method cards off and on",
         "",

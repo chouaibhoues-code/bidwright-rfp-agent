@@ -1,0 +1,837 @@
+{
+ "S12-CASE-01": {
+  "card": "REQ-001",
+  "count": 0,
+  "answer": {
+   "items": [
+    {
+     "src_ids": [
+      "SRC-011"
+     ],
+     "quote": "The Contractor shall provide the Authority with performance reports on the service, to the Authority's satisfaction.",
+     "statement": "The Contractor provides the Authority with performance reports on the service, to the Authority's satisfaction.",
+     "modality": "shall",
+     "disposition": "BINDING",
+     "hazard": false
+    }
+   ],
+   "no_obligation_src_ids": []
+  }
+ },
+ "S12-CASE-02": {
+  "card": "REQ-002",
+  "count": 0,
+  "answer": {
+   "items": [
+    {
+     "src_ids": [
+      "SRC-021"
+     ],
+     "quote": "All project data shall be retained for five (5) years from the end of the contract.",
+     "statement": "All project data shall be retained for five (5) years from the end of the contract.",
+     "modality": "shall",
+     "disposition": "BINDING",
+     "hazard": false
+    },
+    {
+     "src_ids": [
+      "SRC-022"
+     ],
+     "quote": "Financial records shall be retained for seven (7) years from the end of the contract.",
+     "statement": "Financial records shall be retained for seven (7) years from the end of the contract.",
+     "modality": "shall",
+     "disposition": "BINDING",
+     "hazard": false
+    }
+   ],
+   "no_obligation_src_ids": []
+  }
+ },
+ "S12-CASE-03": {
+  "card": "REQ-003",
+  "count": 0,
+  "answer": {
+   "items": [
+    {
+     "src_ids": [
+      "SRC-031"
+     ],
+     "quote": "Compliance audits shall take place annually, except during declared emergency operations.",
+     "statement": "Compliance audits take place annually, except during declared emergency operations.",
+     "modality": "shall",
+     "disposition": "BINDING",
+     "hazard": false
+    },
+    {
+     "src_ids": [
+      "SRC-032"
+     ],
+     "quote": "Security audits shall take place twice a year, with no exceptions.",
+     "statement": "Security audits take place twice a year, with no exceptions.",
+     "modality": "shall",
+     "disposition": "BINDING",
+     "hazard": false
+    }
+   ],
+   "no_obligation_src_ids": []
+  }
+ },
+ "S12-CASE-04": {
+  "card": "REQ-002",
+  "count": 0,
+  "answer": {
+   "topic": "Retention periods for project data and financial records",
+   "duplicates": [],
+   "discrepancies": [
+    {
+     "requirement_ids": [
+      "REQ-101",
+      "REQ-102"
+     ],
+     "kind": "INCONSISTENT_VALUE",
+     "state": "conditional",
+     "description": "Section 4.1 requires five years for all project data, while Section 9.2 requires seven years for financial records.",
+     "resolved_by": null
+    }
+   ],
+   "questions": [
+    {
+     "text": "Should financial records be retained for seven years, overriding the five-year retention period for general project data?",
+     "requirement_ids": [
+      "REQ-101",
+      "REQ-102"
+     ],
+     "lint_finding_ids": [],
+     "reason": "Financial records are a subset of project data with a conflicting retention period."
+    }
+   ],
+   "references": []
+  }
+ },
+ "S12-CASE-05": {
+  "card": "REQ-003",
+  "count": 0,
+  "answer": {
+   "topic": "Frequency of compliance and security audits",
+   "duplicates": [],
+   "discrepancies": [],
+   "questions": [],
+   "references": []
+  }
+ },
+ "S12-CASE-06": {
+  "card": "CFG-001",
+  "count": 0,
+  "answer": {
+   "topic": "Service availability percentage",
+   "duplicates": [],
+   "discrepancies": [
+    {
+     "requirement_ids": [
+      "REQ-105",
+      "REQ-107"
+     ],
+     "kind": "SUPERSEDED",
+     "state": "established",
+     "description": "Addendum 1 amends Clause 6.1, raising the required service availability from 99.5% to 99.9%.",
+     "resolved_by": "Where documents conflict, an addendum takes precedence over the main tender document."
+    }
+   ],
+   "questions": [],
+   "references": [
+    {
+     "requirement_id": "REQ-107",
+     "target": "Clause 6.1",
+     "resolved_ids": [
+      "REQ-105"
+     ]
+    }
+   ]
+  }
+ },
+ "S12-CASE-08": {
+  "card": "BA-001",
+  "count": 0,
+  "answer": {
+   "decision": "PROCEED_WITH_GAP",
+   "reason": "The supplier has no records regarding integration with the Council's legacy geographic information system.",
+   "claims": [],
+   "gap": "No evidence of capability to exchange property locations with the Council's existing geographic information system.",
+   "question": null
+  }
+ },
+ "S12-CASE-09": {
+  "card": "BA-003",
+  "count": 0,
+  "answer": {
+   "decision": "PROCEED_WITH_GAP",
+   "reason": "The knowledge base shows only a generic REST API, which does not cover integration with SAP S/4HANA for invoice posting.",
+   "claims": [],
+   "gap": "No evidence of integration with the Council's SAP S/4HANA finance system.",
+   "question": null
+  }
+ },
+ "S12-CASE-10": {
+  "card": "BA-003",
+  "count": 0,
+  "answer": {
+   "reason": "CAP-001 only states that there are standard REST API endpoints for JSON payload exchange; it does not claim that this API satisfies the SAP S/4HANA integration requirement or is certified for that environment.",
+   "disposition": "UNVERIFIED",
+   "supporting_ids": [],
+   "missing": "Evidence that the REST API integrates with, or is certified for, SAP S/4HANA."
+  }
+ },
+ "S12-CASE-11": {
+  "card": "BA-002",
+  "count": 0,
+  "answer": {
+   "options": [
+    {
+     "name": "Standard Delivery",
+     "summary": "Deliver case management workflows OOTB and exclude the resident self-service portal due to lack of accessibility evidence.",
+     "baseline": true,
+     "approach": [
+      {
+       "need_id": "NEED-S12-OPT01",
+       "delivery_mode": "OOTB",
+       "claim_ids": []
+      },
+      {
+       "need_id": "NEED-S12-OPT02",
+       "delivery_mode": "EXCLUDED",
+       "claim_ids": []
+      }
+     ],
+     "assumptions": [
+      "The buying organization accepts deferring the resident self-service portal to a later phase."
+     ],
+     "scores": [
+      {
+       "factor_id": "F-01",
+       "score": 2,
+       "reason": "Meets case management delivery requirements but omits the portal."
+      },
+      {
+       "factor_id": "F-02",
+       "score": 1,
+       "reason": "Offers limited social value without the self-service component."
+      }
+     ]
+    },
+    {
+     "name": "Partner-assisted Portal Delivery",
+     "summary": "Deliver case management workflows OOTB and partner with a local digital inclusion agency to build the resident self-service portal alternative.",
+     "baseline": false,
+     "approach": [
+      {
+       "need_id": "NEED-S12-OPT01",
+       "delivery_mode": "OOTB",
+       "claim_ids": []
+      },
+      {
+       "need_id": "NEED-S12-OPT02",
+       "delivery_mode": "PARTNER",
+       "claim_ids": []
+      }
+     ],
+     "assumptions": [
+      "A qualified partner is available to deliver accessibility-compliant portal capabilities."
+     ],
+     "scores": [
+      {
+       "factor_id": "F-01",
+       "score": 3,
+       "reason": "Addresses both case management and portal requirements through a specialised partner."
+      },
+      {
+       "factor_id": "F-02",
+       "score": 3,
+       "reason": "Brings additional social value by collaborating with local digital inclusion partners."
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "S12-CASE-12": {
+  "card": "GOV-001",
+  "count": 0,
+  "answer": {
+   "options": [
+    {
+     "name": "Exclude personal data processing from initial scope",
+     "summary": "Exclude personal data processing from the current implementation until the data protection impact assessment can be completed.",
+     "baseline": true,
+     "approach": [
+      {
+       "need_id": "NEED-S12-OPT03",
+       "delivery_mode": "EXCLUDED",
+       "claim_ids": []
+      }
+     ],
+     "assumptions": [
+      "The buyer agrees to defer the personal data processing scope for the initial release."
+     ],
+     "scores": [
+      {
+       "factor_id": "F-03",
+       "score": 0,
+       "reason": "Does not address the data protection compliance factor since personal data processing is excluded."
+      }
+     ]
+    },
+    {
+     "name": "Partner-led data protection compliance",
+     "summary": "Deliver personal data processing by engaging a specialist partner to complete the required data protection impact assessment.",
+     "baseline": false,
+     "approach": [
+      {
+       "need_id": "NEED-S12-OPT03",
+       "delivery_mode": "PARTNER",
+       "claim_ids": []
+      }
+     ],
+     "assumptions": [
+      "A specialist partner can be engaged to establish and fulfill the data protection impact assessment."
+     ],
+     "scores": [
+      {
+       "factor_id": "F-03",
+       "score": 2,
+       "reason": "Meets the data protection compliance requirement by relying on a specialized partner to handle the impact assessment."
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "S12-CASE-13": {
+  "card": "BA-001",
+  "count": 0,
+  "answer": {
+   "current_state": [
+    {
+     "text": "The Council uses a current case-management system today.",
+     "src_ids": [
+      "SRC-301"
+     ],
+     "requirement_ids": [],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "target_state": [
+    {
+     "text": "The Council's current case-management system is replaced with a hosted service.",
+     "src_ids": [
+      "SRC-301"
+     ],
+     "requirement_ids": [
+      "REQ-301"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "workstreams": [
+    {
+     "name": "System Replacement",
+     "objective": "Replace the Council's current case-management system with a hosted service."
+    }
+   ],
+   "wbs": [
+    {
+     "code": "1",
+     "name": "System Replacement",
+     "deliverable": "Hosted case management system",
+     "requirement_ids": [],
+     "need_ids": [],
+     "claim_ids": []
+    },
+    {
+     "code": "1.1",
+     "name": "Core Replacement and Migration",
+     "deliverable": "Migrated data and replaced system",
+     "requirement_ids": [
+      "REQ-301"
+     ],
+     "need_ids": [
+      "NEED-S12-BP1"
+     ],
+     "claim_ids": []
+    }
+   ],
+   "assumptions": [],
+   "ground_rules": [],
+   "tech_claims": []
+  }
+ },
+ "S12-CASE-14": {
+  "card": "DEL-001",
+  "count": 0,
+  "answer": {
+   "current_state": [
+    {
+     "text": "Configuration, data migration and training are currently required.",
+     "src_ids": [
+      "SRC-302"
+     ],
+     "requirement_ids": [
+      "REQ-302"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "target_state": [
+    {
+     "text": "Configuration, data migration and training are delivered.",
+     "src_ids": [],
+     "requirement_ids": [
+      "REQ-302"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "workstreams": [
+    {
+     "name": "Phased Delivery",
+     "objective": "Deliver configuration, data migration and training in phases."
+    }
+   ],
+   "wbs": [
+    {
+     "code": "1",
+     "name": "Phased Delivery",
+     "deliverable": "Complete service delivery",
+     "requirement_ids": [],
+     "need_ids": [],
+     "claim_ids": []
+    },
+    {
+     "code": "1.1",
+     "name": "Configuration and Migration",
+     "deliverable": "Configured system and migrated data",
+     "requirement_ids": [
+      "REQ-302"
+     ],
+     "need_ids": [
+      "NEED-S12-BP2"
+     ],
+     "claim_ids": []
+    },
+    {
+     "code": "1.2",
+     "name": "Training",
+     "deliverable": "Trained personnel",
+     "requirement_ids": [
+      "REQ-302"
+     ],
+     "need_ids": [
+      "NEED-S12-BP2"
+     ],
+     "claim_ids": []
+    }
+   ],
+   "assumptions": [
+    {
+     "text": "The Council's budget for the contract is fixed.",
+     "src_ids": [],
+     "requirement_ids": [],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "ground_rules": [
+    {
+     "text": "The supplier shall deliver configuration, data migration and training.",
+     "src_ids": [
+      "SRC-302"
+     ],
+     "requirement_ids": [
+      "REQ-302"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "tech_claims": []
+  }
+ },
+ "S12-CASE-15": {
+  "card": "DEL-002",
+  "count": 0,
+  "answer": {
+   "current_state": [
+    {
+     "text": "The Council currently operates without the 40 configured licence types and 120,000 migrated records.",
+     "src_ids": [
+      "SRC-303"
+     ],
+     "requirement_ids": [
+      "REQ-303"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "target_state": [
+    {
+     "text": "The platform is fully configured with 40 licence types and 120,000 migrated records.",
+     "src_ids": [],
+     "requirement_ids": [
+      "REQ-303"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "workstreams": [
+    {
+     "name": "Platform Configuration and Migration",
+     "objective": "Configure the required licence types and migrate all records to the platform."
+    }
+   ],
+   "wbs": [
+    {
+     "code": "1",
+     "name": "Platform Configuration and Migration",
+     "deliverable": "Configured platform with migrated records",
+     "requirement_ids": [],
+     "need_ids": [],
+     "claim_ids": []
+    },
+    {
+     "code": "1.1",
+     "name": "Licence Type Configuration",
+     "deliverable": "40 configured licence types",
+     "requirement_ids": [
+      "REQ-303"
+     ],
+     "need_ids": [
+      "NEED-S12-BP3"
+     ],
+     "claim_ids": []
+    },
+    {
+     "code": "1.2",
+     "name": "Record Migration",
+     "deliverable": "120,000 migrated records",
+     "requirement_ids": [
+      "REQ-303"
+     ],
+     "need_ids": [
+      "NEED-S12-BP3"
+     ],
+     "claim_ids": []
+    }
+   ],
+   "assumptions": [
+    {
+     "text": "The source data for the 120,000 records is complete and accessible for migration.",
+     "src_ids": [
+      "SRC-303"
+     ],
+     "requirement_ids": [
+      "REQ-303"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "ground_rules": [
+    {
+     "text": "Configuration and migration strictly adhere to the requirements specified in the RFP.",
+     "src_ids": [
+      "SRC-303"
+     ],
+     "requirement_ids": [
+      "REQ-303"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "tech_claims": []
+  }
+ },
+ "S12-CASE-16": {
+  "card": "DEL-003",
+  "count": 0,
+  "answer": {
+   "current_state": [
+    {
+     "text": "All records require migration before the service goes live in 2027.",
+     "src_ids": [
+      "SRC-304"
+     ],
+     "requirement_ids": [
+      "REQ-304"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "target_state": [
+    {
+     "text": "The service goes live in 2027 after the migration of all records.",
+     "src_ids": [
+      "SRC-304"
+     ],
+     "requirement_ids": [
+      "REQ-304"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "workstreams": [
+    {
+     "name": "Migration and Go-Live",
+     "objective": "Migrate all records and achieve go-live in 2027."
+    }
+   ],
+   "wbs": [
+    {
+     "code": "1",
+     "name": "Migration and Go-Live",
+     "deliverable": "Migrated records and live service",
+     "requirement_ids": [],
+     "need_ids": [],
+     "claim_ids": []
+    },
+    {
+     "code": "1.1",
+     "name": "Data Migration",
+     "deliverable": "All records migrated",
+     "requirement_ids": [
+      "REQ-304"
+     ],
+     "need_ids": [
+      "NEED-S12-BP4"
+     ],
+     "claim_ids": []
+    },
+    {
+     "code": "1.2",
+     "name": "Go-Live and Hypercare",
+     "deliverable": "Service live in 2027",
+     "requirement_ids": [
+      "REQ-304"
+     ],
+     "need_ids": [
+      "NEED-S12-BP4"
+     ],
+     "claim_ids": []
+    }
+   ],
+   "assumptions": [
+    {
+     "text": "Migration is completed in a single cut-over.",
+     "src_ids": [],
+     "requirement_ids": [],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "ground_rules": [
+    {
+     "text": "The service must go live in 2027.",
+     "src_ids": [
+      "SRC-304"
+     ],
+     "requirement_ids": [
+      "REQ-304"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "tech_claims": []
+  }
+ },
+ "S12-CASE-17": {
+  "card": "BEN-001",
+  "count": 0,
+  "answer": {
+   "current_state": [
+    {
+     "text": "Processing licence applications incurs cost and time.",
+     "src_ids": [
+      "SRC-305"
+     ],
+     "requirement_ids": [],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "target_state": [
+    {
+     "text": "The service's benefits are fully described.",
+     "src_ids": [
+      "SRC-305"
+     ],
+     "requirement_ids": [
+      "REQ-305"
+     ],
+     "claim_ids": [],
+     "domain_item_ids": []
+    }
+   ],
+   "workstreams": [
+    {
+     "name": "Self-Service",
+     "objective": "Move licence applications to online self-service and describe its benefits."
+    }
+   ],
+   "wbs": [
+    {
+     "code": "1",
+     "name": "Self-Service Workstream",
+     "deliverable": "Online self-service platform",
+     "requirement_ids": [],
+     "need_ids": [],
+     "claim_ids": []
+    },
+    {
+     "code": "1.1",
+     "name": "Benefits description",
+     "deliverable": "A description of the benefits of the service",
+     "requirement_ids": [
+      "REQ-305"
+     ],
+     "need_ids": [
+      "NEED-S12-BP5"
+     ],
+     "claim_ids": []
+    },
+    {
+     "code": "1.2",
+     "name": "Online applications",
+     "deliverable": "Online licence application workflow",
+     "requirement_ids": [],
+     "need_ids": [],
+     "claim_ids": []
+    }
+   ],
+   "assumptions": [],
+   "ground_rules": [],
+   "tech_claims": []
+  }
+ },
+ "S12-CASE-18": {
+  "card": "RISK-001",
+  "count": 0,
+  "answer": {
+   "risks": [
+    {
+     "condition": "Data migration is required to complete within a 48 hour maintenance window under REQ-301, while HAZ-001/UNCAPPED_LIABILITY places unlimited liability on the contractor for migration delays.",
+     "event": "The automated ETL migration pipeline under APP-301 hits unforeseen data corruptions or bottlenecks, exceeding the 48-hour window.",
+     "effect": "The contractor faces uncapped financial liability due to the breach of the migration window.",
+     "assumptions": [
+      "The automated ETL migration pipeline can process all legacy data within 48 hours without manual intervention."
+     ],
+     "owner_role": "Delivery lead",
+     "trigger": "A dry-run migration test exceeds 40 hours.",
+     "responses": [
+      "Perform a full-scale dry run of the ETL pipeline before the go-live maintenance window.",
+      "Negotiate a liability cap for migration delays with the client."
+     ],
+     "residual_exposure": "Uncapped liability remains if the pipeline fails during the actual cutover.",
+     "evidence_src_ids": [
+      "REQ-301",
+      "APP-301"
+     ],
+     "affects": [
+      "REQ-301",
+      "APP-301"
+     ]
+    }
+   ],
+   "open_questions": [
+    {
+     "text": "What is the total volume and schema complexity of the legacy data to be migrated within the 48-hour window?",
+     "src_ids": [
+      "REQ-301"
+     ]
+    }
+   ]
+  }
+ },
+ "S12-CASE-19": {
+  "card": "RISK-002",
+  "count": 0,
+  "answer": {
+   "risks": [
+    {
+     "condition": "REQ-302 mandates a 99.99% SLA for the third-party payment gateway integration, but APP-302 relies on a circuit breaker pattern without specifying the underlying provider's availability commitments.",
+     "event": "The third-party payment gateway experiences outages that cumulatively exceed the downtime allowed by a 99.99% SLA, and the circuit breaker trips.",
+     "effect": "The payment integration breaches the SLA, incurring liquidated damages as specified in the contract penalties.",
+     "assumptions": [
+      "The third-party payment provider can achieve 99.99% uptime natively."
+     ],
+     "owner_role": "Integration Architect",
+     "trigger": "The third-party payment provider's published historical availability falls below 99.99%.",
+     "responses": [
+      "Negotiate an enterprise contract with the payment gateway provider including back-to-back SLA credits.",
+      "Implement a secondary fallback payment gateway."
+     ],
+     "residual_exposure": "Dependence on third-party vendor reliability despite architectural mitigations.",
+     "evidence_src_ids": [
+      "REQ-302"
+     ],
+     "affects": [
+      "REQ-302"
+     ]
+    }
+   ],
+   "open_questions": [
+    {
+     "text": "What is the exact allowable downtime per month or year for the 99.99% SLA under the penalty terms?",
+     "src_ids": [
+      "REQ-302"
+     ]
+    }
+   ]
+  }
+ },
+ "S12-CASE-20": {
+  "card": "RISK-003",
+  "count": 0,
+  "answer": {
+   "risks": [
+    {
+     "condition": "The approach relies on a multi-region active-passive replica failover for REQ-303, but passive replicas require state synchronization and manual or automated DNS switching that can exceed 15 minutes.",
+     "event": "A disaster occurs, and the multi-region failover takes 25 minutes to complete due to replication lag.",
+     "effect": "Recovery Time Objective is breached, disrupting business continuity beyond the allowable 15-minute threshold.",
+     "assumptions": [
+      "Active-passive replication lag will remain under 5 minutes during peak load."
+     ],
+     "owner_role": "Infrastructure Lead",
+     "trigger": "Failover drill takes longer than 10 minutes.",
+     "responses": [
+      "Switch from active-passive to active-active multi-region replication.",
+      "Perform automated failover tests weekly to measure exact RTO."
+     ],
+     "residual_exposure": "A residual risk of transient DNS propagation delays affecting complete user cutover.",
+     "evidence_src_ids": [
+      "SRC-303"
+     ],
+     "affects": [
+      "REQ-303",
+      "APP-303"
+     ]
+    }
+   ],
+   "open_questions": [
+    {
+     "text": "Does the 15-minute failover requirement include complete DNS propagation time globally?",
+     "src_ids": [
+      "SRC-303"
+     ]
+    }
+   ]
+  }
+ }
+}

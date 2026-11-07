@@ -1,0 +1,953 @@
+{
+ "matrix": "ex-ladder",
+ "gold": "hero v4 c5422494a680",
+ "runs": 25,
+ "finished": 25,
+ "fell_back": [],
+ "invalid": [],
+ "rungs": {
+  "ex0": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.3182,
+    "min": 0.2121,
+    "max": 0.4091,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.3077,
+    "min": 0.1034,
+    "max": 0.4507,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.3077,
+    "min": 0.1034,
+    "max": 0.4507,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 36.0,
+    "min": 30.0,
+    "max": 43.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 36.0,
+    "min": 30.0,
+    "max": 43.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.1818,
+    "min": 0.0545,
+    "max": 0.2909,
+    "n": 5
+   },
+   "requests": {
+    "median": 3.0,
+    "min": 3.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.04464649,
+    "min": 0.0326548,
+    "max": 0.0495868,
+    "n": 5
+   },
+   "tokens": {
+    "median": 64671.0,
+    "min": 58044.0,
+    "max": 66216.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 1.0,
+    "min": 0.9,
+    "max": 1.0,
+    "n": 5
+   }
+  },
+  "ex1": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0066,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.9545,
+    "min": 0.9242,
+    "max": 0.9848,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.8308,
+    "min": 0.7969,
+    "max": 0.8572,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9838,
+    "min": 0.9559,
+    "max": 0.9908,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0049,
+    "min": 0.0,
+    "max": 0.0066,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 0.9815,
+    "min": 0.963,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 0.9863,
+    "min": 0.9733,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.72,
+    "min": 0.6986,
+    "max": 0.7606,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.9818,
+    "min": 0.9273,
+    "max": 0.9818,
+    "n": 5
+   },
+   "requests": {
+    "median": 8.0,
+    "min": 7.0,
+    "max": 8.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.1224675,
+    "min": 0.10567695,
+    "max": 0.1557943,
+    "n": 5
+   },
+   "tokens": {
+    "median": 84364.0,
+    "min": 74363.0,
+    "max": 105091.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.6852,
+    "min": 0.6667,
+    "max": 0.6852,
+    "n": 5
+   }
+  },
+  "ex2": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0054,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.9545,
+    "min": 0.9545,
+    "max": 0.9697,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.8154,
+    "min": 0.782,
+    "max": 0.8346,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9815,
+    "min": 0.972,
+    "max": 0.9815,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0108,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 0.9623,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.7067,
+    "min": 0.6667,
+    "max": 0.7361,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.9636,
+    "min": 0.9455,
+    "max": 0.9636,
+    "n": 5
+   },
+   "requests": {
+    "median": 7.0,
+    "min": 7.0,
+    "max": 8.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.1283419,
+    "min": 0.1188456,
+    "max": 0.1539844,
+    "n": 5
+   },
+   "tokens": {
+    "median": 89367.0,
+    "min": 82256.0,
+    "max": 96330.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.6792,
+    "min": 0.6731,
+    "max": 0.6792,
+    "n": 5
+   }
+  },
+  "ex3": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.9697,
+    "min": 0.9394,
+    "max": 0.9697,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.8182,
+    "min": 0.812,
+    "max": 0.8548,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9815,
+    "min": 0.9779,
+    "max": 0.9908,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 0.9434,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 1.0,
+    "min": 0.974,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.7013,
+    "min": 0.6923,
+    "max": 0.7681,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.9818,
+    "min": 0.9636,
+    "max": 0.9818,
+    "n": 5
+   },
+   "requests": {
+    "median": 8.0,
+    "min": 8.0,
+    "max": 8.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.1323869,
+    "min": 0.11913974,
+    "max": 0.13792126,
+    "n": 5
+   },
+   "tokens": {
+    "median": 91981.0,
+    "min": 86905.0,
+    "max": 94774.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.8704,
+    "min": 0.7925,
+    "max": 0.8868,
+    "n": 5
+   }
+  },
+  "ex4": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0138,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.9697,
+    "min": 0.9394,
+    "max": 0.9697,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.8182,
+    "min": 0.812,
+    "max": 0.848,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9815,
+    "min": 0.9781,
+    "max": 0.9908,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0138,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 0.9434,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 1.0,
+    "min": 0.9744,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.7013,
+    "min": 0.6923,
+    "max": 0.7571,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.9818,
+    "min": 0.9636,
+    "max": 0.9818,
+    "n": 5
+   },
+   "requests": {
+    "median": 13.0,
+    "min": 13.0,
+    "max": 13.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.22784117,
+    "min": 0.20023344,
+    "max": 0.2343517,
+    "n": 5
+   },
+   "tokens": {
+    "median": 155634.0,
+    "min": 144448.0,
+    "max": 157883.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.8704,
+    "min": 0.7925,
+    "max": 0.8868,
+    "n": 5
+   }
+  }
+ },
+ "decisions": [
+  {
+   "rung": "ex1",
+   "control": "ex0",
+   "metric": "missed_mandatory_count",
+   "kind": "keep_or_drop",
+   "passed": true,
+   "detail": "d 35, 90% interval [29, 42]; margin 1, precision_low gain -0.28 (superior, so the secondary does not decide); cost per avoided miss $0.002223",
+   "hypothesis": "Bare extraction without triage or coverage loses no more than 1 additional mandatory requirement than the baseline while improving precision",
+   "d": 35.0,
+   "interval": [
+    29.0,
+    42.0
+   ],
+   "cost_per_avoided_miss": 0.002223,
+   "side": false
+  },
+  {
+   "rung": "ex2",
+   "control": "ex1",
+   "metric": "missed_mandatory_count",
+   "kind": "keep_or_drop",
+   "passed": false,
+   "detail": "d -1, 90% interval [-2, 2]; margin 1, precision_low gain -0.0133; cost per avoided miss n/a",
+   "hypothesis": "Full context without triage or coverage loses no more than 1 additional mandatory requirement while improving precision",
+   "d": -1.0,
+   "interval": [
+    -2.0,
+    2.0
+   ],
+   "cost_per_avoided_miss": null,
+   "side": false
+  },
+  {
+   "rung": "ex3",
+   "control": "ex1",
+   "metric": "missed_mandatory_count",
+   "kind": "keep_or_drop",
+   "passed": false,
+   "detail": "d 0, 90% interval [-1, 2]; margin 1, precision_low gain -0.0187; cost per avoided miss n/a",
+   "hypothesis": "Triage and coverage without second pass lose no more than 1 additional mandatory requirement while improving precision",
+   "d": 0.0,
+   "interval": [
+    -1.0,
+    2.0
+   ],
+   "cost_per_avoided_miss": null,
+   "side": false
+  },
+  {
+   "rung": "ex4",
+   "control": "ex1",
+   "metric": "missed_mandatory_count",
+   "kind": "keep_or_drop",
+   "passed": false,
+   "detail": "d 0, 90% interval [-1, 2]; margin 1, precision_low gain -0.0187; cost per avoided miss n/a",
+   "hypothesis": "Full extraction with second pass loses no more than 1 additional mandatory requirement while improving precision",
+   "d": 0.0,
+   "interval": [
+    -1.0,
+    2.0
+   ],
+   "cost_per_avoided_miss": null,
+   "side": false
+  }
+ ],
+ "consistency": {
+  "ex0": {
+   "jaccard": 0.3,
+   "repeats": 5,
+   "warn": true
+  },
+  "ex1": {
+   "jaccard": 1.0,
+   "repeats": 5,
+   "warn": false
+  },
+  "ex2": {
+   "jaccard": 0.9811,
+   "repeats": 5,
+   "warn": false
+  },
+  "ex3": {
+   "jaccard": 0.9815,
+   "repeats": 5,
+   "warn": false
+  },
+  "ex4": {
+   "jaccard": 0.9815,
+   "repeats": 5,
+   "warn": false
+  }
+ }
+}

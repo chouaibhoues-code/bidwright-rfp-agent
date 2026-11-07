@@ -1,0 +1,1366 @@
+{
+ "matrix": "so-ladder",
+ "gold": "hero v4 c5422494a680",
+ "runs": 30,
+ "finished": 30,
+ "fell_back": [],
+ "invalid": [],
+ "rungs": {
+  "so0": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.9697,
+    "min": 0.9697,
+    "max": 0.9697,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.848,
+    "min": 0.848,
+    "max": 0.848,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9815,
+    "min": 0.9815,
+    "max": 0.9815,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gap_assertions": {
+    "median": 3.0,
+    "min": 1.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "generic_risks_rejected": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.7571,
+    "min": 0.7571,
+    "max": 0.7571,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.9636,
+    "min": 0.9636,
+    "max": 0.9636,
+    "n": 5
+   },
+   "requests": {
+    "median": 8.0,
+    "min": 8.0,
+    "max": 10.0,
+    "n": 5
+   },
+   "risk_completeness": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.1667,
+    "min": 0.0,
+    "max": 0.1667,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.04808717,
+    "min": 0.04408902,
+    "max": 0.05217274,
+    "n": 5
+   },
+   "tokens": {
+    "median": 60187.0,
+    "min": 55881.0,
+    "max": 70248.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.7925,
+    "min": 0.7925,
+    "max": 0.7925,
+    "n": 5
+   }
+  },
+  "so1-f": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "decision_accuracy": {
+    "median": 0.1538,
+    "min": 0.1538,
+    "max": 0.1538,
+    "n": 5
+   },
+   "decision_contrast": {
+    "median": 3.0,
+    "min": 3.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.9697,
+    "min": 0.9697,
+    "max": 0.9697,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.848,
+    "min": 0.848,
+    "max": 0.848,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9815,
+    "min": 0.9815,
+    "max": 0.9815,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gap_assertions": {
+    "median": 3.0,
+    "min": 1.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "generic_risks_rejected": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.7571,
+    "min": 0.7571,
+    "max": 0.7571,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.9636,
+    "min": 0.9636,
+    "max": 0.9636,
+    "n": 5
+   },
+   "requests": {
+    "median": 27.0,
+    "min": 27.0,
+    "max": 29.0,
+    "n": 5
+   },
+   "risk_completeness": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.1667,
+    "min": 0.0,
+    "max": 0.1667,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "seeded_gaps_claimed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.06852637,
+    "min": 0.06494773,
+    "max": 0.07260404,
+    "n": 5
+   },
+   "tokens": {
+    "median": 103044.0,
+    "min": 99309.0,
+    "max": 113485.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.7925,
+    "min": 0.7925,
+    "max": 0.7925,
+    "n": 5
+   }
+  },
+  "so1": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.017285,
+    "min": 0.0,
+    "max": 0.0620355,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "decision_accuracy": {
+    "median": 0.1538,
+    "min": 0.1538,
+    "max": 0.2308,
+    "n": 5
+   },
+   "decision_contrast": {
+    "median": 3.0,
+    "min": 3.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.9697,
+    "min": 0.9697,
+    "max": 0.9697,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.848,
+    "min": 0.848,
+    "max": 0.848,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9815,
+    "min": 0.9815,
+    "max": 0.9815,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gap_assertions": {
+    "median": 3.0,
+    "min": 1.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "generic_risks_rejected": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.7571,
+    "min": 0.7571,
+    "max": 0.7571,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.9636,
+    "min": 0.9636,
+    "max": 0.9636,
+    "n": 5
+   },
+   "requests": {
+    "median": 75.0,
+    "min": 70.0,
+    "max": 76.0,
+    "n": 5
+   },
+   "risk_completeness": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.1667,
+    "min": 0.0,
+    "max": 0.1667,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "seeded_gaps_claimed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.10918054,
+    "min": 0.10344142,
+    "max": 0.11253589,
+    "n": 5
+   },
+   "tokens": {
+    "median": 223319.0,
+    "min": 209627.0,
+    "max": 230480.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.7925,
+    "min": 0.7925,
+    "max": 0.7925,
+    "n": 5
+   }
+  },
+  "so1-t": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.11242841,
+    "min": 0.10743245,
+    "max": 0.11739331,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "decision_accuracy": {
+    "median": 0.1538,
+    "min": 0.0769,
+    "max": 0.2308,
+    "n": 5
+   },
+   "decision_contrast": {
+    "median": 3.0,
+    "min": 2.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.9697,
+    "min": 0.9697,
+    "max": 0.9697,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.848,
+    "min": 0.848,
+    "max": 0.848,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9815,
+    "min": 0.9815,
+    "max": 0.9815,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gap_assertions": {
+    "median": 3.0,
+    "min": 1.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "generic_risks_rejected": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.7571,
+    "min": 0.7571,
+    "max": 0.7571,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.9636,
+    "min": 0.9636,
+    "max": 0.9636,
+    "n": 5
+   },
+   "requests": {
+    "median": 96.0,
+    "min": 92.0,
+    "max": 97.0,
+    "n": 5
+   },
+   "risk_completeness": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.1667,
+    "min": 0.0,
+    "max": 0.1667,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "seeded_gaps_claimed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.14538088,
+    "min": 0.13791405,
+    "max": 0.15189801,
+    "n": 5
+   },
+   "tokens": {
+    "median": 302295.0,
+    "min": 288209.0,
+    "max": 311423.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.7925,
+    "min": 0.7925,
+    "max": 0.7925,
+    "n": 5
+   }
+  },
+  "so2": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.01973522,
+    "min": 0.01281175,
+    "max": 0.02223162,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "decision_accuracy": {
+    "median": 0.1538,
+    "min": 0.1538,
+    "max": 0.2308,
+    "n": 5
+   },
+   "decision_contrast": {
+    "median": 3.0,
+    "min": 3.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.9697,
+    "min": 0.9697,
+    "max": 0.9697,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.848,
+    "min": 0.848,
+    "max": 0.848,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9815,
+    "min": 0.9815,
+    "max": 0.9815,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gap_assertions": {
+    "median": 3.0,
+    "min": 1.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "generic_risks_rejected": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "joint_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.7571,
+    "min": 0.7571,
+    "max": 0.7571,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.9636,
+    "min": 0.9636,
+    "max": 0.9636,
+    "n": 5
+   },
+   "requests": {
+    "median": 90.0,
+    "min": 85.0,
+    "max": 94.0,
+    "n": 5
+   },
+   "risk_completeness": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.1667,
+    "min": 0.0,
+    "max": 0.3333,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "seeded_gaps_claimed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.12406703,
+    "min": 0.12276842,
+    "max": 0.12964095,
+    "n": 5
+   },
+   "tokens": {
+    "median": 265267.0,
+    "min": 244591.0,
+    "max": 276826.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unverified_precision": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 2
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.7925,
+    "min": 0.7925,
+    "max": 0.7925,
+    "n": 5
+   }
+  },
+  "so3": {
+   "accepted_quotes_not_verbatim_or_normalized": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "approach_mapping": {
+    "median": 0.6441,
+    "min": 0.5593,
+    "max": 0.9831,
+    "n": 5
+   },
+   "citation_error_after_repair": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "cost_usd": {
+    "median": 0.06236854,
+    "min": 0.0493506,
+    "max": 0.06533665,
+    "n": 5
+   },
+   "cue_recall": {
+    "median": 0.8444,
+    "min": 0.8444,
+    "max": 0.8444,
+    "n": 5
+   },
+   "decision_accuracy": {
+    "median": 0.1538,
+    "min": 0.1538,
+    "max": 0.2308,
+    "n": 5
+   },
+   "decision_contrast": {
+    "median": 3.0,
+    "min": 3.0,
+    "max": 3.0,
+    "n": 5
+   },
+   "disposition_accuracy": {
+    "median": 0.9697,
+    "min": 0.9697,
+    "max": 0.9697,
+    "n": 5
+   },
+   "f1": {
+    "median": 0.848,
+    "min": 0.848,
+    "max": 0.848,
+    "n": 5
+   },
+   "f1_high": {
+    "median": 0.9815,
+    "min": 0.9815,
+    "max": 0.9815,
+    "n": 5
+   },
+   "first_pass_citation_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gap_assertions": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "generic_risks_rejected": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "gold_version": {
+    "median": 4.0,
+    "min": 4.0,
+    "max": 4.0,
+    "n": 5
+   },
+   "hazards_total": {
+    "median": 9.0,
+    "min": 9.0,
+    "max": 9.0,
+    "n": 5
+   },
+   "joint_error": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "mandatory_total": {
+    "median": 45.0,
+    "min": 45.0,
+    "max": 45.0,
+    "n": 5
+   },
+   "missed_mandatory_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "missed_mandatory_strict_count": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 5
+   },
+   "modality_accuracy": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "normalized_rate": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "precision_high": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "precision_low": {
+    "median": 0.7571,
+    "min": 0.7571,
+    "max": 0.7571,
+    "n": 5
+   },
+   "recall": {
+    "median": 0.9636,
+    "min": 0.9636,
+    "max": 0.9636,
+    "n": 5
+   },
+   "requests": {
+    "median": 90.0,
+    "min": 88.0,
+    "max": 96.0,
+    "n": 5
+   },
+   "risk_completeness": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "risk_seed_recall": {
+    "median": 0.1667,
+    "min": 0.0,
+    "max": 0.1667,
+    "n": 5
+   },
+   "schema_invalid": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "seeded_gaps_claimed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "shadow_cost_usd": {
+    "median": 0.14042715,
+    "min": 0.13022609,
+    "max": 0.1517294,
+    "n": 5
+   },
+   "tokens": {
+    "median": 271504.0,
+    "min": 265395.0,
+    "max": 299357.0,
+    "n": 5
+   },
+   "trap_actions_obeyed": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unauthorized_tool_calls": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 5
+   },
+   "unverified_precision": {
+    "median": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 2
+   },
+   "verbatim_rate": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 5
+   },
+   "zone_accuracy": {
+    "median": 0.7925,
+    "min": 0.7925,
+    "max": 0.7925,
+    "n": 5
+   }
+  }
+ },
+ "decisions": [
+  {
+   "rung": "so1-f",
+   "control": "so0",
+   "metric": "gap_assertions",
+   "kind": "keep_or_drop",
+   "passed": false,
+   "detail": "d 0, 90% interval [-2, 2]; margin 0, approach_mapping gain 0; cost per avoided miss n/a",
+   "hypothesis": "The fixed retrieval asserts no more gaps than the one-call baseline and maps more binding requirements",
+   "d": 0.0,
+   "interval": [
+    -2.0,
+    2.0
+   ],
+   "cost_per_avoided_miss": null,
+   "side": false
+  },
+  {
+   "rung": "so1",
+   "control": "so0",
+   "metric": "gap_assertions",
+   "kind": "keep_or_drop",
+   "passed": false,
+   "detail": "d 0, 90% interval [-2, 2]; margin 0, approach_mapping gain 0; cost per avoided miss n/a",
+   "hypothesis": "Decide agent asserts no more gaps than the one-call baseline and maps more binding requirements",
+   "d": 0.0,
+   "interval": [
+    -2.0,
+    2.0
+   ],
+   "cost_per_avoided_miss": null,
+   "side": false
+  },
+  {
+   "rung": "so1-t",
+   "control": "so1",
+   "metric": "gap_assertions",
+   "kind": "keep_or_drop",
+   "passed": false,
+   "detail": "side rung; d 0, 90% interval [-2, 2]; margin 0, approach_mapping gain 0; cost per avoided miss n/a",
+   "hypothesis": "Reflection after a failed tool call asserts no more gaps than decide alone and maps more binding requirements",
+   "d": 0.0,
+   "interval": [
+    -2.0,
+    2.0
+   ],
+   "cost_per_avoided_miss": null,
+   "side": true
+  },
+  {
+   "rung": "so2",
+   "control": "so0",
+   "metric": "gap_assertions",
+   "kind": "keep_or_drop",
+   "passed": false,
+   "detail": "d 0, 90% interval [-2, 2]; margin 0, approach_mapping gain 0; cost per avoided miss n/a",
+   "hypothesis": "Independent assessment asserts no more gaps than the baseline and maps more binding requirements",
+   "d": 0.0,
+   "interval": [
+    -2.0,
+    2.0
+   ],
+   "cost_per_avoided_miss": null,
+   "side": false
+  },
+  {
+   "rung": "so3",
+   "control": "so0",
+   "metric": "gap_assertions",
+   "kind": "keep_or_drop",
+   "passed": true,
+   "detail": "d 3, 90% interval [1, 3]; margin 0, approach_mapping gain -0.3559 (superior, so the secondary does not decide); cost per avoided miss n/a",
+   "hypothesis": "Full manifest generation asserts no more gaps than the baseline and maps more binding requirements",
+   "d": 3.0,
+   "interval": [
+    1.0,
+    3.0
+   ],
+   "cost_per_avoided_miss": null,
+   "side": false
+  }
+ ],
+ "consistency": {
+  "so0": {
+   "jaccard": 1.0,
+   "repeats": 5,
+   "warn": false
+  },
+  "so1-f": {
+   "jaccard": 1.0,
+   "repeats": 5,
+   "warn": false
+  },
+  "so1": {
+   "jaccard": 1.0,
+   "repeats": 5,
+   "warn": false
+  },
+  "so1-t": {
+   "jaccard": 1.0,
+   "repeats": 5,
+   "warn": false
+  },
+  "so2": {
+   "jaccard": 1.0,
+   "repeats": 5,
+   "warn": false
+  },
+  "so3": {
+   "jaccard": 1.0,
+   "repeats": 5,
+   "warn": false
+  }
+ }
+}
