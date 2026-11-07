@@ -25,3 +25,10 @@ revisions of ADR-052. The replay missed 2 of 45 (GR-0042, an obligation inside a
 and GR-0045), against 3 before, and its F1 fell 4.3 points, to 0.79, as ADR-049 expected of
 the examples' cost in precision. One recording is one sample; the EX ladder measures the
 prompts with repeats (step 19).
+
+It was written again on 2026-11-07 from the same step-12 recording, after the owner hashed gold
+v4 (Iteration 3, step 15). Gold v4 adds the technology seeds and an expected decision for each
+mandatory clause and changes no requirement, so the scores held: 2 of 45 missed (GR-0042 and
+GR-0045), with the same recall, precision and F1. The scorer's Iteration 3 lines (decisions,
+technology seeds, manifest, options and risk checks) read "not run", because the replay stops
+after `consolidate`.

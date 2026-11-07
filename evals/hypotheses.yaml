@@ -4,8 +4,13 @@
 # step 18: `within_noise` keeps the cheaper rung when it stays within the control's spread,
 # `superiority` needs the rung to beat the control by more than that spread, and
 # `improvement` needs the metric to improve while the `secondary` metric loses at most
-# `max_drop`. bidwright-eval hash-gold freezes this file with the gold, before the first
-# matrix run. Rung names are quoted, because YAML reads a bare on and off as booleans.
+# `max_drop`. Iteration 3 adds `keep_or_drop` for the ladders (section 4.11; a margin is
+# met when the interval's low end is at least minus the margin, ADR-054), and for S-12's
+# scorecard check (ADR-055) `worst_repeat`, which passes when no repeat is worse than the
+# control's worst, a `direction: higher` for a metric that counts up, and `checks`, several
+# metrics decided on one rung. bidwright-eval hash-gold freezes this file with the gold,
+# before the first matrix run. Rung names are quoted, because YAML reads a bare on and off
+# as booleans.
 s03-batch:
   control: "b10"
   rungs:
@@ -19,3 +24,48 @@ s13-second-pass:
   control: "off"
   rungs:
     "on": {metric: missed_mandatory_count, kind: improvement, secondary: {metric: precision_low, max_drop: 0.03}, hypothesis: "The second pass lowers the median misses and costs at most 3 points of precision"}
+ex-ladder:
+  control: "ex0"
+  rungs:
+    "ex1": {metric: missed_mandatory_count, kind: keep_or_drop, direction: lower, margin: 1, secondary: {metric: precision_low, direction: higher}, hypothesis: "Bare extraction without triage or coverage loses no more than 1 additional mandatory requirement than the baseline while improving precision"}
+    "ex2": {metric: missed_mandatory_count, kind: keep_or_drop, direction: lower, margin: 1, secondary: {metric: precision_low, direction: higher}, hypothesis: "Full context without triage or coverage loses no more than 1 additional mandatory requirement while improving precision"}
+    "ex3": {metric: missed_mandatory_count, kind: keep_or_drop, direction: lower, margin: 1, secondary: {metric: precision_low, direction: higher}, hypothesis: "Triage and coverage without second pass lose no more than 1 additional mandatory requirement while improving precision"}
+    "ex4": {metric: missed_mandatory_count, kind: keep_or_drop, direction: lower, margin: 1, secondary: {metric: precision_low, direction: higher}, hypothesis: "Full extraction with second pass loses no more than 1 additional mandatory requirement while improving precision"}
+so-ladder:
+  control: "so0"
+  rungs:
+    "so1-f": {metric: gap_assertions, kind: keep_or_drop, direction: lower, margin: 0, secondary: {metric: approach_mapping, direction: higher}, hypothesis: "The fixed retrieval asserts no more gaps than the one-call baseline and maps more binding requirements"}
+    "so1": {metric: gap_assertions, kind: keep_or_drop, direction: lower, margin: 0, secondary: {metric: approach_mapping, direction: higher}, hypothesis: "Decide agent asserts no more gaps than the one-call baseline and maps more binding requirements"}
+    "so1-t": {metric: gap_assertions, kind: keep_or_drop, direction: lower, margin: 0, secondary: {metric: approach_mapping, direction: higher}, compare_to: "so1", hypothesis: "Reflection after a failed tool call asserts no more gaps than decide alone and maps more binding requirements"}
+    "so2": {metric: gap_assertions, kind: keep_or_drop, direction: lower, margin: 0, secondary: {metric: approach_mapping, direction: higher}, hypothesis: "Independent assessment asserts no more gaps than the baseline and maps more binding requirements"}
+    "so3": {metric: gap_assertions, kind: keep_or_drop, direction: lower, margin: 0, secondary: {metric: approach_mapping, direction: higher}, hypothesis: "Full manifest generation asserts no more gaps than the baseline and maps more binding requirements"}
+rk-ladder:
+  control: "rk0"
+  rungs:
+    "rk1-f": {metric: risk_seed_recall, kind: keep_or_drop, direction: higher, secondary: {metric: generic_risks_rejected, direction: lower}, hypothesis: "Fixed risk retrieval achieves higher risk seed recall with fewer generic risks rejected"}
+    "rk1": {metric: risk_seed_recall, kind: keep_or_drop, direction: higher, secondary: {metric: generic_risks_rejected, direction: lower}, hypothesis: "Risk agent achieves higher risk seed recall with fewer generic risks rejected"}
+    "rk1-t": {metric: risk_seed_recall, kind: keep_or_drop, direction: higher, secondary: {metric: generic_risks_rejected, direction: lower}, compare_to: "rk1", hypothesis: "Risk reflection achieves higher risk seed recall than risk agent alone with fewer generic risks rejected"}
+s12-cards:
+  control: "off"
+  rungs:
+    "REQ": {metric: violations, kind: superiority, hypothesis: "The REQ cards lower the violations of their cases on extract and consolidate by more than the off runs' spread"}
+    "CFG": {metric: violations, kind: superiority, hypothesis: "The CFG cards lower the violations of their cases on consolidate by more than the off runs' spread"}
+    "BA": {metric: violations, kind: superiority, hypothesis: "The BA cards lower the violations of their cases on decide, assess, options and blueprint by more than the off runs' spread"}
+    "GOV": {metric: violations, kind: superiority, hypothesis: "The GOV cards lower the violations of their cases on options by more than the off runs' spread"}
+    "DEL": {metric: violations, kind: superiority, hypothesis: "The DEL cards lower the violations of their cases on blueprint by more than the off runs' spread"}
+    "BEN": {metric: violations, kind: superiority, hypothesis: "The BEN cards lower the violations of their cases on blueprint by more than the off runs' spread"}
+    "RISK": {metric: violations, kind: superiority, hypothesis: "The RISK cards lower the violations of their cases on risk by more than the off runs' spread"}
+# S-12's scorecard check (ADR-055): the hero package in step 20's configuration. `on` holds
+# every family whose cases passed; the family rungs are the fallback, run only when `on`
+# fails, one family each.
+s12-scorecard:
+  control: "off"
+  rungs:
+    "on": {checks: [{metric: missed_mandatory_count, kind: within_noise}, {metric: seeded_gaps_claimed, kind: worst_repeat}, {metric: risk_seed_recall, kind: within_noise, direction: higher}], hypothesis: "The families whose cases passed, on together, keep missed mandatory requirements and risk-seed recall within the off runs' spread and claim no seeded gap in a repeat beyond the off runs' worst"}
+    "req": {checks: [{metric: missed_mandatory_count, kind: within_noise}, {metric: seeded_gaps_claimed, kind: worst_repeat}, {metric: risk_seed_recall, kind: within_noise, direction: higher}], hypothesis: "The REQ cards alone keep the same three measures, when the combined rung fails"}
+    "cfg": {checks: [{metric: missed_mandatory_count, kind: within_noise}, {metric: seeded_gaps_claimed, kind: worst_repeat}, {metric: risk_seed_recall, kind: within_noise, direction: higher}], hypothesis: "The CFG cards alone keep the same three measures, when the combined rung fails"}
+    "ba": {checks: [{metric: missed_mandatory_count, kind: within_noise}, {metric: seeded_gaps_claimed, kind: worst_repeat}, {metric: risk_seed_recall, kind: within_noise, direction: higher}], hypothesis: "The BA cards alone keep the same three measures, when the combined rung fails"}
+    "gov": {checks: [{metric: missed_mandatory_count, kind: within_noise}, {metric: seeded_gaps_claimed, kind: worst_repeat}, {metric: risk_seed_recall, kind: within_noise, direction: higher}], hypothesis: "The GOV cards alone keep the same three measures, when the combined rung fails"}
+    "del": {checks: [{metric: missed_mandatory_count, kind: within_noise}, {metric: seeded_gaps_claimed, kind: worst_repeat}, {metric: risk_seed_recall, kind: within_noise, direction: higher}], hypothesis: "The DEL cards alone keep the same three measures, when the combined rung fails"}
+    "ben": {checks: [{metric: missed_mandatory_count, kind: within_noise}, {metric: seeded_gaps_claimed, kind: worst_repeat}, {metric: risk_seed_recall, kind: within_noise, direction: higher}], hypothesis: "The BEN cards alone keep the same three measures, when the combined rung fails"}
+    "risk": {checks: [{metric: missed_mandatory_count, kind: within_noise}, {metric: seeded_gaps_claimed, kind: worst_repeat}, {metric: risk_seed_recall, kind: within_noise, direction: higher}], hypothesis: "The RISK cards alone keep the same three measures, when the combined rung fails"}
