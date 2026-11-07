@@ -1,14 +1,44 @@
 {
   "option": {
     "option_id": "OPT-5",
-    "name": "Benefits Hypothesis Option",
-    "summary": "Value and benefits realization plan",
+    "name": "Digital self-service",
+    "summary": "Move licence applications to online self-service.",
     "approach": [],
     "assumptions": []
   },
-  "needs": [],
+  "needs": [
+    {
+      "need_id": "NEED-S12-BP5",
+      "origin": "RFP",
+      "topic": "Benefits",
+      "text": "The Council wants to reduce the cost and time of processing licence applications.",
+      "requirements": [
+        {
+          "id": "REQ-305",
+          "statement": "The supplier shall describe the benefits of the service.",
+          "modality": "shall",
+          "quote": "The supplier shall describe the benefits of the service.",
+          "src_ids": [
+            "SRC-305"
+          ]
+        }
+      ],
+      "excerpts": [],
+      "discrepancy_ids": [],
+      "question_ids": []
+    }
+  ],
   "claims": [],
-  "scope_in": [{"id": "SC-05", "text": "Benefits realization"}],
+  "scope_in": [
+    {
+      "id": "SC-01",
+      "text": "Benefits realization"
+    },
+    {
+      "id": "SC-02",
+      "text": "Online applications"
+    }
+  ],
   "scope_out": [],
   "constraints": [],
   "never": []

@@ -141,9 +141,11 @@ def test_a_development_run_replays_with_no_network(tmp_path: Path) -> None:
         json.loads(line)
         for line in (replay.run_dir / "tool_calls.jsonl").read_text(encoding="utf-8").splitlines()
     ]
-    risk = [c for c in calls if c["agent"] == "risk"]
-    assert [(c["tool"], c["turn"], c["status"]) for c in risk] == [("search_rfp", 1, "OK")]
-    assert risk[0]["data"] and risk[0]["reason"] is None
+    # `risk` answers in one call by default (ADR-059); `decide` keeps the run's tool loop.
+    assert not [c for c in calls if c["agent"] == "risk"]
+    decide = [c for c in calls if c["agent"] == "decide"]
+    assert decide and all(c["status"] in ("OK", "EMPTY") for c in decide)
+    assert any(c["status"] == "OK" and c["data"] and c["reason"] is None for c in decide)
 
 
 class BrokenApproach(RuleBackend):
@@ -399,7 +401,7 @@ def test_every_tool_call_matches_agents_yaml(tmp_path: Path, no_network: None) -
     result, _ = replay("demo", tmp_path)
     agents = load_config().agents.agents
     calls = _records(result.run_dir, "tool_calls.jsonl")
-    assert {c["agent"] for c in calls} >= {"decide", "risk"}
+    assert {c["agent"] for c in calls} >= {"decide"}, "risk answers in one call (ADR-059)"
     for call in calls:
         assert call["tool"] in agents[call["agent"]].tools, call
 

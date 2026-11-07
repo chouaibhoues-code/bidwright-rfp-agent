@@ -5,14 +5,16 @@
  "gold_sha256": "c5422494a680790f3405ca5cd201489b8ad2e05fb469d391e64e28c9ee0cf30a",
  "status": "COMPLETED",
  "missed_mandatory": [
+  "GR-0030",
   "GR-0042",
   "GR-0045"
  ],
  "missed_mandatory_strict": [
+  "GR-0030",
   "GR-0042",
   "GR-0045"
  ],
- "missed_mandatory_count": 2,
+ "missed_mandatory_count": 3,
  "captured": [
   "GR-0001",
   "GR-0002",
@@ -43,7 +45,6 @@
   "GR-0027",
   "GR-0028",
   "GR-0029",
-  "GR-0030",
   "GR-0031",
   "GR-0032",
   "GR-0033",
@@ -68,7 +69,7 @@
   "GR-0054",
   "GR-0055"
  ],
- "missed_mandatory_strict_count": 2,
+ "missed_mandatory_strict_count": 3,
  "missed_hazards": [],
  "mandatory_total": 45,
  "hazards_total": 9,
@@ -76,6 +77,7 @@
   "guard": [],
   "parse": [],
   "extract": [
+   "GR-0030",
    "GR-0042",
    "GR-0045"
   ],
@@ -83,6 +85,14 @@
   "consolidate": []
  },
  "misses": [
+  {
+   "gold_id": "GR-0030",
+   "stage": "extract",
+   "reason": "NOT_BINDING",
+   "src_ids": [
+    "SRC-0168"
+   ]
+  },
   {
    "gold_id": "GR-0042",
    "stage": "extract",
@@ -101,13 +111,13 @@
   }
  ],
  "cue_recall": 0.8444,
- "recall": 0.9636,
- "precision_low": 0.6709,
+ "recall": 0.9455,
+ "precision_low": 0.7123,
  "precision_high": 1.0,
- "f1": 0.791,
- "f1_high": 0.9815,
+ "f1": 0.8125,
+ "f1_high": 0.972,
  "recall_by_kind": {
-  "mandatory": 0.9556,
+  "mandatory": 0.9333,
   "optional": 1.0
  },
  "recall_by_implicit": {
@@ -117,7 +127,7 @@
   "definition": 0.0,
   "explicit": 1.0,
   "passive_predicate": 0.5,
-  "reserved_right": 1.0,
+  "reserved_right": 0.0,
   "table_cell": 1.0
  },
  "disposition_accuracy": 0.9545,
@@ -128,7 +138,7 @@
   "requirement": 0.9455
  },
  "modality_accuracy": 1.0,
- "zone_accuracy": 0.8302,
+ "zone_accuracy": 0.8269,
  "merged": [],
  "duplicate": [],
  "false_positive_on_distractors": [],
@@ -144,21 +154,16 @@
   "REQ-0032",
   "REQ-0034",
   "REQ-0047",
-  "REQ-0067",
-  "REQ-0068",
-  "REQ-0069",
-  "REQ-0070",
-  "REQ-0071",
-  "REQ-0090",
-  "REQ-0091",
+  "REQ-0083",
+  "REQ-0084",
+  "REQ-0086",
+  "REQ-0089",
+  "REQ-0092",
   "REQ-0093",
-  "REQ-0096",
-  "REQ-0099",
-  "REQ-0100",
-  "REQ-0102",
-  "REQ-0126",
-  "REQ-0127",
-  "REQ-0128"
+  "REQ-0095",
+  "REQ-0119",
+  "REQ-0120",
+  "REQ-0121"
  ],
  "hidden_gold": {
   "clauses_total": 0,
@@ -366,10 +371,10 @@
   "mismatches": []
  },
  "options_reproduced": null,
- "requests": 23,
- "tokens": 179518,
+ "requests": 19,
+ "tokens": 134960,
  "cost_usd": 0.0,
- "shadow_cost_usd": 0.2331554,
+ "shadow_cost_usd": 0.1728532,
  "models": [
   "gemini-3.5-flash-lite"
  ]

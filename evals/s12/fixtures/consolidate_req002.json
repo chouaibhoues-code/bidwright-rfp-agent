@@ -3,23 +3,21 @@
   "members": [
     {
       "id": "REQ-101",
-      "src_id": "SRC-002",
-      "statement": "Data retention is 5 years",
+      "statement": "All project data shall be retained for five (5) years from the end of the contract.",
       "modality": "shall",
       "disposition": "BINDING",
-      "quote": "Data retention is 5 years",
+      "quote": "All project data shall be retained for five (5) years from the end of the contract.",
       "doc_id": "DOC-01",
-      "section_path": "4.1"
+      "section_path": "4.1 Data retention"
     },
     {
       "id": "REQ-102",
-      "src_id": "SRC-002",
-      "statement": "All financial logs retained for 7 years",
+      "statement": "Financial records shall be retained for seven (7) years from the end of the contract.",
       "modality": "shall",
       "disposition": "BINDING",
-      "quote": "All financial logs retained for 7 years",
+      "quote": "Financial records shall be retained for seven (7) years from the end of the contract.",
       "doc_id": "DOC-01",
-      "section_path": "4.1"
+      "section_path": "9.2 Financial records"
     }
   ],
   "context": [],

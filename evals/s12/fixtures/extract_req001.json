@@ -1,16 +1,16 @@
 {
   "batch_id": "BATCH-S12-REQ001",
+  "context": [],
+  "terms": [],
   "passages": [
     {
-      "src_id": "SRC-001",
-      "text": "The Contractor shall provide housing management reporting. Verification shall be by accepted inspection.",
+      "src_id": "SRC-011",
+      "text": "The Contractor shall provide the Authority with performance reports on the service, to the Authority's satisfaction.",
       "doc_id": "DOC-01",
-      "section_path": "3.1 Requirements",
+      "section_path": "3.1 Reporting",
       "lead_in": "",
       "neighbor": "",
       "term": ""
     }
-  ],
-  "context": [],
-  "terms": []
+  ]
 }

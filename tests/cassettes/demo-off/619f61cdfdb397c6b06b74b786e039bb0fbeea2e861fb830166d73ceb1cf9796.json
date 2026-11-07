@@ -1,0 +1,35 @@
+{
+ "key": "sha256:619f61cdfdb397c6b06b74b786e039bb0fbeea2e861fb830166d73ceb1cf9796",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "RiskRegister",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\n  \"risks\": [\n    {\n      \"condition\": \"The proposal must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC under REQ-0001.\",\n      \"event\": \"The final proposal document exceeds 20 pages or is uploaded after the deadline due to network delays.\",\n      \"effect\": \"The proposal is rejected without evaluation, disqualifying the bid entirely.\",\n      \"assumptions\": [\"The buyer manages proposal submission formatting independently.\"],\n      \"owner_role\": \"Bid manager\",\n      \"trigger\": \"The draft reaches 18 pages or the upload date approaches 2026-11-30.\",\n      \"responses\": [\n        \"Enforce a strict 18-page limit on the draft.\",\n        \"Upload the proposal 24 hours in advance of the deadline.\"\n      ],\n      \"residual_exposure\": \"A minor risk of portal downtime on the final day, mitigated by early submission.\",\n      \"evidence_src_ids\": [\"REQ-0001\"],\n      \"affects\": [\"REQ-0001\"]\n    },\n    {\n      \"condition\": \"The service must be live for students by 2027-01-11 under REQ-0012, while work package 3.1 requires 20 to 40 days and depends on work packages 1.2 and 2.1.\",\n      \"event\": \"The prerequisite work packages take longer than expected, delaying the spring enrollment go-live past 2027-01-11.\",\n      \"effect\": \"Students cannot use the required signing service on the first day of spring enrollment, breaching the contract.\",\n      \"assumptions\": [\"Migration and support requirements are met within the stated partial claims.\"],\n      \"owner_role\": \"Delivery lead\",\n      \"trigger\": \"Work package 1.2 or 2.1 slips past its estimated low days.\",\n      \"responses\": [\n        \"Prioritize core signing and REST API integration to meet the 2027-01-11 deadline.\",\n        \"De-scope non-mandatory features temporarily to protect the go-live date.\"\n      ],\n      \"residual_exposure\": \"Potential delay in secondary features if high-end day estimates for work packages are realized.\",\n      \"evidence_src_ids\": [\"REQ-0012\"],\n      \"affects\": [\"REQ-0012\"]\n    }\n  ],\n  \"open_questions\": [\n    {\n      \"text\": \"Are there specific format or schema details available for the College's existing REST API mentioned in REQ-0008?\",\n      \"src_ids\": [\"REQ-0008\"]\n    }\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 2319,
+   "tokens_out": 635,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"risks\": [\n    {\n      \"condition\": \"The proposal must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC under REQ-0001.\",\n      \"event\": \"The final proposal document exceeds 20 pages or is uploaded after the deadline due to network delays.\",\n      \"effect\": \"The proposal is rejected without evaluation, disqualifying the bid entirely.\",\n      \"assumptions\": [\"The buyer manages proposal submission formatting independently.\"],\n      \"owner_role\": \"Bid manager\",\n      \"trigger\": \"The draft reaches 18 pages or the upload date approaches 2026-11-30.\",\n      \"responses\": [\n        \"Enforce a strict 18-page limit on the draft.\",\n        \"Upload the proposal 24 hours in advance of the deadline.\"\n      ],\n      \"residual_exposure\": \"A minor risk of portal downtime on the final day, mitigated by early submission.\",\n      \"evidence_src_ids\": [\"REQ-0001\"],\n      \"affects\": [\"REQ-0001\"]\n    },\n    {\n      \"condition\": \"The service must be live for students by 2027-01-11 under REQ-0012, while work package 3.1 requires 20 to 40 days and depends on work packages 1.2 and 2.1.\",\n      \"event\": \"The prerequisite work packages take longer than expected, delaying the spring enrollment go-live past 2027-01-11.\",\n      \"effect\": \"Students cannot use the required signing service on the first day of spring enrollment, breaching the contract.\",\n      \"assumptions\": [\"Migration and support requirements are met within the stated partial claims.\"],\n      \"owner_role\": \"Delivery lead\",\n      \"trigger\": \"Work package 1.2 or 2.1 slips past its estimated low days.\",\n      \"responses\": [\n        \"Prioritize core signing and REST API integration to meet the 2027-01-11 deadline.\",\n        \"De-scope non-mandatory features temporarily to protect the go-live date.\"\n      ],\n      \"residual_exposure\": \"Potential delay in secondary features if high-end day estimates for work packages are realized.\",\n      \"evidence_src_ids\": [\"REQ-0012\"],\n      \"affects\": [\"REQ-0012\"]\n    }\n  ],\n  \"open_questions\": [\n    {\n      \"text\": \"Are there specific format or schema details available for the College's existing REST API mentioned in REQ-0008?\",\n      \"src_ids\": [\"REQ-0008\"]\n    }\n  ]\n}",
+     "thought_signature": "EmAKXgFpFH0TpOaERtJB9Z8a3tRHo0lq8AyUz3jjKPLw8bhw__Oc4pH1HXrWaUx4GeaiJ-OaxFX2OQV0yqD4utFeC4Wx9obHNV1BtRDazKQrfAL2SWQl23mS13yhJ2VcX3k="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-07T19:27:11Z"
+}

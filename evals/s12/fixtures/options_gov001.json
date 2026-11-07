@@ -1,22 +1,27 @@
 {
   "factors": [
     {
-      "factor_id": "F-02",
-      "name": "Regulatory Compliance",
-      "weight": "50%",
-      "scoring": "gate",
+      "factor_id": "F-03",
+      "name": "Data protection compliance",
+      "weight": "pass/fail",
+      "scoring": "gate: a fail excludes the bid",
       "status": "IN_SCOPE"
     }
   ],
   "needs": [
     {
-      "need_id": "NEED-S12-OPT02",
+      "need_id": "NEED-S12-OPT03",
       "origin": "RFP",
-      "text": "Statutory data protection",
-      "status": "COVERED",
+      "text": "Processing of residents' personal data under data protection law",
+      "status": "PARTIAL",
       "claims": []
     }
   ],
   "domain_items": [],
-  "gaps": []
+  "gaps": [
+    {
+      "need_id": "NEED-S12-OPT03",
+      "gap": "No data protection impact assessment on record."
+    }
+  ]
 }

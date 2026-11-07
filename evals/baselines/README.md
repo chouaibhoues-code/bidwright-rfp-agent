@@ -32,3 +32,10 @@ mandatory clause and changes no requirement, so the scores held: 2 of 45 missed 
 GR-0045), with the same recall, precision and F1. The scorer's Iteration 3 lines (decisions,
 technology seeds, manifest, options and risk checks) read "not run", because the replay stops
 after `consolidate`.
+
+It was written again on 2026-11-07, after the EX ladder turned the second pass off (ADR-057):
+the hero recording was filled again on `paid` with the new defaults, which kept step 12's
+first-pass calls and recorded `consolidate` again on the changed records. The replay misses 3
+of 45 (GR-0030, a buyer's reserved right, which step 12's second pass had caught, and GR-0042
+and GR-0045); recall falls from 96.4% to 94.5%, low precision rises from 67.1% to 71.2%, and F1
+from 0.79 to 0.81.

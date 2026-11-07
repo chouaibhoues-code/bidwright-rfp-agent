@@ -1,0 +1,35 @@
+{
+ "key": "sha256:cee75c910e8658d941380ba2a5d4ae0c83c1dcda2307c97dc1e99faff5dcd895",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\n  \"title\": \"Risks and assumptions\",\n  \"text\": \"The main risk to this proposal is exceeding the 20-page limit or missing the upload deadline due to network delays, which would result in rejection [RSK-001]. We would enforce an 18-page limit on the draft and upload the proposal 24 hours in advance [RSK-001]. A further risk is that prerequisite work packages take longer than expected and delay the spring enrollment go-live past 2027-01-11, breaching the contract [RSK-002]. We would prioritize core signing and REST API integration to meet the deadline, and de-scope non-mandatory features temporarily [RSK-002]. Additionally, it remains an open question whether specific format or schema details are available for the College's existing REST API mentioned in REQ-0008 [Q-01].\",\n  \"cited_ids\": [\n    \"RSK-001\",\n    \"RSK-002\",\n    \"Q-01\"\n  ]\n}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1330,
+   "tokens_out": 242,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\n  \"title\": \"Risks and assumptions\",\n  \"text\": \"The main risk to this proposal is exceeding the 20-page limit or missing the upload deadline due to network delays, which would result in rejection [RSK-001]. We would enforce an 18-page limit on the draft and upload the proposal 24 hours in advance [RSK-001]. A further risk is that prerequisite work packages take longer than expected and delay the spring enrollment go-live past 2027-01-11, breaching the contract [RSK-002]. We would prioritize core signing and REST API integration to meet the deadline, and de-scope non-mandatory features temporarily [RSK-002]. Additionally, it remains an open question whether specific format or schema details are available for the College's existing REST API mentioned in REQ-0008 [Q-01].\",\n  \"cited_ids\": [\n    \"RSK-001\",\n    \"RSK-002\",\n    \"Q-01\"\n  ]\n}",
+     "thought_signature": "EmAKXgFpFH0TaLjKxV4qKe5xmNznXNe8ra6kZSqcuo9jLAoklMuJPa1sYi5OoGqCvVy_4gAvgeOOisTyy_8ErezNducgf1huK6eZAYacbo2tF3o8dYEBK4jjhZLQZHTZBv0="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-07T19:27:12Z"
+}

@@ -1,15 +1,58 @@
 {
   "option": {
     "option_id": "OPT-2",
-    "name": "Deliverable WBS Option",
-    "summary": "Full WBS breakdown",
+    "name": "Phased delivery",
+    "summary": "Deliver the service in two phases.",
     "approach": [],
     "assumptions": []
   },
-  "needs": [],
+  "needs": [
+    {
+      "need_id": "NEED-S12-BP2",
+      "origin": "RFP",
+      "topic": "Phased delivery",
+      "text": "Deliver configuration, migration and training.",
+      "requirements": [
+        {
+          "id": "REQ-302",
+          "statement": "The supplier shall deliver configuration, data migration and training.",
+          "modality": "shall",
+          "quote": "The supplier shall deliver configuration, data migration and training.",
+          "src_ids": [
+            "SRC-302"
+          ]
+        }
+      ],
+      "excerpts": [],
+      "discrepancy_ids": [],
+      "question_ids": []
+    }
+  ],
   "claims": [],
-  "scope_in": [{"id": "SC-02", "text": "WBS work packages"}],
+  "scope_in": [
+    {
+      "id": "SC-01",
+      "text": "Configuration"
+    },
+    {
+      "id": "SC-02",
+      "text": "Data migration"
+    },
+    {
+      "id": "SC-03",
+      "text": "Training"
+    }
+  ],
   "scope_out": [],
-  "constraints": [],
+  "constraints": [
+    {
+      "id": "CN-01",
+      "text": "The Council's budget for the contract is fixed."
+    },
+    {
+      "id": "CN-02",
+      "text": "Go-live is required in 2027."
+    }
+  ],
   "never": []
 }

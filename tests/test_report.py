@@ -247,3 +247,20 @@ def test_a_rung_with_checks_gets_a_decision_for_each() -> None:
     ]
     assert (misses.passed, gaps.passed, recall.passed) == (True, True, None)
     assert misses.hypothesis == "cards keep the scorecard"
+
+
+def test_a_margin_rung_whose_interval_is_wholly_favorable_is_kept_whatever_its_secondary() -> None:
+    """ADR-056: non-inferiority decides only when the interval holds zero. A rung far better
+    than its control is kept even when the control's secondary sits at a ceiling, as EX0's
+    precision did on the EX ladder; inside the interval, the secondary still decides."""
+    spec = LOWER | {"margin": 1, "secondary": {"metric": "precision_low", "direction": "higher"}}
+    plan = _plan({"r1": spec})
+    control = _runs("missed_mandatory_count", [36, 43, 30, 35, 36], precision_low=[1.0] * 5)
+    rung = _runs("missed_mandatory_count", [1, 1, 4, 1, 1], precision_low=[0.72] * 5)
+    [kept] = _decisions("m", {"c0": control, "r1": rung}, plan)
+    assert kept.passed is True and kept.interval is not None and kept.interval[0] > 0
+    assert "precision_low gain -0.28" in kept.detail and "superior" in kept.detail
+    near = _runs("missed_mandatory_count", [1, 2, 1, 2, 1], precision_low=[0.70] * 5)
+    [dropped] = _decisions("m", {"c0": rung, "r1": near}, plan)
+    assert dropped.interval is not None and dropped.interval[0] <= 0
+    assert dropped.passed is False, "inside the interval, the lower precision drops it"

@@ -2,15 +2,17 @@
   "need": {
     "need_id": "NEED-S12-BA001",
     "origin": "RFP",
-    "topic": "Legacy GIS Integration",
-    "text": "",
+    "topic": "Legacy GIS integration",
+    "text": "Integration with the buyer's existing geographic information system.",
     "requirements": [
       {
         "id": "REQ-201",
-        "statement": "The system must interface with the buyer legacy GIS whose internal database schema is unstated.",
+        "statement": "The solution shall exchange property locations with the Council's existing geographic information system.",
         "modality": "shall",
-        "quote": "interface with the buyer legacy GIS",
-        "src_ids": ["SRC-010"]
+        "quote": "The solution shall exchange property locations with the Council's existing geographic information system.",
+        "src_ids": [
+          "SRC-201"
+        ]
       }
     ],
     "excerpts": [],

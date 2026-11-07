@@ -72,6 +72,10 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 | 053 | Review records, run control in the UI, and Phoenix's sessions and annotations | accepted |
 | 054 | A non-inferiority rung may rise by no more than its margin | accepted |
 | 055 | S-12's scorecard check runs on the hero package, combined and shared with step 20 | accepted |
+| 056 | A rung clearly better than its comparator is kept whatever its secondary metric | accepted |
+| 057 | Extraction keeps full context, triage and coverage, and the second pass goes off | accepted |
+| 058 | The solution default stays the manifest | accepted |
+| 059 | The risk register comes from one call | accepted |
 
 ### ADR-001: Gemini through the native `google-genai` SDK
 
@@ -718,7 +722,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-028: The `extract` prompt drops its examples, and the second pass is on
 
-**Status:** accepted, 2026-11-04, under the decision rules the plan fixed before each spike ran and hashed with the gold in `evals/hypotheses.yaml`; the owner chose to run both spikes in Iteration 1 (CH-86). Its first decision, the examples dropped, is superseded by ADR-049 (2026-11-05), after ADR-030's correction reversed S-10.
+**Status:** accepted, 2026-11-04, under the decision rules the plan fixed before each spike ran and hashed with the gold in `evals/hypotheses.yaml`; the owner chose to run both spikes in Iteration 1 (CH-86). Its first decision, the examples dropped, is superseded by ADR-049 (2026-11-05), after ADR-030's correction reversed S-10. Its second decision, the second pass on, is superseded by ADR-057 (2026-11-07).
 
 **Context.** S-10 asks whether the worked examples in `extract.md` earn their tokens: they stay only if they lower the median missed mandatory requirements by more than the spread of the prompt without them (`superiority`). S-13 asks whether a second reading of `OBLIGATION` zones, over the passages the first reading found nothing binding in, lowers the median misses while costing at most 3 points of low precision (`improvement`). Both ran on the hero package to `coverage`, with packs of 40 and five repeats a rung, S-13 on the prompt S-10 chose.
 
@@ -1148,7 +1152,7 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 
 ### ADR-048: How the ablation runs
 
-**Status:** accepted, 2026-11-05, by the owner (D-10, option C). It departs from the Master-Plan once: the SO rungs read a frozen run of the EX3 configuration to `brief`, and the RK rungs a frozen full run. Its margin test, `lo > -m`, is superseded by ADR-054 (2026-11-06).
+**Status:** accepted, 2026-11-05, by the owner (D-10, option C). It departs from the Master-Plan once: the SO rungs read a frozen run of the EX3 configuration to `brief`, and the RK rungs a frozen full run. Its margin test, `lo > -m`, is superseded by ADR-054 (2026-11-06). ADR-056 (2026-11-07) keeps a rung whose interval is wholly favorable whatever its secondary metric, and ADR-057 departs from its defaults rule for the EX ladder.
 
 **Context.** The Master-Plan's keep-or-drop rule (CH-54) decides each rung from 5 repeats against the last configuration kept. An EX3 run stopped at `coverage` holds no groups or brief for the solution path, and the full `risk` reads a manifest.
 
@@ -1313,6 +1317,78 @@ ADR-001 to ADR-004 were taken while building Iteration 0a. ADR-005 to ADR-016 re
 **Reverse if.** A single family has to be switched on or off on its own evidence before the combination is tested, which per-family rungs give directly.
 
 **Provenance.** The owner's decision of 2026-11-06; the Master-Plan's S-12 rule; section 4.11.
+
+### ADR-056: A rung clearly better than its comparator is kept whatever its secondary metric
+
+**Status:** accepted, 2026-11-07, by the owner, after a sequential-thinking review; adopted after the EX ladder's results and before the SO ladder was scored. It replaces the sentence of `docs/designs/iteration-3.md`, section 4.11, that has non-inferiority replace the superiority test on a rung with a margin; ADR-048 and ADR-054 stand otherwise.
+
+**Context.** Under section 4.11, a rung with a margin `m` was kept only when `lo >= -m` and its secondary metric's median improved, whatever its interval showed. The non-inferiority test assumes a comparator already near zero, where no gain can be shown. The EX ladder's first comparison broke that assumption: EX0's one call missed a median of 36 of 45 mandatory requirements and returned 3 to 16 records, all of them gold, so its low precision sat at 1.0. EX1 to EX4 cut the median misses to 1 or 2 (d 34 to 35, 90% intervals [28, 41] to [29, 42]), and every one was dropped, because none could raise a precision already at its ceiling. Taken literally, the defaults would have returned to EX0. The SO ladder carried the same risk: a one-shot SO0 that mapped every binding requirement would have dropped every SO rung.
+
+**Decision.** A rung with a margin is kept when `lo > 0`, as a rung without one is. Only when its interval holds zero do non-inferiority (`lo >= -m`) and the secondary metric's gain decide. The report's detail names a superior rung and still prints its secondary gain. `evals/hypotheses.yaml` is unchanged, so the owner's hash stands.
+
+**Consequences.** The EX ladder is reported under both rules: the designed rule's report is kept as `evals/results/ex-ladder/report-designed-rule.md`, and `report.md` gives the amended verdicts, with this ADR stating that the rule changed after those results were seen. The SO ladder was scored only under the amended rule, which was fixed before its scores were read. The RK ladder has no margins and is unaffected. A rung can now be kept while its secondary falls, as SO3 is (ADR-058); the report prints that fall beside the verdict.
+
+**Options.** Keeping the designed rule, which drops every EX rung and leaves the defaults at EX0; a new secondary for the EX ladder, chosen after the results, which would select the answer; a guard that the secondary may not fall beyond the control's spread, which repeats the ceiling problem on EX1.
+
+**Confirmation.** `tests/test_report.py`, `test_a_margin_rung_whose_interval_is_wholly_favorable_is_kept_whatever_its_secondary`; the EX and SO reports.
+
+**Reverse if.** A rung kept on superiority alone proves worse on its secondary metric in a later set of repeats by more than its own spread.
+
+**Provenance.** The owner's decision of 2026-11-07; the Master-Plan's keep rule (CH-54), whose non-inferiority clause names metrics near zero; ADR-048; ADR-054.
+
+### ADR-057: Extraction keeps full context, triage and coverage, and the second pass goes off
+
+**Status:** accepted, 2026-11-07, by the owner, after a sequential-thinking review. It departs from ADR-048's "the last rung kept sets the defaults" for the EX ladder, and supersedes ADR-028's second decision, the second pass on.
+
+**Context.** The EX ladder ran 25 runs on the hero package to `coverage`, on the free profile ($0). Missed mandatory requirements, median (range): EX0 36 (30-43), EX1 1 (1-4), EX2 2 (2-3), EX3 1 (1-2), EX4 1 (1-2). Under ADR-056, EX1 (bare context, no triage, no coverage loop) is kept against EX0, and EX2, EX3 and EX4 are dropped against EX1: their intervals hold zero ([-2, 2], [-1, 2], [-1, 2]) and their low precision is 1 to 2 points lower (0.70 against 0.72), a gap inside each rung's own range (EX1 0.70-0.76, EX3 0.69-0.77). The ladder stops at `coverage`, so it cannot see what triage and the loop feed later. Two measures in the same runs can: zone accuracy, 0.67-0.69 for EX1 against 0.79-0.89 for EX3, and the closure check that every passage gets exactly one disposition, which EX1 failed in 3 of 5 runs and EX3 in none. Zones decide which `EVALUATION` and `INSTRUCTION` records `brief` reads, and so the factors and weights `options` scores. No run of EX1, EX3 or EX4 missed one of the 9 submission hazards. EX4 adds the second pass to EX3 with the same first-pass calls per repeat, from the response cache, so the two form pairs: the pass changed no capture in 5 of 5 pairs (d 0, interval [-1, 1], no precision gain), for 13 calls against 8 and 156K tokens against 92K a run. Recording the hero again without the pass, after this decision, showed a sixth pair: step 12's recording had caught GR-0030, a buyer's reserved right, only in the pass, so its replay now misses 3 of 45 where it missed 2; EX3's first repeat missed GR-0030 too, and EX4's pass did not recover it there.
+
+**Decision.** The extraction defaults are EX3's: `extract_context: full`, `triage: true` and `coverage: true` stay, and `second_pass` becomes `false` in `config/limits.yaml`. The second pass drops under the designed rule too, EX4 against EX3. The code of every switch stays.
+
+**Consequences.** Each hero run makes 5 fewer calls. The pass recovered one miss in six paired observations, which the rule cannot tell from noise; the hero baseline, written again from the new recording, holds 3 misses (GR-0030, GR-0042, GR-0045). The defaults rest on the closure check and zone accuracy, not on the ladder's metric, which this ADR states; the ladder did not separate triage from the coverage loop, since EX3 adds both. ADR-028's second pass, from S-13 on gold v2 with the `extract` prompt before its examples returned (ADR-049), found misses the first pass now finds itself.
+
+**Options.** EX1, as the amended rule would set it, which fails the closure check in most runs and lowers zone accuracy; EX4 as built, which spends 5 calls a run for no measured capture.
+
+**Confirmation.** `evals/results/ex-ladder/`, `report.md` and `report-designed-rule.md`; `test_config.py` reads the defaults.
+
+**Reverse if.** A ladder that runs past `coverage` shows triage or the coverage loop adding nothing downstream, or the second pass recovering misses on a gold set the first pass misses.
+
+**Provenance.** The owner's decision of 2026-11-07; ADR-028; ADR-048; ADR-056.
+
+### ADR-058: The solution default stays the manifest
+
+**Status:** accepted, 2026-11-07, by the owner's keep rule (ADR-056), fixed before the SO ladder was scored.
+
+**Context.** The SO ladder ran 30 runs seeded from one EX3 run frozen at `brief` (`so-seed`), 13 on the free profile and 17 on paid after the daily quota ran out ($1.08). Its metric is gap assertions, lower, margin 0, with binding requirements mapped to the approach as the secondary. SO0, SO1-F, SO1, SO1-T and SO2 asserted the same gaps run for run, median 3 (1-3): the assertions sit in the approach text, and the approach call is the same in each rung for the same repeat, so the response cache gave it the same answer. Their claims asserted no seeded gap (seeded gaps claimed 0 in every run that drafts claims). SO3, the manifest, asserted none in any repeat (d 3, interval [1, 3]), while it mapped a median of 64% of binding requirements (56-98%) against SO0's 100%. SO1-F, SO1 and SO2 have intervals of [-2, 2] and no mapping gain, so they are dropped against SO0. SO1-T, the side rung with `reflect`, is dropped against SO1.
+
+**Decision.** SO3 is kept, so `solution: manifest` stays the default, above ADR-048's floor of `assess`. `reflect` stays off for `decide`. The code of every rung stays.
+
+**Consequences.** The manifest removes the gap assertions the approach text made, at a lower mapping of binding requirements, which the evaluation document reports as a weakness. The ladder measured `decide` and `assess` through their claims only, since the approach text was shared; the claims never asserted a seeded gap in any rung.
+
+**Options.** The designed rule, which would drop SO3 on its mapping and leave the default at ADR-048's floor, `assess`, whose approach text asserted a median of 3 gaps.
+
+**Confirmation.** `evals/results/so-ladder/`.
+
+**Reverse if.** A ladder whose rungs draft their own approach text shows a lower rung asserting no gaps while mapping more requirements.
+
+**Provenance.** ADR-048; ADR-056.
+
+### ADR-059: The risk register comes from one call
+
+**Status:** accepted, 2026-11-07, by the owner.
+
+**Context.** The RK ladder ran 20 runs seeded from the first SO3 repeat frozen at `risk` (`rk-seed`), on paid after the free quota ran out ($0.25). Its metric is risk-seed recall, higher, with no margin. Out of the hero's 6 risk seeds, the repeats found: RK0, one call, 1, 1, 0, 0 and 0; RK1-F, the fixed control, 1, 1, 1, 1 and 0; RK1, the agent, 0, 1, 1, 1 and 2; RK1-T, the agent with `reflect`, 1, 2, 1, 1 and 1. RK1-F and RK1 gain one seed at the median (d 1/6, interval [0, 1/6]); a lower bound of 0 is not above zero, so both are dropped. RK1-T is dropped against RK1 (d 0). No rung had a generic risk rejected. The scorer's matching was checked on an RK1 run, which matched RS-01 and RS-04 by their anchors and terms.
+
+**Decision.** `risk_mode` defaults to `oneshot`. `reflect` stays off for `risk`. The agent's code stays behind the flag.
+
+**Consequences.** A hero run's risk step makes 5 calls instead of 8, with 25K tokens against 49K. The code checks on every risk, the six fields and the retry after a generic risk, run in every mode, and the `decide` agent keeps a tool loop in every run, since ADR-048 keeps the solution at `assess` or above. Risk-seed recall is 0 to 2 of 6 in every setting, which the evaluation document states as a limit.
+
+**Options.** Keeping the agent, which the ladder could not show to find more seeds; more seeds or repeats before deciding, which the 1/6 granularity of 6 seeds would need.
+
+**Confirmation.** `evals/results/rk-ladder/`.
+
+**Reverse if.** A ladder with more risk seeds shows the agent finding more of them beyond its interval.
+
+**Provenance.** The owner's decision of 2026-11-07; ADR-048.
 
 ## Failure modes hit
 

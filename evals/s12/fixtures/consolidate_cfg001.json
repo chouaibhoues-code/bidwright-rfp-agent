@@ -3,17 +3,41 @@
   "members": [
     {
       "id": "REQ-105",
-      "src_id": "SRC-004",
-      "statement": "Initial baseline SLA requirement",
+      "statement": "The service shall achieve 99.5% availability, measured monthly.",
       "modality": "shall",
       "disposition": "BINDING",
-      "quote": "Initial baseline SLA requirement",
+      "quote": "The service shall achieve 99.5% availability, measured monthly.",
       "doc_id": "DOC-01",
-      "section_path": "6.0"
+      "section_path": "6.1 Availability"
+    },
+    {
+      "id": "REQ-107",
+      "statement": "Clause 6.1 is amended: the service shall achieve 99.9% availability, measured monthly.",
+      "modality": "shall",
+      "disposition": "BINDING",
+      "quote": "Clause 6.1 is amended: the service shall achieve 99.9% availability, measured monthly.",
+      "doc_id": "DOC-02",
+      "section_path": "Addendum 1, item 3"
     }
   ],
   "context": [],
-  "precedence": [],
-  "precedence_clause": [],
+  "precedence": [
+    {
+      "doc_id": "DOC-02",
+      "role": "addendum",
+      "precedence": 1
+    },
+    {
+      "doc_id": "DOC-01",
+      "role": "main",
+      "precedence": 2
+    }
+  ],
+  "precedence_clause": [
+    {
+      "src_id": "SRC-090",
+      "text": "Where documents conflict, an addendum takes precedence over the main tender document."
+    }
+  ],
   "lint": []
 }

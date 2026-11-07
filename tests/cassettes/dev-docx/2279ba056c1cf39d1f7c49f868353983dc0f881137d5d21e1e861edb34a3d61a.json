@@ -1,0 +1,35 @@
+{
+ "key": "sha256:2279ba056c1cf39d1f7c49f868353983dc0f881137d5d21e1e861edb34a3d61a",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "RiskRegister",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"risks\": [{\"condition\": \"Proposals must be sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12 as one document of no more than 15 pages under REQ-0001.\", \"event\": \"The final document exceeds 15 pages or is sent after 17:00 GMT on 2027-02-12 due to network blockages.\", \"effect\": \"The proposal is rejected without evaluation.\", \"assumptions\": [\"Instructions are adequately covered via external operational documentation.\"], \"owner_role\": \"Bid manager\", \"trigger\": \"The draft exceeds 13 pages or the e-mail is not queued by 15:00 GMT on 2027-02-12.\", \"responses\": [\"Enforce a strict 12-page limit on the draft document.\", \"Send a test e-mail with the attachment size to the Trust's office one day prior.\"], \"residual_exposure\": \"Dependence on the Trust's incoming e-mail server availability at the deadline.\", \"evidence_src_ids\": [\"REQ-0001\"], \"affects\": [\"REQ-0001\"]}, {\"condition\": \"The system must keep all personal data in the United Kingdom under REQ-0008, and historical records are migrated under APP-001.\", \"event\": \"Cloud infrastructure or third-party backup services store personal data outside the United Kingdom during migration.\", \"effect\": \"Breach of mandatory data residency requirements leading to contract termination.\", \"assumptions\": [\"Historic spreadsheets can be successfully mapped to the standard record format.\"], \"owner_role\": \"Technical lead\", \"trigger\": \"A cloud storage bucket is provisioned in a non-UK region during work package 1.1.\", \"responses\": [\"Audit all cloud resource region settings before deploying work package 1.1.\", \"Obtain written confirmation of data center locations from the hosting provider.\"], \"residual_exposure\": \"Controlled by explicit regional pinning, subject to sub-processor verification.\", \"evidence_src_ids\": [\"REQ-0008\", \"APP-001\"], \"affects\": [\"REQ-0008\"]}, {\"condition\": \"The system must be live by 2027-06-30 under REQ-0012, with staff training depending on work packages 1.1 and 2.1.\", \"event\": \"Delays in historic data migration push the staff training schedule past the 2027-06-30 deadline.\", \"effect\": \"The system goes live without trained staff, violating the go-live readiness mandate.\", \"assumptions\": [\"Historic spreadsheets can be successfully mapped to the standard record format.\"], \"owner_role\": \"Delivery lead\", \"trigger\": \"Work package 1.2 exceeds its high estimate of 10 days.\", \"responses\": [\"Run staff training in parallel with the final stages of historic migration using synthetic test data.\", \"De-scope non-essential historic records for day-one migration.\"], \"residual_exposure\": \"Staff may have less familiarity with migrated historical records at go-live.\", \"evidence_src_ids\": [\"REQ-0012\", \"REQ-0011\"], \"affects\": [\"REQ-0012\", \"REQ-0011\"]}], \"open_questions\": [{\"text\": \"What specific format is required for the e-mail submission under REQ-0001 to prevent rejection by the Trust's mail server?\", \"src_ids\": [\"REQ-0001\"]}]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3340,
+   "tokens_out": 775,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"risks\": [{\"condition\": \"Proposals must be sent by e-mail to the Trust's office by 17:00 GMT on 2027-02-12 as one document of no more than 15 pages under REQ-0001.\", \"event\": \"The final document exceeds 15 pages or is sent after 17:00 GMT on 2027-02-12 due to network blockages.\", \"effect\": \"The proposal is rejected without evaluation.\", \"assumptions\": [\"Instructions are adequately covered via external operational documentation.\"], \"owner_role\": \"Bid manager\", \"trigger\": \"The draft exceeds 13 pages or the e-mail is not queued by 15:00 GMT on 2027-02-12.\", \"responses\": [\"Enforce a strict 12-page limit on the draft document.\", \"Send a test e-mail with the attachment size to the Trust's office one day prior.\"], \"residual_exposure\": \"Dependence on the Trust's incoming e-mail server availability at the deadline.\", \"evidence_src_ids\": [\"REQ-0001\"], \"affects\": [\"REQ-0001\"]}, {\"condition\": \"The system must keep all personal data in the United Kingdom under REQ-0008, and historical records are migrated under APP-001.\", \"event\": \"Cloud infrastructure or third-party backup services store personal data outside the United Kingdom during migration.\", \"effect\": \"Breach of mandatory data residency requirements leading to contract termination.\", \"assumptions\": [\"Historic spreadsheets can be successfully mapped to the standard record format.\"], \"owner_role\": \"Technical lead\", \"trigger\": \"A cloud storage bucket is provisioned in a non-UK region during work package 1.1.\", \"responses\": [\"Audit all cloud resource region settings before deploying work package 1.1.\", \"Obtain written confirmation of data center locations from the hosting provider.\"], \"residual_exposure\": \"Controlled by explicit regional pinning, subject to sub-processor verification.\", \"evidence_src_ids\": [\"REQ-0008\", \"APP-001\"], \"affects\": [\"REQ-0008\"]}, {\"condition\": \"The system must be live by 2027-06-30 under REQ-0012, with staff training depending on work packages 1.1 and 2.1.\", \"event\": \"Delays in historic data migration push the staff training schedule past the 2027-06-30 deadline.\", \"effect\": \"The system goes live without trained staff, violating the go-live readiness mandate.\", \"assumptions\": [\"Historic spreadsheets can be successfully mapped to the standard record format.\"], \"owner_role\": \"Delivery lead\", \"trigger\": \"Work package 1.2 exceeds its high estimate of 10 days.\", \"responses\": [\"Run staff training in parallel with the final stages of historic migration using synthetic test data.\", \"De-scope non-essential historic records for day-one migration.\"], \"residual_exposure\": \"Staff may have less familiarity with migrated historical records at go-live.\", \"evidence_src_ids\": [\"REQ-0012\", \"REQ-0011\"], \"affects\": [\"REQ-0012\", \"REQ-0011\"]}], \"open_questions\": [{\"text\": \"What specific format is required for the e-mail submission under REQ-0001 to prevent rejection by the Trust's mail server?\", \"src_ids\": [\"REQ-0001\"]}]}",
+     "thought_signature": "EmAKXgFpFH0TeSOqQO4_HUBS9Yxszvd7dZiMwVBUlgAEEC-o10mLqtudTx1O59Qi2ULj6zbB8GzAu41z-6lMOG9fZikdqPUVZyCFLIAdKdfVUfBZEhKSwtIKr24PE4U2MbQ="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-07T19:27:27Z"
+}

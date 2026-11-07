@@ -482,7 +482,8 @@ def test_every_model_call_of_a_run_has_a_context_manifest(tmp_path: Path) -> Non
     assert _call_ids(run_dir, "draft") == ["S01", "S02", "S03"]
     items = json.loads((run_dir / "approach.json").read_text(encoding="utf-8"))["items"]
     assert _manifest(run_dir, "draft", "S02").included_record_ids == [a["id"] for a in items]
-    final = _manifest(run_dir, "risk", "R-final")
+    # The default risk step is one call, `R-oneshot` (ADR-059).
+    final = _manifest(run_dir, "risk", "R-oneshot")
     assert final.included_record_ids[-len(items) :] == [a["id"] for a in items]
 
 

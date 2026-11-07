@@ -120,6 +120,9 @@ def _run(tmp_path: Path, view: TextView, markers: Sequence[str]) -> tuple[RunRes
         backends={"gemini": model},
         run_id="view",
         view=view,
+        # The risk agent's `search_rfp` call carries passage text back as a tool result; the
+        # default risk step makes one call with no tools (ADR-059).
+        risk_mode="agent",
     )
     assert result.status == "COMPLETED", result.reason
     return result, model

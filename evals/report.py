@@ -31,9 +31,10 @@ kind, `keep_or_drop`:
   `higher`), and `[lo, hi]` its 90% bootstrap interval: each rung's repeats resampled with
   replacement, independently, 10,000 times, with `random.Random` seeded from the first 8
   bytes of the SHA-256 of the matrix name, and the 5th and 95th percentiles taken;
-- with no `margin`, a rung is kept when `lo > 0`; with a margin `m`, when `lo >= -m` (the
-  metric rises by no more than its margin, ADR-054) and the signed difference of the medians
-  of its `secondary` metric is above 0;
+- a rung is kept when `lo > 0`; with a margin `m`, a rung whose interval holds zero is kept
+  when `lo >= -m` (the metric rises by no more than its margin, ADR-054) and the signed
+  difference of the medians of its `secondary` metric is above 0 (ADR-056: the secondary
+  decides only when superiority is not shown);
 - the cost per avoided miss, the difference of the median shadow costs over the difference
   of the median missed mandatory requirements, is reported, `n/a` when no miss is avoided,
   and never decides.
@@ -249,8 +250,12 @@ def keep_or_drop(
         gain = (
             _signed(other["direction"], then, now) if then is not None and now is not None else 0.0
         )
-        kept = lo >= -float(margin) and gain > 0
+        # ADR-056: an interval wholly on the favorable side keeps the rung, as a rung with no
+        # margin is kept; non-inferiority and the secondary decide only when it holds zero.
+        kept = lo > 0 or (lo >= -float(margin) and gain > 0)
         detail += f"; margin {float(margin):g}, {other['metric']} gain {gain:g}"
+        if lo > 0:
+            detail += " (superior, so the secondary does not decide)"
     cost = cost_per_avoided_miss(comparator, runs)
     detail += "; cost per avoided miss " + ("n/a" if cost is None else f"${cost:g}")
     side = spec.get("compare_to") is not None

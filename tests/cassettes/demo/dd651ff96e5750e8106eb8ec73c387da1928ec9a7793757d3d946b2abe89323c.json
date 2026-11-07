@@ -1,0 +1,35 @@
+{
+ "key": "sha256:dd651ff96e5750e8106eb8ec73c387da1928ec9a7793757d3d946b2abe89323c",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"title\":\"Risks and assumptions\",\"text\":\"Combining separate documents could push the draft over the 20-page limit or network congestion could delay the upload past the deadline, causing the proposal to be rejected without evaluation [RSK-001]. We would apply a strict 18-page budget across all sections and perform a test upload one day before the deadline [RSK-001]. Cumulative development and integration tasks could exceed the available time before 2027-01-11, causing the service to miss the go-live date for spring enrollment [RSK-002]. We would run signing and API integration work packages in parallel where possible and de-scope non-mandatory features to ensure core go-live readiness by 2027-01-11 [RSK-002]. Whether the procurement portal provides an automated submission confirmation receipt under REQ-0001 remains an open question [Q-01].\",\"cited_ids\":[\"RSK-001\",\"RSK-002\",\"Q-01\"]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1303,
+   "tokens_out": 228,
+   "tokens_cached": 0,
+   "tokens_thinking": 794,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"title\":\"Risks and assumptions\",\"text\":\"Combining separate documents could push the draft over the 20-page limit or network congestion could delay the upload past the deadline, causing the proposal to be rejected without evaluation [RSK-001]. We would apply a strict 18-page budget across all sections and perform a test upload one day before the deadline [RSK-001]. Cumulative development and integration tasks could exceed the available time before 2027-01-11, causing the service to miss the go-live date for spring enrollment [RSK-002]. We would run signing and API integration work packages in parallel where possible and de-scope non-mandatory features to ensure core go-live readiness by 2027-01-11 [RSK-002]. Whether the procurement portal provides an automated submission confirmation receipt under REQ-0001 remains an open question [Q-01].\",\"cited_ids\":[\"RSK-001\",\"RSK-002\",\"Q-01\"]}",
+     "thought_signature": "EoEYCv4XAWkUfRMhSiMt4zdTJUEiW6B4NNKfcTHn_Qv4b15oqLfpBXxVJ3JawxT_HWnQbVJ0maGKcHGEpnEQwlhkkWKHLCBUVgauFAvr5c4k_qt8RDAAtftDELcVMfloFkAI0OtL8FOwxif8Kk0PMJGAZxG9msEttophqNmEnI8P7UwDZvmwIczx7yIoDPudeX-sMjCmvvXsngXSA6LJUtT5XkaH89efqFite4rAlpabds4NzI6aDn11aqr1oaM9d5Ne_PDOJ_HXN1lhW4Yk2QjRN82iU3Rp5yYUKuDyTpRx5w5OgsLdmrAf9KUltsh3xzk3k9sLXzsCUGDEb4q4jdUzWGAIiT6ZDeaJiqEwO8otic_FirX3gGklUiucqwg1W8UHfzPmC5UqKnMSWCstCpZG2cZklifXCsKObY7FgtlHKJD_HJP5akAAYX9NCKAhQmNPalFVZE-29ArC4HqizE2naE1M8Xf6DLII6GBMkB1LpaIKbkzEQcIlJckzB16UxKcw-zbW32ag7oGIO3A1ZMOjJBL5Bx0BMuZEYapgexdCfVSBw1HTNK8jv86eLB5cbuLHA3bC6IcuLSJFMvEPlkiKrF-oK4tHKeSnqeorLT9agMDM_FCgpi_XaMyyvsf-6z75xNqYSBfOgz_g-smv8hzP7DNYjGO3e5SV7ppHoCA9agAd6YgoD7b7mYQxoa5-vLawO45vOanCMtfVuTxTCq4mGKs6x-5TBQCqlNdDs_6rpsmkCCCuBgc2f8gyTU9b3SBmC4qZ65KiELMYkC75WSofCZwJr2mlUW39vMDFLlbWgAufMg7OGh9gdFQzHsFelhT4GLY2iszvw_8qWKuPEdSIheYfrFLs9C6YDr-xpQYDOcnJjRwszDJMq7lvSdfXjfE39N8zJZazCVlijSW0JUdv4w0ecnUI0DVTcRFO-q21fE996iRMION-ml5i0ZmRvUmSlrGRTNUH2gm4VUczwZyEnDf6aetydwFOi9jC7YldpekyvEk0PUR1yjls6eMHUREQ_lB24U0ssqrT5k4l7ThFlmKJcoPCfbmQ7Avk-PFvze0TzWp2PmOG_P2D5Dk34Y-pQloTr9RilNhuz0k-mkSIgBWqzBPTeF_xzmXKNzAfC-uJcFOIUSoVSVcTHNDq5Eihi4RWlk_7msAraiFZz27DImgH_2vfso90kJjK9rUCCAgexEnujkHkmQTyEkzoFBq92br-3FTW1CERc4GgTDWMfwX572fbjYPHviTn9RHWJ60w4ZP5mrU0pivnfktPH0vSrchp8VzW_7QwKQ_OaK2S7SCLYpK_MoOkT52vE1ysy8pgnUZs47wK6f26AsG2Gf93SsQTAB_ts8zTAW_vvBa0D0CBVtUu-IGl3XPMBdaEsRr2k3IIstWRlSsj0Lrg7LiHwI7KDfKGaBh808BKufr5i_gwkNdlqXE1T7bjsSyqaODHxHFt_0cu1YDC3X72p4Kjx24WZNVFil-oA_Rg5R8HLnG_YDENkQ3zoClt3BeiDojaSQsd87_yU02FL2heY-WEnvMAbE9d31oESi01JqRnRu6LfhSH336jEs5o_qsQHqd1xYR-OPOCxz6XfAzJKRxHoMlD5WNrP4xbIwWmIzSITKs3J6MdsqUIyXpilFDayvK9fdRIjrMMd0n6YMJpVPma_uB2ScEX3lIQlB5IFFGT9bU_Ml4Q3NWhSj7v73_arRMFWxdXswI5fH4LlYvhi8e9SD9I28h47ZLZGWtrwUTDlSydYKzE_SCHk_4j8HMfC9bGbhjl6R_8ivoUgSwksD_3ehsBG3YYQ7oSrqSb2OmLYgZT0uzdv-QV_Zgw89BM2x0TV7jwqiev88tL52m5SJztJXiz3f96ygRQ6YUEdYnz7MMEofw5Y0Vjidqm3MklEwIkUIXCBuaqW8uvBcWkRljcxQ0LyTk6OTpG6_MxcF0IriNF2tFebL_oKeNK4O-p2-avEL4Dzqxcgc-PVbtzeHG-ex4sL-3U2307hzF-PsJhbiPaGNq1r2L3GgKtMwBujOLO1NeM8GCUJ7LNbheSj8ldA3IEl8-2zvLsr9XozCR3oEEtuy-V96_Qc3e_l7SScxT-G8FjlUvQyo0VLwbUbNyp34jxLq0t6zqq5c254oUcVcKNo98JFGmFYOMBR8tkNVD4hvhKBf-giOxUvc-8xDer1cUosL8Bq3eYIh6ofDWKAxC7KIv-MBjrcEs2YmYuBdU1n87U9nd6g1tCALytxVZstqdm74-0AcPJcQ66rULZC1vJ3Bh0PWHffcfBK-N4vjxQCBqnErKs57PEN-MYLXQS9Yh3uluGk2n24K3j8mruaj5C3dpBcLabhnhzqAZnuNSSMDEfaF_deSRyPYH3XXm36wIMb2Y7joyuwMmLjDgkggX4y1pBZkdZixP4o6y22II_BftIRIGAejsnVMUz7-4HoTB11bYIfL30UL1nx_xIHyHyeAHNFTZq42Ce43OfFvlxswQnVK5cGSkgvU7l2HNJ1l--FIU7ndr2MD_tHJwx9HJNncyu9f3eAbDLeQT2LZGAL4RSLaxeFUf0uQkwVZpMM_ar-2LPXzJRA7q2wowSYqlMqy6sLkJCspVjNSiH_OSpLphBZNotDwhuRm0KF1sIHxgTP6wuJA3PBz5q6xrtdDWlE_JiENauRFhU8BM-MtjydUnbVo3MKO6z0Jt8d4d6uHDBmG6x_4O_hDBepxeMAu6Z6E23d1QG9LJxbUgeP3QeS7t-cbaGgab6mt2BhbWl9vb6FCcMpH-6GczbYpzZ0fkXX9gStcEaQElb3ekf6nmIMxKNw4Fnf8xD0bNJRIWalDBY7Najanm7wUfEAkZLSAijwrEHOSB3OA9wk3ba2sUv3nQt7jaFuY10dn9Jsq0b3Id3KbWtS5NwwitJ0088Mx1djgeoxxJvYTUy0U8rRU8SNzFAD7WtIY_aFYLSYfe0pVKVz7tcIzk2v_lKkQ_3crEprFK9DSN9_Ac8muCm-Y4BvUDcfp0ZmO5Ts5lOilpBE0JljNhTYuaWO3U1FajoPejZ2_ZyJPrRCXolqoGRKzcm6Wsq6DKs1TRzCdRRNmgGdaddVPiVyAVpBzWsx_ZgfP4S3clzXz0yVj1jGlGA9v3xSxDg04AbX7u0MXLxoQStd5SIFKwjOC6TaOYR52b7Na_gCF8lK0l4GFW4IJmR54dQKIeh3GCJ2Edt0DCzZ9d4Ka1Plvhl95u5xebHVjdz4qLEUu9LRhSUO-OzCp7Ty7hvCZZRYDHo4nxaaRje7yp3tx_amiXJUjjxnPkBPyAGmZ6ppaU4B7r_rGSJqHDjQNI2KciRC8fhrFelt0TDGZUeGkNheuZklZuAOnfxues6U814xeRHiWIcTFk1Efcl-u9QdY5D9UhcLjIr5gat1znnXcyVQ04INcCg558-XAALszbMlYCKyysa5EYgYwZoKSZuiYakfYsMJHe9wrRIk8v7pH7whEkzOMHxleyL4R3t5E5-Oebd5PtwWfcAfLXcXBqNgHlNwpL9Rh30oyTQ88lBE2JXvOqMhs-jSXH6Tpqk6LY4MKC5VP8epkONzK3w2UJgEgAOYOGWxG4YTa0SFrqrKYZPigKbdreEgLxC1rEDvnNTLmRUTjlkiBFz8jStflCxx02X5QNxY31m5W-aTBCZMtlyXIneRa7Pf3jjn6sMFQEffrIHks3Ys3I0fSP5Kzy4rfhsXiHIzbnI7q03mATgGBw9aX1FsxEy6mY7R6fwfx-mlA-moO2SqP_EUxchC4ig2kQAOUrVs_W-h10q1TSit1T2mosk2keDFP5mRQfYD59aJUI2Wbe5ksfT2PNmRJEdFoLw-SoVpZ4BkncEN5tr9NvsCstHStHSGewPge4iPeCoLnKM5JUvvSZ_1nrYpXwJlnjgA-LSdXs4q6OCE3Ib-a9dEHcCeVc02Z4uLZ62r9pS__Fb1zVkjOo8WFnp70kvXLO7Lz_KehKnKnR0y3AUqEAY4tAxRkFJpviOt-Xf7aBtYIPHc_YVZ-qIDL0iQ-wyINmZd5hr4AQ6Mxu0Xsk-dFSGV7CXzEcVLy_lCOcLgBWt7bMgTLxUS0v2w7-Iz4QoIc-g6MWIJZsqsqFfoDjphw=="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-07T19:27:00Z"
+}

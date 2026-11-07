@@ -2,15 +2,17 @@
   "need": {
     "need_id": "NEED-S12-BA003",
     "origin": "RFP",
-    "topic": "SAP S/4HANA Integration",
-    "text": "",
+    "topic": "SAP S/4HANA integration",
+    "text": "The supplier's knowledge base lists a generic REST API (CAP-001) for JSON exchange, and no connector or test record for SAP S/4HANA.",
     "requirements": [
       {
         "id": "REQ-202",
-        "statement": "The solution shall provide certified integration with the buyer SAP S/4HANA ERP environment.",
+        "statement": "The solution shall integrate with the Council's SAP S/4HANA finance system for invoice posting.",
         "modality": "shall",
-        "quote": "certified integration with the buyer SAP S/4HANA ERP environment",
-        "src_ids": ["SRC-011"]
+        "quote": "The solution shall integrate with the Council's SAP S/4HANA finance system for invoice posting.",
+        "src_ids": [
+          "SRC-202"
+        ]
       }
     ],
     "excerpts": [],

@@ -1,14 +1,44 @@
 {
   "option": {
     "option_id": "OPT-3",
-    "name": "Effort Estimation Option",
-    "summary": "Effort estimation across work packages",
+    "name": "Configured platform",
+    "summary": "Configure an existing platform to the Council's needs.",
     "approach": [],
     "assumptions": []
   },
-  "needs": [],
+  "needs": [
+    {
+      "need_id": "NEED-S12-BP3",
+      "origin": "RFP",
+      "topic": "Configuration effort",
+      "text": "Configure 40 licence types and migrate 120,000 records.",
+      "requirements": [
+        {
+          "id": "REQ-303",
+          "statement": "The supplier shall configure 40 licence types and migrate 120,000 records.",
+          "modality": "shall",
+          "quote": "The supplier shall configure 40 licence types and migrate 120,000 records.",
+          "src_ids": [
+            "SRC-303"
+          ]
+        }
+      ],
+      "excerpts": [],
+      "discrepancy_ids": [],
+      "question_ids": []
+    }
+  ],
   "claims": [],
-  "scope_in": [{"id": "SC-03", "text": "Effort estimates"}],
+  "scope_in": [
+    {
+      "id": "SC-01",
+      "text": "Licence type configuration"
+    },
+    {
+      "id": "SC-02",
+      "text": "Record migration"
+    }
+  ],
   "scope_out": [],
   "constraints": [],
   "never": []

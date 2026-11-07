@@ -44,6 +44,8 @@ def test_without_a_collector_spans_land_in_jsonl(
         cassettes=CassetteStore(tmp_path / "cassettes"),
         backends=fake_backends(RuleBackend()),
         run_id="traced",
+        # The risk agent, which no longer runs by default (ADR-059), so its spans are traced.
+        risk_mode="agent",
     )
     assert result.status == "COMPLETED", result.reason
     spans = _spans(result.run_dir)

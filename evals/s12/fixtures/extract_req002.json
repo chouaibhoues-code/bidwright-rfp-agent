@@ -1,16 +1,25 @@
 {
   "batch_id": "BATCH-S12-REQ002",
+  "context": [],
+  "terms": [],
   "passages": [
     {
-      "src_id": "SRC-002",
-      "text": "Section 4.1: Data retention is 5 years. Section 9.2: All financial logs retained for 7 years.",
+      "src_id": "SRC-021",
+      "text": "All project data shall be retained for five (5) years from the end of the contract.",
       "doc_id": "DOC-01",
-      "section_path": "4.1 Data Retention",
+      "section_path": "4.1 Data retention",
+      "lead_in": "",
+      "neighbor": "",
+      "term": ""
+    },
+    {
+      "src_id": "SRC-022",
+      "text": "Financial records shall be retained for seven (7) years from the end of the contract.",
+      "doc_id": "DOC-01",
+      "section_path": "9.2 Financial records",
       "lead_in": "",
       "neighbor": "",
       "term": ""
     }
-  ],
-  "context": [],
-  "terms": []
+  ]
 }

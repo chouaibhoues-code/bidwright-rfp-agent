@@ -1,15 +1,54 @@
 {
   "option": {
     "option_id": "OPT-4",
-    "name": "Scheduling Option",
-    "summary": "Milestone and schedule planning",
+    "name": "Single cut-over",
+    "summary": "Migrate all records and go live in one cut-over.",
     "approach": [],
     "assumptions": []
   },
-  "needs": [],
+  "needs": [
+    {
+      "need_id": "NEED-S12-BP4",
+      "origin": "RFP",
+      "topic": "Cut-over",
+      "text": "Migrate all records and go live in one cut-over.",
+      "requirements": [
+        {
+          "id": "REQ-304",
+          "statement": "The service shall go live in 2027 after the migration of all records.",
+          "modality": "shall",
+          "quote": "The service shall go live in 2027 after the migration of all records.",
+          "src_ids": [
+            "SRC-304"
+          ]
+        }
+      ],
+      "excerpts": [],
+      "discrepancy_ids": [],
+      "question_ids": []
+    }
+  ],
   "claims": [],
-  "scope_in": [{"id": "SC-04", "text": "Schedule baseline"}],
+  "scope_in": [
+    {
+      "id": "SC-01",
+      "text": "Migration"
+    },
+    {
+      "id": "SC-02",
+      "text": "Go-live"
+    },
+    {
+      "id": "SC-03",
+      "text": "Hypercare"
+    }
+  ],
   "scope_out": [],
-  "constraints": [],
+  "constraints": [
+    {
+      "id": "CN-01",
+      "text": "Go-live in 2027."
+    }
+  ],
   "never": []
 }

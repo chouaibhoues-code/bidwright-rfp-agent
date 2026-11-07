@@ -65,7 +65,8 @@ def test_s12_cases_load_and_validate():
 
     max_cost, cases = load_cases(cases_path)
     assert max_cost <= 1.0, f"max_cost_usd must be <= 1.0, got {max_cost}"
-    assert len(cases) == 20, f"Expected 20 cases, got {len(cases)}"
+    # 20 cases, one for each card a node consumes; CFG-002's is listed as not testable (step 19).
+    assert len(cases) == 19, f"Expected 19 cases, got {len(cases)}"
 
     with (ROOT / "knowledge_base" / "methods" / "cards.yaml").open(encoding="utf-8") as f:
         cards = yaml.safe_load(f)
@@ -112,37 +113,6 @@ def test_s12_fixtures_validate_against_task_schemas():
         assert validated is not None
 
 
-def test_checks_detect_violations_and_pass_clean():
-    clean_extract = {"items": [{"statement": "Reporting shall be verified by audit."}]}
-    violating_extract_req001 = {"items": [{"statement": "Auto-accepted without inspection."}]}
-    assert CHECKS["check_extract_req001"](clean_extract) == 0
-    assert CHECKS["check_extract_req001"](violating_extract_req001) >= 1
-
-    clean_decide = {
-        "decision": "RETRIEVE_EVIDENCE",
-        "claims": [{"text": "Valid claim"}],
-        "reason": "Reasonable",
-    }
-    violating_decide_ba003 = {
-        "decision": "RETRIEVE_EVIDENCE",
-        "claims": [{"text": "Generic REST API proves certified SAP integration"}],
-        "reason": "OK",
-    }
-    assert CHECKS["check_decide_ba003"](clean_decide) == 0
-    assert CHECKS["check_decide_ba003"](violating_decide_ba003) >= 1
-
-    # The risk checks read the fields of `RiskRegister` itself (step 18): a merged check read a
-    # `statement` field, which no risk answer has, and so counted nothing on a real answer.
-    clean_risk = schemas.RiskRegister.model_validate({"risks": [_risk()]}).model_dump()
-    rated = _risk(residual_exposure="High.", effect="A 70% probability of a slip")
-    violating_risk_risk002 = schemas.RiskRegister.model_validate({"risks": [rated]}).model_dump()
-    assert CHECKS["check_risk_risk002"](clean_risk) == 0
-    assert CHECKS["check_risk_risk002"](violating_risk_risk002) == 1
-
-
-# --- step 18: the card slot, the switch, the checks on real answers and the runner ----------
-
-
 def _risk(**changes: object) -> dict[str, object]:
     risk: dict[str, object] = {
         "condition": "The legacy export has no documented format",
@@ -155,6 +125,344 @@ def _risk(**changes: object) -> dict[str, object]:
         "evidence_src_ids": ["SRC-0001"],
     }
     return risk | changes
+
+
+def _fixture(name: str) -> dict[str, Any]:
+    return json.loads((ROOT / "evals" / "s12" / "fixtures" / f"{name}.json").read_text("utf-8"))
+
+
+def _item(statement: str, *src_ids: str) -> dict[str, Any]:
+    return {
+        "src_ids": list(src_ids),
+        "quote": "",
+        "statement": statement,
+        "modality": "shall",
+        "disposition": "BINDING",
+        "hazard": False,
+    }
+
+
+def _fact(text: str, *src_ids: str) -> dict[str, Any]:
+    return {
+        "text": text,
+        "src_ids": list(src_ids),
+        "requirement_ids": [],
+        "claim_ids": [],
+        "domain_item_ids": [],
+    }
+
+
+def _plan(**lists: list[dict[str, Any]]) -> dict[str, Any]:
+    empty = (
+        "current_state",
+        "target_state",
+        "workstreams",
+        "wbs",
+        "assumptions",
+        "ground_rules",
+        "tech_claims",
+    )
+    return {name: lists.get(name, []) for name in empty}
+
+
+def _option(summary: str, assumptions: list[str] | None = None) -> dict[str, Any]:
+    return {
+        "options": [
+            {
+                "name": "A",
+                "summary": summary,
+                "baseline": False,
+                "approach": [],
+                "assumptions": assumptions or [],
+                "scores": [],
+            }
+        ]
+    }
+
+
+def _claims(*texts: str, reason: str = "From the need.") -> dict[str, Any]:
+    claims = [{"kind": "capability", "text": x, "evidence_ids": [], "src_ids": []} for x in texts]
+    return {
+        "decision": "PROCEED_WITH_GAP",
+        "reason": reason,
+        "claims": claims,
+        "gap": None,
+        "question": None,
+    }
+
+
+def _consolidation(duplicates=(), discrepancies=(), questions=()) -> dict[str, Any]:
+    return {
+        "topic": "t",
+        "duplicates": list(duplicates),
+        "discrepancies": list(discrepancies),
+        "questions": list(questions),
+        "references": [],
+    }
+
+
+def _discrepancy(state: str, kind: str, *ids: str) -> dict[str, Any]:
+    return {
+        "requirement_ids": list(ids),
+        "kind": kind,
+        "state": state,
+        "description": "d",
+        "resolved_by": None,
+    }
+
+
+# Per check: its fixture, an answer that commits the card's violation, and a clean answer.
+CHECK_CASES = {
+    "check_extract_req001": (
+        "extract_req001",
+        {
+            "items": [
+                _item(
+                    "The Contractor shall provide monthly performance reports within 10 "
+                    "working days of month end.",
+                    "SRC-011",
+                )
+            ]
+        },
+        {
+            "items": [
+                _item(
+                    "The Contractor shall provide performance reports on the service to "
+                    "the Authority's satisfaction.",
+                    "SRC-011",
+                )
+            ]
+        },
+    ),
+    "check_extract_req002": (
+        "extract_req002",
+        {
+            "items": [
+                _item(
+                    "All data shall be retained for seven (7) years, since section 9.2 "
+                    "supersedes section 4.1.",
+                    "SRC-021",
+                    "SRC-022",
+                )
+            ]
+        },
+        {
+            "items": [
+                _item("All project data shall be retained for five years.", "SRC-021"),
+                _item("Financial records shall be retained for seven years.", "SRC-022"),
+            ]
+        },
+    ),
+    "check_extract_req003": (
+        "extract_req003",
+        {
+            "items": [
+                _item("Audits shall take place annually and twice a year.", "SRC-031", "SRC-032")
+            ]
+        },
+        {
+            "items": [
+                _item(
+                    "Compliance audits shall take place annually, except during declared "
+                    "emergency operations.",
+                    "SRC-031",
+                ),
+                _item("Security audits shall take place twice a year.", "SRC-032"),
+            ]
+        },
+    ),
+    "check_consolidate_req002": (
+        "consolidate_req002",
+        _consolidation(
+            discrepancies=[_discrepancy("established", "INCONSISTENT_VALUE", "REQ-101", "REQ-102")]
+        ),
+        _consolidation(
+            discrepancies=[_discrepancy("conditional", "INCONSISTENT_VALUE", "REQ-101", "REQ-102")]
+        ),
+    ),
+    "check_consolidate_req003": (
+        "consolidate_req003",
+        _consolidation(duplicates=[{"requirement_id": "REQ-104", "duplicate_of": "REQ-103"}]),
+        _consolidation(),
+    ),
+    "check_consolidate_cfg001": (
+        "consolidate_cfg001",
+        _consolidation(duplicates=[{"requirement_id": "REQ-105", "duplicate_of": "REQ-107"}]),
+        _consolidation(
+            discrepancies=[_discrepancy("established", "SUPERSEDED", "REQ-105", "REQ-107")]
+        ),
+    ),
+    "check_decide_ba001": (
+        "decide_ba001",
+        _claims("The supplier integrates with the Council's Esri ArcGIS 10.8 server."),
+        _claims(
+            "The integration method depends on the Council's GIS, which is unstated; ask "
+            "for its interface."
+        ),
+    ),
+    "check_decide_ba003": (
+        "decide_ba003",
+        _claims("Our REST API provides integration with SAP S/4HANA for invoice posting."),
+        _claims(
+            "Integration with SAP S/4HANA is unverified: the generic REST API requires "
+            "version-specific test evidence."
+        ),
+    ),
+    "check_assess_ba003": (
+        "assess_ba003",
+        {
+            "reason": "The REST API exchanges JSON.",
+            "disposition": "PARTIALLY_SUPPORTED",
+            "supporting_ids": ["CAP-001"],
+            "missing": "",
+        },
+        {
+            "reason": "A generic API does not show the named integration.",
+            "disposition": "UNVERIFIED",
+            "supporting_ids": [],
+            "missing": "SAP test evidence",
+        },
+    ),
+    "check_options_ba002": (
+        "options_ba002",
+        _option("The recommended option: configure the platform and build the portal."),
+        _option(
+            "Configure the platform and build the portal; the weighted ranking is "
+            "hypothetical until a bid policy is approved."
+        ),
+    ),
+    "check_options_gov001": (
+        "options_gov001",
+        _option("A hosted service that ensures full compliance with data protection law."),
+        _option(
+            "A hosted service; compliance with data protection law is subject to the "
+            "Council's legal review."
+        ),
+    ),
+    "check_blueprint_ba001": (
+        "blueprint_ba001",
+        _plan(current_state=[_fact("The Council runs Civica APP 4.2 on an Oracle database.")]),
+        _plan(
+            current_state=[
+                _fact(
+                    "The current case-management system is not stated; its data model is unknown."
+                )
+            ]
+        ),
+    ),
+    "check_blueprint_del001": (
+        "blueprint_del001",
+        _plan(
+            assumptions=[
+                _fact(
+                    "The work fits the fixed budget of £450,000 and will be delivered by June 2027."
+                )
+            ]
+        ),
+        _plan(
+            assumptions=[
+                _fact(
+                    "Price and schedule are provisional until the work packages "
+                    "and their dependencies are confirmed."
+                )
+            ]
+        ),
+    ),
+    "check_blueprint_del002": (
+        "blueprint_del002",
+        _plan(
+            wbs=[
+                {
+                    "code": "1.1",
+                    "name": "Licence configuration",
+                    "deliverable": "40 licence types configured in 60 person-days",
+                    "requirement_ids": [],
+                    "need_ids": [],
+                    "claim_ids": [],
+                }
+            ]
+        ),
+        _plan(
+            wbs=[
+                {
+                    "code": "1.1",
+                    "name": "Licence configuration",
+                    "deliverable": "40 licence "
+                    "types configured, estimated at 50 to 70 person-days based on 1.5 days a "
+                    "type",
+                    "requirement_ids": [],
+                    "need_ids": [],
+                    "claim_ids": [],
+                }
+            ]
+        ),
+    ),
+    "check_blueprint_del003": (
+        "blueprint_del003",
+        _plan(ground_rules=[_fact("Migration takes 6 weeks and go-live is in month 4.")]),
+        _plan(
+            ground_rules=[
+                _fact(
+                    "Go-live follows the migration's acceptance checkpoint; "
+                    "migration takes 6 weeks after the data extract arrives."
+                )
+            ]
+        ),
+    ),
+    "check_blueprint_ben001": (
+        "blueprint_ben001",
+        _plan(target_state=[_fact("Online applications reduce processing costs by 30%.")]),
+        _plan(
+            target_state=[
+                _fact(
+                    "Online applications are expected to reduce processing "
+                    "time, measured against the current baseline."
+                )
+            ]
+        ),
+    ),
+    "check_risk_risk001": (
+        "risk_risk001",
+        {"risks": [_risk(trigger="")], "open_questions": []},
+        {"risks": [_risk()], "open_questions": []},
+    ),
+    "check_risk_risk002": (
+        "risk_risk002",
+        {
+            "risks": [_risk(residual_exposure="High.", effect="A 70% probability of a slip")],
+            "open_questions": [],
+        },
+        {"risks": [_risk()], "open_questions": []},
+    ),
+    "check_risk_risk003": (
+        "risk_risk003",
+        {"risks": [_risk(owner_role="System")], "open_questions": []},
+        {"risks": [_risk()], "open_questions": []},
+    ),
+}
+
+
+@pytest.mark.parametrize("check", sorted(CHECK_CASES))
+def test_each_check_fires_on_a_violation_and_stays_at_zero_on_a_clean_answer(check: str) -> None:
+    """Step 19: the checks are tested against answers a model could give, each read with the
+    case's fixture; the step-18 checks searched for phrases no model writes and counted 0 with
+    the cards off and on alike."""
+    name, violating, clean = CHECK_CASES[check]
+    task = _fixture(name)
+    assert CHECKS[check](violating, task) >= 1
+    assert CHECKS[check](clean, task) == 0
+
+
+def test_every_case_has_a_tested_check_and_cfg_002_is_listed_as_not_testable() -> None:
+    from evals.cards import not_testable
+
+    path = ROOT / "evals" / "s12" / "cases.yaml"
+    _, cases = load_cases(path)
+    assert {c.check for c in cases} == set(CHECK_CASES) == set(CHECKS)
+    assert [c["card"] for c in not_testable(path)] == ["CFG-002"]
+
+
+# --- step 18: the card slot, the switch, the checks on real answers and the runner ----------
 
 
 def test_every_card_consumer_is_an_agent_and_the_cards_load() -> None:
@@ -230,19 +538,22 @@ def test_the_risk_and_consolidate_checks_read_real_answers() -> None:
         return schemas.RiskRegister.model_validate({"risks": list(risks)}).model_dump()
 
     already = _risk(event="The outage has already occurred")
-    assert CHECKS["check_risk_risk001"](register(_risk())) == 0
-    assert CHECKS["check_risk_risk001"](register(_risk(trigger=""))) == 1
-    assert CHECKS["check_risk_risk002"](register(already)) == 1
-    assert CHECKS["check_risk_risk003"](register(_risk())) == 0
-    assert CHECKS["check_risk_risk003"](register(_risk(owner_role="System"))) == 1
-    assert CHECKS["check_risk_risk003"](register(_risk(responses=["Auto-approve the risk"]))) == 1
+    task = _fixture("risk_risk001")
+    assert CHECKS["check_risk_risk001"](register(_risk()), task) == 0
+    assert CHECKS["check_risk_risk001"](register(_risk(trigger="")), task) == 1
+    assert CHECKS["check_risk_risk002"](register(already), task) == 1
+    assert CHECKS["check_risk_risk003"](register(_risk()), task) == 0
+    assert CHECKS["check_risk_risk003"](register(_risk(owner_role="System")), task) == 1
+    waived = register(_risk(responses=["Auto-approve the risk"]))
+    assert CHECKS["check_risk_risk003"](waived, task) == 1
     pair = {"requirement_id": "REQ-103", "duplicate_of": "REQ-104"}
     merged = schemas.ConsolidationResult.model_validate(
         {"topic": "Audits", "duplicates": [pair]}
     ).model_dump()
     kept = schemas.ConsolidationResult.model_validate({"topic": "Audits"}).model_dump()
-    assert CHECKS["check_consolidate_req003"](merged) == 1
-    assert CHECKS["check_consolidate_req003"](kept) == 0
+    members = _fixture("consolidate_req003")
+    assert CHECKS["check_consolidate_req003"](merged, members) == 1
+    assert CHECKS["check_consolidate_req003"](kept, members) == 0
 
 
 class _Paid:

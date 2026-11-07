@@ -2,9 +2,16 @@
   "factors": [
     {
       "factor_id": "F-01",
-      "name": "Delivery Cost",
+      "name": "Quality of the delivery approach",
+      "weight": "60%",
+      "scoring": "0-4 per factor, weighted",
+      "status": "IN_SCOPE"
+    },
+    {
+      "factor_id": "F-02",
+      "name": "Social value",
       "weight": "40%",
-      "scoring": "linear",
+      "scoring": "0-4 per factor, weighted",
       "status": "IN_SCOPE"
     }
   ],
@@ -12,11 +19,23 @@
     {
       "need_id": "NEED-S12-OPT01",
       "origin": "RFP",
-      "text": "Core workflow deployment",
+      "text": "Case management workflows",
       "status": "COVERED",
+      "claims": []
+    },
+    {
+      "need_id": "NEED-S12-OPT02",
+      "origin": "RFP",
+      "text": "Resident self-service portal",
+      "status": "PARTIAL",
       "claims": []
     }
   ],
   "domain_items": [],
-  "gaps": []
+  "gaps": [
+    {
+      "need_id": "NEED-S12-OPT02",
+      "gap": "No portal accessibility evidence on record."
+    }
+  ]
 }

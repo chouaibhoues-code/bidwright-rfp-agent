@@ -5,7 +5,11 @@ card that a node of this iteration consumes: the card, the node, a fixture of
 that node's task model in evals/s12/fixtures/, and a named check in evals/cards.py
 that counts a violation in the node's answer. Each check reads the fields of that
 node's real answer schema (`ExtractResult`, `ConsolidationResult`, `DecideResult`,
-`AssessmentResult`, `OptionsResult`, `BlueprintPlan`, `RiskRegister`).
+`AssessmentResult`, `OptionsResult`, `BlueprintPlan`, `RiskRegister`) and the case's task,
+and counts the violation as a model would commit it: figures or names the answer adds that
+the task does not hold, a verdict the evidence cannot carry, a claim with no hedge (step 19).
+A card whose consuming node's answer has no field that could show its violation is listed
+under `not_testable`, which the report names and nothing runs.
 
 `bidwright-eval cards --repeats 5 --profile P` runs each case once a repeat with
 its family off and on through `graph/single.py`'s `call_node`, stops at the cost
@@ -41,210 +45,367 @@ def _get_field(obj: Any, name: str, default: Any = None) -> Any:
     return getattr(obj, name, default)
 
 
-# --- REQ Checks ---
+# Each check reads the node's answer and the task the case gave it, both as `model_dump` dicts,
+# and counts the card's violation as a model would commit it: words or figures the answer adds
+# that the task does not hold, a verdict the evidence cannot carry, or a claim with no hedge.
+# Step 19 replaced checks that searched for phrases no model writes ("invented acceptance",
+# "silent overwrite"), which counted 0 with the cards off and on alike.
+
+_WORD = re.compile(r"[a-z0-9]+(?:[.'][a-z0-9]+)*")
+_NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
 
 
-def check_extract_req001(output: Any) -> int:
-    """REQ-001: Missing attributes justify clarification, not invented acceptance."""
-    items = _get_field(output, "items", [])
+def _words(text: str) -> set[str]:
+    return set(_WORD.findall(text.lower()))
+
+
+def _strings(value: Any) -> list[str]:
+    """Every string inside an answer or a task, depth first."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [s for v in value.values() for s in _strings(v)]
+    if isinstance(value, list):
+        return [s for v in value for s in _strings(v)]
+    return []
+
+
+def _passages(task: Any) -> dict[str, str]:
+    return {p["src_id"]: p["text"] for p in _get_field(task, "passages", []) or []}
+
+
+def _added(text: str, source: str, terms: set[str]) -> set[str]:
+    """The terms and numbers in `text` that `source` does not hold."""
+    have = _words(source)
+    found = {w for w in _words(text) if w in terms and w not in have}
+    found |= {n for n in _NUMBER.findall(text) if n not in _NUMBER.findall(source)}
+    return found
+
+
+# Words that fix what REQ-001 says to leave open: a frequency, a deadline, a format or an
+# acceptance result.
+_FIXING = {
+    "daily", "weekly", "fortnightly", "monthly", "quarterly", "annually", "annual", "yearly",
+    "within", "days", "hours", "deadline", "kpi", "kpis", "sla", "template", "dashboard",
+    "signed", "approved", "accuracy", "complete", "completeness", "timeliness",
+}  # fmt: skip
+_RESOLVES = re.compile(
+    r"\b(?:conflict\w*|supersed\w*|overrid\w*|inconsisten\w*|precedence|instead|prevail\w*)\b",
+    re.I,
+)
+_HEDGE = re.compile(
+    r"\b(?:unverified|not (?:yet )?(?:verified|confirmed|proven|evidenced)|to be (?:verified|"
+    r"confirmed|tested)|subject to|requires? (?:\w+ ){0,3}(?:evidence|testing|confirmation|"
+    r"verification)|pending|unknown|not stated|unstated|not specified|cannot (?:confirm|"
+    r"verify)|gap|clarif\w*|hypothe\w*|indicative|provisional)\b",
+    re.I,
+)
+
+
+def check_extract_req001(output: Any, task: Any) -> int:
+    """REQ-001: missing attributes justify clarification, not invented acceptance. An item
+    whose statement adds a frequency, deadline, format, acceptance word or number that its
+    passages do not hold."""
+    passages = _passages(task)
     violations = 0
-    for item in items:
-        text = _get_field(item, "statement", "") or _get_field(item, "text", "")
-        if "invented acceptance" in text.lower() or "auto-accepted" in text.lower():
+    for item in _get_field(output, "items", []) or []:
+        source = " ".join(passages.get(s, "") for s in _get_field(item, "src_ids", []) or [])
+        if _added(_get_field(item, "statement", "") or "", source, _FIXING):
             violations += 1
     return violations
 
 
-def check_extract_req002(output: Any) -> int:
-    """REQ-002: Potentially conflicting requirements need shared scope/time check."""
-    items = _get_field(output, "items", [])
+def check_extract_req002(output: Any, task: Any) -> int:
+    """REQ-002 on extract: two retention periods with different scopes are not a conflict to
+    resolve. An item whose statement resolves them (conflict, supersede, override,
+    precedence), or applies a period to the other clause's scope."""
     violations = 0
-    for item in items:
-        text = _get_field(item, "statement", "") or _get_field(item, "text", "")
-        if "established conflict" in text.lower() and "unverified scope" in text.lower():
+    for item in _get_field(output, "items", []) or []:
+        text = (_get_field(item, "statement", "") or "").lower()
+        financial = "financ" in text
+        seven = bool(re.search(r"\b(?:7|seven)\b", text))
+        five = bool(re.search(r"\b(?:5|five)\b", text))
+        if (
+            _RESOLVES.search(text)
+            or (seven and not financial)
+            or (five and financial and not seven)
+        ):
             violations += 1
     return violations
 
 
-def check_extract_req003(output: Any) -> int:
-    """REQ-003: Related clauses with different exceptions remain separate obligations."""
-    items = _get_field(output, "items", [])
-    violations = 0
-    for item in items:
-        text = _get_field(item, "statement", "") or _get_field(item, "text", "")
-        if "merged exceptions" in text.lower() or "deduplicated distinct" in text.lower():
-            violations += 1
-    return violations
-
-
-# --- CFG Checks ---
-
-
-def check_consolidate_req002(output: Any) -> int:
-    """REQ-002 on consolidate: discrepancy established without shared scope/time check."""
-    discrepancies = _get_field(output, "discrepancies", [])
-    violations = 0
-    for d in discrepancies:
-        state = _get_field(d, "state", "")
-        desc = _get_field(d, "description", "").lower()
-        has_scope = "without scope check" in desc or "unconfirmed scope" in desc
-        if state == "established" and has_scope:
-            violations += 1
-    return violations
-
-
-def check_consolidate_req003(output: Any) -> int:
-    """REQ-003 on consolidate: the case's two members carry different exceptions, so any
-    duplicate pair the answer makes merges separate obligations. A `DuplicatePair` holds the
-    two requirement ids only."""
-    return len(_get_field(output, "duplicates", []) or [])
-
-
-def check_consolidate_cfg001(output: Any) -> int:
-    """CFG-001: Protect baseline owner; addenda trigger review not silent mutation."""
-    discrepancies = _get_field(output, "discrepancies", [])
-    violations = 0
-    for d in discrepancies:
-        desc = _get_field(d, "description", "").lower()
-        if "silent overwrite" in desc or "overwrote baseline" in desc:
-            violations += 1
-    return violations
-
-
-def check_consolidate_cfg002(output: Any) -> int:
-    """CFG-002: Change impact requires evidence; graph alone cannot prove impact."""
-    references = _get_field(output, "references", [])
-    violations = 0
-    for ref in references:
-        target = _get_field(ref, "target", "").lower()
-        if "unproven impact" in target or "graph-only impact" in target:
-            violations += 1
-    return violations
-
-
-# --- BA Checks ---
-
-
-def check_decide_ba001(output: Any) -> int:
-    """BA-001 on decide: Map explicitly stated states; mark missing systems unknown."""
-    claims = _get_field(output, "claims", [])
-    reason = _get_field(output, "reason", "")
-    violations = 0
-    for cl in claims:
-        text = _get_field(cl, "text", "").lower()
-        if "assumed buyer legacy" in text or "fabricated current state" in text:
-            violations += 1
-    if "assumed current state without evidence" in reason.lower():
+def check_extract_req003(output: Any, task: Any) -> int:
+    """REQ-003 on extract: two audit clauses with different exceptions stay two obligations.
+    One count for each item that cites both passages, one if no item keeps the emergency
+    exception, and one for each passage no item cites."""
+    items = _get_field(output, "items", []) or []
+    passages = list(_passages(task))
+    cited = [set(_get_field(item, "src_ids", []) or []) for item in items]
+    violations = sum(1 for ids in cited if all(p in ids for p in passages))
+    if not any("emergenc" in (_get_field(i, "statement", "") or "").lower() for i in items):
         violations += 1
+    violations += sum(1 for p in passages if not any(p in ids for ids in cited))
     return violations
 
 
-def check_decide_ba003(output: Any) -> int:
-    """BA-003 on decide: Generic API capability does not prove legacy integration."""
-    claims = _get_field(output, "claims", [])
+def _members(task: Any) -> list[str]:
+    return [m["id"] for m in _get_field(task, "members", []) or []]
+
+
+def check_consolidate_req002(output: Any, task: Any) -> int:
+    """REQ-002 on consolidate: before a shared scope, time and data-category check, a
+    discrepancy is conditional. Each discrepancy over the case's members marked
+    `established`."""
+    members = set(_members(task))
+    return sum(
+        1
+        for d in _get_field(output, "discrepancies", []) or []
+        if _get_field(d, "state", "") == "established"
+        and members <= set(_get_field(d, "requirement_ids", []) or [])
+    )
+
+
+def check_consolidate_req003(output: Any, task: Any) -> int:
+    """REQ-003 on consolidate: the case's two members carry different exceptions, so any
+    duplicate pair, or any `SUPERSEDED` discrepancy between them, merges separate
+    obligations."""
+    members = set(_members(task))
+    pairs = len(_get_field(output, "duplicates", []) or [])
+    superseded = sum(
+        1
+        for d in _get_field(output, "discrepancies", []) or []
+        if _get_field(d, "kind", "") == "SUPERSEDED"
+        and members <= set(_get_field(d, "requirement_ids", []) or [])
+    )
+    return pairs + superseded
+
+
+def check_consolidate_cfg001(output: Any, task: Any) -> int:
+    """CFG-001: a buyer addendum triggers change review, not silent mutation. One count for
+    each duplicate pair over the original clause and its addendum, and one if no discrepancy
+    or question names both."""
+    members = set(_members(task))
+    pairs = sum(
+        1
+        for pair in _get_field(output, "duplicates", []) or []
+        if {_get_field(pair, "requirement_id", ""), _get_field(pair, "duplicate_of", "")} <= members
+    )
+    named = [
+        set(_get_field(d, "requirement_ids", []) or [])
+        for d in (_get_field(output, "discrepancies", []) or [])
+    ]
+    named += [
+        set(_get_field(q, "requirement_ids", []) or [])
+        for q in (_get_field(output, "questions", []) or [])
+    ]
+    reviewed = any(members <= ids for ids in named)
+    return pairs + (0 if reviewed else 1)
+
+
+# Products and versions a model may name for a buyer system the task leaves unstated.
+_PRODUCTS = re.compile(
+    r"\b(?:arcgis|esri|qgis|mapinfo|geoserver|postgis|smallworld|intergraph|geomedia|autocad|"
+    r"oracle|sql server|postgresql|postgres|mysql|mongodb|db2|sap|salesforce|dynamics|"
+    r"servicenow|northgate|civica|capita|idox|tascomi|uniform)\b",
+    re.I,
+)
+_VERSION = re.compile(r"\b(?:v|version\s*)?\d+\.\d+(?:\.\d+)?\b", re.I)
+
+
+def _named(text: str, source: str) -> bool:
+    """Whether `text` names a product or version that `source` does not."""
+    have = source.lower()
+    products = {m.lower() for m in _PRODUCTS.findall(text)} - {
+        m.lower() for m in _PRODUCTS.findall(have)
+    }
+    versions = set(_VERSION.findall(text)) - set(_VERSION.findall(have))
+    return bool(products or versions)
+
+
+def check_decide_ba001(output: Any, task: Any) -> int:
+    """BA-001 on decide: map stated states and mark missing ones unknown. Each claim, and the
+    reason, gap or question, that names a product or version for the buyer's system that the
+    need does not state."""
+    source = " ".join(_strings(task))
+    texts = [_get_field(c, "text", "") or "" for c in _get_field(output, "claims", []) or []]
+    texts += [_get_field(output, k, "") or "" for k in ("reason", "gap", "question")]
+    return sum(1 for text in texts if _named(text, source))
+
+
+_INTEGRATES = re.compile(r"\b(?:integrat\w*|interfac\w*|connect\w*|certif\w*)\b", re.I)
+
+
+def check_decide_ba003(output: Any, task: Any) -> int:
+    """BA-003 on decide: a generic API does not prove integration with a named buyer system.
+    Each claim that asserts integration with SAP without a hedge (unverified, to be tested,
+    requires evidence, and the like)."""
     violations = 0
-    for cl in claims:
-        text = _get_field(cl, "text", "").lower()
-        has_generic = "generic api" in text or "generic rest api" in text
-        has_named = "proves" in text or "satisfies" in text or "certified" in text
-        if has_generic and has_named:
+    for claim in _get_field(output, "claims", []) or []:
+        text = _get_field(claim, "text", "") or ""
+        if (
+            re.search(r"\bsap\b", text, re.I)
+            and _INTEGRATES.search(text)
+            and not _HEDGE.search(text)
+        ):
             violations += 1
     return violations
 
 
-def check_assess_ba003(output: Any) -> int:
-    """BA-003 on assess: Generic API cannot be assessed SUPPORTED for named integration."""
-    disposition = _get_field(output, "disposition", "")
-    reason = _get_field(output, "reason", "").lower()
+def check_assess_ba003(output: Any, task: Any) -> int:
+    """BA-003 on assess: generic REST evidence cannot support the named SAP integration, in
+    full or in part; a `SUPPORTED` or `PARTIALLY_SUPPORTED` verdict counts."""
+    return int(_get_field(output, "disposition", "") in ("SUPPORTED", "PARTIALLY_SUPPORTED"))
+
+
+_CHOOSES = re.compile(
+    r"\b(?:recommend\w*|preferred|best (?:option|choice|value)|optimal|clear winner|should be "
+    r"(?:selected|chosen|adopted)|we (?:select|choose)|is selected|is chosen)\b",
+    re.I,
+)
+_COMPLIES = re.compile(
+    r"\b(?:no[- ]bid|bid/no|go/no|bid threshold|(?:fully |is |are |be |remains? )compliant|"
+    r"ensur\w* (?:full )?compliance|guarantee\w* (?:full )?compliance|achiev\w* (?:full )?"
+    r"compliance|meets? (?:all )?(?:statutory|regulatory|legal)|complies with)\b",
+    re.I,
+)
+
+
+def _options(output: Any) -> list[str]:
+    return [" ".join(_strings(o)) for o in _get_field(output, "options", []) or []]
+
+
+def check_options_ba002(output: Any, task: Any) -> int:
+    """BA-002: a weighted choice is hypothetical unless an approved policy exists. Each option
+    whose text declares it the choice (recommended, preferred, optimal) without a hedge."""
+    return sum(1 for text in _options(output) if _CHOOSES.search(text) and not _HEDGE.search(text))
+
+
+def check_options_gov001(output: Any, task: Any) -> int:
+    """GOV-001: advisory knowledge sets no bid/no-bid threshold and asserts no regulatory or
+    contractual compliance. Each option whose text does either without a hedge."""
+    return sum(1 for text in _options(output) if _COMPLIES.search(text) and not _HEDGE.search(text))
+
+
+def _facts(output: Any, *names: str) -> list[dict[str, Any]]:
+    return [f for name in names for f in _get_field(output, name, []) or []]
+
+
+_ID_FIELDS = ("src_ids", "requirement_ids", "claim_ids", "domain_item_ids")
+
+
+def check_blueprint_ba001(output: Any, task: Any) -> int:
+    """BA-001 on blueprint: map stated current states and mark missing ones unknown. Each
+    current-state fact that cites no source and does not say it is unknown, or that names a
+    product or version the task does not."""
+    source = " ".join(_strings(task))
     violations = 0
-    if disposition in ("SUPPORTED", "PARTIALLY_SUPPORTED"):
-        has_generic = "generic api" in reason or "generic rest api" in reason
-        if has_generic and "integration" in reason:
+    for fact in _facts(output, "current_state"):
+        text = _get_field(fact, "text", "") or ""
+        unsourced = not any(_get_field(fact, k, []) for k in _ID_FIELDS)
+        if (unsourced and not _HEDGE.search(text)) or _named(text, source):
             violations += 1
     return violations
 
 
-# --- OPTIONS Checks ---
+_PRICE = re.compile(
+    r"(?:[£$€]\s?\d|\b(?:usd|gbp|eur)\s?\d|\b\d[\d,.]*\s?(?:k|m)?\s?(?:usd|gbp|eur|pounds|dollars|euros)\b)",
+    re.I,
+)
+_FEASIBLE = re.compile(
+    r"\b(?:fixed[- ]price|guarantee\w*|on time and (?:on|within) budget|within budget|"
+    r"feasib\w+|will be (?:delivered|completed|live) (?:by|in|within))\b",
+    re.I,
+)
 
 
-def check_options_ba002(output: Any) -> int:
-    """BA-002 on options: Weighted choice is hypothetical unless approved policy exists."""
-    options = _get_field(output, "options", [])
+def _plan_texts(output: Any) -> list[str]:
+    texts = [
+        _get_field(f, "text", "") or ""
+        for f in _facts(output, "current_state", "target_state", "assumptions", "ground_rules")
+    ]
+    texts += [
+        f"{_get_field(n, 'name', '')} {_get_field(n, 'deliverable', '')}"
+        for n in _get_field(output, "wbs", []) or []
+    ]
+    texts += [
+        f"{_get_field(w, 'name', '')} {_get_field(w, 'objective', '')}"
+        for w in _get_field(output, "workstreams", []) or []
+    ]
+    return texts
+
+
+def check_blueprint_del001(output: Any, task: Any) -> int:
+    """DEL-001: a provisional WBS does not prove price or schedule feasibility. Each text that
+    states a price, or asserts feasibility or a guaranteed delivery, without a hedge."""
+    return sum(
+        1
+        for text in _plan_texts(output)
+        if _PRICE.search(text) or (_FEASIBLE.search(text) and not _HEDGE.search(text))
+    )
+
+
+_EFFORT = re.compile(
+    r"\b\d[\d,.]*\s?(?:person[- ]?(?:days|weeks|months)|man[- ]?(?:days|months)|fte|"
+    r"days of effort|hours of effort|effort days)\b",
+    re.I,
+)
+_BASIS = re.compile(
+    r"\b(?:basis|based on|assum\w*|estimat\w*|provisional|range|uncertain\w*)\b", re.I
+)
+
+
+def check_blueprint_del002(output: Any, task: Any) -> int:
+    """DEL-002: an estimate states its basis, source and uncertainty. Each text that gives an
+    effort or cost figure with no basis or uncertainty word."""
+    return sum(
+        1
+        for text in _plan_texts(output)
+        if (_EFFORT.search(text) or _PRICE.search(text)) and not _BASIS.search(text)
+    )
+
+
+_DATE = re.compile(
+    r"\b(?:\d{4}-\d{2}-\d{2}|(?:january|february|march|april|may|june|july|august|september|"
+    r"october|november|december) \d{4}|q[1-4] \d{4}|(?:month|week) \d+|\d+ (?:weeks|months))\b",
+    re.I,
+)
+_DEPENDS = re.compile(
+    r"\b(?:after|following|once|depend\w*|subject to|acceptance|checkpoint|milestone|"
+    r"prerequisite|lead time|provided that|assum\w*)\b",
+    re.I,
+)
+
+
+def check_blueprint_del003(output: Any, task: Any) -> int:
+    """DEL-003: a feasible schedule needs dependencies, lead times and checkpoints. Each text
+    that sets a date or duration the task does not, with no dependency or checkpoint."""
+    source = " ".join(_strings(task)).lower()
     violations = 0
-    for opt in options:
-        summary = _get_field(opt, "summary", "").lower()
-        if "binding decision" in summary or "mandated selection" in summary:
+    for text in _plan_texts(output):
+        dates = {d.lower() for d in _DATE.findall(text)} - set(_DATE.findall(source))
+        if dates and not _DEPENDS.search(text):
             violations += 1
     return violations
 
 
-def check_options_gov001(output: Any) -> int:
-    """GOV-001 on options: Advisory knowledge does not define bid/no-bid thresholds."""
-    options = _get_field(output, "options", [])
-    violations = 0
-    for opt in options:
-        summary = _get_field(opt, "summary", "").lower()
-        if "autonomous no-bid" in summary or "binding bid threshold" in summary:
-            violations += 1
-    return violations
+_BENEFIT = re.compile(
+    r"\b(?:sav(?:e|es|ing|ings)|roi|return on investment|cost reduction|reduc\w+ (?:the )?"
+    r"(?:cost|costs|time|effort|processing|backlog)|efficienc\w+ gains?|payback)\b",
+    re.I,
+)
+_HYPOTHESIS = re.compile(
+    r"\b(?:expect\w*|hypothe\w*|anticipat\w*|target\w*|estimat\w*|could|may|might|aim\w*|"
+    r"intend\w*|potential\w*|baseline|measur\w*|if )\b",
+    re.I,
+)
 
 
-# --- BLUEPRINT Checks ---
-
-
-def check_blueprint_ba001(output: Any) -> int:
-    """BA-001 on blueprint: Map current/target states; mark missing unknown."""
-    current_state = _get_field(output, "current_state", [])
-    violations = 0
-    for f in current_state:
-        text = _get_field(f, "text", "").lower()
-        if "fabricated current state" in text or "invented legacy architecture" in text:
-            violations += 1
-    return violations
-
-
-def check_blueprint_del001(output: Any) -> int:
-    """DEL-001 on blueprint: WBS exposes missing packages; no price/schedule proof."""
-    wbs = _get_field(output, "wbs", [])
-    violations = 0
-    for node in wbs:
-        deliverable = _get_field(node, "deliverable", "").lower()
-        if "guaranteed fixed price" in deliverable or "schedule feasibility proof" in deliverable:
-            violations += 1
-    return violations
-
-
-def check_blueprint_del002(output: Any) -> int:
-    """DEL-002 on blueprint: Estimates state basis, source data, maturity, uncertainty."""
-    assumptions = _get_field(output, "assumptions", [])
-    violations = 0
-    for a in assumptions:
-        text = _get_field(a, "text", "").lower()
-        if "fixed price commitment" in text and "no uncertainty" in text:
-            violations += 1
-    return violations
-
-
-def check_blueprint_del003(output: Any) -> int:
-    """DEL-003 on blueprint: Feasible schedules require dependencies and checkpoints."""
-    ground_rules = _get_field(output, "ground_rules", [])
-    violations = 0
-    for gr in ground_rules:
-        text = _get_field(gr, "text", "").lower()
-        if "hard deadline with no dependencies" in text or "zero buffer schedule" in text:
-            violations += 1
-    return violations
-
-
-def check_blueprint_ben001(output: Any) -> int:
-    """BEN-001 on blueprint: State benefit as hypothesis; no unverified savings/ROI."""
-    target_state = _get_field(output, "target_state", [])
-    violations = 0
-    for f in target_state:
-        text = _get_field(f, "text", "")
-        if re.search(r"\b(guaranteed|asserted)\s+(savings|roi|cost reduction)\b", text, re.I):
-            violations += 1
-    return violations
+def check_blueprint_ben001(output: Any, task: Any) -> int:
+    """BEN-001: a benefit is a hypothesis with a baseline and a measure. Each text that
+    asserts savings, a reduction or a return as fact, with no hypothesis or measure word."""
+    return sum(
+        1 for text in _plan_texts(output) if _BENEFIT.search(text) and not _HYPOTHESIS.search(text)
+    )
 
 
 # --- RISK Checks ---
@@ -257,7 +418,7 @@ def _risk_texts(risk: Any) -> str:
     return " ".join(values)
 
 
-def check_risk_risk001(output: Any) -> int:
+def check_risk_risk001(output: Any, task: Any = None) -> int:
     """RISK-001: a risk states its condition, its uncertain event and its effect, with an owner
     role and an observable trigger; each risk missing one counts."""
     required = ("condition", "event", "effect", "owner_role", "trigger")
@@ -271,7 +432,7 @@ def check_risk_risk001(output: Any) -> int:
 _ALREADY = re.compile(r"\b(?:has|have|had)\s+already\s+(?:occurred|happened)\b", re.I)
 
 
-def check_risk_risk002(output: Any) -> int:
+def check_risk_risk002(output: Any, task: Any = None) -> int:
     """RISK-002: no rating or probability, by the rule `risk`'s own check applies, and no
     issue that has already happened presented as a risk."""
     from bidwright.graph.nodes import PROBABILITY, RATING_PHRASE, RATING_WORDS
@@ -294,7 +455,7 @@ _NO_HUMAN = {"", "none", "n/a", "system", "automatic", "auto", "automatic_overri
 _AUTO_APPROVAL = re.compile(r"\bauto(?:matically)?[- ]?approv|\bwaive[sd]?\b", re.I)
 
 
-def check_risk_risk003(output: Any) -> int:
+def check_risk_risk003(output: Any, task: Any = None) -> int:
     """RISK-003: response options with a human owner role; a risk with no response, with no
     human owner, or approving or waiving itself counts."""
     violations = 0
@@ -306,14 +467,13 @@ def check_risk_risk003(output: Any) -> int:
     return violations
 
 
-CHECKS: dict[str, Callable[[Any], int]] = {
+CHECKS: dict[str, Callable[[Any, Any], int]] = {
     "check_extract_req001": check_extract_req001,
     "check_extract_req002": check_extract_req002,
     "check_extract_req003": check_extract_req003,
     "check_consolidate_req002": check_consolidate_req002,
     "check_consolidate_req003": check_consolidate_req003,
     "check_consolidate_cfg001": check_consolidate_cfg001,
-    "check_consolidate_cfg002": check_consolidate_cfg002,
     "check_decide_ba001": check_decide_ba001,
     "check_decide_ba003": check_decide_ba003,
     "check_assess_ba003": check_assess_ba003,
@@ -453,7 +613,9 @@ def run_cards(
                 count = (
                     None
                     if answer.parsed is None
-                    else CHECKS[case.check](answer.parsed.model_dump(mode="json"))
+                    else CHECKS[case.check](
+                        answer.parsed.model_dump(mode="json"), task.model_dump(mode="json")
+                    )
                 )
                 run.violations[case.id][state].append(count)
     run.spent_usd = round(sum(float(e.get("cost_usd") or 0) for e in _calls(folder, read_calls)), 6)
@@ -514,7 +676,21 @@ def family_results(run: CardsRun, plan: dict[str, Any] | None = None) -> dict[st
     return found
 
 
-def write_report(run: CardsRun, out: Path = RESULTS, plan: dict[str, Any] | None = None) -> Path:
+def not_testable(path: Path) -> list[dict[str, str]]:
+    """The cases `cases.yaml` lists as not testable: a consuming node whose answer has no field
+    that could show the card's violation. The report names them; nothing runs them."""
+    with path.open(encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    keys = ("id", "card", "family", "node", "reason")
+    return [{k: str(c[k]).strip() for k in keys} for c in data.get("not_testable", []) or []]
+
+
+def write_report(
+    run: CardsRun,
+    out: Path = RESULTS,
+    plan: dict[str, Any] | None = None,
+    cases_path: Path = CASES,
+) -> Path:
     import json
 
     families = family_results(run, plan)
@@ -524,6 +700,7 @@ def write_report(run: CardsRun, out: Path = RESULTS, plan: dict[str, Any] | None
         "stopped": run.stopped,
         "families": families,
         "cases": run.violations,
+        "not_testable": not_testable(cases_path),
     }
     out.mkdir(parents=True, exist_ok=True)
     (out / "report.json").write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
@@ -544,5 +721,11 @@ def write_report(run: CardsRun, out: Path = RESULTS, plan: dict[str, Any] | None
             f"| {family} | {len(row['cases'])} | {row['off']} | {row['on']} | {result}"
             f" | {row['detail']} |"
         )
+    if data["not_testable"]:
+        lines += ["", "Not run: the node's answer has no field that could show the violation.", ""]
+        lines += [
+            f"- {c['id']} ({c['card']} on `{c['node']}`): {c['reason']}"
+            for c in data["not_testable"]
+        ]
     (out / "report.md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     return out

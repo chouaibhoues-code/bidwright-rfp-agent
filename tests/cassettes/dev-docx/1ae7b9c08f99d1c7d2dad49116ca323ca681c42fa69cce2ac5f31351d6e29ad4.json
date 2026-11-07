@@ -1,0 +1,35 @@
+{
+ "key": "sha256:1ae7b9c08f99d1c7d2dad49116ca323ca681c42fa69cce2ac5f31351d6e29ad4",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "DraftResult",
+  "tools": [],
+  "settings": {
+   "thinking": "medium"
+  }
+ },
+ "response": {
+  "text": "{\"title\": \"Risks and assumptions\", \"text\": \"The main risks include the final document exceeding 15 pages or being sent after 17:00 GMT on 2027-02-12 due to network blockages, which would lead to rejection without evaluation [RSK-001]. To respond, we would enforce a strict 12-page limit on the draft document and send a test e-mail with the attachment size to the Trust's office one day prior [RSK-001]. A further risk is cloud infrastructure or third-party backup services storing personal data outside the United Kingdom during migration, causing a breach of mandatory data residency requirements leading to contract termination [RSK-002]. We would audit all cloud resource region settings before deploying work package 1.1 and obtain written confirmation of data center locations from the hosting provider [RSK-002]. Additionally, delays in historic data migration could push the staff training schedule past the 2027-06-30 deadline, violating the go-live readiness mandate [RSK-003]. We would run staff training in parallel with the final stages of historic migration using synthetic test data and de-scope non-essential historic records for day-one migration [RSK-003]. It remains an open question what specific format is required for the e-mail submission under REQ-0001 to prevent rejection by the Trust's mail server [Q-01].\", \"cited_ids\": [\"RSK-001\", \"RSK-002\", \"RSK-003\", \"Q-01\"]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 1420,
+   "tokens_out": 352,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"title\": \"Risks and assumptions\", \"text\": \"The main risks include the final document exceeding 15 pages or being sent after 17:00 GMT on 2027-02-12 due to network blockages, which would lead to rejection without evaluation [RSK-001]. To respond, we would enforce a strict 12-page limit on the draft document and send a test e-mail with the attachment size to the Trust's office one day prior [RSK-001]. A further risk is cloud infrastructure or third-party backup services storing personal data outside the United Kingdom during migration, causing a breach of mandatory data residency requirements leading to contract termination [RSK-002]. We would audit all cloud resource region settings before deploying work package 1.1 and obtain written confirmation of data center locations from the hosting provider [RSK-002]. Additionally, delays in historic data migration could push the staff training schedule past the 2027-06-30 deadline, violating the go-live readiness mandate [RSK-003]. We would run staff training in parallel with the final stages of historic migration using synthetic test data and de-scope non-essential historic records for day-one migration [RSK-003]. It remains an open question what specific format is required for the e-mail submission under REQ-0001 to prevent rejection by the Trust's mail server [Q-01].\", \"cited_ids\": [\"RSK-001\", \"RSK-002\", \"RSK-003\", \"Q-01\"]}",
+     "thought_signature": "EmAKXgFpFH0TvkuT8w83ulzp4pnwjg4sJsSaAin66op6BvPpqeX_dT8JpqJ5ohZP2tT9SrNTh98khefwGg5dTQIN6NajhDs_yC3innxijbGJRNcFtKhF78-3lssNDUppohM="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-07T19:27:29Z"
+}

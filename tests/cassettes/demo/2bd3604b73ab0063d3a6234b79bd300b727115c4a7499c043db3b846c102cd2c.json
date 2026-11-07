@@ -1,0 +1,35 @@
+{
+ "key": "sha256:2bd3604b73ab0063d3a6234b79bd300b727115c4a7499c043db3b846c102cd2c",
+ "provider": "gemini",
+ "model": "gemini-3.5-flash-lite",
+ "request": {
+  "schema_name": "RiskRegister",
+  "tools": [],
+  "settings": {
+   "thinking": "low"
+  }
+ },
+ "response": {
+  "text": "{\"risks\": [{\"condition\": \"Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC under REQ-0001, and the team is compiling separate design and pricing documents into the submission.\", \"event\": \"Combining the separate documents pushes the draft over the 20-page limit or network congestion delays the upload past the deadline.\", \"effect\": \"The proposal is rejected without evaluation.\", \"assumptions\": [\"Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC.\"], \"owner_role\": \"Bid manager\", \"trigger\": \"The consolidated draft reaches 18 pages or the upload is not initiated by 2026-11-30.\", \"responses\": [\"Apply a strict 18-page budget across all sections.\", \"Perform a test upload one day before the deadline.\"], \"residual_exposure\": \"A residual risk of portal unavailability during the final upload window.\", \"evidence_src_ids\": [\"REQ-0001\"], \"affects\": [\"REQ-0001\"]}, {\"condition\": \"The service must be live for students by 2027-01-11 under REQ-0012, and work packages include API Integration with high days of 15.0 following Signing and Audit with high days of 20.0.\", \"event\": \"Cumulative development and integration tasks exceed the available time before 2027-01-11.\", \"effect\": \"The service misses the go-live date for spring enrollment.\", \"assumptions\": [\"The service must be live for students by 2027-01-11, the first day of spring enrollment.\"], \"owner_role\": \"Delivery lead\", \"trigger\": \"Work package 1.2 completion is delayed past 2027-01-04.\", \"responses\": [\"Run signing and API integration work packages in parallel where possible.\", \"De-scope non-mandatory features to ensure core go-live readiness by 2027-01-11.\"], \"residual_exposure\": \"A tight schedule leading up to spring enrollment with limited buffer for integration defects.\", \"evidence_src_ids\": [\"REQ-0008\", \"REQ-0012\"], \"affects\": [\"REQ-0008\", \"REQ-0012\"]}], \"open_questions\": [{\"text\": \"Does the procurement portal provide an automated submission confirmation receipt under REQ-0001?\", \"src_ids\": [\"REQ-0001\"]}]}",
+  "tool_calls": [],
+  "usage": {
+   "tokens_in": 3033,
+   "tokens_out": 597,
+   "tokens_cached": 0,
+   "tokens_thinking": 0,
+   "load_ms": null,
+   "prompt_ms": null,
+   "gen_ms": null
+  },
+  "native": {
+   "parts": [
+    {
+     "text": "{\"risks\": [{\"condition\": \"Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC under REQ-0001, and the team is compiling separate design and pricing documents into the submission.\", \"event\": \"Combining the separate documents pushes the draft over the 20-page limit or network congestion delays the upload past the deadline.\", \"effect\": \"The proposal is rejected without evaluation.\", \"assumptions\": [\"Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC.\"], \"owner_role\": \"Bid manager\", \"trigger\": \"The consolidated draft reaches 18 pages or the upload is not initiated by 2026-11-30.\", \"responses\": [\"Apply a strict 18-page budget across all sections.\", \"Perform a test upload one day before the deadline.\"], \"residual_exposure\": \"A residual risk of portal unavailability during the final upload window.\", \"evidence_src_ids\": [\"REQ-0001\"], \"affects\": [\"REQ-0001\"]}, {\"condition\": \"The service must be live for students by 2027-01-11 under REQ-0012, and work packages include API Integration with high days of 15.0 following Signing and Audit with high days of 20.0.\", \"event\": \"Cumulative development and integration tasks exceed the available time before 2027-01-11.\", \"effect\": \"The service misses the go-live date for spring enrollment.\", \"assumptions\": [\"The service must be live for students by 2027-01-11, the first day of spring enrollment.\"], \"owner_role\": \"Delivery lead\", \"trigger\": \"Work package 1.2 completion is delayed past 2027-01-04.\", \"responses\": [\"Run signing and API integration work packages in parallel where possible.\", \"De-scope non-mandatory features to ensure core go-live readiness by 2027-01-11.\"], \"residual_exposure\": \"A tight schedule leading up to spring enrollment with limited buffer for integration defects.\", \"evidence_src_ids\": [\"REQ-0008\", \"REQ-0012\"], \"affects\": [\"REQ-0008\", \"REQ-0012\"]}], \"open_questions\": [{\"text\": \"Does the procurement portal provide an automated submission confirmation receipt under REQ-0001?\", \"src_ids\": [\"REQ-0001\"]}]}",
+     "thought_signature": "EmAKXgFpFH0TGIBYOHgezPu-30reGf1NE55JxC1SjKFFSjhSRkMjOjd90AT3d-a4Za2RLnsb86Fq1pSo1bctAOtMAWRKhumgePTw0WrZbBvLfX9Oq6E23yXqosnFz8Evqbs="
+    }
+   ],
+   "role": "model"
+  }
+ },
+ "recorded": "2026-11-07T19:26:57Z"
+}

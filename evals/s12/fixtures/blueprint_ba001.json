@@ -1,14 +1,44 @@
 {
   "option": {
     "option_id": "OPT-1",
-    "name": "Cloud Native Case Management",
-    "summary": "Deployment of SaaS case management",
+    "name": "Cloud case management",
+    "summary": "Replace the Council's current case-management system with a hosted service.",
     "approach": [],
     "assumptions": []
   },
-  "needs": [],
+  "needs": [
+    {
+      "need_id": "NEED-S12-BP1",
+      "origin": "RFP",
+      "topic": "Current system replacement",
+      "text": "Replace the case-management system the Council uses today.",
+      "requirements": [
+        {
+          "id": "REQ-301",
+          "statement": "The solution shall replace the Council's current case-management system.",
+          "modality": "shall",
+          "quote": "The solution shall replace the Council's current case-management system.",
+          "src_ids": [
+            "SRC-301"
+          ]
+        }
+      ],
+      "excerpts": [],
+      "discrepancy_ids": [],
+      "question_ids": []
+    }
+  ],
   "claims": [],
-  "scope_in": [{"id": "SC-01", "text": "Tenant onboarding"}],
+  "scope_in": [
+    {
+      "id": "SC-01",
+      "text": "Case management for licensing officers"
+    },
+    {
+      "id": "SC-02",
+      "text": "Data migration from the current system"
+    }
+  ],
   "scope_out": [],
   "constraints": [],
   "never": []
