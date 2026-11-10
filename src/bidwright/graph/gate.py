@@ -3,11 +3,14 @@ before anything is drafted from it.
 
 `solution_gate` computes the bid signal (`signal.py`) and writes `bid_signal.json` and
 `bid_memo.md`, then `review/solution_gate.md` (`write_review`): the chosen option and the
-ranking with each score and reason, the capability map, the manifest's work packages and
-checks, every technology verdict, the risks, the bid signal, the research's origin, and how to
-decide. It then asks for the approval through LangGraph's `interrupt()`, and the run's part
-ends `WAITING_HUMAN`; resumed, LangGraph runs the node again from its start, so it writes the
-same files again and `interrupt()` returns the approval (C7-06, checked again 2026-11-05).
+ranking with each score and reason, how each option answers each need and what supports that
+(a need answered with no claim says so), each option's assumptions, the capability map, the
+manifest's work packages with their evidence class and claims, its assumptions and ground
+rules as an edit numbers them, its checks, every technology verdict, the risks, the bid
+signal, the research's origin, and how to decide (ADR-060). It then asks for the approval
+through LangGraph's `interrupt()`, and the run's part ends `WAITING_HUMAN`; resumed, LangGraph
+runs the node again from its start, so it writes the same files again and `interrupt()` returns
+the approval (C7-06, checked again 2026-11-05).
 
 The approval is a `GateApproval` in ADR-035's format. It is void, and the gate asks again, when
 it does not validate, names another gate or run, carries `reviewed` hashes that no longer match
@@ -267,7 +270,12 @@ def write_review(
         lines.append("The ranking is hypothetical: no approved bid policy is loaded.")
     if options.weighting == "equal":
         lines.append("Every factor counts equally, so the ranking is provisional.")
-    lines += ["", "## The ranking", "", "| Rank | Option | Total | Failed gates | Needs proof |"]
+    lines += [
+        "",
+        "## The ranking",
+        "",
+        "| Rank | Option | Total | Failed gates | Cites unsupported claims |",
+    ]
     lines.append("|---|---|---|---|---|")
     for o in ranked:
         gates = ", ".join(o.failed_gates) or "none"
@@ -276,6 +284,18 @@ def write_review(
     for o in ranked:
         for s in o.scores:
             lines.append(f"- {o.id} {s.factor_id}: {s.score} of 4. {_cell(s.reason)}")
+    # How each option answers each need, and what supports that: a need answered with no
+    # claim rests on the option's assumptions, which `needs_proof` cannot show (ADR-060).
+    for o in ranked:
+        for a in o.approach:
+            if a.delivery_mode == "EXCLUDED":
+                support = "left out"
+            elif a.claim_ids:
+                support = "claims " + ", ".join(a.claim_ids)
+            else:
+                support = "no claim: rests on the option's assumptions"
+            lines.append(f"- {o.id} answers {a.need_id} as {a.delivery_mode}; {support}.")
+        lines += [f"- {o.id} assumes: {_cell(text)}" for text in o.assumptions]
     lines += ["", "## The capability map", "", "| Need | Origin | Status | Claims | Note |"]
     lines.append("|---|---|---|---|---|")
     for row in inputs.capability_map.rows:
@@ -283,13 +303,30 @@ def write_review(
             f"| {row.need_id} {_cell(row.text)} | {row.origin} | {row.status}"
             f" | {', '.join(row.claim_ids) or 'none'} | {_cell(row.reason)} |"
         )
-    lines += ["", "## The work packages", "", "| Code | Name | Effort (days) | Predecessors |"]
-    lines.append("|---|---|---|---|")
+    lines += [
+        "",
+        "## The work packages",
+        "",
+        "| Code | Name | Effort (days) | Predecessors | Evidence | Claims |",
+    ]
+    lines.append("|---|---|---|---|---|---|")
     for p in manifest.work_packages:
         effort = f"{p.effort.low_days:g} to {p.effort.high_days:g}" if p.effort else "none"
+        evidence = p.evidence_class + (", needs proof" if p.needs_proof else "")
         lines.append(
-            f"| {p.code} | {_cell(p.name)} | {effort} | {', '.join(p.predecessors) or 'none'} |"
+            f"| {p.code} | {_cell(p.name)} | {effort} | {', '.join(p.predecessors) or 'none'}"
+            f" | {evidence} | {', '.join(p.claim_ids) or 'none'} |"
         )
+    lines += ["", "## Assumptions and ground rules", ""]
+    facts = [("Assumption", f) for f in manifest.assumptions] + [
+        ("Ground rule", f) for f in manifest.ground_rules
+    ]
+    counts: dict[str, int] = {}
+    for kind, fact in facts:
+        counts[kind] = counts.get(kind, 0) + 1
+        lines.append(f"- {kind} {counts[kind]} ({fact.evidence_class}): {_cell(fact.text)}")
+    if not facts:
+        lines.append("None.")
     lines += ["", "## The manifest's checks", "", "| Check | Passed | Detail |", "|---|---|---|"]
     for check in manifest.checks:
         lines.append(

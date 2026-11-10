@@ -56,13 +56,42 @@ def new_run_id(source: str, profile: str, now: datetime | None = None) -> str:
     return f"{stamp}-{slug}-{profile}-ui"
 
 
+@dataclass(frozen=True)
+class LaunchDefaults:
+    """The settings a CLI run takes when it names none: `config/research.yaml`'s mode and
+    `config/limits.yaml`'s switches."""
+
+    research: str
+    solution: str
+    risk_mode: str
+    reflect: bool
+
+
+def launch_defaults() -> LaunchDefaults:
+    """The configuration's defaults, so a run started on the Run page starts from the same
+    settings as `bidwright run` (ADR-060)."""
+    from bidwright.config import load_config
+
+    config = load_config()
+    switches = config.limits.switches
+    return LaunchDefaults(
+        research=config.research.mode,
+        solution=switches.solution,
+        risk_mode=switches.risk_mode,
+        reflect=switches.reflect,
+    )
+
+
 @dataclass
 class LaunchRequest:
+    """A run the Run page starts. The page fills every setting from its form, which starts
+    from `launch_defaults()`; these field defaults serve callers that name only a source."""
+
     source: str
     profile: str = "free"
     research: str = "pack"
     solution: str = "manifest"
-    risk_mode: str = "agent"
+    risk_mode: str = "oneshot"
     reflect: bool = False
     until: str = "render"
     auto_select: bool = False
@@ -187,11 +216,13 @@ def eval_to_phoenix(run_dir: Path) -> list[str]:
 
 __all__ = [
     "Job",
+    "LaunchDefaults",
     "LaunchRequest",
     "bidwright",
     "demo",
     "eval_to_phoenix",
     "inputs",
+    "launch_defaults",
     "new_run_id",
     "phoenix_sync",
     "resume",

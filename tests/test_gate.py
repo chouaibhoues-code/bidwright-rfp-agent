@@ -303,3 +303,66 @@ def test_apply_edits_refuses_a_cycle() -> None:
     manifest.work_packages[1].predecessors = ["1.1"]
     with pytest.raises(EditRefused, match="cycle"):
         apply_edits(manifest, [GateEdit(field="work_packages[1.1].predecessors", value=["1.2"])])
+
+
+def test_the_review_file_says_what_each_option_rests_on_and_lists_the_facts(
+    tmp_path: Path,
+) -> None:
+    """ADR-060: each option's approach per need, with 'no claim' where it rests on its
+    assumptions; the work packages' evidence class and claims; the facts as an edit numbers
+    them."""
+    from bidwright.graph.gate import write_review
+    from bidwright.schemas import BidSignal, Fact, ReviewedHashes, StoredApproach
+
+    options = SolutionOptions(
+        options=[
+            SolutionOption(
+                id="OPT-1",
+                name="Partner",
+                total=2.0,
+                rank=1,
+                approach=[
+                    StoredApproach(need_id="RG-001", delivery_mode="CONFIG", claim_ids=["CL-001"]),
+                    StoredApproach(need_id="RG-002", delivery_mode="PARTNER"),
+                    StoredApproach(need_id="RG-003", delivery_mode="EXCLUDED"),
+                ],
+                assumptions=["A partner covers the service levels."],
+            )
+        ]
+    )
+    manifest = _manifest()
+    manifest.assumptions = [Fact(text="A partner covers them.", evidence_class="ASSUMPTION")]
+    manifest.ground_rules = [Fact(text="Targets as stated.", evidence_class="RFP_SOURCE")]
+    signal = SignalInputs(
+        capability_map=CMAP,
+        options=options,
+        manifest=manifest,
+        tech_validations=CLEAN,
+        hazards=[],
+        flags=[],
+        binding_needs={"RG-001"},
+        need_of={},
+        deadline="not_stated",
+        started=date(2026, 11, 5),
+    )
+    inputs = GateInputs(
+        options=options,
+        capability_map=CMAP,
+        manifest=manifest,
+        tech_validations=CLEAN,
+        risks=[],
+        questions=[],
+        signal_inputs=signal,
+    )
+    hashes = ReviewedHashes(manifest="sha256:" + "a" * 64, options="sha256:" + "b" * 64)
+    path = write_review(tmp_path, RUN_ID, inputs, BidSignal(signal="UNDETERMINED"), hashes, [])
+    review = path.read_text(encoding="utf-8")
+    assert "- OPT-1 answers RG-001 as CONFIG; claims CL-001." in review
+    no_claim = "- OPT-1 answers RG-002 as PARTNER; no claim: rests on the option's assumptions."
+    assert no_claim in review
+    assert "- OPT-1 answers RG-003 as EXCLUDED; left out." in review
+    assert "- OPT-1 assumes: A partner covers the service levels." in review
+    assert "| Code | Name | Effort (days) | Predecessors | Evidence | Claims |" in review
+    assert "| 1.1 | Configure | 5 to 10 | none | ASSUMPTION | none |" in review
+    assert "- Assumption 1 (ASSUMPTION): A partner covers them." in review
+    assert "- Ground rule 1 (RFP_SOURCE): Targets as stated." in review

@@ -26,7 +26,7 @@ Two rules hold for the whole session:
 **Thirty minutes before**
 1. Run `docker compose up -d phoenix`, then open `http://127.0.0.1:6006`.
 2. Run `uv run bidwright ui --api` in its own terminal, then open `http://127.0.0.1:8501`. The API docs are at `http://127.0.0.1:8001/docs`.
-3. In the sidebar's **Run** selector, choose GATE. Check that the Review page's **Solution gate** tab shows the **Gate decision** form. If GATE no longer waits, start a fresh run as in step 3 of the day before, and use it as GATE.
+3. In the sidebar's **Run** selector, choose GATE. Check that the Review page's **Solution gate** tab shows **5. The decision**. If GATE no longer waits, start a fresh run as in step 3 of the day before, and use it as GATE.
 4. Keep four windows ready: the UI, Phoenix on GATE's trace, an editor on the repository, and a terminal at the repository root.
 
 | Label | Run | Live or replay | Use |
@@ -78,13 +78,18 @@ Talking points:
 
 ### 4. The human gate, decided live (5 minutes)
 
-On the Review page's **Solution gate** tab, show **Bid memo**, **The review file, review/solution_gate.md**, **Options ranking** and **Capability map**. Then fill in **Gate decision**:
-- **Approver role**: `Solution lead`. **Option**: `(keep current)`.
-- One rehearsed effort edit. For example, raise `work_packages[1.2].effort.high_days` from 20 to 24. Package 1.2 is legacy data migration and integration, estimated at 10 to 20 days at the gate.
-- Press **Submit gate decision**. The page runs the same `bidwright approve` command as the CLI and shows its output when the run stops again. The edit re-runs `techcheck` and `risk` on the changed fields before the run goes on to `render`.
+On the Review page, change the role at the top to `Solution lead`: the same field signs the gate decision. On the **Solution gate** tab, walk down the numbered sections:
+- **1. The options**: each option's scores with the model's reasons, how it answers each need and what supports that, and its assumptions. A yellow note names each need an option answers with no claim behind it.
+- **2. What the supplier can prove**: the capability map, with each claim's disposition from `assess`.
+- **3. The solution manifest**: the checks that fail, the gaps, the work packages with their evidence class, the assumptions and ground rules, and the technology verdicts.
+- **4. Risks**, then the bid memo and the review file in their expanders.
+
+Under **5. The decision**, choose **Approve with edits**. The fields are grouped by work package under its code and name:
+- One rehearsed effort edit. For example, in package 1.2, raise **High estimate (days)** from 20 to 24. Package 1.2 is legacy data migration and integration, estimated at 10 to 20 days at the gate.
+- Press **Approve with these edits**. The page sends only the changed field to the same `bidwright approve` command as the CLI, and a progress box stays open until the run stops again. The edit re-runs `techcheck` and `risk` on the changed package before the run goes on to `render`.
 
 The rechecks make model calls, so the wait can last a minute or two. To fill it, open the same address in a second browser tab and show the Ops page there. When the command returns:
-- The gate tab shows the approval record: the decision, the role, the option and `Automatic: False`.
+- The gate tab shows **The decision is recorded**, the command's output, and the approval record: the decision, the role, the option, `Automatic: False` and the edit.
 - The Run page's **Summary** tab now holds the summary: hazards first, then requirements, approach, risks and open questions, labeled `UNREVIEWED_DRAFT`. **Files** offers the compliance matrix and the other outputs.
 - Back on Review, **Stale** counts any record the resume rewrote, such as a risk from the `risk` recheck.
 - Ops lists a second trace for the resume, in the same Phoenix session.

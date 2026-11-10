@@ -62,11 +62,14 @@ def _jobs() -> list[actions.Job]:
 
 def _launcher() -> None:
     sources = actions.inputs()
+    if "launch_solution" not in st.session_state:
+        # The run's settings start from the configuration a CLI run uses (ADR-060).
+        defaults = actions.launch_defaults()
+        default("launch_research", defaults.research)
+        default("launch_solution", defaults.solution)
+        default("launch_risk_mode", defaults.risk_mode)
+        default("launch_reflect", defaults.reflect)
     default("launch_profile", "free")
-    default("launch_research", "pack")
-    default("launch_solution", "manifest")
-    default("launch_risk_mode", "agent")
-    default("launch_reflect", False)
     default("launch_until", "render")
     default("launch_auto_select", False)
     with st.form("launch_form"):
@@ -180,7 +183,7 @@ def _controls(data: RunData, status: str) -> None:
             st.rerun()
     elif status == "WAITING_HUMAN":
         st.warning("The run waits at the solution gate for a person's decision.")
-        st.page_link("pages/review.py", label="Decide the gate on the Review page")
+        st.page_link("views/review.py", label="Decide the gate on the Review page")
 
 
 def _monitor(run_dir: Path, shown: str) -> None:

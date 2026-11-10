@@ -188,7 +188,7 @@ To revert, restore `config/zones.yaml`, `config/agents.yaml`, `src/bidwright/sch
 | **Start the run** | `uv run bidwright run inputs/dev/dev_rfp.pdf --profile free` |
 | **Stop at the end of the current step** | `uv run bidwright stop <run>` |
 | **Resume the run** | `uv run bidwright resume <run>` |
-| **Submit gate decision** | `uv run bidwright approve <run> --role "Solution lead"`, with `--option`, `--edit`, `--override` or `--reject` |
+| **Approve**, **Approve with these edits**, **Switch option**, **Reject the solution** | `uv run bidwright approve <run> --role "Solution lead"`, with `--edit`, `--option`, `--reject` or `--override` |
 | **Record these verdicts** | `uv run bidwright review <run> --role "Bid manager" --item REQ-0001 --verdict accept` |
 | **Send the run, its checks and its review verdicts** | `uv run bidwright phoenix sync <run>` |
 | **Score the run and send its scores** | `uv run bidwright-eval phoenix outputs/<run>` |

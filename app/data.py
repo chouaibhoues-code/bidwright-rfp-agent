@@ -20,9 +20,11 @@ from bidwright.preflight import HOME
 from bidwright.schemas import (
     ApproachItem,
     BidSignal,
+    CapabilityClaim,
     CapabilityMap,
     ClarificationQuestion,
     DomainBrief,
+    EvidenceAssessment,
     GateApproval,
     LedgerEntry,
     OpenQuestion,
@@ -31,6 +33,7 @@ from bidwright.schemas import (
     Risk,
     RunManifest,
     SolutionManifest,
+    SolutionOption,
     SolutionOptions,
     SolutionSummary,
     TechValidation,
@@ -150,6 +153,11 @@ class RunData:
     gate_approval_text: str | None = None
     bid_signal: BidSignal | None = None
     bid_memo_text: str | None = None
+    # What the gate's decision rests on, read before `render` writes the summary (ADR-060).
+    risks: list[Risk] = field(default_factory=list)
+    brief: OpportunityBrief | None = None
+    claims: dict[str, CapabilityClaim] = field(default_factory=dict)
+    assessments: dict[str, EvidenceAssessment] = field(default_factory=dict)
 
 
 def outputs_dir(override: Path | None = None) -> Path:
@@ -354,6 +362,251 @@ def load_bid_memo_text(run_dir: Path) -> str | None:
     return path.read_text(encoding="utf-8")
 
 
+def _jsonl_lines(path: Path) -> list[str]:
+    if not path.is_file():
+        return []
+    return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def load_risks(run_dir: Path) -> list[Risk]:
+    """Read `<run_dir>/risks.jsonl`, which `risk` writes before the gate, into `Risk` records."""
+    return [Risk.model_validate_json(line) for line in _jsonl_lines(run_dir / "risks.jsonl")]
+
+
+def load_brief(run_dir: Path) -> OpportunityBrief | None:
+    """Validate `<run_dir>/brief.json` into `OpportunityBrief`, or None if absent."""
+    path = run_dir / "brief.json"
+    if not path.is_file():
+        return None
+    return OpportunityBrief.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def load_claims(run_dir: Path) -> dict[str, CapabilityClaim]:
+    """Read `<run_dir>/claims.jsonl` into `CapabilityClaim` records, by claim id."""
+    claims = (
+        CapabilityClaim.model_validate_json(line) for line in _jsonl_lines(run_dir / "claims.jsonl")
+    )
+    return {claim.id: claim for claim in claims}
+
+
+def load_assessments(run_dir: Path) -> dict[str, EvidenceAssessment]:
+    """Read `<run_dir>/assessments.jsonl` into `EvidenceAssessment` records, by claim id."""
+    found = (
+        EvidenceAssessment.model_validate_json(line)
+        for line in _jsonl_lines(run_dir / "assessments.jsonl")
+    )
+    return {a.claim_id: a for a in found}
+
+
+# --- The gate's view (ADR-060): what a person reads before deciding ---------------------------
+
+
+def code_key(code: str) -> list[int]:
+    """A work package code's sort key: `1.10` after `1.9`."""
+    return [int(part) for part in code.split(".") if part.isdigit()]
+
+
+def factor_labels(brief: OpportunityBrief | None) -> dict[str, str]:
+    """Each evaluation factor's id mapped to its name and weight, as the brief copied them."""
+    if brief is None:
+        return {}
+    return {f.id: f"{f.name} ({f.weight})" for f in brief.factors}
+
+
+def option_score_rows(option: SolutionOption, labels: Mapping[str, str]) -> list[dict[str, str]]:
+    """One row per in-scope factor: the factor, the option's score and the model's reason."""
+    return [
+        {
+            "factor": f"{s.factor_id} {labels.get(s.factor_id, '')}".strip(),
+            "score": f"{s.score} of 4",
+            "reason": s.reason,
+        }
+        for s in option.scores
+    ]
+
+
+NO_CLAIM = "no claim: rests on the option's assumptions"
+EXCLUDED = "left out by this option"
+
+
+def option_approach_rows(
+    option: SolutionOption,
+    capability_map: CapabilityMap | None,
+    assessments: Mapping[str, EvidenceAssessment],
+) -> list[dict[str, str]]:
+    """One row per need the option answers: how it delivers it and what supports that. A need
+    the option answers with no claim says so, whatever its delivery mode; `needs_proof` counts
+    only claims an option cites, so it cannot show this."""
+    needs = {row.need_id: row for row in capability_map.rows} if capability_map else {}
+    rows: list[dict[str, str]] = []
+    for approach in option.approach:
+        need = needs.get(approach.need_id)
+        if approach.delivery_mode == "EXCLUDED":
+            support = EXCLUDED
+        elif not approach.claim_ids:
+            support = NO_CLAIM
+        else:
+            support = ", ".join(
+                f"{c} {assessments[c].disposition}" if c in assessments else f"{c} not assessed"
+                for c in approach.claim_ids
+            )
+        rows.append(
+            {
+                "need": approach.need_id,
+                "text": need.text if need else "",
+                "map status": need.status if need else "",
+                "delivery": approach.delivery_mode,
+                "support": support,
+            }
+        )
+    return rows
+
+
+def unsupported_needs(option: SolutionOption) -> list[str]:
+    """The needs an option answers, not excludes, with no claim behind them."""
+    return [a.need_id for a in option.approach if a.delivery_mode != "EXCLUDED" and not a.claim_ids]
+
+
+def work_package_rows(manifest: SolutionManifest) -> list[dict[str, str]]:
+    """The manifest's work packages, in code order, with what each one rests on."""
+    rows: list[dict[str, str]] = []
+    for wp in sorted(manifest.work_packages, key=lambda p: code_key(p.code)):
+        effort = wp.effort
+        rows.append(
+            {
+                "code": wp.code,
+                "name": wp.name,
+                "effort (days)": f"{effort.low_days:g} to {effort.high_days:g}" if effort else "",
+                "basis": f"{effort.basis}, {effort.maturity}" if effort else "",
+                "evidence": wp.evidence_class + (", needs proof" if wp.needs_proof else ""),
+                "requirements": ", ".join(wp.requirement_ids),
+                "claims": ", ".join(wp.claim_ids) or "none",
+                "after": ", ".join(wp.predecessors) or "none",
+            }
+        )
+    return rows
+
+
+def fact_rows(manifest: SolutionManifest) -> list[dict[str, str]]:
+    """The assumptions and ground rules, numbered as an edit names them."""
+    rows: list[dict[str, str]] = []
+    kinds = (("assumption", manifest.assumptions), ("ground rule", manifest.ground_rules))
+    for kind, facts in kinds:
+        for n, fact in enumerate(facts, start=1):
+            rows.append(
+                {
+                    "fact": f"{kind} {n}",
+                    "text": fact.text,
+                    "evidence": fact.evidence_class + (", needs proof" if fact.needs_proof else ""),
+                    "sources": ", ".join(fact.source_ids) or "none",
+                }
+            )
+    return rows
+
+
+def risk_rows(risks: Sequence[Risk]) -> list[dict[str, str]]:
+    return [
+        {
+            "risk": r.id,
+            "event": r.event,
+            "owner": r.owner_role,
+            "trigger": r.trigger,
+            "bears on": ", ".join(r.affects) or "",
+        }
+        for r in risks
+    ]
+
+
+@dataclass(frozen=True)
+class EditField:
+    """One field the gate lets a person edit, with the label the form shows."""
+
+    path: str
+    kind: str
+    current: Any
+    label: str
+
+
+@dataclass(frozen=True)
+class EditGroup:
+    """The fields of one work package, or the assumptions, or the ground rules."""
+
+    title: str
+    caption: str
+    fields: list[EditField]
+
+
+PACKAGE_LABELS = {
+    "effort.low_days": "Low estimate (days)",
+    "effort.high_days": "High estimate (days)",
+    "predecessors": "Starts after",
+    "scope": "Scope",
+    "exclusions": "Exclusions",
+    "acceptance": "Acceptance",
+}
+
+
+def edit_groups(manifest: SolutionManifest | None) -> list[EditGroup]:
+    """`allowed_edit_fields`, grouped as a person reads them: each work package under its code
+    and name, then the assumptions, then the ground rules. The paths stay the gate's own."""
+    editable = allowed_edit_fields(manifest)
+    if manifest is None:
+        return []
+    groups: list[EditGroup] = []
+    for wp in sorted(manifest.work_packages, key=lambda p: code_key(p.code)):
+        prefix = f"work_packages[{wp.code}]."
+        fields = [
+            EditField(path, kind, current, PACKAGE_LABELS[path.removeprefix(prefix)])
+            for path, (kind, current) in editable.items()
+            if path.startswith(prefix)
+        ]
+        caption = f"Evidence {wp.evidence_class}"
+        if wp.requirement_ids:
+            caption += f"; requirements {', '.join(wp.requirement_ids)}"
+        caption += f"; claims {', '.join(wp.claim_ids) or 'none'}"
+        groups.append(EditGroup(f"{wp.code} {wp.name}", caption, fields))
+    for kind, title, facts in (
+        ("assumptions", "Assumptions", manifest.assumptions),
+        ("ground_rules", "Ground rules", manifest.ground_rules),
+    ):
+        fields = [
+            EditField(
+                f"{kind}[{n}].text",
+                "str",
+                fact.text,
+                f"{title[:-1]} {n} ({fact.evidence_class})",
+            )
+            for n, fact in enumerate(facts, start=1)
+        ]
+        if fields:
+            groups.append(EditGroup(title, "", fields))
+    return groups
+
+
+def changed_edits(
+    editable: Mapping[str, tuple[str, Any]], values: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    """The edits a form's values make: only the fields whose value changed, in the order the
+    gate lists them. Text is compared and sent with its whitespace collapsed, as the gate stores
+    it, so a text box's trailing newline is not an edit."""
+    edits: list[dict[str, Any]] = []
+    for path, (kind, current) in editable.items():
+        if path not in values:
+            continue
+        value = values[path]
+        if kind == "float":
+            if float(value) != float(current):
+                edits.append({"field": path, "value": float(value)})
+        elif kind == "predecessors":
+            if list(value) != list(current):
+                edits.append({"field": path, "value": list(value)})
+        else:
+            text = " ".join(str(value).split())
+            if text != " ".join(str(current).split()):
+                edits.append({"field": path, "value": text})
+    return edits
+
+
 def is_allowed_edit_field(
     field_path: str,
     manifest: SolutionManifest | None = None,
@@ -377,10 +630,16 @@ def allowed_edit_fields(
         return {}
     fields: dict[str, tuple[str, Any]] = {}
     for wp in manifest.work_packages:
-        low_days = float(wp.effort.low_days) if wp.effort is not None else 0.0
-        high_days = float(wp.effort.high_days) if wp.effort is not None else 0.0
-        fields[f"work_packages[{wp.code}].effort.low_days"] = ("float", low_days)
-        fields[f"work_packages[{wp.code}].effort.high_days"] = ("float", high_days)
+        # The gate refuses an effort edit on a package with no effort, so none is offered.
+        if wp.effort is not None:
+            fields[f"work_packages[{wp.code}].effort.low_days"] = (
+                "float",
+                float(wp.effort.low_days),
+            )
+            fields[f"work_packages[{wp.code}].effort.high_days"] = (
+                "float",
+                float(wp.effort.high_days),
+            )
         fields[f"work_packages[{wp.code}].predecessors"] = (
             "predecessors",
             list(wp.predecessors),
@@ -450,9 +709,19 @@ def run_approve(
     cmd: Sequence[str],
     stdin_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    """Run `bidwright approve` as a subprocess, passing `stdin_text` on standard input."""
-    return subprocess.run(  # noqa: S603
-        list(cmd),
+    """Run `bidwright approve` as a subprocess, passing `stdin_text` on standard input.
+
+    `build_approve_command` names the command `bidwright`, as a person would type it; this runs
+    it through this interpreter from the repository, as every other page action does
+    (`actions.bidwright`), so it does not depend on the PATH or the working directory."""
+    from app.actions import bidwright
+
+    args = list(cmd)
+    if args and args[0] == "bidwright":
+        args = bidwright(*args[1:])
+    return subprocess.run(  # noqa: S603 - an argument list, never a shell
+        args,
+        cwd=HOME,
         input=stdin_text,
         text=True,
         capture_output=True,
@@ -721,6 +990,10 @@ def load_run_data(
         gate_approval_text=gate_approval_text,
         bid_signal=bid_signal,
         bid_memo_text=bid_memo_text,
+        risks=load_risks(run_dir),
+        brief=load_brief(run_dir),
+        claims=load_claims(run_dir),
+        assessments=load_assessments(run_dir),
     )
 
 

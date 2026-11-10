@@ -14,7 +14,6 @@ from streamlit.testing.v1 import AppTest
 
 from app.data import (
     allowed_edit_fields,
-    build_approve_command,
     load_compliance_matrix,
     load_run_data,
 )
@@ -23,9 +22,9 @@ from bidwright.preflight import HOME
 
 APP_DIR = HOME / "app"
 MAIN_PAGE = APP_DIR / "main.py"
-RUN_PAGE = APP_DIR / "pages" / "run.py"
-REVIEW_PAGE = APP_DIR / "pages" / "review.py"
-OPS_PAGE = APP_DIR / "pages" / "ops.py"
+RUN_PAGE = APP_DIR / "views" / "run.py"
+REVIEW_PAGE = APP_DIR / "views" / "review.py"
+OPS_PAGE = APP_DIR / "views" / "ops.py"
 DEV_SAMPLE = HOME / "samples" / "dev"
 DUMMY_SHA = "sha256:" + "a" * 64
 
@@ -490,63 +489,98 @@ def test_run_page_shows_capability_map_rows_by_status_and_work_packages_under_pa
     assert any("TC-01 (fastapi 0.115): VALIDATED" in t for t in texts)
 
 
-def test_review_form_builds_exact_approve_command_and_stdin_and_blocks_outside_fields(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    run_dir = tmp_path / "run-waiting"
-    _write_iter3_fixture(run_dir, status="WAITING_HUMAN")
-    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(run_dir))
-
-    recorded: list[tuple[list[str], str | None]] = []
-
+def _fake_approve(recorded: list[tuple[list[str], str | None]], code: int = 0) -> Any:
     def fake_run_approve(
-        cmd: Sequence[str],
-        stdin_text: str | None = None,
+        cmd: Sequence[str], stdin_text: str | None = None
     ) -> subprocess.CompletedProcess[str]:
         recorded.append((list(cmd), stdin_text))
         return subprocess.CompletedProcess(
-            args=list(cmd),
-            returncode=0,
-            stdout="COMPLETED: resumed after gate edit\n",
-            stderr="",
+            args=list(cmd), returncode=code, stdout="COMPLETED: resumed after the gate\n", stderr=""
         )
 
-    monkeypatch.setattr("app.data.run_approve", fake_run_approve)
+    return fake_run_approve
 
-    data = load_run_data(run_dir)
-    editable = allowed_edit_fields(data.solution_manifest)
+
+def _gate_page(run_dir: Path, monkeypatch: pytest.MonkeyPatch, role: str = "") -> AppTest:
+    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(run_dir))
     at = AppTest.from_file(str(REVIEW_PAGE)).run(timeout=15)
     assert len(at.exception) == 0
-    assert len(at.markdown) == 0
-    assert any("Chosen option: OPT-1" in el.value for el in at.code)
+    if role:
+        at.text_input(key="review_role").input(role)
+        at = at.run(timeout=15)
+    return at
 
-    # Every edit widget key in the form is restricted strictly to section 4.8's allowed field paths.
-    edit_widget_keys = {
+
+def _submit(at: AppTest, label: str) -> AppTest:
+    next(b for b in at.button if b.label == label).click()
+    return at.run(timeout=15)
+
+
+def test_the_gate_shows_on_the_page_what_the_decision_rests_on(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ADR-060: options with scores, reasons, approach and assumptions; the capability map; the
+    work packages with evidence; the facts; the risks; all as plain text or table cells."""
+    run_dir = tmp_path / "run-waiting"
+    _write_iter3_fixture(run_dir, status="WAITING_HUMAN")
+    at = _gate_page(run_dir, monkeypatch)
+    assert len(at.markdown) == 0
+    texts = [el.value for el in at.text]
+    assert (
+        "Rank 1: OPT-1, Phased OOTB rollout. Total 4 of 4. The manifest below is built on this"
+        " option." in texts
+    )
+    assert "Rank 2: OPT-2, Custom adapter suite. Total 3 of 4." in texts
+    assert "Assumes: Adapter spec signed in week 2" in texts
+    warnings = [el.value for el in at.warning]
+    assert any("Answers RG-002 with no claim behind it" in w for w in warnings)
+    assert not any("RG-001" in w for w in warnings), "OPT-1 answers RG-001 with a claim"
+    subheaders = [el.value for el in at.subheader]
+    for heading in (
+        "1. The options",
+        "2. What the supplier can prove",
+        "3. The solution manifest, for OPT-1",
+        "4. Risks",
+        "5. The decision",
+    ):
+        assert heading in subheaders
+    assert any("Chosen option: OPT-1" in el.value for el in at.code), "the review file"
+    assert at.radio(key="gate_decision").value == "Approve"
+    assert "Enter your role at the top of the page" in " ".join(warnings)
+
+
+def test_the_gate_approves_with_grouped_edits_and_shows_the_recorded_decision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = tmp_path / "run-waiting"
+    _write_iter3_fixture(run_dir, status="WAITING_HUMAN")
+    recorded: list[tuple[list[str], str | None]] = []
+    monkeypatch.setattr("app.data.run_approve", _fake_approve(recorded))
+    data = load_run_data(run_dir)
+    editable = allowed_edit_fields(data.solution_manifest)
+
+    at = _gate_page(run_dir, monkeypatch, role="Solution Architect")
+    at.radio(key="gate_decision").set_value("Approve with edits")
+    at = at.run(timeout=15)
+    assert len(at.exception) == 0 and len(at.markdown) == 0
+    # Every edit widget is one of the gate's own field paths, and every such path has one.
+    keys = {
         el.key
-        for group in (at.number_input, at.multiselect, at.text_input)
+        for group in (at.number_input, at.multiselect, at.text_area)
         for el in group
         if el.key and el.key.startswith("edit:")
     }
-    assert edit_widget_keys == {f"edit:{path}" for path in editable}
+    assert keys == {f"edit:{path}" for path in editable}
+    texts = [el.value for el in at.text]
+    assert "1.1.1 SAML Broker Setup" in texts and "1.1.2 Role Mapping Cutover" in texts
+    assert any(t.startswith("Evidence CAPABILITY_EVIDENCE; requirements REQ-0001") for t in texts)
+    labels = {el.label for el in at.number_input}
+    assert labels == {"Low estimate (days)", "High estimate (days)"}
+    assert "Assumption 1 (ASSUMPTION)" in {el.label for el in at.text_area}
 
-    # An edit outside section 4.8's field paths cannot be entered or built.
-    with pytest.raises(ValueError, match="not allowed by section 4.8"):
-        build_approve_command(
-            run_dir,
-            role="Solution Architect",
-            edits=[{"field": "workstreams[0].name", "value": "Forbidden"}],
-            manifest=data.solution_manifest,
-        )
-
-    # Fill the form with an approver role, two section-4.8 edits, and an override reason.
-    at.text_input(key="gate_role").set_value("Solution Architect")
     at.number_input(key="edit:work_packages[1.1.1].effort.low_days").set_value(7.5)
-    at.text_input(key="edit:assumptions[1].text").set_value("IdP metadata delivered on day 1")
-    at.text_input(key="gate_override").set_value("Waived by Bid Director")
-    at.button[0].click()
-    at = at.run(timeout=15)
-
+    at.text_area(key="edit:assumptions[1].text").input("IdP metadata delivered   on day 1\n")
+    at = _submit(at, "Approve with these edits")
     assert len(at.exception) == 0
     assert len(recorded) == 1
     cmd, stdin_text = recorded[0]
@@ -558,24 +592,97 @@ def test_review_form_builds_exact_approve_command_and_stdin_and_blocks_outside_f
         "Solution Architect",
         "--edit",
         "-",
-        "--override",
-        "Waived by Bid Director",
     ]
-    assert stdin_text is not None
-    parsed_stdin: list[dict[str, Any]] = yaml.safe_load(stdin_text)
-    assert parsed_stdin == [
+    parsed = yaml.safe_load(stdin_text or "")
+    assert parsed == [
         {"field": "work_packages[1.1.1].effort.low_days", "value": 7.5},
         {"field": "assumptions[1].text", "value": "IdP metadata delivered on day 1"},
-    ]
-    # The gate reads the same edits: its rule accepts each field, and `assumptions[1]` is the
-    # manifest's first assumption, as the review file numbers it.
-    from bidwright.graph.blueprint import apply_edits, edit_path_problem
+    ], "only the changed fields, with text as the gate stores it"
+    # The page reran on the recorded decision: the result shows, and the form starts clean.
+    assert any("The decision is recorded" in el.value for el in at.success)
+    assert at.radio(key="gate_decision").value == "Approve"
+    # The gate reads the same edits.
+    from bidwright.graph.blueprint import apply_edits
     from bidwright.schemas import GateEdit
 
-    assert all(edit_path_problem(e["field"]) is None for e in parsed_stdin)
     assert data.solution_manifest is not None
-    edited, _ = apply_edits(data.solution_manifest, [GateEdit(**parsed_stdin[1])])
+    edited, _ = apply_edits(data.solution_manifest, [GateEdit(**e) for e in parsed])
     assert edited.assumptions[0].text == "IdP metadata delivered on day 1"
+
+
+def test_an_edit_decision_with_no_change_or_no_role_runs_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = tmp_path / "run-waiting"
+    _write_iter3_fixture(run_dir, status="WAITING_HUMAN")
+    recorded: list[tuple[list[str], str | None]] = []
+    monkeypatch.setattr("app.data.run_approve", _fake_approve(recorded))
+    at = _gate_page(run_dir, monkeypatch)
+    at = _submit(at, "Approve OPT-1")
+    assert any("Enter your role at the top of the page first" in el.value for el in at.error)
+    at.text_input(key="review_role").input("Solution Architect")
+    at.radio(key="gate_decision").set_value("Approve with edits")
+    at = at.run(timeout=15)
+    at = _submit(at, "Approve with these edits")
+    assert any("No field changed" in el.value for el in at.error)
+    assert recorded == []
+
+
+def test_reject_needs_a_reason_and_switching_names_the_other_option(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = tmp_path / "run-waiting"
+    _write_iter3_fixture(run_dir, status="WAITING_HUMAN")
+    recorded: list[tuple[list[str], str | None]] = []
+    monkeypatch.setattr("app.data.run_approve", _fake_approve(recorded))
+    at = _gate_page(run_dir, monkeypatch, role="Bid director")
+    at.radio(key="gate_decision").set_value("Reject")
+    at = at.run(timeout=15)
+    at = _submit(at, "Reject the solution")
+    assert any("Give the reason for the rejection" in el.value for el in at.error)
+    at.text_area(key="gate_reject").input("No partner for the service levels")
+    at = _submit(at, "Reject the solution")
+    assert recorded[-1] == (
+        [
+            "bidwright",
+            "approve",
+            str(run_dir),
+            "--role",
+            "Bid director",
+            "--reject",
+            "No partner for the service levels",
+        ],
+        None,
+    )
+    at.radio(key="gate_decision").set_value("Switch to another option")
+    at = at.run(timeout=15)
+    assert at.selectbox(key="gate_option").options == ["OPT-2, Custom adapter suite"]
+    at = _submit(at, "Switch option")
+    assert recorded[-1][0][-2:] == ["--option", "OPT-2"]
+    assert len(at.exception) == 0
+
+
+def test_a_blocked_gate_asks_for_an_override_and_a_refusal_keeps_the_form(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = tmp_path / "run-blocked"
+    _write_iter3_fixture(run_dir, status="WAITING_HUMAN")
+    validation = json.loads((run_dir / "tech_validations.jsonl").read_text(encoding="utf-8"))
+    validation["verdict"] = "INVALIDATED"
+    (run_dir / "tech_validations.jsonl").write_text(json.dumps(validation) + "\n", "utf-8")
+    recorded: list[tuple[list[str], str | None]] = []
+    monkeypatch.setattr("app.data.run_approve", _fake_approve(recorded, code=2))
+    at = _gate_page(run_dir, monkeypatch, role="Bid director")
+    assert any("Blocked by technology claims still INVALIDATED: TC-01" in e.value for e in at.error)
+    at.text_input(key="gate_override").input("Checked by hand against the vendor's release notes")
+    at = _submit(at, "Approve OPT-1")
+    assert recorded[-1][0][-2:] == [
+        "--override",
+        "Checked by hand against the vendor's release notes",
+    ]
+    # The command failed: the error shows and the form is still there to correct.
+    assert any("the run still waits at the gate" in e.value for e in at.error)
+    assert any(b.label == "Approve OPT-1" for b in at.button)
 
 
 def test_review_page_for_run_not_waiting_shows_approval_file_and_no_form(
@@ -589,7 +696,7 @@ def test_review_page_for_run_not_waiting_shows_approval_file_and_no_form(
     at = AppTest.from_file(str(REVIEW_PAGE)).run(timeout=15)
     assert len(at.exception) == 0
     assert len(at.markdown) == 0
-    assert not [b for b in at.button if "Submit gate decision" in b.label], "no gate form"
+    assert not [r for r in at.radio if r.key == "gate_decision"], "no gate form"
     texts = [el.value for el in at.text]
     assert any("Decision: approve | Role: Bid Director | Option: OPT-1" in t for t in texts)
     assert any("approver_role: Bid Director" in el.value for el in at.code)
@@ -887,3 +994,114 @@ def test_the_selector_labels_a_run_and_leaves_matrix_runs_out_unless_asked(
     at.session_state["show_matrix_runs"] = True
     at.run(timeout=20)
     assert len(at.sidebar.selectbox(key="run").options) == 2
+
+
+# --- ADR-060: the gate's view, the views folder and the launcher's defaults ------------------
+
+
+def test_the_page_scripts_live_outside_a_pages_folder() -> None:
+    """Streamlit serves a `pages/` folder next to the entrypoint until a session calls
+    `st.navigation`, so the first deep link after a start would get those pages instead."""
+    assert not (APP_DIR / "pages").exists()
+    assert {p.name for p in (APP_DIR / "views").glob("*.py")} == {"run.py", "review.py", "ops.py"}
+
+
+def test_the_launcher_starts_from_the_configuration_a_cli_run_uses(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from bidwright.config import load_config
+
+    monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(tmp_path / "none"))
+    at = AppTest.from_file(str(RUN_PAGE)).run(timeout=15)
+    assert len(at.exception) == 0
+    config = load_config()
+    assert at.selectbox(key="launch_risk_mode").value == config.limits.switches.risk_mode
+    assert at.selectbox(key="launch_solution").value == config.limits.switches.solution
+    assert at.selectbox(key="launch_research").value == config.research.mode
+    assert at.checkbox(key="launch_reflect").value == config.limits.switches.reflect
+
+
+def test_changed_edits_sends_only_changes_with_text_as_the_gate_stores_it() -> None:
+    from app.data import changed_edits
+
+    editable = {
+        "work_packages[1.1].effort.high_days": ("float", 20.0),
+        "work_packages[1.2].predecessors": ("predecessors", ["1.1"]),
+        "work_packages[1.1].scope": ("str", "Configure audit records."),
+        "assumptions[1].text": ("str", "A partner can cover service levels."),
+    }
+    values = {
+        "work_packages[1.1].effort.high_days": 20,
+        "work_packages[1.2].predecessors": [],
+        "work_packages[1.1].scope": "Configure audit records.\n",
+        "assumptions[1].text": "A named partner  covers\nservice levels.",
+    }
+    assert changed_edits(editable, values) == [
+        {"field": "work_packages[1.2].predecessors", "value": []},
+        {"field": "assumptions[1].text", "value": "A named partner covers service levels."},
+    ]
+
+
+def test_the_edit_groups_hold_exactly_the_gates_fields_and_skip_an_absent_effort(
+    tmp_path: Path,
+) -> None:
+    from app.data import edit_groups
+
+    run_dir = tmp_path / "run-waiting"
+    _write_iter3_fixture(run_dir, status="WAITING_HUMAN")
+    manifest = load_run_data(run_dir).solution_manifest
+    assert manifest is not None
+    manifest.work_packages[1].effort = None
+    groups = edit_groups(manifest)
+    assert [g.title for g in groups] == [
+        "1.1.1 SAML Broker Setup",
+        "1.1.2 Role Mapping Cutover",
+        "Assumptions",
+        "Ground rules",
+    ]
+    paths = [f.path for g in groups for f in g.fields]
+    assert sorted(paths) == sorted(allowed_edit_fields(manifest))
+    assert "work_packages[1.1.2].effort.low_days" not in paths
+
+
+def test_the_option_approach_says_when_a_need_rests_on_no_claim(tmp_path: Path) -> None:
+    from app.data import NO_CLAIM, option_approach_rows, unsupported_needs
+
+    run_dir = tmp_path / "run-waiting"
+    _write_iter3_fixture(run_dir, status="WAITING_HUMAN")
+    data = load_run_data(run_dir)
+    assert data.options is not None
+    first, second = data.options.options
+    assert option_approach_rows(first, data.capability_map, {})[0]["support"] == (
+        "CL-001 not assessed"
+    )
+    row = option_approach_rows(second, data.capability_map, {})[0]
+    assert row["support"] == NO_CLAIM and row["map status"] == "GAP"
+    assert unsupported_needs(second) == ["RG-002"] and unsupported_needs(first) == []
+
+
+def test_run_approve_runs_the_cli_through_this_interpreter_from_the_repository(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import sys
+
+    import app.data as app_data
+
+    seen: dict[str, Any] = {}
+
+    def fake_run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        seen["args"], seen["kwargs"] = args, kwargs
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(app_data.subprocess, "run", fake_run)
+    app_data.run_approve(["bidwright", "approve", "run-x", "--role", "Bid director"], "x: 1\n")
+    assert seen["args"] == [
+        sys.executable,
+        "-m",
+        "bidwright.cli",
+        "approve",
+        "run-x",
+        "--role",
+        "Bid director",
+    ]
+    assert seen["kwargs"]["cwd"] == HOME and seen["kwargs"]["input"] == "x: 1\n"

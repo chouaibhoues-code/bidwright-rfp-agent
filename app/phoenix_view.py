@@ -32,7 +32,8 @@ def _client(data_class: str) -> PhoenixClient | None:
         client = PhoenixClient.from_env(data_class)
     except Refused:
         return None
-    client.timeout = 1.0
+    # A local Phoenix idle for hours took over a second to answer its first request (2026-11-10).
+    client.timeout = 3.0
     return client
 
 
