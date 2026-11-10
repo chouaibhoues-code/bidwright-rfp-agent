@@ -58,7 +58,7 @@ Talking points:
 On the Run page's **Solution** tab, show **Approach**, **Capability map**, **Options**, **Solution manifest**, **Technology verdicts** and **Bid signal**. GATE's map has 2 PARTIAL and 3 GAP needs and offers 2 options. Then open GATE's trace in Phoenix: the `decide` spans with their tool calls, and an `assess` span.
 
 Talking points:
-- LangGraph routes the run, and no LLM chooses the next node. The agents are `discover`, `decide` and `risk`: each runs a bounded tool loop and stops when a turn adds no new evidence.
+- LangGraph routes the run, and no LLM chooses the next node. `decide` is the agent in every run, one per need, and `discover` in research mode `live`: each runs a bounded tool loop and stops when a turn adds no new evidence. The `risk` agent is built and off by default, because its ladder did not show it finding more risk seeds than one call (ADR-059).
 - The gateway checks every tool call against `config/agents.yaml` outside the model: the allowlist, the argument schema, repeated calls and the budget.
 - `assess` ran on another model family (`gpt-oss-120b` on Cerebras). It sees the claim and its cited spans, never the author's reasoning. With no KB evidence, code marks a claim `UNVERIFIED` and makes no LLM call.
 - A need the supplier KB cannot support stays a GAP, and the gate shows it to a person.
@@ -122,7 +122,7 @@ Talking points:
 | Decision | Cost accepted | Evidence |
 |---|---|---|
 | Missed mandatory requirements block, and F1 only warns | Precision falls when recall rises: on the hero replay, misses fell from 3 to 2 and F1 fell 4.3 points | `evals/baselines/README.md`, `config/thresholds.yaml`, ADR-049 |
-| A fixed graph, with tool loops only in `discover`, `decide` and `risk` | Less freedom for the model. Each loop must beat a fixed control with repeats, and those ladders are not run yet | `docs/agents.md`, the [Iteration 3 design](designs/iteration-3.md) |
+| A fixed graph, with tool loops only in `discover`, `decide` and, behind a switch, `risk` | Less freedom for the model. Each loop had to beat a fixed control with repeats: on 2026-11-07 the manifest path kept `decide`, and the risk loop and `reflect` stay off (ADR-058, ADR-059) | `docs/agents.md`, the [Iteration 3 design](designs/iteration-3.md) |
 | `assess` on another model family | An extra provider and its quota. A same-family fallback ends the run `DEGRADED` with `SAME_FAMILY` | ADR-045, `config/models.yaml` |
 | Flash-Lite for the `reason` role on `free` | A smaller model than Flash, because Flash allowed 20 free requests a day | ADR-003 |
 | A synthetic corpus, with gold written in the specs | Synthetic text is cleaner than real tenders, and one author wrote both corpus and prompts | `ASSUMPTIONS.md` |

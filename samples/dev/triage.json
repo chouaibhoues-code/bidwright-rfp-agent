@@ -4,96 +4,96 @@
    "section_path": "Request for Proposal: Electronic Signature Service",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "BACKGROUND",
-   "confidence": 0.9,
-   "reason": "Provides identification and context for the RFP document.",
+   "confidence": 0.85,
+   "reason": "Provides the college name and reference number as introductory context.",
    "source": "model"
   },
   {
    "section_path": "1 Introduction",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "BACKGROUND",
-   "confidence": 0.95,
-   "reason": "Describes the purpose of the procurement and the entity issuing it.",
+   "confidence": 0.9,
+   "reason": "Introduces the college and the general scope of the procurement.",
    "source": "model"
   },
   {
    "section_path": "2 Background",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "BACKGROUND",
-   "confidence": 1.0,
-   "reason": "Provides historical context about the buyer's current system and data.",
+   "confidence": 0.95,
+   "reason": "Describes the current tools and past signatures, which obliges no bidder.",
    "source": "model"
   },
   {
    "section_path": "3 Instructions to bidders",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "INSTRUCTION",
-   "confidence": 1.0,
-   "reason": "Specifies submission requirements, format, and deadlines.",
+   "confidence": 0.98,
+   "reason": "Explains how to respond, specifying portal submission, page limit and deadline.",
    "source": "model"
   },
   {
    "section_path": "4 Requirements",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 0.8,
-   "reason": "Outlines the scope and requirements for the contract term.",
+   "confidence": 0.9,
+   "reason": "Sets out terms applying for the whole contract term.",
    "source": "model"
   },
   {
    "section_path": "4 Requirements > 4.1 Signing",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 1.0,
-   "reason": "Details specific technical requirements for signature logging.",
+   "confidence": 0.95,
+   "reason": "Details supplier obligations regarding audit records for signature events.",
    "source": "model"
   },
   {
    "section_path": "4 Requirements > 4.2 Records",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 1.0,
-   "reason": "Sets mandatory requirements for data retention and migration.",
+   "confidence": 0.95,
+   "reason": "Defines supplier duties on storing signed documents and migrating records.",
    "source": "model"
   },
   {
    "section_path": "4 Requirements > 4.3 Integration",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 1.0,
-   "reason": "Defines integration requirements for the provided service.",
+   "confidence": 0.95,
+   "reason": "Specifies technical service integration requirements.",
    "source": "model"
   },
   {
    "section_path": "5 Service levels",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 1.0,
-   "reason": "Establishes performance and service level requirements for the provider.",
+   "confidence": 0.95,
+   "reason": "Defines uptime availability and incident response obligations.",
    "source": "model"
   },
   {
    "section_path": "6 Timeline",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "OBLIGATION",
-   "confidence": 0.8,
-   "reason": "Defines key delivery dates and milestones for the service.",
+   "confidence": 0.85,
+   "reason": "Sets live dates and operational deadlines for the supplier.",
    "source": "model"
   },
   {
    "section_path": "7 Evaluation",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "EVALUATION",
-   "confidence": 1.0,
-   "reason": "Explains how proposals are scored.",
+   "confidence": 0.98,
+   "reason": "Outlines the criteria and weight used for scoring proposals.",
    "source": "model"
   },
   {
    "section_path": "8 Contract",
    "doc_id": "dev-rfp-db9eeb00",
    "zone": "CONTRACT",
-   "confidence": 1.0,
-   "reason": "Specifies the duration and renewal options of the contract.",
+   "confidence": 0.95,
+   "reason": "States the contract duration and extension options.",
    "source": "model"
   }
  ],
@@ -102,7 +102,7 @@
   "procurement": "cloud electronic signature service",
   "submission_deadline": "2026-12-01 12:00 UTC",
   "submission_format": "single PDF of no more than 20 pages",
-  "evaluation_method": "scored on the criteria below",
+  "evaluation_method": "Criterial scoring",
   "contract_length": "three years from award, with an option to extend it by one year"
  },
  "fallback_sections": 0

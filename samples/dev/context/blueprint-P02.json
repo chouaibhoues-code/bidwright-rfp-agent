@@ -1,0 +1,1 @@
+{"node":"blueprint","call_id":"P02","included_src_ids":[],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["1.1","1.2","2.1","CL-001","CL-002","CL-003"],"cards":[],"tokens_by_layer":{"rules":563,"examples":941,"evidence":1173,"task":48},"budget_tokens":24000,"utilization":0.1135}

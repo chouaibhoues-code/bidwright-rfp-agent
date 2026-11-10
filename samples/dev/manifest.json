@@ -1,0 +1,394 @@
+{
+ "option_id": "OPT-2",
+ "revision": 0,
+ "current_state": [
+  {
+   "text": "Signed documents are currently maintained without automated audit records or REST API integration.",
+   "evidence_class": "RFP_SOURCE",
+   "source_ids": [
+    "SRC-0020",
+    "REQ-0003"
+   ],
+   "needs_proof": false
+  },
+  {
+   "text": "Historic records are held in the current tool without automated migration.",
+   "evidence_class": "RFP_SOURCE",
+   "source_ids": [
+    "SRC-0026",
+    "REQ-0008"
+   ],
+   "needs_proof": false
+  }
+ ],
+ "target_state": [
+  {
+   "text": "The Supplier keeps an audit record of every signature event and stores signed documents for ten years.",
+   "evidence_class": "RFP_SOURCE",
+   "source_ids": [
+    "SRC-0020",
+    "SRC-0025",
+    "REQ-0003",
+    "REQ-0007"
+   ],
+   "needs_proof": false
+  },
+  {
+   "text": "The service integrates with the College's student records system through its existing REST API.",
+   "evidence_class": "RFP_SOURCE",
+   "source_ids": [
+    "SRC-0027",
+    "REQ-0009",
+    "CL-001"
+   ],
+   "needs_proof": false
+  },
+  {
+   "text": "Historic records are migrated with trial runs, reconciliation reports and a final cut-over.",
+   "evidence_class": "RFP_SOURCE",
+   "source_ids": [
+    "SRC-0026",
+    "REQ-0008",
+    "CL-002"
+   ],
+   "needs_proof": false
+  }
+ ],
+ "workstreams": [
+  {
+   "code": "1",
+   "name": "Electronic Signing and Integration",
+   "objective": "Configure electronic signing, document retention, and student record system integration."
+  },
+  {
+   "code": "2",
+   "name": "Partner Implementation",
+   "objective": "Manage the live deployment timeline with the implementation partner."
+  }
+ ],
+ "wbs": [
+  {
+   "code": "1",
+   "name": "Electronic Signing and Integration",
+   "deliverable": "Configured signing and integration service"
+  },
+  {
+   "code": "2",
+   "name": "Partner Implementation",
+   "deliverable": "Live service deployment"
+  }
+ ],
+ "work_packages": [
+  {
+   "code": "1.1",
+   "name": "Signing and Storage",
+   "deliverable": "Audit records, browser support, reminders, templates, 10-year storage, and on-premises deployment option",
+   "requirement_ids": [
+    "REQ-0003",
+    "REQ-0004",
+    "REQ-0005",
+    "REQ-0006",
+    "REQ-0007",
+    "REQ-0010"
+   ],
+   "need_ids": [
+    "RG-002"
+   ],
+   "claim_ids": [],
+   "scope": "Configure audit records, browser support, reminders, templates, ten-year storage, and on-premises deployment options.",
+   "exclusions": "Service availability and severity-one incident response requirements.",
+   "acceptance": "Signed documents are stored for ten years with complete audit records and configured features.",
+   "effort": {
+    "low_days": 10.0,
+    "high_days": 20.0,
+    "basis": "analogy",
+    "basis_text": "Similar signing and storage configurations took comparable time ranges.",
+    "role_ids": [
+     "ROLE-003"
+    ],
+    "uncertainty": "Scope of on-premises deployment details.",
+    "maturity": "CLASS_5",
+    "provisional": true
+   },
+   "verification": [
+    {
+     "requirement_id": "REQ-0003",
+     "method": "TEST"
+    },
+    {
+     "requirement_id": "REQ-0004",
+     "method": "DEMONSTRATION"
+    },
+    {
+     "requirement_id": "REQ-0005",
+     "method": "TEST"
+    },
+    {
+     "requirement_id": "REQ-0006",
+     "method": "INSPECTION"
+    },
+    {
+     "requirement_id": "REQ-0007",
+     "method": "TEST"
+    },
+    {
+     "requirement_id": "REQ-0010",
+     "method": "ANALYSIS"
+    }
+   ],
+   "predecessors": [],
+   "evidence_class": "ASSUMPTION",
+   "needs_proof": false,
+   "untraced": false
+  },
+  {
+   "code": "1.2",
+   "name": "Integration and Migration",
+   "deliverable": "REST API integration and historic record migration",
+   "requirement_ids": [
+    "REQ-0008",
+    "REQ-0009"
+   ],
+   "need_ids": [
+    "RG-002"
+   ],
+   "claim_ids": [
+    "CL-001",
+    "CL-002"
+   ],
+   "scope": "Implement REST API integration with the student records system and execute historic record migration.",
+   "exclusions": "Custom modifications outside the documented REST API.",
+   "acceptance": "Historic records are migrated with trial runs and reconciliation reports, and the REST API exchanges data successfully.",
+   "effort": {
+    "low_days": 15.0,
+    "high_days": 25.0,
+    "basis": "expert_judgment",
+    "basis_text": "Based on previous API integrations and data migrations.",
+    "role_ids": [
+     "ROLE-002",
+     "ROLE-003"
+    ],
+    "uncertainty": "Data quality in the legacy system.",
+    "maturity": "CLASS_5",
+    "provisional": true
+   },
+   "verification": [
+    {
+     "requirement_id": "REQ-0008",
+     "method": "TEST"
+    },
+    {
+     "requirement_id": "REQ-0009",
+     "method": "TEST"
+    }
+   ],
+   "predecessors": [
+    "1.1"
+   ],
+   "evidence_class": "CAPABILITY_EVIDENCE",
+   "needs_proof": false,
+   "untraced": false
+  },
+  {
+   "code": "2.1",
+   "name": "Timeline Execution",
+   "deliverable": "Go-live by 2027-01-11 with partner assistance",
+   "requirement_ids": [
+    "REQ-0014"
+   ],
+   "need_ids": [
+    "RG-004"
+   ],
+   "claim_ids": [],
+   "scope": "Manage the live deployment timeline with the implementation partner to ensure go-live.",
+   "exclusions": "Proposal submission instructions and portal requirements.",
+   "acceptance": "Service is deployed live with partner assistance by the target date.",
+   "effort": {
+    "low_days": 5.0,
+    "high_days": 10.0,
+    "basis": "parametric",
+    "basis_text": "Standard timeline management duration for partner deployments.",
+    "role_ids": [
+     "ROLE-001"
+    ],
+    "uncertainty": "Third-party implementation partner availability.",
+    "maturity": "CLASS_5",
+    "provisional": true
+   },
+   "verification": [
+    {
+     "requirement_id": "REQ-0014",
+     "method": "INSPECTION"
+    }
+   ],
+   "predecessors": [
+    "1.2"
+   ],
+   "evidence_class": "ASSUMPTION",
+   "needs_proof": false,
+   "untraced": false
+  }
+ ],
+ "assumptions": [
+  {
+   "text": "A third-party implementation partner can bridge timeline and attribute release gaps.",
+   "evidence_class": "ASSUMPTION",
+   "source_ids": [],
+   "needs_proof": false
+  },
+  {
+   "text": "Proposal submission instructions and portal requirements are excluded from the solution scope.",
+   "evidence_class": "RFP_SOURCE",
+   "source_ids": [
+    "SRC-0015",
+    "REQ-0001"
+   ],
+   "needs_proof": false
+  },
+  {
+   "text": "Service availability and severity-one incident response requirements are excluded from the first release.",
+   "evidence_class": "RFP_SOURCE",
+   "source_ids": [
+    "SRC-0029",
+    "SRC-0030",
+    "REQ-0011",
+    "REQ-0012"
+   ],
+   "needs_proof": false
+  }
+ ],
+ "ground_rules": [
+  {
+   "text": "Document retention follows the ten-year period stated in the RFP.",
+   "evidence_class": "RFP_SOURCE",
+   "source_ids": [
+    "SRC-0025",
+    "REQ-0007"
+   ],
+   "needs_proof": false
+  }
+ ],
+ "tech_claims": [
+  {
+   "id": "TC-01",
+   "text": "The service provides a documented REST API for exchanging data with other line-of-business systems.",
+   "library": null,
+   "version": null,
+   "wbs_code": "1.2",
+   "kind": "NOT_CHECKABLE"
+  },
+  {
+   "id": "TC-02",
+   "text": "The service provides migration of historic records and documents, with trial runs, reconciliation reports and a final cut-over.",
+   "library": null,
+   "version": null,
+   "wbs_code": "1.2",
+   "kind": "NOT_CHECKABLE"
+  }
+ ],
+ "benefits": [
+  {
+   "hypothesis": "Staff complete signature workflows faster and maintain secure audit trails.",
+   "measure": "Time taken to complete signature workflows and audit log completeness.",
+   "need_id": "RG-002"
+  },
+  {
+   "hypothesis": "The service is deployed on schedule with partner assistance.",
+   "measure": "Actual go-live date compared to target.",
+   "need_id": "RG-004"
+  }
+ ],
+ "win_themes": [
+  {
+   "feature": "Documented REST API",
+   "metric": "Successful data exchange with line-of-business systems",
+   "benefit": "Seamless integration with the College's student records system",
+   "proof_claim_id": "CL-001",
+   "proof": "CL-001"
+  },
+  {
+   "feature": "Historic record migration",
+   "metric": "Trial runs, reconciliation reports, and cut-over completeness",
+   "benefit": "Historic records are successfully migrated without loss",
+   "proof_claim_id": "CL-002",
+   "proof": "CL-002"
+  }
+ ],
+ "pdca": [
+  {
+   "workstream": "Electronic Signing and Integration",
+   "plan": "Plan the configuration of signing, retention, API, and migration.",
+   "do": "Execute signing setup, ten-year storage, REST API integration, and trial migrations.",
+   "check": "Verify audit records, reconciliation reports, and API data exchange.",
+   "act": "Refine configurations based on check findings."
+  },
+  {
+   "workstream": "Partner Implementation",
+   "plan": "Establish the deployment timeline with the implementation partner.",
+   "do": "Coordinate deployment tasks and partner assistance.",
+   "check": "Review milestone progress against the schedule.",
+   "act": "Adjust coordination activities to bridge timeline gaps."
+  }
+ ],
+ "gaps": [
+  {
+   "requirement_id": "REQ-0001",
+   "need_id": "RG-001",
+   "status": "GAP"
+  },
+  {
+   "requirement_id": "REQ-0011",
+   "need_id": "RG-003",
+   "status": "GAP"
+  }
+ ],
+ "checks": [
+  {
+   "name": "tree",
+   "passed": true,
+   "detail": ""
+  },
+  {
+   "name": "hundred_percent",
+   "passed": false,
+   "detail": "REQ-0001; REQ-0011"
+  },
+  {
+   "name": "backward_trace",
+   "passed": true,
+   "detail": ""
+  },
+  {
+   "name": "dictionary",
+   "passed": true,
+   "detail": ""
+  },
+  {
+   "name": "effort",
+   "passed": true,
+   "detail": ""
+  },
+  {
+   "name": "schedule",
+   "passed": true,
+   "detail": ""
+  },
+  {
+   "name": "provenance",
+   "passed": true,
+   "detail": ""
+  },
+  {
+   "name": "win_theme_proof",
+   "passed": true,
+   "detail": ""
+  },
+  {
+   "name": "no_prices_or_dates",
+   "passed": true,
+   "detail": ""
+  }
+ ],
+ "failed": false,
+ "notes": []
+}

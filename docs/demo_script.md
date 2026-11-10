@@ -129,7 +129,7 @@ To revert, restore `config/models.yaml`, `docs/agents.md`, `docs/ai-bom.md`, `te
 
 ## 4. Add a tool to an allowlist (live)
 
-This change gives `risk` the `read_section` tool, which `decide` already has. With it, `risk` can read a whole section rather than search for passages.
+This change gives `risk` the `read_section` tool, which `decide` already has. With it, `risk` can read a whole section rather than search for passages. Since ADR-059 the risk register comes from one call by default, so the `risk` agent and its tools run only with `--risk-mode agent`, and the demo and the replay tests use the one call. Show the change on a live run with that flag. The test counts below are from 2026-11-06; the release rehearsal measures them again.
 
 **Step a, the allowlist alone.** In `config/agents.yaml`, set the `risk` tools to `[search_rfp, date_calc, sla_calc, read_section, reflect]`. Then:
 - `uv run pytest tests/test_config.py tests/test_gateway.py`: 65 passed.
@@ -154,9 +154,9 @@ The checks:
 - `uv run pytest tests/test_config.py tests/test_gateway.py tests/test_risk_loop.py`: 98 passed.
 - The whole-run tests on scripted models, `uv run pytest tests/test_ledger.py tests/test_supervisor.py tests/test_tracing.py`: 30 passed.
 
-The tool definitions are part of the cassette key, so `uv run bidwright demo` now ends `UNRECOVERABLE_FAULT` with `CassetteMissing` at `risk`, and `uv run pytest -m replay` shows 5 failures. That is the guard asking for a new recording.
+The tool definitions are part of the cassette key of the agent's calls. The demo and the replay tests record the one-call register, whose request holds no tools, so they still replay; a recording made with `--risk-mode agent` would need recording again, which is the guard asking for it.
 
-In a live run, a `read_section` call by the model appears as a TOOL span under `risk` in Phoenix, and as a line in the run's `tool_calls.jsonl`. The model may not call the tool; if it does not, say so.
+In a live run with `--risk-mode agent`, a `read_section` call by the model appears as a TOOL span under `risk` in Phoenix, and as a line in the run's `tool_calls.jsonl`. The model may not call the tool; if it does not, say so.
 
 Authorization stays outside the model. A call to a tool the agent's list leaves out returns `DENIED`, with the reason `'<tool>' is not allowed for agent '<agent>'`. `tests/test_gateway.py` tests this denial (FI-09).
 

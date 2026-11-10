@@ -989,7 +989,7 @@ def test_the_selector_labels_a_run_and_leaves_matrix_runs_out_unless_asked(
     monkeypatch.setenv("BIDWRIGHT_OUTPUTS", str(tmp_path))
     at = AppTest.from_file(str(MAIN_PAGE)).run(timeout=20)
     selector = at.sidebar.selectbox(key="run")
-    assert selector.options == ["20261106T000000Z | dev_rfp.pdf | approach | COMPLETED"]
+    assert selector.options == ["20261106T000000Z | dev_rfp.pdf | manifest | COMPLETED"]
     at = AppTest.from_file(str(MAIN_PAGE))
     at.session_state["show_matrix_runs"] = True
     at.run(timeout=20)

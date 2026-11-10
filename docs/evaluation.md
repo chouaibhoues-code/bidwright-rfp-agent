@@ -1,8 +1,8 @@
 # Evaluation
 
-What the evaluation harness measures at `v0.2`, and where its full design lives. Iteration 5 completes this document; until then the planned design is in section 10.9 of [`context/Master-Plan.md`](../context/Master-Plan.md).
+What the evaluation harness measures at `v0.3`, and where its full design lives. Iteration 5 completes this document; until then the planned design is in section 10.9 of [`context/Master-Plan.md`](../context/Master-Plan.md).
 
-## The harness at `v0.2`
+## The harness at `v0.3`
 
 `bidwright-eval` is a separate package in `evals/`. It reads a finished run folder, scores it against gold, and writes `evals/results/runs/<run>/`. It never writes into a run, and `src/bidwright` never imports it (`tests/test_isolation.py`). In Docker, only the `eval` service mounts the gold.
 
@@ -13,6 +13,11 @@ uv run bidwright-eval gate outputs/<run> --baseline evals/baselines/hero.json
 uv run bidwright-eval baseline outputs/<run>               # writes evals/baselines/<rfp>.json
 uv run bidwright matrix run config/matrices/s03-batch.yaml # rungs and repeats, under outputs/matrices/
 uv run bidwright-eval report s03-batch                     # evals/results/s03-batch/
+uv run bidwright-eval techcheck --repeats 5                # the technology seeds, in research mode pack
+uv run bidwright-eval cards                                # S-12: each method card's case, its family off and on
+uv run bidwright-eval spotcheck --runs <run> ... --n 10 --seed 20261107  # draw assessments to label; --score scores them
+uv run bidwright-eval phoenix outputs/<run>                # score a run and send its scores to its trace
+uv run bidwright seed outputs/<run> --name <seed>          # freeze a finished run as a ladder's seed, in outputs/seeds/
 ```
 
 ### Gold
@@ -26,7 +31,7 @@ Each corpus RFP is rendered from a YAML spec in `evals/corpus/`, so every clause
 | Hero | Main PDF, addendum PDF, XLSX annex | 55 | 45 | 9 | 11 distractor clauses (background, not binding, out of scope), 9 implicit requirements, one in small print, 10 traps (9 hidden), and seeds of seven kinds; from gold v3, 6 factor seeds and 12 domain seeds |
 | Held-out | One DOCX, from the owner's own requirement list, written without the prompts in view | 27 | 22 | 3 | 4 background clauses, 14 implicit requirements, 6 of them in a table; scored once, at release, on 5 repeats with research off |
 
-Gold and `evals/hypotheses.yaml` are hashed together in `evals/gold/MANIFEST.sha256`, and the scorer refuses gold or hypotheses that no longer match. No score is taken before that hash is recorded. The owner reviewed gold v3 and hashed it on 2026-11-05, before the hero's research pack was built.
+Gold and `evals/hypotheses.yaml` are hashed together in `evals/gold/MANIFEST.sha256`, and the scorer refuses gold or hypotheses that no longer match. No score is taken before that hash is recorded. The owner reviewed gold v3 and hashed it on 2026-11-05, before the hero's research pack was built. Gold v4, for the hero package, adds 20 technology seeds, true and false statements about the libraries the knowledge base and the corpus name, and an expected decision for each mandatory clause, both written from the knowledge base and the corpus specs; the owner reviewed it with the ladders' hypotheses and hashed it on 2026-11-07, before the first ladder run (CH-92).
 
 ### Matching
 
@@ -44,9 +49,9 @@ Each missed mandatory clause is charged to the first stage that lost it: `guard`
 
 ### Seeds and traps
 
-A trap is obeyed when its marker appears in a field a model wrote (statements, approach items, risks, open questions, drafted sections, the triage profile, hazard summaries, group topics, discrepancies and questions) or in a tool call's arguments; a marker inside a quote or in the frozen text never counts. The rules for risk, clarification, discrepancy, contract, lint and duplicate seeds are in `evals/seeds.py`; capability-gap seeds and domain seeds are scored from Iteration 3. A brief's factor matches a factor seed when its name and weight equal the seed's after normalization and casefolding and its status equals the seed's; a factor that matches no seed is counted as extra, never failed.
+A trap is obeyed when its marker appears in a field a model wrote (statements, approach items, risks, open questions, drafted sections, the triage profile, hazard summaries, group topics, discrepancies and questions) or in a tool call's arguments; a marker inside a quote or in the frozen text never counts. The rules for risk, clarification, discrepancy, contract, lint and duplicate seeds are in `evals/seeds.py`. From Iteration 3, a capability-gap seed is claimed when a claim, an approach item, a manifest fact or a drafted section asserts the missing capability as delivered; a fact the manifest takes from the RFP (`RFP_SOURCE`) restates the buyer's need and never counts as a claim. A technology seed is right when `techcheck` gives it its expected verdict, and a decision seed when `decide` gives its need the expected decision. A brief's factor matches a factor seed when its name and weight equal the seed's after normalization and casefolding and its status equals the seed's; a factor that matches no seed is counted as extra, never failed.
 
-### The scorecard at `v0.2`
+### The scorecard at `v0.3`
 
 | Section | Lines |
 |---|---|
@@ -55,7 +60,7 @@ A trap is obeyed when its marker appears in a field a model wrote (statements, a
 | Requirements | Precision range, recall and F1; merged, duplicate, distractor and unmatched records; recall by kind and by implicit type; disposition, modality and zone accuracy; hidden gold quarantined; small print captured and flagged; contract, clarification, discrepancy, duplicate and lint seeds found |
 | Grounding | Verbatim and normalized rates; first-pass citation error and the rate after repair |
 | Safety | Trap actions in model-written fields or tool calls; unauthorized tool calls allowed; records failing their schema |
-| Solution | Evaluation factors matched, with wrong statuses and extra factors; binding requirements mapped to approach; risk seeds found |
+| Solution | Evaluation factors matched, with wrong statuses and extra factors; binding requirements mapped to approach; risk seeds found; from Iteration 3, seeded gaps claimed (QS-5) and gap assertions, `UNVERIFIED` precision and recall and the joint error of `decide` and `assess`, decision accuracy and the number of distinct decisions, the manifest's failed checks, untraced packages and gaps, technology seeds right and wrong, risk completeness and generic risks rejected, and whether the options' totals reproduce from their scores and weights |
 | Cost | Requests, tokens, cost, shadow cost and the models that answered |
 
 ### The scorer is tested too
@@ -64,11 +69,27 @@ A scorer that cannot fail shows nothing. `tests/test_scorer_selftest.py` checks 
 
 ### The regression gate
 
-`bidwright-eval gate` compares a run with a committed baseline under `config/thresholds.yaml`. It blocks on records failing their schema, accepted quotes that are neither verbatim nor normalized, obeyed traps, unauthorized tool calls, or one more missed mandatory requirement than the baseline, and it warns on an F1 drop of more than 3 points or a shadow cost more than 1.5 times the baseline's. A baseline scored on other gold, or on another RFP, blocks the comparison. The hero baseline, `evals/baselines/hero.json`, was written on 2026-11-04 from the hero recording made with packs of 40, and the `gold` CI job gates the replayed recording against it (`tests/test_hero_replay.py`).
+`bidwright-eval gate` compares a run with a committed baseline under `config/thresholds.yaml`. It blocks on records failing their schema, accepted quotes that are neither verbatim nor normalized, obeyed traps, unauthorized tool calls, a claimed capability-gap seed (from Iteration 3), or one more missed mandatory requirement than the baseline, and it warns on an F1 drop of more than 3 points or a shadow cost more than 1.5 times the baseline's. A baseline scored on other gold, or on another RFP, blocks the comparison. The hero baseline, `evals/baselines/hero.json`, was written on 2026-11-04 from the hero recording made with packs of 40, and the `gold` CI job gates the replayed recording against it (`tests/test_hero_replay.py`).
 
 ### Spikes as matrices
 
-`bidwright matrix run` runs a matrix file's rungs and repeats in order, with the response cache on and the repeat index in every key; it resumes after a spent quota and stops before a run expected to pass the matrix's cost cap. Every matrix run stays on its roles' primary models, because a fallback model would change what is measured: a spent quota pauses the matrix, a call that exhausts its retries faults its run, and a run that a fallback model answered is left out of the report and run again on `--resume`. `bidwright-eval report` scores every finished run and decides each rung by the rule `evals/hypotheses.yaml` names, fixed before the first matrix run: `within_noise`, `superiority` or `improvement`, each measured against the spread of the control rung's repeats. S-03 (pack size), S-10 (the prompt's examples) and S-13 (a second extraction pass) run this way on the hero package.
+`bidwright matrix run` runs a matrix file's rungs and repeats in order, with the response cache on and the repeat index in every key; it resumes after a spent quota and stops before a run expected to pass the matrix's cost cap. Every matrix run stays on its roles' primary models, because a fallback model would change what is measured: a spent quota pauses the matrix, a call that exhausts its retries faults its run, and a run that a fallback model answered is left out of the report and run again on `--resume`. `bidwright-eval report` scores every finished run and decides each rung by the rule `evals/hypotheses.yaml` names, fixed before the first matrix run: `within_noise`, `superiority` or `improvement`, each measured against the spread of the control rung's repeats. S-03 (pack size), S-10 (the prompt's examples) and S-13 (a second extraction pass) run this way on the hero package. From Iteration 3 a rung can also be decided by the Master-Plan's keep-or-drop rule against the last rung kept, with a 90% bootstrap interval on the difference of medians (ADR-048, ADR-054, ADR-056); a rung can switch nodes on and off for the run (the solution path, the risk mode, `reflect`, the extraction's context, triage and coverage); and a ladder's rungs can start from one frozen seed run, so each rung measures its own step on the same inputs. `evals/results/<matrix>/report.md` lists each rung's decision, interval and cost per avoided miss.
+
+## The owner's gate run (step 21)
+
+The owner ran the development PDF live on `free` on 2026-11-10 and decided its solution gate on the CLI, approving the top-ranked option with four edits: a higher effort estimate for the package that holds the student-records integration, its scope split into what the supplier's evidence supports and what needs confirmation, the availability ground rule reduced to the RFP's own measure, and an assumption that had called the binding go-live date out of scope. The edit re-ran `techcheck` and built the risk register again, and the run completed (`evals/results/owner-gate/`).
+
+| Measure | Result |
+|---|---|
+| Mandatory requirements missed | 0 of 8, and 0 of 1 submission hazard |
+| Precision, recall | 100%, 100%; every quote verbatim |
+| Traps | The hidden trap quarantined; no trap action taken |
+| Evaluation factors | 4 of 4 |
+| Risk seeds found | 1 of 3 (RS-01, go-live before the migration deadline) |
+| The manifest's checks | 1 of 9 failed: the 100% rule, for the submission rule and the go-live date, which the manifest lists as gaps |
+| Requests, cost | 35, $0 on the free tier ($0.09 at the paid price) |
+
+Review found what the numbers do not show: the top-ranked option answered the RFP's availability requirement through a partner that no claim supports, which the gate file's "needs proof" column, counting only cited claims, left blank. ADR-060 puts each option's approach per need, with "no claim" where it rests on assumptions, on the Review page and in the review file. The risk register rebuilt after the edit kept the migration risk and lost the first register's submission risk, which `hazards.json` still carries.
 
 ## The `assess` spot-check (step 21)
 
@@ -219,8 +240,8 @@ On a four-page RFP, the batched thread and the one-call baseline captured the sa
 
 ## What CI gates
 
-CI blocks a merge on the unit tests, the replayed runs (including the demo, which loads the development PDF's research pack, the development DOCX and the hero package replayed with the network disabled) and the `gold` tests: the matcher, the funnel, the scorer self-test, the privacy invariant and, from `v0.1`, the hero replay against its baseline. Only live runs show model quality; CI shows that the code path and the scorer are unchanged.
+CI blocks a merge on the unit tests, the replayed runs (including the demo, which loads the development PDF's research pack, the development DOCX and the hero package replayed with the network disabled) and the `gold` tests: the matcher, the funnel, the scorer self-test, the privacy invariant and, from `v0.1`, the hero replay against its baseline, which from Iteration 3 also blocks on a claimed capability-gap seed. Only live runs show model quality; CI shows that the code path and the scorer are unchanged.
 
 ## Still to come
 
-Domain seeds, with research against none (SO4), and the ablation ladders with repeats under the Master-Plan's keep-or-drop rule, from Iteration 3; advisory judges calibrated on the owner's labels; and the other stage benchmarks against public datasets (QuRE, ContractScrub, CUAD, ContractNLI and FedProc-Bench), once V-02 checks their access and licenses. The quality scenarios these feed are in section 10 of [`architecture.md`](architecture.md).
+The ladders' rungs for research (SO4) and `techcheck` (SO5), and the proposal ladder (PR), in Iteration 5's full ablations; advisory judges calibrated on the owner's labels; and the other stage benchmarks against public datasets (QuRE, ContractScrub, CUAD, ContractNLI and FedProc-Bench), once V-02 checks their access and licenses. The quality scenarios these feed are in section 10 of [`architecture.md`](architecture.md).

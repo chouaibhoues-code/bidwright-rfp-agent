@@ -2,84 +2,47 @@
  "items": [
   {
    "id": "APP-001",
-   "text": "Bid compliance: assemble the tender as one PDF of no more than 20 pages and submit it via the portal by 2026-12-01 12:00 UTC, ensuring the service is live for students by 2027-01-11.",
+   "text": "Electronic Signing and Integration: Configure electronic signing, document retention, and student record system integration.",
    "requirement_ids": [
-    "REQ-0001",
-    "REQ-0012"
+    "REQ-0003",
+    "REQ-0004",
+    "REQ-0005",
+    "REQ-0006",
+    "REQ-0007",
+    "REQ-0010",
+    "REQ-0008",
+    "REQ-0009"
    ],
-   "basis": "The deadline and page limit are set by the procurement process, and the live date aligns with the start of spring enrollment.",
+   "basis": "Configure electronic signing, document retention, and student record system integration.",
    "evidence_class": "ASSUMPTION",
    "source_ids": [
-    "SRC-0015",
-    "SRC-0032"
+    "SRC-0020",
+    "SRC-0022",
+    "SRC-0023",
+    "SRC-0024",
+    "SRC-0025",
+    "SRC-0026",
+    "SRC-0027",
+    "SRC-0028"
    ]
   },
   {
    "id": "APP-002",
-   "text": "Service features: provide signing capabilities for all current desktop and mobile browsers, and integrate with the student records system using the existing REST API.",
+   "text": "Partner Implementation: Manage the live deployment timeline with the implementation partner.",
    "requirement_ids": [
-    "REQ-0003",
-    "REQ-0008"
+    "REQ-0014"
    ],
-   "basis": "Browser compatibility is baseline for web services, and the use of the REST API is the stated method for student system integration.",
+   "basis": "Manage the live deployment timeline with the implementation partner.",
    "evidence_class": "ASSUMPTION",
    "source_ids": [
-    "SRC-0021",
-    "SRC-0022",
-    "SRC-0027"
-   ]
-  },
-  {
-   "id": "APP-003",
-   "text": "Signature management: log every signature event with user identity, time, and version while retaining all signed documents for ten years and sending reminders after 72 hours of inactivity.",
-   "requirement_ids": [
-    "REQ-0002",
-    "REQ-0004",
-    "REQ-0006"
-   ],
-   "basis": "Automated logs and retention satisfy the record-keeping standards required for digital signing.",
-   "evidence_class": "ASSUMPTION",
-   "source_ids": [
-    "SRC-0020",
-    "SRC-0021",
-    "SRC-0023",
-    "SRC-0025"
-   ]
-  },
-  {
-   "id": "APP-004",
-   "text": "Operational excellence: maintain 99.5% service availability each month, with planned maintenance notified five working days before execution.",
-   "requirement_ids": [
-    "REQ-0010"
-   ],
-   "basis": "The service availability and maintenance notification period ensure minimal disruption to user access.",
-   "evidence_class": "ASSUMPTION",
-   "source_ids": [
-    "SRC-0029"
+    "SRC-0032"
    ]
   }
  ],
  "unmapped": [
-  "REQ-0005",
-  "REQ-0007",
-  "REQ-0009",
+  "REQ-0001",
   "REQ-0011"
  ],
- "questions": [
-  {
-   "text": "Should the supplier include templates for the twelve most used forms, and how would these be identified? Also, does the College require a formal quote for the migration of records by 2027-02-28?",
-   "src_ids": [
-    "SRC-0024",
-    "SRC-0026"
-   ]
-  },
-  {
-   "text": "Does the College prefer an on-premises deployment over the default cloud service, and what are the specific SLAs expected for severity-one incidents beyond the one-hour response goal?",
-   "src_ids": [
-    "SRC-0028",
-    "SRC-0030"
-   ]
-  }
- ],
+ "questions": [],
  "failure": null
 }

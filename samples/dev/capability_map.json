@@ -1,0 +1,60 @@
+{
+ "rows": [
+  {
+   "need_id": "RG-001",
+   "origin": "RFP",
+   "text": "3 Instructions to bidders",
+   "decision": "ABSTAIN",
+   "status": "GAP",
+   "claim_ids": [],
+   "reason": "no claim is supported"
+  },
+  {
+   "need_id": "RG-002",
+   "origin": "RFP",
+   "text": "Electronic signing, record keeping, and integration requirements",
+   "decision": "PROCEED_WITH_GAP",
+   "status": "PARTIAL",
+   "claim_ids": [
+    "CL-001",
+    "CL-002"
+   ],
+   "reason": "some claims are supported, or only in part"
+  },
+  {
+   "need_id": "RG-003",
+   "origin": "RFP",
+   "text": "Service availability and severity-one incident response",
+   "decision": "PROCEED_WITH_GAP",
+   "status": "GAP",
+   "claim_ids": [
+    "CL-003"
+   ],
+   "reason": "no claim is supported"
+  },
+  {
+   "need_id": "RG-004",
+   "origin": "RFP",
+   "text": "6 Timeline",
+   "decision": "PROCEED_WITH_GAP",
+   "status": "GAP",
+   "claim_ids": [],
+   "reason": "no claim is supported"
+  },
+  {
+   "need_id": "DN-001",
+   "origin": "DOMAIN",
+   "text": "FERPA-aware attribute release controls that filter PII for students with active disclosure blocks.",
+   "decision": "PROCEED_WITH_GAP",
+   "status": "GAP",
+   "claim_ids": [],
+   "reason": "no claim is supported"
+  }
+ ],
+ "counts": {
+  "COVERED": 0,
+  "PARTIAL": 1,
+  "PARTNER": 0,
+  "GAP": 4
+ }
+}

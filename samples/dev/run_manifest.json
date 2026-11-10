@@ -1,62 +1,79 @@
 {
- "run_id": "20261105T120916Z-dev-rfp-db9eeb00-free",
- "commit": "7c6fdb3",
+ "run_id": "20261110T075309Z-dev-rfp-db9eeb00-free",
+ "commit": "3c6cf18",
  "profile": "free",
  "models": {
   "extract": "gemini-3.5-flash-lite",
-  "reason": "gemini-3.5-flash-lite"
+  "reason": "gemini-3.5-flash-lite",
+  "assess": "gpt-oss-120b"
  },
  "models_used": {
-  "approach": [
-   "gemini-3.1-flash-lite"
+  "assess": [
+   "gpt-oss-120b"
+  ],
+  "blueprint": [
+   "gemini-3.5-flash-lite"
   ],
   "brief": [
-   "gemini-3.1-flash-lite"
+   "gemini-3.5-flash-lite"
   ],
   "consolidate": [
-   "gemini-3.1-flash-lite"
+   "gemini-3.5-flash-lite"
+  ],
+  "decide": [
+   "gemini-3.5-flash-lite"
   ],
   "draft": [
-   "gemini-3.1-flash-lite"
+   "gemini-3.5-flash-lite"
   ],
   "extract": [
-   "gemini-3.1-flash-lite"
+   "gemini-3.5-flash-lite"
+  ],
+  "options": [
+   "gemini-3.5-flash-lite"
   ],
   "risk": [
-   "gemini-3.1-flash-lite"
+   "gemini-3.5-flash-lite"
   ],
   "triage": [
-   "gemini-3.1-flash-lite"
+   "gemini-3.5-flash-lite"
   ]
  },
  "prompt_hashes": {
-  "triage": "sha256:7e154ae7564a4bb42d66c6ae88c4f2a31d6cb8e78258bebccbb8ccf99eb7522c",
-  "brief": "sha256:58dc56bb634a8706e358fd941368d812f81bc5b9a08c9199e80c45cd488852ed",
+  "triage": "sha256:ad2ca25136104a1561389ce48e12b1e2be0d073b8ddcf49cf6a34b9f9276a294",
+  "brief": "sha256:0a1a5294d35ebe39e7e4a2d69645a22ca521105d45d74f1a208f15c4b07adbdc",
   "discover": "sha256:be5de32c200269a2e0850ded248160165bdd7a8cedf2275bb3cc737d95ee9197",
-  "extract": "sha256:11cde3336a38b0103cb12e65a6140e5264b1bf021a4c375aa4e5d5c3896f8da1",
+  "extract": "sha256:3c17d8534edce9ce3050694bc3f88474614a09ecab96a77e8b0f6b65efe79cb3",
   "approach": "sha256:d95f06596240c28e2ee54fc87f60447acd442e9c691cce71d9a8c1e86060de12",
-  "risk": "sha256:10c255fbf785bdb25f990ff7e823e2d26d2287cd0aa9116f5ceda4f03959e699",
-  "draft": "sha256:e565f6bb6f35db882d19b334c2f7f42488d80d891249bd444ef0f5e784fafec0",
-  "consolidate": "sha256:0e4706513b48c033f21e2d0ed9b1429c9fbf763eb87ea46e7a061835d0c1dfab",
+  "risk": "sha256:a670a3ac716c7512e563b66de196865d7209a48e2953a683b1e2984cb59b1e0b",
+  "decide": "sha256:25f4f0a20ca223c5efa5302300e582de71286a66d25c6a41839b5a08e580feb8",
+  "assess": "sha256:2aa0d0fe6317c8394d0910c5d034e0ff8b0341fcd6557547319d5aa3bd81ad70",
+  "options": "sha256:0d38b5d27fbf758b87c2bdeef2c09a5706b97fac77d1b5ee774d3a705e7b65a0",
+  "blueprint": "sha256:834762b364388abab0a9004706ecbf9a29959d59ef826fcf99d750610b37ba93",
+  "blueprint_detail": "sha256:2b4a3a6bf7682f20bb5b38580231610f02c1a1a5a92ae8a50a6a228b8eb19191",
+  "techcheck": "sha256:88c175538fd6ca1cd6d8ed2fa0a9bf8d20ff7f3a2d88896beb995cad4b1792f3",
+  "risk_oneshot": "sha256:482f584a78f02a03ede6b554b3cd8f2b38167cc591c504b1a4d3d50318867123",
+  "draft": "sha256:4967376a2ee9bdec178bee34953365d7e1579defe7e06ebeee479c5c9cf7fb48",
+  "consolidate": "sha256:bc56f5fd3b084286df22f9e5eb1832af414d8b681b569d308b6f8585f9e8a1e5",
   "extract_oneshot": "sha256:cda10111ce58648cd3a5794732a3b70183110facb99219eef74db68334e1a787"
  },
  "input_hashes": {
   "dev_rfp.pdf": "sha256:db9eeb004e718077678cddd9976b53895f9d7d009044f6b59c8a8d75213d2bd3"
  },
- "started": "2026-11-05T12:09:16.708174Z",
- "ended": "2026-11-05T12:10:10Z",
+ "started": "2026-11-10T07:53:09.028495Z",
+ "ended": "2026-11-10T07:56:30Z",
  "status": "COMPLETED",
  "status_reason": null,
  "overrides": [],
  "totals": {
-  "requests": 14,
-  "tokens_in": 35806,
-  "tokens_out": 7110,
-  "tokens_cached": 0,
-  "tokens_thinking": 10370,
+  "requests": 31,
+  "tokens_in": 70422,
+  "tokens_out": 9492,
+  "tokens_cached": 2816,
+  "tokens_thinking": 12532,
   "cost_usd": 0.0,
-  "shadow_cost_usd": 0.0544418,
-  "active_seconds": 53.984
+  "shadow_cost_usd": 0.07438875,
+  "active_seconds": 201.281
  },
  "documents": [
   {
@@ -67,15 +84,15 @@
  ],
  "data_class": "synthetic",
  "refused_destinations": [],
- "pid": 34244,
+ "pid": 48636,
  "status_history": [
   {
-   "at": "2026-11-05T12:09:16Z",
+   "at": "2026-11-10T07:53:09Z",
    "status": "RUNNING",
    "reason": "started"
   },
   {
-   "at": "2026-11-05T12:10:10Z",
+   "at": "2026-11-10T07:56:30Z",
    "status": "COMPLETED",
    "reason": null
   }
@@ -89,7 +106,7 @@
   "limits": "dev",
   "until": "render",
   "batch_size": 40,
-  "second_pass": true,
+  "second_pass": false,
   "extract_prompt": "extract",
   "research": "pack",
   "repeat": 0,
@@ -97,7 +114,19 @@
   "docling_mode": "live",
   "fallback": true,
   "mode": "live",
-  "environment": "host:DESKTOP-FHH4DIS"
+  "assess_route": "primary",
+  "environment": "host:DESKTOP-FHH4DIS",
+  "gate": "auto",
+  "bid_policy": null,
+  "solution": "manifest",
+  "risk_mode": "oneshot",
+  "reflect": false,
+  "extract_context": "full",
+  "triage": true,
+  "coverage": true,
+  "seed_run": null,
+  "seed_from": null,
+  "methods": []
  },
  "research": {
   "mode": "pack",
@@ -106,5 +135,19 @@
   "jobs": 0,
   "questions": 0,
   "notes": []
- }
+ },
+ "bid_policy_sha256": null,
+ "seed": null,
+ "assess_route": "primary",
+ "switches": {
+  "solution": "manifest",
+  "risk_mode": "oneshot",
+  "reflect": false,
+  "extract_context": "full",
+  "triage": true,
+  "coverage": true
+ },
+ "trace_ids": [
+  "0d49892405282b42ca58527a13d2aeac"
+ ]
 }

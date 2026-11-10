@@ -827,6 +827,8 @@ The owner asked on 2026-11-05, after the merge of steps 13 and 17, for pages who
 
 **Tests.** The full suite, the replays and the `gold` CI job pass before the tag.
 
+- As built (the reviews, the sample and the documents, 2026-11-10): the code review at medium effort of `v0.2` to the working tree raised ten findings; nine were fixed with tests, among them an edit the manifest cannot take now voiding the approval instead of ending the run, an override covering only the claims that blocked the gate when it was given, and a switch of option needing no override; one, `techcheck` re-running after an edit, stays as ADR-046 sets it. The security review found nothing at high or medium confidence; from its notes, span replay sends the Phoenix key only to the configured endpoint. Before them, the check before a run asks Docling twice, after the owner's first gate attempt was refused by an idle container. `samples/dev/` is a live run of the development PDF on `free` with automatic approval at the gate, at the review-fix commit; its score shows the visible trap restated in a `NOT_BINDING` record, logged in the failure log and kept as it came. The documents describe `v0.3`.
+
 ## 7. Exit checks
 
 The left column quotes the Iteration gate in the Master-Plan's words: a requirement group is a need here, the author is `decide`, and the published weights are the brief's stated weights.

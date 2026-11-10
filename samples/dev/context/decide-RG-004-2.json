@@ -1,0 +1,1 @@
+{"node":"decide","call_id":"RG-004-2","included_src_ids":["SRC-0032"],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["REQ-0014"],"cards":[],"tokens_by_layer":{"rules":619,"examples":454,"evidence":221,"task":34},"budget_tokens":16000,"utilization":0.083}

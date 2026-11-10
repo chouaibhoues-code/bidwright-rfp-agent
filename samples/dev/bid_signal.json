@@ -1,0 +1,9 @@
+{
+ "signal": "UNDETERMINED",
+ "triggers": [],
+ "covered_share": 0.0,
+ "policy_sha256": null,
+ "missing_inputs": [
+  "bid policy"
+ ]
+}

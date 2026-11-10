@@ -1,0 +1,1 @@
+{"node":"assess","call_id":"CL-002","included_src_ids":[],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["CL-002","CAP-007"],"cards":[],"tokens_by_layer":{"rules":384,"examples":802,"evidence":263,"task":36},"budget_tokens":4000,"utilization":0.3713}

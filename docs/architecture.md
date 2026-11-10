@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes Bidwright as built in Iteration 2, for the tag `v0.2`, under the twelve arc42 headings. Iteration 2 builds on `v0.1`, which read a whole RFP package and checked every requirement's quote, and adds run control (stop, resume and a journal of answered calls), the gateway's rules, recovery, and a first research step on the RFP's domain. This document covers only what is built. The work still to come lives in section 10 of [`context/Master-Plan.md`](../context/Master-Plan.md); the build plans are [`designs/iteration-1.md`](designs/iteration-1.md) and [`designs/iteration-2.md`](designs/iteration-2.md). Each heading stays short and points to the file that owns the detail.
+This document describes Bidwright as built in Iteration 3, for the tag `v0.3`, under the twelve arc42 headings. Iteration 3 builds on `v0.2`, which read a whole RFP package with run control, the gateway's rules and research on the RFP's domain, and adds the solution path: for each need, an agent decides how to answer it and drafts claims from the supplier's knowledge base; an assessor on another model family checks each claim against its evidence; code builds the capability map; `options` and `blueprint` turn it into a sourced solution manifest whose technology claims are checked against current documentation; `risk` writes a pre-mortem over the manifest; and a person approves the manifest at a gate before anything is drafted from it. A Streamlit UI and a loopback API show a run's files and decide the gate. This document covers only what is built. The work still to come lives in section 10 of [`context/Master-Plan.md`](../context/Master-Plan.md); the build plans are [`designs/iteration-1.md`](designs/iteration-1.md), [`designs/iteration-2.md`](designs/iteration-2.md) and [`designs/iteration-3.md`](designs/iteration-3.md). Each heading stays short and points to the file that owns the detail.
 
 ## 0. How this architecture is described
 
@@ -19,15 +19,16 @@ Six steps, combining arc42, C4 and ADRs. The method was reviewed against the lit
 
 ### 1.1 What the system does
 
-The assignment asks for an LLM application that reads an RFP and produces a structured solution summary of requirements, approach and risks. It must be what the assignment calls "a genuine agentic workflow", with an evaluation harness and tracing of tokens, latency and cost. At `v0.2`, Bidwright reads one file or a package folder of PDF, DOCX and XLSX documents, such as an RFP with its addendum and annex, and writes:
-- `solution_summary.md` and its JSON form: submission hazards first, then requirements with verified quotes and the evaluation factors as the RFP states them, approach items, risks and open questions, and, when research found anything, an appendix of domain research marked external and unverified;
+The assignment asks for an LLM application that reads an RFP and produces a structured solution summary of requirements, approach and risks. It must be what the assignment calls "a genuine agentic workflow", with an evaluation harness and tracing of tokens, latency and cost. At `v0.3`, Bidwright reads one file or a package folder of PDF, DOCX and XLSX documents, such as an RFP with its addendum and annex, and writes:
+- `solution_summary.md` and its JSON form: submission hazards first, then requirements with verified quotes and the evaluation factors as the RFP states them, approach items (the manifest's workstreams, each with the requirements it answers), risks and open questions, and, when research found anything, an appendix of domain research marked external and unverified;
 - `proposal.md`: three short sections (`understanding`, `approach` and `risks_and_assumptions`) drafted from those records;
 - the compliance matrix (`compliance_matrix.xlsx` and `.csv`), `clarification_questions.md`, `submission_checklist.md`, and `review/quarantine.md`, which shows a person the hidden content removed before parsing, the small print kept, and the passages that read like instructions to a model;
 - the records behind them: the control register of the package's documents, a disposition for every passage, requirement groups, discrepancies, contract flags and lint findings;
 - `brief.json`, the opportunity brief: evaluation factors with their weights and scoring method, needs, scope and constraints, each citing passages, and the research topics; and `domain_brief.json` and `research.json`, the domain research and its record, from a committed research pack or a live research job;
+- the solution: `decisions.jsonl` and `claims.jsonl`, each need's decision and the claims drafted for it; `assessments.jsonl`, each claim's disposition against its evidence; `capability_map.json`, each need's status; `options.json`, two or three options with their scores, reasons and ranking; `manifest.json`, the solution manifest, every fact with its evidence class and sources; `tech_validations.jsonl`, each technology claim's verdict; `bid_signal.json` and `bid_memo.md`; and `review/solution_gate.md` with `review/solution_gate.approval.yaml`, what a person reviewed and decided at the gate;
 - `ledger.jsonl`, `run_manifest.json`, `events.jsonl` and `tool_calls.jsonl`: every LLM call's tokens, latency and cost, the run's status history, totals and data class, every status change, recovery and security event, and every tool call with its result; and, when a call fails for good, `dead_letter.jsonl`.
 
-An operator can stop a run with `bidwright stop` and continue it with `bidwright resume`, which never pays twice for a call that was answered. Every output carries the status `UNREVIEWED_DRAFT`.
+An operator can stop a run with `bidwright stop` and continue it with `bidwright resume`, which never pays twice for a call that was answered. A run waits at the solution gate, in `WAITING_HUMAN`, until a person decides it with `bidwright approve` or on the UI's Review page; `--auto-select` approves the top-ranked option for evaluation runs and records that it did. Every output carries the status `UNREVIEWED_DRAFT`.
 
 ### 1.2 Quality goals
 
@@ -52,27 +53,27 @@ Quote verification protects grounding: a requirement's quote is in the RFP. It d
 | The bid team Bidwright serves, fictional here | A summary they can trust line by line, and drafts they can edit |
 | Coding agents | Commands and boundaries, in [`AGENTS.md`](../AGENTS.md) |
 
-### 1.4 Not in `v0.2`
+### 1.4 Not in `v0.3`
 
-A bid team's problem is that one missed mandatory clause can disqualify a bid, and an overstated compliance claim creates liability. Bidwright answers the first with a disposition for every passage and requirements whose quotes code has checked, and the second with drafts that people approve and a compliance status that starts `UNVERIFIED`. The product's non-goals, among them pricing, win probability, submission, real client data, training and production concerns, are in section 1.4 of [`context/Master-Plan.md`](../context/Master-Plan.md#14-non-goals). Planned components that `v0.2` does not have:
-- any reader of the domain research: `approach`, `risk` and `draft` keep their inputs of `v0.1`, and the research first feeds Iteration 3's `options` and `blueprint`;
-- `assess`, the independent check of claims against the knowledge base of supplier capabilities, which `knowledge_base/` already holds, and `techcheck` with Context7 (Iteration 3);
-- the two human gates (Iterations 3 and 4): the approval file's format is decided (ADR-035), and the gateway's outcome "pause for a human" is defined, but no rule uses it yet;
-- the gated `reflect` tool and the sequential-thinking server it uses (Iteration 3); the MCP client already speaks stdio, tested against a small Python server;
-- an `ExecutionPolicy` class, versioned artifacts and the context manager's slots for cards and skills, which wait for their first consumers (ADR-037);
-- the proposal pack (Iteration 4);
+A bid team's problem is that one missed mandatory clause can disqualify a bid, and an overstated compliance claim creates liability. Bidwright answers the first with a disposition for every passage and requirements whose quotes code has checked, and the second with claims that an independent assessor checks against their evidence, a manifest that asserts a capability only by citing an assessed claim, drafts that people approve and a compliance status that starts `UNVERIFIED`. The product's non-goals, among them pricing, win probability, submission, real client data, training and production concerns, are in section 1.4 of [`context/Master-Plan.md`](../context/Master-Plan.md#14-non-goals). Planned components that `v0.3` does not have, or has and leaves off:
+- the proposal pack and the final review gate (Iteration 4): `draft` still writes three short sections, now from the manifest's workstreams;
+- the method cards: built, with a slot in the context manager, and off, because no family passed S-12 (ADR-055);
+- the gated `reflect` tool: built behind the gateway's sixth rule, and off, because neither SO1-T nor RK1-T showed a gain (ADR-058, ADR-059);
+- the `risk` agent's tool loop: built and kept behind `risk_mode: agent`; the default is one call over the manifest, because the RK ladder did not show the loop finding more risk seeds (ADR-059);
+- judges and their calibration on the owner's labels (Iteration 5);
+- an `ExecutionPolicy` class and versioned artifacts, which wait for their first consumers (ADR-037);
 - OCR: a scanned file is reported, and its pages are not parsed;
-- client documents on `free`: they run on `local`; the consent override in section 3.1 stays by the owner's decision of 2026-11-03 (D-05, ADR-026), which records its conflict with the free tier's terms as an accepted risk. A client run may use research mode `pack`, never `live`.
+- client documents on `free`: they run on `local`; the consent override in section 3.1 stays by the owner's decision of 2026-11-03 (D-05, ADR-026), which records its conflict with the free tier's terms as an accepted risk. A client run may use research mode `pack`, never `live`, and `techcheck` reads Context7 only in research mode `live`.
 
 ## 2. Constraints
 
 | Kind | Constraint |
 |---|---|
 | Assignment | Synthetic RFPs only: no real tender or client document enters the repository, a prompt or a test. The deliverables include `DECISIONS.md`, [`ASSUMPTIONS.md`](../ASSUMPTIONS.md), rough timings and a 3-5 minute demo. |
-| Models | Free tiers first. The owner's AI Studio limits, read 2026-11-02: 20 requests a day on `gemini-3.8-flash`, 500 on `gemini-3.5-flash-lite` (ADR-003). Free-tier prompts may be used by the provider to improve its products, so `free` runs only on the synthetic corpus. |
+| Models | Free tiers first. The owner's AI Studio limits, read 2026-11-02: 20 requests a day on `gemini-3.8-flash`, 500 on `gemini-3.5-flash-lite` (ADR-003). Free-tier prompts may be used by the provider to improve its products, so `free` runs only on the synthetic corpus. `assess` and `techcheck`'s verdicts run on Cerebras `gpt-oss-120b`, whose trial credits run until 2026-12-03, with Groq's copy of the same model as fallback and then the `reason` role's model, flagged `SAME_FAMILY` (ADR-045). The paid budget is $40 for Iterations 2 and 3 (D-01), of which about $4.4 was spent by the Iteration 3 exit. |
 | Machine | The build laptop, a Windows machine whose 4 GB GPU the local models exceed, so Ollama runs mostly on CPU (V-06 in [`verification_log.md`](verification_log.md)). Ollama cuts a prompt longer than `num_ctx` silently (S-14), so the adapter fails a call whose evaluated prompt reaches `num_ctx`. |
 | Parsing | `docling-serve`, a 5 GB image, parses PDF, DOCX and XLSX for live runs; replays and tests read recorded Docling responses and need no service. |
-| Research | Research mode `live` needs the owner's NotebookLM login, a cookie-based login on a personal Google account, and the `notebooklm-mcp` server running on the host, bound to loopback; it is acceptable for synthetic data only. Research mode `pack`, the default, needs neither. |
+| Research | Research mode `live` needs the owner's NotebookLM login, a cookie-based login on a personal Google account, and the `notebooklm-mcp` server running on the host, bound to loopback; it is acceptable for synthetic data only. Research mode `pack`, the default, needs neither. `techcheck` reads Context7's remote server in research mode `live`, and the committed library pack in `pack`. |
 | Toolchain | Python 3.12 and uv; ruff, pyright and pytest; GitHub Actions on a private repository |
 | Conventions | Keys only in `.env`; ISO 8601 dates; one writer per output file; a design change needs an ADR |
 
@@ -85,24 +86,30 @@ flowchart LR
     team(["Bid team member"])
     reviewer(["EY reviewer"])
     rfp[/"File or package folder in inputs/<br/>PDF, DOCX, XLSX; synthetic, in CORPUS.sha256"/]
-    bw["Bidwright<br/>CLI and workflow"]
+    kb[/"knowledge_base/<br/>the fictional supplier's capabilities,<br/>case studies, certifications and roles"/]
+    bw["Bidwright<br/>CLI, workflow, UI and loopback API"]
     docling["docling-serve<br/>parser, localhost"]
     gemini["Gemini API<br/>free or paid tier"]
+    cere["Cerebras, then Groq<br/>assess and techcheck's verdicts"]
     ollama["Ollama<br/>local models"]
     phoenix["Phoenix<br/>trace collector"]
     nlm["notebooklm-mcp<br/>research server on the host, loopback;<br/>forwards queries to Google"]
-    packs[/"research_packs/<br/>recorded domain research, hashed"/]
-    out[/"outputs/run/<br/>summary, proposal, matrix, review files, ledger, events"/]
+    c7["Context7<br/>library documentation, remote"]
+    packs[/"research_packs/<br/>domain packs and the library pack, hashed"/]
+    out[/"outputs/run/<br/>summary, solution, review files, ledger, events"/]
     evalr["bidwright-eval<br/>separate scorer"]
     gold[/"evals/gold<br/>known answers"/]
     score[/"evals/results/<br/>scorecards, reports"/]
 
-    team -- "bidwright run, stop, resume" --> bw
+    team -- "bidwright run, stop, resume, approve; or the UI" --> bw
     rfp --> bw
+    kb --> bw
     packs -- "research mode pack" --> bw
     bw -- "research mode live: topics only, after the gateway's rules" --> nlm
+    bw -- "research mode live: library names and questions, after the gateway's rules" --> c7
     bw -- "file bytes, after guard" --> docling
     bw -- "typed requests through the text view, HTTPS" --> gemini
+    bw -- "one claim and its records, or one technology claim and its documentation" --> cere
     bw -- "typed requests, localhost" --> ollama
     bw -- "OTLP spans without prompt text" --> phoenix
     bw --> out
@@ -116,44 +123,56 @@ flowchart LR
 | Interface | Direction | Form |
 |---|---|---|
 | RFP input | In | One file or a folder under `inputs/`: PDF, DOCX or XLSX, with an optional `package.yaml` naming roles and precedence. On `free`, every file's sha256 must be listed in `inputs/CORPUS.sha256`, or the run is started with `--allow-non-corpus=i-accept-free-tier-terms`, which the manifest records beside the data class `client` (ADR-026). The run entry checks the rule before the run folder exists. |
+| Knowledge base | In | `knowledge_base/capabilities/`: the fictional supplier's capabilities, case studies, certifications and roles, in YAML, indexed once a run as `kb.sqlite` for `search_capabilities`. It is the only source of capability evidence. |
 | Docling | Out | HTTP to `DOCLING_URL` (`http://localhost:5001` on the host, `http://docling:5001` in Compose), after `guard` has sanitized the file; only for live and record runs |
 | Gemini | Out | The native `google-genai` SDK (ADR-001), with `GEMINI_API_KEY`, or `GEMINI_PAID_API_KEY` on the `paid` profile, from `.env` |
+| Cerebras and Groq | Out | The OpenAI-compatible endpoints `https://api.cerebras.ai/v1` and `https://api.groq.com/openai/v1`, with `CEREBRAS_API_KEY` and `GROQ_API_KEY` from `.env`, for the `assess` role only. The route is chosen once a run from the backends present and recorded in the manifest, so a resume or a replay uses the same one (ADR-045). |
 | Ollama | Out | HTTP to `OLLAMA_HOST`: `http://localhost:11434` on the host and `http://ollama:11434` in Compose, or `http://host.docker.internal:11434` from Compose for the host's own Ollama |
-| Phoenix | Out | OTLP over HTTP to `PHOENIX_ENDPOINT` when it is set, answers and is allowed for the run's data class; otherwise spans go to `outputs/<run>/spans.jsonl` |
+| Phoenix | Out | OTLP over HTTP to `PHOENIX_ENDPOINT` when it is set, answers and is allowed for the run's data class; otherwise spans go to `outputs/<run>/spans.jsonl`, which `bidwright phoenix sync` or the UI replays into the local Phoenix later |
 | NotebookLM | Out | MCP over streamable HTTP to `NOTEBOOKLM_MCP_URL` (`http://127.0.0.1:8000/mcp` on the host, `http://host.docker.internal:8000/mcp` from Compose), only in research mode `live`. The server's name, version and six allowed tools must match `config/mcp_pins.yaml`, or no tool of it is used (FI-11). The server forwards every query to Google, so the egress register treats it as remote whatever its host, and a client run with research mode `live` is refused at the run entry. |
-| Research packs | In | `research_packs/<domain>/`: a manifest of hashes, sources with URLs and authority tiers, excerpts of at most 300 characters, the recorded `DomainBrief` and answers (ADR-033). A pack whose files do not match its hashes is refused. `bidwright research pack` builds one from a live run or a NotebookLM job, on the host. |
-| Egress register | Check | `config/egress.yaml` lists every destination, its hosts, whether it is local and what it may receive. Before a run, each backend, the trace endpoint, the parser and, in research mode `live`, the research server are checked against it and the data class; a client run reaches no remote destination except through the consent override (ADR-026). |
+| Context7 | Out | MCP over streamable HTTP to `mcp.context7.com`, only in research mode `live`, for `techcheck`: code calls its two tools, pinned like NotebookLM's, with a library name and a question built from one technology claim, never RFP text (G3) |
+| Research packs | In | `research_packs/<domain>/`: a manifest of hashes, sources with URLs and authority tiers, excerpts of at most 300 characters, the recorded `DomainBrief` and answers (ADR-033). `research_packs/libraries/` is the library pack `techcheck` reads in research mode `pack`: recorded documentation excerpts for the libraries the knowledge base and the corpus name (ADR-044). A pack whose files do not match its hashes is refused. `bidwright research pack` builds a domain pack from a live run or a NotebookLM job, on the host. |
+| Egress register | Check | `config/egress.yaml` lists every destination, its hosts, whether it is local and what it may receive. Before a run, each backend, the trace endpoint, the parser and, in research mode `live`, the research and documentation servers are checked against it and the data class; a client run reaches no remote destination except through the consent override (ADR-026). |
 | Run control | In | `bidwright stop <run>` writes `control/stop.request`, which the supervisor reads once a second; `bidwright resume <run>` continues a stopped, paused, killed or budget-stopped run under its lock, `control/run.lock` |
+| Gate decision | In | `bidwright approve <run> --role ROLE` with `--edit FILE`, `--option OPT-n`, `--override REASON` or `--reject REASON`, or the same command run by the UI's Review page; it builds an approval in ADR-035's format and resumes the run, whose gate checks it and writes `review/solution_gate.approval.yaml` (ADR-046) |
+| UI and API | In and out | `bidwright ui` serves the Streamlit pages on `127.0.0.1:8501`, and `--api` the loopback API on `127.0.0.1:8001` (ADR-050, ADR-051); both read run folders and run the CLI, and neither writes a run file itself |
 | Run folder | Out | `outputs/<run>/`, gitignored; `bidwright purge` deletes a run, its journal and its cache entries, refuses a run whose lock is held, and `--expired` deletes every client run past the retention period |
 | Evaluation | Read only | `bidwright-eval` reads finished run folders and the gold, and writes `evals/results/` |
 
 ### 3.2 The LLM boundary
 
-Everything a model writes crosses one boundary. Code sends a typed request built from a schema and receives text that must parse into a schema, and an acceptance check in code then decides what reaches the graph's state. The model never sees character offsets, never chooses the next step, and never runs a tool itself. Everything a model reads from the RFP passes one seam, the text view (ADR-026): context packs, section views, cluster tasks, brief tasks and search results are built from `TextView.text`, and stored records keep the frozen text. At `v0.2` the view is `IdentityView`, which shows the frozen text with line breaks as spaces; a masking view replaces it in Iteration 5. The `discover` model sees no RFP passage at all: its only input from the RFP is the brief's topics, which code checks, and everything it reads back from research is screened, tiered and tagged `EXTERNAL_RESEARCH` (section 8.1). Section 5.4 lists the contract for each call.
+Everything a model writes crosses one boundary. Code sends a typed request built from a schema and receives text that must parse into a schema, and an acceptance check in code then decides what reaches the graph's state. The model never sees character offsets, never chooses the next step, and never runs a tool itself. Everything a model reads from the RFP passes one seam, the text view (ADR-026): context packs, section views, cluster tasks, brief tasks and search results are built from `TextView.text`, and stored records keep the frozen text. At `v0.2` the view is `IdentityView`, which shows the frozen text with line breaks as spaces; a masking view replaces it in Iteration 5. The `discover` model sees no RFP passage at all: its only input from the RFP is the brief's topics, which code checks, and everything it reads back from research is screened, tiered and tagged `EXTERNAL_RESEARCH` (section 8.1). A `decide` call sees one need and what its own tools return; an `assess` call sees one claim, the knowledge-base records it cites and its need's requirements, never the author's reasoning; a `techcheck` call sees one technology claim and the documentation returned for it. A capability reaches the manifest only through a claim that `assess` judged against its records. Section 5.4 lists the contract for each call.
 
 ## 4. Solution strategy
 
-The design rests on one principle: a deterministic shell around a probabilistic core. Code checks what code can check (files, quotes, numbers, ids, schemas, allowlists and budgets), and the LLM does only the judgment and generation that code cannot, inside those checks (ADR-005).
+The design rests on one principle: a deterministic shell around a probabilistic core. Code checks what code can check (files, quotes, numbers, ids, schemas, allowlists, budgets, closure and weights), and the LLM does only the judgment and generation that code cannot, inside those checks (ADR-005).
 
-| Goal | Strategy at `v0.2` | Instead of | ADR |
+| Goal | Strategy at `v0.3` | Instead of | ADR |
 |---|---|---|---|
 | Every requirement traceable | Each document becomes passages with ids and offsets into one frozen text. The model cites passage ids and copies a quote, and code checks the quote and every number and date in the statement. | Offsets or citations emitted by the model | ADR-006 |
 | No obligation silently dropped | Every passage reaches `extract` in a context pack and gets a disposition; cues and zones are hints; `coverage` re-reads the gaps | A cue filter in front of the model | ADR-017, ADR-018 |
 | Hidden text never reaches a model | `guard` scans the raw files, removes hidden content from the copy that is parsed, and lists it for review | Screening the parsed text, or delimiters alone | ADR-010, ADR-020 |
 | Linked requirements read together | Code clusters requirements by section, reference and wording; one `consolidate` call per cluster | One call over all requirements, or none | ADR-019 |
-| Agentic, yet testable | A LangGraph graph routes the run, with no LLM choosing the next step. Two tool-using agents, `risk` and `discover`; single-call functions elsewhere. Code waits for a research job; no model polls it. | An LLM choosing the next step, or CrewAI | ADR-005, ADR-036 |
-| No unauthorized action | Every tool call passes `ToolGateway` before it runs: the four checks of `v0.0` and five rules, each a trigger, a check and an outcome. Code binds every notebook and job id, so the model never names one. | Allowlists alone, or safety instructions in the prompt | ADR-009, ADR-032 |
+| Agentic, yet testable | A LangGraph graph routes the run, with no LLM choosing the next step. `decide` is a tool-using agent, one per need, in every run, and `discover` in research mode `live`; `risk`'s agent loop is built and off by default. Single-call functions elsewhere. Code waits for a research job; no model polls it. | An LLM choosing the next step, or CrewAI | ADR-005, ADR-036, ADR-039 |
+| No capability asserted without evidence | Each claim cites knowledge-base records its own loop retrieved; `assess`, on another model family, judges entailment over those records only, after code's pre-checks, and a claim with no evidence is `UNVERIFIED` in code with no call; the capability map's status is code; the manifest asserts a capability only by citing an assessed claim | The author judging its own claim, or a scored judge | ADR-040, ADR-045 |
+| A reproducible choice of solution | The model proposes two or three options, the simplest as the baseline, and scores each 0 to 4 per in-scope factor with a reason; code applies the RFP's weights, the pass-or-fail rule and the tie-breaks, so the ranking reproduces from the logged scores | A ranking the model writes | ADR-041 |
+| A solution a bid team can defend | `blueprint` in two calls, the structure and then each work package's detail; code checks the tree, the 100% rule, the backward trace, provenance, the effort's basis and the absence of prices and invented dates, and a fact with no source becomes an assumption | One free-text approach | ADR-043 |
+| Technology claims checked | `techcheck` judges each library claim against current documentation, from Context7 or the committed library pack, with a quote that must be found in it; an `INVALIDATED` claim sends the manifest back once, then blocks the gate | Trusting the model's knowledge of libraries | ADR-044 |
+| People decide the solution | `solution_gate` waits in `WAITING_HUMAN` and shows the options, the capability map, the manifest, the verdicts and the risks; the approval names a role, the hashes of what was reviewed, and edits within a fixed list of fields | Automatic approval | ADR-035, ADR-046, ADR-060 |
+| Each step earns its place | Three ladders of 5 repeats a rung, each rung against the last one kept; the last rung kept sets each switch's default, so `decide`, `assess` and the manifest stay, and the risk agent, `reflect` and the second pass default off | Adding every planned step | ADR-048, ADR-054, ADR-056 to ADR-059 |
+| No unauthorized action | Every tool call passes `ToolGateway` before it runs: the four checks of `v0.0` and six rules, each a trigger, a check and an outcome. Code binds every notebook and job id, so the model never names one. | Allowlists alone, or safety instructions in the prompt | ADR-009, ADR-032, ADR-047 |
 | Stoppable and resumable | A supervisor drains the graph between steps on a stop request, a journal keeps every answered call, the ledger and the budget's counts are written as they change, and a run lock tells a killed run from a running one | Rerunning a stopped run from the start, or stop checks in every node | ADR-031 |
-| Domain research without leaking the RFP | Queries are built from the brief's topics, never from passages; a gateway rule denies any query sharing 8 consecutive words with a passage; recorded research packs by default, a live job only on request | Queries written from RFP text, or live research on every run | ADR-032, ADR-033, ADR-036 |
+| Domain research without leaking the RFP | Queries are built from the brief's topics, never from passages; a gateway rule denies any query sharing 8 consecutive words with a passage; recorded research packs by default, a live job only on request; `decide`'s research questions are answered from the research the run already holds | Queries written from RFP text, or live research on every run | ADR-032, ADR-033, ADR-036 |
 | Research treated as untrusted | Every excerpt, answer and report paragraph is screened as passages are; a source that reads like a published solicitation is left out; each source gets an authority tier by host; an item resting only on tier-4 sources, or sharing no word with its excerpts, is dropped; research is never capability evidence | Trusting what the research tool returns | ADR-033, ADR-038 |
-| Client documents protected | A data class per run, an egress register that counts the research server as remote, the text view and a retention period | Trusting each call site | ADR-026 |
+| Client documents protected | A data class per run, an egress register that counts the research and documentation servers as remote, the text view and a retention period | Trusting each call site | ADR-026 |
 | The assignment's output first | The solution summary is the first output of every run | The summary alone, or a pack without it | ADR-007 |
 | People decide | `DRAFT_ONLY`: nothing is submitted, every output is `UNREVIEWED_DRAFT`, and compliance starts `UNVERIFIED` | A fully automatic pipeline | ADR-008, ADR-021 |
-| Runs without keys | Recorded LLM and Docling cassettes replay a whole run; the host path needs no Docker | Live calls in every test | ADR-016 |
-| Measured, not asserted | A separate evaluation package with a funnel and a regression gate; a ledger entry per call and spans per step | A judged-metric framework | ADR-014, ADR-015 |
-| Fits the free tier | Flash-Lite for both roles on `free`; a limiter on each model's per-minute limits and, on `paid`, its daily limit, while Google's own daily 429 decides on `free`; a circuit breaker per model and per server; a response cache for repeats; no thinking on `local` | Flash for `reason`; thinking on for `local`; a local daily cap on `free` | ADR-003, ADR-004, ADR-029 |
+| Runs without keys | Recorded LLM and Docling cassettes replay a whole run, the solution path and its gate included; the host path needs no Docker | Live calls in every test | ADR-016 |
+| Measured, not asserted | A separate evaluation package with a funnel, seed scores and a regression gate; a ledger entry per call and spans per step | A judged-metric framework | ADR-014, ADR-015 |
+| Fits the free tier | Flash-Lite for both Gemini roles on `free`; Cerebras's trial for `assess`; a limiter on each model's per-minute limits and, on `paid`, its daily limit, while Google's own daily 429 decides on `free`; a circuit breaker per model and per server; a response cache for repeats; no thinking on `local` | Flash for `reason`; thinking on for `local`; a local daily cap on `free` | ADR-003, ADR-004, ADR-029 |
+| One interface for people | The Streamlit pages and the loopback API read run folders and run the same CLI a person types | A second code path for the UI | ADR-050, ADR-051, ADR-053 |
 
-The workflow follows three phases: requirements and reality (`guard` to `consolidate`), engineering and evidence (`brief`, `discover`, `approach`, `risk`), and proposal (`draft`, `render`). Of the planned control plane, `v0.2` has the run supervisor with stop and resume, the tool gateway with its rules, recovery (the circuit breaker and the dead-letter file), the events log, the run budget, the limiter, and the checkpointer, which writes each step's state to `checkpoints.sqlite` for `resume` to read. Three planned components wait for their consumers (ADR-037): an `ExecutionPolicy` class, since `config.py` already validates `config/agents.yaml` and the nodes read it; versioned artifacts, for Iteration 4's `repair`; and the context manager's slots for cards and skills.
+The workflow follows three phases: requirements and reality (`guard` to `consolidate`), engineering and evidence (`brief`, research, `decide`, `assess`, the capability map, `options`, `blueprint`, `techcheck`, `risk` and `solution_gate`), and proposal (`draft`, `render`). Of the planned control plane, `v0.3` has the run supervisor with stop and resume, the tool gateway with its rules, recovery (the circuit breaker and the dead-letter file), the events log, the run budget, the limiter, the checkpointer, which writes each step's state to `checkpoints.sqlite` for `resume` to read, and the first human gate. Two planned components still wait for their consumers (ADR-037): an `ExecutionPolicy` class, since `config.py` already validates `config/agents.yaml` and the nodes read it, and versioned artifacts, for Iteration 4's `repair`. The context manager's slot for method cards exists and is empty, since no family is on.
 
 ## 5. Building block view
 
@@ -163,59 +182,62 @@ Hexagons make LLM calls through the client. Everything else is code with no LLM.
 
 ```mermaid
 flowchart TB
-    cli["cli.py<br/>run, demo, record, stop, resume, purge, matrix run, research pin, research pack"]
-    pre["preflight.py<br/>corpus rule, data class, backends, Docling health"]
+    ui["app/: Streamlit Run, Review and Ops pages;<br/>loopback API on 127.0.0.1:8001"]
+    cli["cli.py<br/>run, demo, record, stop, resume, approve, review, purge, seed, matrix run, phoenix, ui, research"]
+    pre["preflight.py<br/>corpus rule, data class, backends, models, Docling health"]
     sup["harness/supervisor.py<br/>run lock, statuses, stop watcher, budget file"]
     subgraph lg["graph/build.py: LangGraph graph with a SQLite checkpointer, durability sync"]
-        guard["guard"]
-        ingest["ingest"]
-        cand["candidates"]
-        triage{{"triage"}}
-        pack["pack"]
-        extract{{"extract, one per pack"}}
-        verify["verify"]
-        coverage["coverage"]
-        lint["lint"]
-        cons{{"consolidate, one per cluster"}}
+        req["guard, ingest, candidates, triage, pack,<br/>extract, verify, coverage, lint, consolidate<br/>as at v0.2"]
         brief{{"brief"}}
         disc{{"discover: load, or start, wait, ask, extract"}}
-        approach{{"approach"}}
-        risk{{"risk agent"}}
+        decide{{"decide agent, one per need"}}
+        assess{{"assess, one per claim, another family"}}
+        cmap["capability map"]
+        options{{"options"}}
+        blueprint{{"blueprint: P01, P02, P03"}}
+        techcheck{{"techcheck verdicts"}}
+        risk{{"risk: one call, or the agent"}}
+        gate["solution_gate: waits for a person"]
         draft{{"draft, three sections"}}
         render["render"]
     end
     view["harness/view.py<br/>text view"]
     ctxm["harness/context.py<br/>context packs and manifests"]
-    client["llm/client.py<br/>model per role, journal, limiter, breaker, cache, retries, fallback, cassettes"]
-    gateway["harness/gateway.py and rules.py<br/>allowlist, arguments, repeats, call cap, G1 to G5"]
-    tools["tools.py<br/>search_rfp over FTS5, date_calc"]
-    prov["research/<br/>ResearchProvider: NotebookLM over MCP, or a research pack;<br/>pins, trust, tiers"]
+    client["llm/client.py<br/>model per role, assess route, journal, limiter, breaker, cache, retries, fallback, cassettes"]
+    gateway["harness/gateway.py and rules.py<br/>allowlist, arguments, repeats, call cap, G1 to G6"]
+    tools["tools.py and kb.py<br/>search_rfp, date_calc, sla_calc;<br/>search_capabilities and read_section over kb.sqlite and the view"]
+    prov["research/<br/>ResearchProvider: NotebookLM over MCP, or a pack;<br/>Context7 or the library pack; pins, trust, tiers"]
     egress["harness/egress.py<br/>egress register"]
     parsers["parsers/<br/>Docling client and parser, pdfplumber"]
-    obs["obs/<br/>ledger, events and spans"]
+    obs["obs/<br/>ledger, events, spans, span replay, Phoenix sync"]
     genai["llm/genai.py"] --> gem[("Gemini")]
+    oc["llm/openai_compat.py"] --> cg[("Cerebras, Groq")]
     oll["llm/ollama.py"] --> ol[("Ollama")]
     dcs[("docling-serve")]
-    nlm[("notebooklm-mcp")]
+    mcp[("notebooklm-mcp, Context7")]
     rp[("research_packs/")]
     cass[("tests/cassettes")]
 
+    ui -- "argument lists, never a shell" --> cli
     cli -- "checked before the run folder exists" --> pre
     cli --> sup --> lg
     pre --> egress
-    guard --> ingest --> cand --> triage --> pack --> extract --> verify --> coverage
-    coverage -- "gaps" --> extract
-    coverage --> lint --> cons --> brief --> disc --> approach --> risk --> draft --> render
-    ingest --> parsers --> dcs
-    triage & extract & cons & brief & disc & approach & risk & draft --> ctxm
+    req --> brief --> disc --> decide --> assess --> cmap --> options --> blueprint --> techcheck --> risk --> gate --> draft --> render
+    techcheck -- "INVALIDATED, once" --> blueprint
+    gate -- "another option" --> blueprint
+    gate -- "edited work packages" --> techcheck
+    req --> parsers --> dcs
+    req & brief & disc & decide & assess & options & blueprint & techcheck & risk & draft --> ctxm
     ctxm --> view
-    triage & extract & cons & brief & disc & approach & risk & draft --> client
-    risk -- "ToolRequest" --> gateway --> tools --> view
+    req & brief & disc & decide & assess & options & blueprint & techcheck & risk & draft --> client
+    decide -- "ToolRequest" --> gateway --> tools --> view
     disc -- "ToolRequest" --> gateway --> prov
-    prov --> nlm
+    techcheck -- "code's own calls, through the gateway" --> prov
+    prov --> mcp
     prov --> rp
     client --> obs
     client --> genai
+    client --> oc
     client --> oll
     client <--> cass
     parsers <--> cass
@@ -225,43 +247,54 @@ flowchart TB
 
 | Module | Responsibility | Tested by |
 |---|---|---|
-| `cli.py` | The `run`, `demo`, `record`, `stop`, `resume`, `purge`, `matrix run`, `research pin` and `research pack` commands; prints what the run entry refuses | `test_cli.py`, `test_purge.py`, `test_matrix.py` |
+| `cli.py` | The `run`, `demo`, `record`, `stop`, `resume`, `approve`, `review`, `purge`, `seed`, `matrix run`, `phoenix`, `ui`, `research pin` and `research pack` commands; prints what the run entry refuses; `approve` builds an approval from its flags and refuses edits the reviewed manifest cannot take | `test_cli.py`, `test_purge.py`, `test_matrix.py`, `test_seed.py`, `test_review.py` |
 | `harness/supervisor.py` | `RunSupervisor`: the run lock, the manifest as its only writer, every status in `status_history` and `events.jsonl`, the stop watcher that drains the graph, the budget's counts in `control/budget.json`, and a resume's refusals; on a resume, the line files a kill may have cut are repaired before anything appends | `test_supervisor.py`, `test_resume.py` |
 | `harness/recovery.py` | The circuit breaker per model and tier and per MCP server, kept in `outputs/.quota/breaker/`; the dead-letter file | `test_recovery.py` |
-| `harness/rules.py` | The gateway's rules G1 to G5, each a trigger, a check and an outcome | `test_gateway.py` |
+| `harness/rules.py`, `harness/reflect.py` | The gateway's rules G1 to G6, each a trigger, a check and an outcome; G3 and G4 also cover Context7's tools; G6 offers `reflect` only after a failure signal; the `reflect` tool over the pinned sequential-thinking server on stdio | `test_gateway.py`, `test_reflect.py` |
 | `obs/events.py`, `fileio.py` | The events log; atomic writes and the reading and repair of line files that a kill may leave with a cut last line | `test_supervisor.py`, `test_cache.py` |
 | `graph/brief.py` | `brief`: the opportunity brief from the evaluation and instruction sections, checked against the passages it cites | `test_brief.py` |
 | `graph/discover.py` | `discover`'s five nodes, `research.json` and `domain_brief.json`, the research tools, and the rules that settle an extraction into a `DomainBrief` | `test_discover.py` |
 | `research/provider.py`, `research/nlm.py`, `research/mcp_client.py` | The `ResearchProvider` interface; NotebookLM behind it, over an MCP client that speaks streamable HTTP and stdio | `test_mcp_client.py`, `test_discover.py` |
 | `research/pins.py`, `research/trust.py`, `research/audit.py` | Tool pins checked at connection (FI-11); screening, the solicitation pattern (ADR-038) and authority tiers for research text (FI-10); the overlap of every sent query with the RFP | `test_mcp_client.py`, `test_pack.py`, `test_discover.py` |
 | `research/pack.py`, `research/builder.py`, `restricted.py` | Research packs: hashes, selection by keyword, `ask_research` over a pack; the pack builder, with its checks for solicitation-like sources and for the names the repository must not carry | `test_pack.py`, `test_builder.py`, `test_repo_hygiene.py` |
+| `graph/decide.py` | `decide_plan`, one `decide` worker per need with its tool loop, the join that numbers claims `CL-001` onward in need order, and `claims.jsonl` and `decisions.jsonl` | `test_decide.py` |
+| `graph/assess.py`, `graph/capability.py` | `assess`, one call per claim with evidence on the routed model, `UNVERIFIED` in code with no evidence, and `assessments.jsonl`; the capability map's status per need, in code | `test_assess.py`, `test_capability_map.py` |
+| `graph/options.py`, `graph/signal.py` | `options`, its scores and the weighted ranking in code; the bid signal and memo, from an approved bid policy or `UNDETERMINED` | `test_options.py`, `test_bid_signal.py` |
+| `graph/blueprint.py` | `blueprint`'s plan and detail calls, the manifest's checks, the revision after an `INVALIDATED` claim, the gate's edits (`apply_edits`) and `manifest.json` | `test_blueprint.py`, `test_blueprint_option.py` |
+| `graph/techcheck.py`, `research/context7.py` | Each technology claim's verdict, its quote found in the documentation, from Context7 in research mode `live` or the library pack in `pack` | `test_techcheck.py` |
+| `graph/gate.py` | `solution_gate`: the review file, the approval's checks, the edits, the switch, the rejection and the override's cover | `test_gate.py` |
+| `graph/solution.py` | The solution path's nodes in the graph, the switches of section 4.11 of the Iteration 3 design, and the option `blueprint` builds for | `test_solution_path.py` |
+| `graph/seed.py`, `graph/single.py` | Freezing a finished run as a ladder's seed and loading it; one node's call outside a run, for the technology seeds and S-12 | `test_seed.py`, `test_single.py` |
+| `review.py` | `bidwright review`: verdicts on a run's records in order of consequence, in `review/decisions.jsonl` | `test_review.py` |
 | `text.py` | Word-level helpers shared by the nodes and the gateway's rules: content stems, normalized words and the longest shared run of words | `test_brief.py`, `test_gateway.py` |
 | `preflight.py` | The run entry's preconditions: the corpus rule per file, the data class and package id, a backend per provider, the local models, Docling's health | `test_preflight.py`, `test_corpus_rule.py` |
 | `config.py` | Loads and validates `config/*.yaml` with `yaml.safe_load` and Pydantic | `test_config.py` |
 | `schemas.py` | Every record and every model-facing request and response, in [`reference/schemas.md`](reference/schemas.md) | `test_schemas.py` |
 | `guard/` | Size, page, path and archive limits; scanned files; hidden content in PDF, DOCX and XLSX, removed from the parsed copy and kept in `quarantine.jsonl`; small print | `test_guard.py` |
 | `parsers/`, `ingest.py`, `register.py` | The Docling client with its cassettes, the Docling and pdfplumber parsers, frozen text and passages with lead-ins, table headers, pages and small-print flags; the control register of documents, roles and precedence | `test_docling_parser.py`, `test_ingest.py`, `test_register.py` |
-| `candidates.py`, `kb.py` | Cue annotations and the term registry; the B0 rule-only baseline; the knowledge base loader | `test_candidates.py`, `test_knowledge_base.py` |
+| `candidates.py`, `kb.py` | Cue annotations and the term registry; the B0 rule-only baseline; the knowledge base, its FTS5 index `kb.sqlite` and the method cards | `test_candidates.py`, `test_knowledge_base.py`, `test_cards.py` |
 | `graph/triage.py` | Section views, zones with the keyword fallback, the RFP profile and submission hazards | `test_triage.py` |
 | `harness/context.py`, `harness/view.py` | Context packs within budget, with neighbors, lead-ins and terms, and their manifests; the text view | `test_context.py`, `test_text_view.py` |
 | `verify.py` | Quote checks (verbatim, normalized or rejected) and number and date fidelity | `test_verify.py` |
 | `coverage.py` | The gaps after `extract`, and when to stop re-reading them | `test_coverage.py` |
 | `lint.py` | Requirement-quality rules, the coded checks and contract flags | `test_lint.py` |
 | `clusters.py`, `graph/consolidate.py` | The cluster rule in code; one `consolidate` call per cluster, and the groups, discrepancies and questions it settles | `test_clusters.py`, `test_consolidate.py` |
-| `retrieval.py`, `tools.py` | The per-run FTS5 index over the view's text; the `search_rfp` and `date_calc` tools | `test_tools.py` |
+| `retrieval.py`, `tools.py` | The per-run FTS5 index over the view's text; the `search_rfp`, `read_section`, `search_capabilities`, `date_calc` and `sla_calc` tools | `test_tools.py` |
 | `harness/gateway.py`, `harness/budget.py` | `ToolGateway` and `tool_calls.jsonl`; per-run limits on requests, tokens and active time, checked before each provider attempt, paused while code waits for a research job, and raised by `resume --raise-budget` | `test_gateway.py`, `test_budget.py` |
 | `harness/egress.py`, `purge.py` | The egress register's checks; deleting runs and their cache entries | `test_egress.py`, `test_purge.py` |
 | `llm/client.py`, `llm/types.py`, `llm/limits.py`, `llm/cache.py` | One `complete` call for every role: model choice, decoding, the run's journal, the limiter, the circuit breaker, the response cache, retries, fallback, record and replay, schema validation, ledger entries | `test_client_replay.py`, `test_simulator.py`, `test_cache_key.py`, `test_limiter.py`, `test_cache.py`, `test_resume.py` |
-| `llm/genai.py`, `llm/ollama.py`, `llm/openai_compat.py` | The Gemini and Ollama adapters, and an adapter for OpenAI-compatible providers kept for Iteration 3 | `test_adapters.py` |
+| `llm/genai.py`, `llm/ollama.py`, `llm/openai_compat.py` | The Gemini, Ollama and OpenAI-compatible adapters, the last for Cerebras and Groq | `test_adapters.py`, `test_routes.py` |
 | `llm/replay.py`, `llm/simulator.py`, `llm/schema.py` | Cassettes; a replay backend that injects scripted faults; the provider form of a schema | `test_client_replay.py`, `test_simulator.py`, `test_provider_schema.py` |
 | `prompts.py` | Loads versioned prompts, renders them with `string.Template.substitute`, seeds delimiters from the run id, and renders the few-shot examples, validated against the schemas | `test_prompts.py` |
 | `graph/nodes.py`, `graph/state.py`, `graph/build.py` | The nodes, the graph state, the wiring, and `execute` | `test_nodes.py`, `test_risk_loop.py`, `test_e2e_replay.py` |
 | `render.py`, `render_xlsx.py` | The outputs, after schema validation; the compliance matrix | `test_render_outputs.py`, `test_compliance_matrix.py` |
 | `baselines.py`, `matrix.py` | EX0 and B0; the matrix runner for spikes and ablations | `test_e2e_replay.py`, `test_matrix.py` |
 | `obs/ledger.py`, `obs/tracing.py` | `ledger.jsonl`, appended as each call finishes, its totals and the models that answered; spans with a file fallback | `test_ledger.py`, `test_tracing.py` |
+| `obs/replay.py`, `obs/phoenix.py` | `spans.jsonl` replayed over OTLP into the local Phoenix; review verdicts and scores sent to a run's trace as annotations | `test_span_replay.py`, `test_phoenix.py` |
+| `app/` | The Streamlit Run, Review and Ops pages in `app/views/`, the run selector and the state the pages share, the commands the pages run, and the loopback API | `test_app.py`, `test_api.py` |
 | `scripts/gen_docs.py`, `scripts/check_docs.py`, `scripts/outbound_rates.py` | Generate `agents.md`, `ai-bom.md` and the CLI and schema references; check links, wikilinks, dates, front matter, voice and test names; report the outbound rule's pass rates on its test set | `test_docs_generated.py`, `test_check_docs.py`, and the `docs-links` job |
 | Repository rules | The import rule, repository hygiene, the Compose lockdown, the privacy invariant | `test_isolation.py`, `test_repo_hygiene.py`, `test_compose_lockdown.py`, `test_privacy_invariant.py` |
-| `evals/` | The separate `bidwright-eval` package: corpus rendering, gold, matcher, funnel, seeds, scorer, gate, explain, report, and the external stage benchmarks in `evals/external/` | `test_render.py`, `test_matcher.py`, `test_funnel.py`, `test_scorer_selftest.py`, `test_gates.py`, `test_hero_replay.py`, `test_external_crackedpdfs.py` |
+| `evals/` | The separate `bidwright-eval` package: corpus rendering, gold, matcher, funnel, seeds, scorer, gate, explain, report with the keep-or-drop rule, the technology seeds, S-12's cards, the spot-check, and the external stage benchmarks in `evals/external/` | `test_render.py`, `test_matcher.py`, `test_funnel.py`, `test_scorer_selftest.py`, `test_gates.py`, `test_hero_replay.py`, `test_external_crackedpdfs.py` |
 
 ### 5.3 Agent view
 
@@ -270,32 +303,44 @@ flowchart TB
 | Role | Kind | Input to output | Model role | Tools | Limits |
 |---|---|---|---|---|---|
 | `triage` | Function, one per pack of sections | `TriageInput` to `TriageResult` | extract | None | 1 call, 1 repair |
-| `extract` | Function, one per context pack | `ExtractBatch` to `ExtractResult` | extract | None | 1 call, 1 targeted repair, then, with the second pass on, 1 call and 1 format repair, fixed in code |
+| `extract` | Function, one per context pack | `ExtractBatch` to `ExtractResult` | extract | None | 1 call, 1 targeted repair; the second pass is off (ADR-057) |
 | `consolidate` | Function, one per cluster the model step takes | `ClusterTask` to `ConsolidationResult` | reason | None | 1 call, 1 repair |
 | `brief` | Function, one per context pack of evaluation and instruction sections | `BriefInput` to `BriefResult` | extract | None | 1 call, 1 repair |
 | `discover` | Agent, in research mode `live` only | `DiscoveryTask` to `DiscoveryExtract` | reason | `start_research`, `ask_research` | 1 turn and 1 reminder to start a job; 4 turns a pass, 2 passes; 2 jobs, 6 questions and 8 tool calls a run; 1 extraction call, 1 repair |
-| `approach` | Function | `ApproachInput` to `ApproachResult` | reason | None | 1 call, 1 repair |
-| `risk` | Agent | `RiskInput` to `RiskRegister` | reason | `search_rfp`, `date_calc` | 4 turns, 6 tool calls, stop on no progress |
+| `decide` | Agent, one per need, at most 24 needs a run | `DecideTask` to `DecideResult` | reason | `search_capabilities`, `search_rfp`, `read_section`, `ask_research`; `reflect`, off | 4 turns, 6 tool calls, stop on no progress; 1 final call, 1 repair; at most 3 claims |
+| `assess` | Function, one per claim that cites evidence | `AssessmentTask` to `AssessmentResult` | assess, another family | None | 1 call, 1 repair; no evidence, no call |
+| `options` | Function | `OptionsTask` to `OptionsResult` | reason | None | 1 call, 1 repair |
+| `blueprint` | Function, two calls and a revision | `BlueprintPlanTask` to `BlueprintPlan` (P01), `BlueprintDetailTask` to `BlueprintDetail` (P02); P03 revises the plan after an `INVALIDATED` claim | reason | None | Each call 1 format repair; P01 also 1 closure repair |
+| `techcheck` | Function, one per checkable technology claim | `TechVerdictTask` to `TechVerdict` | assess, another family | Code calls Context7's `resolve-library-id` and `query-docs` | At most 15 claims a run |
+| `risk` | Function by default; agent behind `risk_mode: agent` | `RiskFixedInput` or `RiskInput` to `RiskRegister` | reason | The agent: `search_rfp`, `date_calc`, `sla_calc`; `reflect`, off | One call, one retry for rejected risks; the agent 4 turns and 6 tool calls |
+| `approach` | Function, the solution ladder's one-call baseline and the fallback when `blueprint` fails twice | `ApproachInput` to `ApproachResult` | reason | None | 1 call, 1 repair |
 | `draft` | Function, once per section | `DraftTask` to `DraftResult` | reason | None | 1 call, 1 repair |
 
-The roles never exchange output. The graph passes each one a typed input built from checked records, and only checked output enters the state; `discover` gets the brief's topics and nothing else from the RFP. Each `Send` worker returns its result through a list reducer, so no two workers write the same key.
+The roles never exchange output. The graph passes each one a typed input built from checked records, and only checked output enters the state; `discover` gets the brief's topics and nothing else from the RFP; `assess` never sees the reasoning of the `decide` call that wrote the claim. Each `Send` worker returns its result through a list reducer, so no two workers write the same key.
 
 ### 5.4 Boundary contracts
 
-Each LLM call has a schema, except the `risk` agent's tool turns, which return tool calls. Each has an acceptance check in code, a pinned prompt and model, and a defined result when the check fails.
+Each LLM call has a schema, except the agents' tool turns, which return tool calls. Each has an acceptance check in code, a pinned prompt and model, and a defined result when the check fails.
 
 | Call | Pinned by | Acceptance check in code | When the check fails |
 |---|---|---|---|
-| `triage` | `triage@0.1.0`; the `extract` role's model | Zones only for sections in the pack, at or above the confidence threshold; hazards cite passages that exist | A section without an accepted zone takes the keyword zone; a pack whose answer breaks its schema twice falls back to keywords, and the run ends `DEGRADED` |
-| `extract` | `extract@0.4.0`; `extract` | Each quote is found in the view's text of a passage the item cites, from its own pack, and mapped to the frozen text; every number and date in the statement occurs in the quote, a cited passage, its lead-in or header, or its section path; every passage of the pack appears in an item or in `no_obligation_src_ids`. An item keeps its first 3 ids; a quote over 300 characters fails its item, not its pack (ADR-024). | One repair message naming each failed quote, number and long quote; items that still fail go to `rejected.jsonl`. A pack that breaks its schema twice is rejected whole. `coverage` re-reads passages left without a disposition, and the second pass (S-13, ADR-028) re-reads the passages of an `OBLIGATION` zone that the first reading found nothing binding in. |
-| `consolidate` | `consolidate@0.1.0`; `reason` | Duplicates, discrepancies, questions and references name members of the cluster; a merge never loses an anchor | A call that fails becomes a group built in code, and the run ends `DEGRADED` |
-| `brief` | `brief@0.2.0`; `extract` | A factor stays only when its name and, unless `not_stated`, its weight occur as whole words in a passage it cites; a scoring quote that does not verify becomes `not_stated`; code sets each factor's status, `OUT_OF_SCOPE` for price, cost, fee or charge; ids outside the call's sections are dropped; a topic of more than 7 words, or sharing 4 consecutive words with a passage, is dropped. Two stated weights for one factor become a discrepancy and a clarification question. | One format repair; a call that still fails adds nothing, and the run ends `DEGRADED` |
+| `triage` | `triage@0.2.0`; the `extract` role's model | Zones only for sections in the pack, at or above the confidence threshold; hazards cite passages that exist | A section without an accepted zone takes the keyword zone; a pack whose answer breaks its schema twice falls back to keywords, and the run ends `DEGRADED` |
+| `extract` | `extract@0.5.0`; `extract` | Each quote is found in the view's text of a passage the item cites, from its own pack, and mapped to the frozen text; every number and date in the statement occurs in the quote, a cited passage, its lead-in or header, or its section path; every passage of the pack appears in an item or in `no_obligation_src_ids`. An item keeps its first 3 ids; a quote over 300 characters fails its item, not its pack (ADR-024). | One repair message naming each failed quote, number and long quote; items that still fail go to `rejected.jsonl`. A pack that breaks its schema twice is rejected whole. `coverage` re-reads passages left without a disposition. |
+| `consolidate` | `consolidate@0.2.0`; `reason` | Duplicates, discrepancies, questions and references name members of the cluster; a merge never loses an anchor | A call that fails becomes a group built in code, and the run ends `DEGRADED` |
+| `brief` | `brief@0.3.0`; `extract` | A factor stays only when its name and, unless `not_stated`, its weight occur as whole words in a passage it cites; a scoring quote that does not verify becomes `not_stated`; code sets each factor's status, `OUT_OF_SCOPE` for price, cost, fee or charge; ids outside the call's sections are dropped; a topic of more than 7 words, or sharing 4 consecutive words with a passage, is dropped. Two stated weights for one factor become a discrepancy and a clarification question. | One format repair; a call that still fails adds nothing, and the run ends `DEGRADED` |
 | `discover`, tool turns | `discover@0.4.0`; `reason`; the allowlist in `config/agents.yaml` and the pins in `config/mcp_pins.yaml` | `ToolGateway`, with G1 to G5 (section 8.3, and the generated table in [`agents.md`](agents.md)); code builds the query from the prompt's research envelope, the model's question and the topics, and binds every notebook and job id | A denial of the model's call goes back to the model; a denial of code's own call, a tool error, a refused server or a failed job is a research failure, handled in section 6.3 |
 | `discover`, extraction | The same | Every cited excerpt exists and is not quarantined, at most 3 kept; an item or need whose excerpts all come from tier-4 sources, or that shares no content word with them, is dropped | One format repair; an extraction that keeps nothing writes no `domain_brief.json` and is a research failure |
+| `decide`, tool turns | `decide@0.2.0`; `reason`; the allowlist in `config/agents.yaml` | `ToolGateway`: the tool is allowed, the arguments validate, no third identical call, the call cap is not spent; G6 denies `reflect` while it is off or before a failure signal | A `DENIED` or `FAILED` result goes back to the model; a turn with nothing new ends the loop |
+| `decide`, final call | The same | An evidence id stays only when this need's loop received it from `search_capabilities`, a passage id only when it belongs to the need or this loop received it; a claim left with no passage id is dropped; `RETRIEVE_EVIDENCE` with no claim left becomes `PROCEED_WITH_GAP` | One format repair; a need whose call still fails has no claim, and its status is `GAP` |
+| `assess` | `assess@0.1.0`; the `assess` route, recorded in the manifest | A supporting id must be one the claim cites; `SUPPORTED` with none left becomes `UNVERIFIED`; a claim with no evidence makes no call and is `UNVERIFIED`; a same-family route flags every assessment | One format repair, then `UNVERIFIED`; a fallback to the generator's family makes a `free` or `paid` run `DEGRADED` |
+| `options` | `options@0.1.0`; `reason` | Two or three options, the baseline marked; approaches name needs on the map and their own claims; a score for an out-of-scope factor is dropped, a missing one counts 0 and one out of range is clamped; code computes each total, the failed pass-or-fail factors, the unsupported claims cited and the rank | One format repair; with no option left, `blueprint` builds nothing and the run takes the `approach` fallback |
+| `blueprint` | `blueprint@0.1.0`, `blueprint_detail@0.1.0`; `reason` | The tree, the 100% rule, the backward trace, the dictionary, the effort's basis and order, the schedule's predecessors, provenance, win themes with a proof, and no price or date the RFP does not hold; a fact's evidence class is its strongest source's, and a fact with no source becomes an `ASSUMPTION` | One format repair, and for P01 one closure repair naming the unmapped requirements; a plan that fails twice is a blueprint failure, and the run takes the `approach` fallback; checks that still fail are listed in the manifest, which is written |
+| `techcheck` | `techcheck@0.1.0`; the `assess` route; Context7's pins | The verdict's quote must be found in the documentation returned for the claim; a claim naming no library is `NOT_CHECKABLE`; past 15, `SKIPPED_CAP` | A quote not found gives `INSUFFICIENT_DOCS`; one `INVALIDATED` claim sends the manifest to P03 once, and one still `INVALIDATED` blocks the gate |
+| `risk`, one call | `risk_oneshot@0.1.0`; `reason` | Each risk cites passages that exist and shares a content word with them, holds the six fields, and carries no rating or probability | One retry for the rejected risks; a register that breaks its schema twice is empty, and the run ends `DEGRADED` |
+| `risk`, agent | `risk@0.3.0`; `reason`; the allowlist | As the one call, and `ToolGateway` on every tool call | As above |
 | `approach` | `approach@0.2.0`; `reason` | Requirement ids must name verified `BINDING` or `OPTIONAL` requirements; an item with none is dropped, and requirements left unmapped are listed | One format repair, then an empty result and the run ends `DEGRADED` |
-| `risk`, tool turns | `risk@0.2.0`; `reason`; the allowlist in `config/agents.yaml` | `ToolGateway`: the tool is allowed and registered, the arguments validate, no third identical call, the call cap is not spent | A `DENIED` result goes back to the model and the tool never runs; a `FAILED` result goes back after the tool raised |
-| `risk`, final register | The same | Each risk cites passages that exist and shares a content word with them, and carries no rating or probability | One retry for the rejected risks; a register that breaks its schema twice is empty, and the run ends `DEGRADED` |
-| `draft` | `draft@0.2.0`; `reason` | Cited ids are kept only if they name the section's own records | One format repair, then the section is `FAILED` and the run `DEGRADED` |
+| `draft` | `draft@0.3.0`; `reason` | Cited ids are kept only if they name the section's own records | One format repair, then the section is `FAILED` and the run `DEGRADED` |
+| The gate's approval | ADR-035's format; the reviewed hashes | Gate and run match; the hashes of `manifest.json` and `options.json` match what was reviewed; a blocked gate needs an override unless the decision rejects or switches option; edits name fields of the fixed list and must apply to the manifest | A void approval asks again, and the run keeps waiting; `bidwright approve` refuses most of these before it resumes the run |
 | Every call | The cassette key | The response parses into its schema | Reported as a parse error for the node's repair |
 
 [`agents.md`](agents.md) lists the prompt versions in force. A research pack's recorded `DomainBrief` goes through the extraction's rules again each time it loads, without the tier rule its build applied; a pack that keeps nothing is a research shortfall. `render` adds the last check: every record is validated against its schema before anything is written, and one failure blocks every output.
@@ -304,18 +349,20 @@ Each LLM call has a schema, except the `risk` agent's tool turns, which return t
 
 ### 6.1 The graph
 
-`guard` → `ingest` → `candidates` → `triage` → `pack` → `extract`, one `Send` per context pack → `verify` → `coverage`, which either ends the extraction or sends the packs holding its gaps back to `extract`, for at most 2 rounds → `lint` → `consolidate`, one `Send` per cluster the model step takes, with code groups for the rest → `brief` → research, by the run's research mode → `approach` → `risk` → `draft` → `render`. `--until verify`, `coverage`, `consolidate` or `brief` ends the run after that node, `COMPLETED` with the reason "stopped after <node> by request", and `--baseline b0` routes `candidates` to the rule-only B0 step and stops after `verify`. The diagram in [`agents.md`](agents.md) is drawn from the compiled graph.
+`guard` → `ingest` → `candidates` → `triage` → `pack` → `extract`, one `Send` per context pack → `verify` → `coverage`, which either ends the extraction or sends the packs holding its gaps back to `extract`, for at most 2 rounds → `lint` → `consolidate`, one `Send` per cluster the model step takes, with code groups for the rest → `brief` → research, by the run's research mode → `decide_plan` → `decide`, one `Send` per need → `decide_join` → `assess`, one `Send` per claim that cites evidence → `assess_join` → `capability_map` → `options` → `blueprint` → `techcheck` → `risk` → `solution_gate` → `draft` → `render`. `techcheck` sends a manifest with an `INVALIDATED` technology claim back to `blueprint` once, for P03's revision; the gate sends a switch of option back to `blueprint` and edited work packages to `techcheck`; a `blueprint` that fails twice goes to `approach`, the one-call route, and on to `risk` without a gate. `--until verify`, `coverage`, `consolidate`, `brief`, `capability_map` or `solution_gate` ends the run after that node, `COMPLETED` with the reason "stopped after <node> by request", and `--baseline b0` routes `candidates` to the rule-only B0 step and stops after `verify`. The diagram in [`agents.md`](agents.md) is drawn from the compiled graph.
 
 Research follows the mode in `config/research.yaml`, which `--research off|pack|live` overrides for one run (ADR-036):
-- `off`: `brief` goes straight to `approach`.
+- `off`: `brief` goes straight to `decide_plan`, and `decide` is not offered `ask_research`.
 - `pack`, the default: `discover_load` loads the research pack whose keywords match the brief's topics, at least 2 of them and more than any other pack, with no model call. No matching pack is not a shortfall; the manifest's research block says so.
 - `live`: `discover_start` creates a notebook and starts one deep research job; `discover_wait`, code, polls it with the budget paused; `discover_ask` asks follow-up questions over the job's report, and may start a second job, which returns to `discover_wait`; `discover_extract` makes one call over every finished report and the answers. A research failure in any live node goes to `discover_load`, which loads the matching pack, if any, and the run ends `DEGRADED` with the reason.
 
-`approach`, `risk` and `draft` do not read the research at `v0.2`; `render` adds its items to the summary's appendix.
+The solution path reads the research: each need of the domain brief becomes a need of origin `DOMAIN`, which `decide` answers from the knowledge base like a requirement group; `decide`'s `ask_research` answers from the loaded pack, or from the run's own `research.json` in research mode `live`; and `options` sees the domain brief's items. `render` adds the research's items to the summary's appendix.
 
-Every passage reaches `extract`, in packs of at most `batch_size` passages within the call's token budget, so the hero package's 278 passages take 7 packs, and about 12 calls with their repairs and the second pass. At most 2 workers run at once on `free`, 4 on `paid` and 1 on `local`, because Ollama on the build laptop serves one request at a time (`config/limits.yaml`).
+Switches, set per run and defaulted in `config/limits.yaml` from the ladders' results, change the path (section 4.11 of the Iteration 3 design): `solution` (`manifest`, the default; `assess` and `decide`, which stop before `options` and take the `approach` route; `fixed`, one call per need with retrieved evidence; `oneshot`, the `v0.2` route), `risk_mode` (`oneshot`, the default; `fixed`; `agent`), `reflect` (off), and the extraction's `extract_context`, `triage` and `coverage` (all on). The run manifest records them, and a resume keeps them.
 
-Before the run folder is created, `execute` checks the run entry's preconditions, in `preflight.py`: the corpus rule per file on `free`, the data class, a backend for every provider the profile's roles use, the local models on `local`, Docling's health when it parses live, and the egress register for every destination, the research server included in research mode `live`. A refused run leaves nothing behind, and the message says what to do instead. `execute` then runs the graph inside a `RunSupervisor`, which takes the run lock, writes the manifest as `RUNNING` at once, and records every later status.
+Every passage reaches `extract`, in packs of at most `batch_size` passages within the call's token budget, so the hero package's 278 passages take 7 packs, about 8 calls with `triage` and their repairs (the EX3 rung of step 19). `decide` takes at most 24 needs a run, `RFP` needs first, and each claim with evidence one `assess` call. At most 2 workers run at once on `free`, 4 on `paid` and 1 on `local`, because Ollama on the build laptop serves one request at a time (`config/limits.yaml`).
+
+Before the run folder is created, `execute` checks the run entry's preconditions, in `preflight.py`: the corpus rule per file on `free`, the data class, a backend for every provider the profile's roles use, the local models on `local`, Docling's health when it parses live, asked twice, and the egress register for every destination, the research and documentation servers included in research mode `live`. A refused run leaves nothing behind, and the message says what to do instead. `execute` then runs the graph inside a `RunSupervisor`, which takes the run lock, writes the manifest as `RUNNING` at once, and records every later status.
 
 **Stop and resume (ADR-031).** `bidwright stop` writes `control/stop.request`; the supervisor's watcher finds it within a second and asks LangGraph to drain, so the graph finishes its current step, saves a checkpoint and the run ends `STOPPED`. Only `discover_wait`, which waits inside one step, reads the request itself, between polls. While the client calls live models, every answer that parses goes to the run's journal, `journal/`, under its cassette key and with the provider's native turn; every ledger entry is appended as its call finishes; and the budget's counts are written once a second. `bidwright resume` reruns the run entry's checks, takes the lock, refuses what section 6.3 lists, rebuilds the passages and the search index from the checkpointed state, and invokes the graph from its last checkpoint; a call the journal holds is answered from it at no cost. The operating system releases the lock when a process dies, so a `RUNNING` manifest whose lock is free belongs to a killed run, which resumes the same way.
 
@@ -371,14 +418,30 @@ sequenceDiagram
         G->>C: discover_extract: reports, answers and excerpts
         G->>G: settle the DomainBrief
     end
-    G->>C: ApproachInput
-    loop risk: at most 4 turns and 6 tool calls
+    par each need, decide: at most 4 turns and 6 tool calls
         G->>C: turn with the tool specs
         C-->>G: tool calls
-        G->>T: ToolRequest
+        G->>T: ToolRequest: search_capabilities, search_rfp, read_section, ask_research
         T-->>G: ToolResult: OK, EMPTY, DENIED or FAILED
+        G->>C: final call: the decision, then at most 3 claims
+        G->>G: keep only the ids the loop received
     end
-    G->>C: final call with no tools, for the RiskRegister
+    par each claim that cites evidence
+        G->>C: assess on the recorded route: the claim and its records only
+    end
+    G->>G: capability map: a status per need, in code
+    G->>C: options: two or three options, scored per factor
+    G->>G: totals, pass-or-fail factors and the rank, in code
+    G->>C: blueprint P01: the structure, then P02: each work package's detail
+    G->>G: the manifest's checks, provenance and evidence classes
+    loop each checkable technology claim, at most 15
+        G->>R: Context7, or the library pack
+        G->>C: techcheck verdict with a quote, checked in the documentation
+    end
+    G->>C: risk: one call over the manifest
+    G->>G: solution_gate: the review file, the bid signal and memo
+    G-->>CLI: interrupt: the run waits in WAITING_HUMAN
+    CLI->>G: bidwright approve: the approval, checked against the reviewed hashes
     G->>C: DraftTask for each of three sections
     G->>G: render: validate every record, write the summary, proposal, matrix and review files
     CLI->>CLI: record the final status in run_manifest.json and events.jsonl, whatever the outcome
@@ -391,7 +454,7 @@ Every LLM call goes through the client, which looks the call up in the journal o
 | Step | Failure | Response | Limit | Test |
 |---|---|---|---|---|
 | The run entry | A file not in the corpus, on `free` | Refused before the run folder exists; the consent override runs it, and the manifest records the override and the data class `client` | None | `test_corpus_rule.py` |
-| The run entry | No backend for a provider the profile uses, a local model that is not pulled, or Docling not answering | Refused before the run folder exists, with the key to set, the pull command or the service to start | None | `test_preflight.py`, `test_a_docling_run_is_refused_when_the_health_check_fails` |
+| The run entry | No backend for a provider the profile uses, a local model that is not pulled, or Docling not answering twice | Refused before the run folder exists, with the key to set, the pull command or the service to start | None | `test_preflight.py`, `test_a_docling_run_is_refused_when_the_health_check_fails`, `test_a_docling_that_misses_its_first_health_check_is_asked_again` |
 | The run entry | A destination the egress register refuses for the run's data class, such as research mode `live` on a client run | Refused, or for a trace endpoint, spans go to `spans.jsonl` and the manifest lists the refused destination; the research refusal names `--research pack` | None | `test_egress.py`, `test_a_client_run_with_live_research_is_refused_before_its_folder_exists` |
 | The run entry | Research mode `live` in the client's `record` or `replay` mode | Refused before the run folder exists, naming `--research pack` | None | `test_live_research_is_refused_when_recording_or_replaying` |
 | The run entry | A baseline asked for the second pass, which a baseline never runs (ADR-028), or an extract prompt the run does not load, such as a retired one | Refused before the run folder exists; a matrix with such a rung is refused before anything starts | None | `test_a_baseline_asked_for_the_second_pass_is_refused_before_a_run_folder_exists`, `test_an_extract_prompt_a_run_does_not_load_is_refused_before_a_run_folder_exists`, `test_a_rung_that_execute_would_refuse_is_refused_before_anything_starts` |
@@ -421,10 +484,22 @@ Every LLM call goes through the client, which looks the call up in the journal o
 | `discover_wait` | The job still runs when the 20-minute wait cap passes | The run ends `WAITING_RESEARCH`; a resume polls the same job with a fresh cap | 20 minutes | `test_discover_wait_times_out_and_a_resume_finishes_the_job`, `test_a_live_run_waits_for_research_and_a_resume_completes_it` |
 | Research text | An excerpt, answer or report paragraph that matches the suspect patterns | The excerpt is quarantined and no item may cite it; the answer's text is withheld; the paragraph is removed before a model sees it; each is a security event attributed `injection-dominant` (FI-10) | 0 | `test_fi10_poisoned_excerpt_is_quarantined`, `test_fi10_poisoned_answer_is_withheld` |
 | `approach`, `risk` | Malformed output twice | The node's output is empty, the run continues and ends `DEGRADED`, so the summary keeps the verified requirements | 1 repair | `test_approach_degrades_after_two_schema_failures`, `test_risk_degrades_after_two_schema_failures` |
-| `risk` | A tool outside the allowlist, bad arguments, a third identical call, or the cap spent | `DENIED`, returned to the model | 0 | `test_gateway.py` |
-| `risk` | A tool raises | `FAILED`, returned to the model | 0 | `test_a_tool_that_raises_returns_failed_to_the_model` |
-| `risk` | A turn adds nothing new, or a cap is reached | The loop ends, and a final call with no tools asks for the register | 4 turns, 6 calls | `test_loop_caps_stop_at_four_turns`, `test_loop_caps_stop_at_six_tool_calls` |
-| `risk` | A generic risk, or one with a rating or probability | Rejected, with one retry for the rejected risks | 1 retry | `test_risk_generic_is_rejected_then_replaced_on_retry` |
+| `decide`, the `risk` agent | A tool outside the allowlist, bad arguments, a third identical call, the cap spent, or `reflect` while it is off or before a failure signal | `DENIED`, returned to the model | 0 | `test_gateway.py`, `test_reflect_gating` |
+| `decide`, the `risk` agent | A tool raises | `FAILED`, returned to the model | 0 | `test_a_tool_that_raises_returns_failed_to_the_model` |
+| `decide`, the `risk` agent | A turn adds nothing new, or a cap is reached | The loop ends, and a final call with no tools asks for the answer | 4 turns, 6 calls | `test_loop_caps_stop_at_four_turns`, `test_loop_caps_stop_at_six_tool_calls`, `test_the_loop_stops_at_a_turn_with_nothing_new`, `test_the_loop_stops_at_its_tool_cap` |
+| `decide` | An evidence or passage id the loop never received, or a claim left with no passage | The id is dropped, and so is the claim; `RETRIEVE_EVIDENCE` with no claim left becomes `PROCEED_WITH_GAP` | 0 | `test_ids_the_loop_never_received_are_dropped_and_a_claim_left_bare_goes`, `test_retrieve_evidence_with_no_claim_left_becomes_a_gap` |
+| `decide` | More needs than the cap | The rest are listed `GAP`, "not decided", and the run ends `DEGRADED` | 24 needs | `test_past_the_need_cap_the_rest_are_overflow_and_degrade_the_run` |
+| `assess` | A claim with no evidence | `UNVERIFIED` in code, with no call | 0 | `test_assess_no_evidence_makes_no_call` |
+| `assess` | Neither Cerebras nor Groq has a backend | The `reason` role's model answers, every assessment is flagged `SAME_FAMILY`, and a `free` or `paid` run ends `DEGRADED` | 0 | `test_a_same_family_route_flags_every_assessment_and_degrades_free_not_local`, `test_a_gemini_only_free_run_is_degraded_same_family` |
+| `options` | An option cites a claim that is not supported, or fails a pass-or-fail factor | Listed in its `needs_proof`, or ranked below every option that passes | 0 | `test_options_needs_proof`, `test_a_failed_gate_ranks_its_option_below_every_passing_one` |
+| `blueprint` | A binding requirement mapped nowhere, or a plan that breaks its schema twice | One closure repair naming the requirements, then the rest listed as gaps; a plan that fails twice sends the run to `approach` | 1 repair | `test_blueprint_closure`, `test_a_schema_failure_twice_sets_blueprint_failed_and_keeps_what_settled` |
+| `techcheck` | A technology claim `INVALIDATED` | Back to `blueprint` once for P03; a claim still `INVALIDATED` blocks the gate, which only an override with a reason passes | 1 revision | `test_techcheck_blocks_gate`, `test_a_revised_manifest_is_not_due_a_second_revision` |
+| `techcheck` | Context7 out of reach, or its tools changed | The claim is left unvalidated, or the server refused, and the gate shows it | 0 | `test_techcheck_unknown_when_context7_is_out_of_reach`, `test_a_changed_tool_description_refuses_the_server` |
+| `solution_gate` | No person has decided | The run waits in `WAITING_HUMAN` with the review file written | None | `test_gate_waiting_human_writes_the_review_and_interrupts` |
+| `solution_gate` | An approval for other hashes, a blocked gate approved without an override, or edits the manifest cannot take | The approval is void, and the gate asks again with the reason; `bidwright approve` refuses most of these before it resumes | 0 | `test_a_manifest_changed_after_review_voids_the_approval`, `test_an_edit_the_manifest_cannot_take_asks_again_and_the_run_keeps_waiting` |
+| `solution_gate` | A claim invalidated after an edit that the override did not cover | The gate asks again | 0 | `test_an_override_covers_only_the_claims_it_was_given_for` |
+| `solution_gate` | A rejection, or a blocked gate under `--auto-select` | The run ends `POLICY_BLOCKED` with `GATE_REJECTED` or `GATE_BLOCKED`, and nothing is drafted | 0 | `test_a_reject_ends_the_run_policy_blocked`, `test_techcheck_blocks_gate` |
+| `risk` | A generic risk, one missing a field, or one with a rating or probability | Rejected, with one retry for the rejected risks, in `risk_rejected.jsonl` | 1 retry | `test_risk_generic_is_rejected_then_replaced_on_retry`, `test_risk_no_invented_rating` |
 | `draft` | Malformed output twice | That section is `FAILED`, the others continue, and the run ends `DEGRADED` | 1 repair | `test_nodes.py` |
 | `render` | A record fails its schema | Nothing is written; `UNRECOVERABLE_FAULT` | 0 | `test_render_schema_failure_blocks_all_output` |
 | Tracing | The collector is down or refuses a batch | Spans go to `spans.jsonl`, and the run never waits | None | `test_tracing.py` |
@@ -434,7 +509,7 @@ Every LLM call goes through the client, which looks the call up in the journal o
 
 Nodes after `verify` degrade rather than fault because the requirements are complete and verified by then; `render` still faults, because a record that fails its schema cannot be written (ADR-024).
 
-### 6.4 Run statuses at `v0.2`
+### 6.4 Run statuses at `v0.3`
 
 | Status | Kind | Entered when | Leaves by |
 |---|---|---|---|
@@ -443,9 +518,10 @@ Nodes after `verify` degrade rather than fault because the requirements are comp
 | `QUOTA_PAUSED` | Resumable | A spent daily quota with no fallback left, or an open circuit breaker | `bidwright resume` after the quota day turns or the breaker closes, or with `--profile paid` |
 | `BUDGET_EXCEEDED` | Resumable | A per-run limit is reached | `bidwright resume --raise-budget PERCENT` |
 | `WAITING_RESEARCH` | Resumable | A research job still runs when the wait cap passes | `bidwright resume`, which polls the same job |
+| `WAITING_HUMAN` | Resumable | The run reaches `solution_gate` with no decision, or with a void one | `bidwright approve`, from the CLI or the UI's Review page; `bidwright resume` refuses it and names `approve` |
 | `COMPLETED`, `DEGRADED`, `POLICY_BLOCKED`, `UNRECOVERABLE_FAULT` | Terminal | As at `v0.1`; `DEGRADED` lists each shortfall in `status_reason` | None |
 
-Every transition is appended to the manifest's `status_history` and to `events.jsonl`. The active-time clock runs only in `RUNNING`, and the budget is paused around each poll of a research job. `WAITING_HUMAN` stays unused until Iteration 3's first gate.
+Every transition is appended to the manifest's `status_history` and to `events.jsonl`. The active-time clock runs only in `RUNNING`, and the budget is paused around each poll of a research job. A rejection at the gate, or a gate still blocked under `--auto-select`, ends the run `POLICY_BLOCKED`, with `GATE_REJECTED` or `GATE_BLOCKED` in its reason.
 
 ## 7. Deployment view
 
@@ -456,7 +532,7 @@ Two ways to run, from one codebase.
 | Path | Command | Needs |
 |---|---|---|
 | Host | `uv run bidwright demo`, `uv run bidwright run <file or folder>`, `uv run pytest` | Python 3.12 and uv. The demo and the tests need no keys, no network and no Docling service; CI's `host-path` job shows it on a clean checkout. A live run needs Docling, started with `docker compose up -d docling`, and for `local`, Ollama with `qwen3.5:4b` and `qwen3.5:2b` pulled. Research mode `live` also needs the owner's `nlm login` and the research server on the host, `notebooklm-mcp --transport http` from `notebooklm-mcp-cli` 0.15.8, which binds `127.0.0.1:8000`; `bidwright research pin` and `research pack` are meant for the host, where the owner's login and the research server run. |
-| Compose | `docker compose up -d`, `docker compose run --rm demo`, `docker compose run --rm test` | Docker, and `GEMINI_API_KEY` in `.env`, which Compose requires for every command (ADR-002) |
+| Compose | `docker compose up -d`, `docker compose run --rm demo`, `docker compose run --rm test`, `docker compose --profile ui up -d ui` | Docker, and `GEMINI_API_KEY` in `.env`, which Compose requires for every command (ADR-002) |
 
 ### 7.2 Services
 
@@ -465,6 +541,7 @@ Two ways to run, from one codebase.
 | `app` | Built from the `Dockerfile` in stages with uv, running as a non-root user, with `BIDWRIGHT_ENV=container` | The `bidwright` CLI, through `docker compose run` | `inputs/`, `config/`, `prompts/` and `research_packs/` read-only; `outputs/` read-write. `host.docker.internal` names the host machine, so `docker compose run -e OLLAMA_HOST=http://host.docker.internal:11434` reaches the host's own Ollama, and `NOTEBOOKLM_MCP_URL` points at the research server on the host, which S-11 showed reachable on Docker Desktop. A run started in the container is resumed and purged in the container, after its container has exited, since the bind mount may not honor the run lock. |
 | `docling` | `docling-serve-cpu`, pinned by digest in `compose.yaml` | Parses PDF, DOCX and XLSX through its v1 API | Published on `127.0.0.1` only; the demo and test services never reach it |
 | `phoenix` | `arizephoenix/phoenix`, pinned by digest in `compose.yaml` | Traces on port 6006 | Published on `127.0.0.1` only. Authentication is disabled by default for this local collector of synthetic runs; `.env` can enable it, and Bidwright then sends `PHOENIX_API_KEY` as a bearer token. |
+| `ui` | The same image, Compose profile `ui` | `bidwright ui --address 0.0.0.0 --api`: the Streamlit pages and the loopback API | Published on `127.0.0.1:8501` and `127.0.0.1:8001` only; the `app` service's mounts, plus `evals/results/` read-only so the Ops page shows scores while runs started in `app` keep gold-derived files out of reach (ADR-050) |
 | `eval` | The same image, Compose profile `eval` | `bidwright-eval` | The only service that mounts `evals/gold` and `evals/corpus`, read-only |
 | `test` | The same image, Compose profile `test` | `pytest -m "not gold"` | No network; cassettes read-only |
 | `demo` | The same image, Compose profile `demo` | `bidwright demo` | No network; cassettes read-only |
@@ -482,10 +559,11 @@ The NotebookLM research server is not a Compose service: it runs on the host onl
 |---|---|---|
 | `inputs/` | Rendered synthetic RFPs and packages, and `CORPUS.sha256` | Yes |
 | `evals/corpus/`, `evals/gold/` | Corpus specs and the gold generated from them, hashed with `evals/hypotheses.yaml` in `MANIFEST.sha256` | Yes; never in the image |
-| `knowledge_base/` | The fictional supplier's capabilities, case studies and certifications, used from Iteration 3 | Yes |
-| `research_packs/` | Recorded domain research, one folder per domain, with its hashes; excerpts of at most 300 characters, never raw reports | Yes |
-| `outputs/` | Run folders, each with its journal, control files and checkpoints; matrix runs under `outputs/matrices/`; the limiter's daily counts and the circuit breaker's state under `outputs/.quota/`; the response cache | No |
-| `samples/dev/` | One real live run of the development RFP, the sample [`README.md`](../README.md) cites | Yes |
+| `knowledge_base/` | The fictional supplier's capabilities, case studies, certifications and roles, which `decide` searches and `assess` judges claims against, and the method cards | Yes |
+| `research_packs/` | Recorded domain research, one folder per domain, and the library pack for `techcheck`, each with its hashes; excerpts of at most 300 characters, never raw reports | Yes |
+| `outputs/` | Run folders, each with its journal, control files and checkpoints; matrix runs under `outputs/matrices/` and frozen seed runs under `outputs/seeds/`; the limiter's daily counts and the circuit breaker's state under `outputs/.quota/`; the response cache | No |
+| `samples/dev/` | One real live run of the development RFP through the solution path, approved automatically at the gate, the sample [`README.md`](../README.md) cites and the UI's tests read | Yes |
+| `evals/results/`, `evals/labels/` | Scores, ladder reports, the owner's gate run, and the owner's labels for the `assess` spot-check | Yes; never mounted in `app` |
 | `tests/cassettes/` | Recorded LLM responses for the demo, the development DOCX and the hero package, and recorded Docling responses by file hash | Yes |
 | `.env` | Keys | No; `.env.example` holds names only |
 | `private/` | Research reports, review reports, the assignment PDF, and the salted name hashes the hygiene test and the pack builder read | No |
@@ -494,7 +572,7 @@ The NotebookLM research server is not a Compose service: it runs on the host onl
 
 ### 8.1 What each call sees
 
-`harness/context.py` builds what each packed call sees, from whole passages, never partial ones, within the call's token budget: `triage` sees section views (path, role, the first two passages and cue counts); `extract` sees a pack of passages with their section paths, lead-ins, zone and cue hints, the neighboring passages marked as context, and the definitions of the terms the pack uses; `consolidate` sees one cluster's members and context requirements, the package's order of precedence, its lint findings and, for addendum clusters, the precedence clause; `brief` sees whole `EVALUATION` sections, then `INSTRUCTION` sections, with the verified requirements they hold and the RFP profile. `approach` sees the verified `BINDING` and `OPTIONAL` requirements, `risk` those, the approach items and the hazard ids plus what its tools return, and `draft` only its own section's records. `discover` sees the brief's topics, then the job's report, cut at the last paragraph that fits its budget, its own questions and the screened answers and excerpts. Every call writes a context manifest, `context/<node>-<call>.json`, of what it included and the tokens by layer, counting every turn after the rendered prompt: `A01` for `approach`, `R01` onward and `R-final` for `risk`, `S01` to `S03` for `draft`, `D01` onward for `discover`, and one more manifest for each repair or retry. Nothing carries over between runs except the response cache, keyed by the whole request, and the committed research packs; a run's journal serves only that run's resume.
+`harness/context.py` builds what each packed call sees, from whole passages, never partial ones, within the call's token budget: `triage` sees section views (path, role, the first two passages and cue counts); `extract` sees a pack of passages with their section paths, lead-ins, zone and cue hints, the neighboring passages marked as context, and the definitions of the terms the pack uses; `consolidate` sees one cluster's members and context requirements, the package's order of precedence, its lint findings and, for addendum clusters, the precedence clause; `brief` sees whole `EVALUATION` sections, then `INSTRUCTION` sections, with the verified requirements they hold and the RFP profile. `decide` sees one need, as its member requirements with their verified quotes or a domain need's text and excerpts, and what its own tools return; `assess` one claim, the knowledge-base records it cites and its need's requirement statements; `options` the brief's factors, the capability map with each claim's disposition and the domain brief's items; `blueprint` the chosen option, the needs, the assessed claims and the brief, then for P02 the settled plan; `techcheck` one technology claim and the documentation returned for it; `risk` the manifest, the hazards, the gaps and the discrepancies; `approach` the verified `BINDING` and `OPTIONAL` requirements; and `draft` only its own section's records. `discover` sees the brief's topics, then the job's report, cut at the last paragraph that fits its budget, its own questions and the screened answers and excerpts. Every call writes a context manifest, `context/<node>-<call>.json`, of what it included and the tokens by layer, counting every turn after the rendered prompt: `A01` for `approach`, `R01` onward and `R-final` for the `risk` agent and `R-oneshot` for its one call, `S01` to `S03` for `draft`, `D01` onward for `discover`, `<need id>-<turn>` and `<need id>-final` for `decide`, the claim id for `assess`, `O01` for `options`, `P01` to `P03` for `blueprint`, the technology claim's id for `techcheck`, and one more manifest for each repair or retry. Nothing carries over between runs except the response cache, keyed by the whole request, and the committed research packs; a run's journal serves only that run's resume.
 
 Every prompt follows one layout: the system instruction first, with role, rules, output format and, except in the two extraction prompts (ADR-028), examples; then the data inside delimiter tags seeded from the run id; and the task last. Every document text a model reads comes through the text view (section 3.2).
 
@@ -505,38 +583,43 @@ Every prompt follows one layout: the system instruction first, with role, rules,
 - Each requirement cites at most 3 passage ids and quotes at most 300 characters, with the quote's status and its span in the frozen text, its zone, and whether it passed only after a repair.
 - The candidate ledger, `candidates.jsonl`, gives every passage its dispositions and the reason for each, so a passage with no obligation is a recorded decision, not an omission.
 - `run_manifest.json` records the commit, profile, the models configured by role and the models that answered by node, prompt hashes, every document's hash, the data class, overrides (budget raises and a switch to `paid` among them), refused destinations, the arguments a resume needs and the environment that ran it, start and end, status and reason with the full status history, the research block (mode, pack id and hash, jobs, questions and notes), and totals derived from the ledger.
+- Each claim cites at most 3 knowledge-base records and 1 to 3 passages; each assessment names its supporting records, what is missing, its assessor's provider, model and prompt, and whether the route was the generator's family. Every manifest fact carries an evidence class (`RFP_SOURCE`, `CAPABILITY_EVIDENCE`, `DOMAIN_METHOD`, `EXTERNAL_RESEARCH` or `ASSUMPTION`, never promoted from one to another) and the ids of its sources, and each work package its requirements, claims and effort basis. Each technology verdict quotes the documentation it rests on, with the source.
 - The brief's factors and items cite at most 3 passage ids each, and a scoring method keeps its verified quote. Each domain item and need cites at most 3 excerpts, each excerpt names its source, and each source its URL and authority tier; `research.json` records every query and question sent, every answer, and the notebook and job ids, written as soon as each exists.
 
 ### 8.3 Limits
 
 From `config/limits.yaml` and `config/agents.yaml`:
-- Per run, by corpus tier and profile: 60 requests and 300,000 tokens for the development RFPs, the held-out RFP and any file outside the corpus, with 20 active minutes on `free` and `paid` and 60 on `local`; 250 requests, 2,000,000 tokens and 90 minutes for the hero package on `free` and `paid`. The clock counts the run's active time.
+- Per run, by corpus tier and profile, raised in Iteration 3 for the solution path: 150 requests and 600,000 tokens for the development RFPs, the held-out RFP and any file outside the corpus, with 30 active minutes on `free` and `paid` and 90 on `local`; 450 requests, 3,000,000 tokens and 120 minutes for the hero package on `free` and `paid`. The clock counts the run's active time.
 - The request limit counts provider attempts, retries and fallback attempts included, because that is what the quota counts (ADR-022). The limiter keeps each model's daily count under `outputs/.quota/`, by the provider's quota day. On `paid` it stops at the published daily limit; on `free` it only observes the count, and Google's own daily 429 stops the calls, after which the operator moves runs to `paid`, with `--profile paid` or a matrix file's `profile` (ADR-029). The per-minute limits apply on both tiers: 15 requests a minute on `free`, and the paid project's 4,000 (V-03).
 - Per call: a 120-second timeout on `free` and `paid`, 300 seconds on `local`, with 3 retries.
-- Context packs hold at most `batch_size` passages within 12,000 tokens for `extract`, 8,000 for `triage`, `consolidate` and `brief`; `approach`, `risk` and `discover` have 16,000 and `draft` 10,000. Clusters hold at most 12 members and 8 context requirements. `coverage` runs at most 2 rounds. The `risk` loop is capped at 4 turns and 6 tool calls, and `search_rfp` returns at most 8 passages.
+- Context packs hold at most `batch_size` passages within 12,000 tokens for `extract`, 8,000 for `triage`, `consolidate` and `brief`; `approach`, `risk`, `discover`, `decide` and `options` have 16,000, `blueprint` 24,000, `draft` 10,000, `techcheck` 6,000 and `assess` 4,000. `decide` takes at most 24 needs a run and 3 claims a need, and `techcheck` at most 15 technology claims (`solution` in `config/limits.yaml`). Clusters hold at most 12 members and 8 context requirements. `coverage` runs at most 2 rounds. The `decide` and `risk` loops are capped at 4 turns and 6 tool calls, `search_rfp` and `search_capabilities` return at most 8 results, and `reflect`, when on, allows 2 thoughts an invocation, outside the cap.
 - Research, from `config/research.yaml`: at most 2 jobs and 6 questions a run, 8 `discover` tool calls, 4 turns a pass and 2 passes; a 20-minute wait for a job, polled every 30 seconds; `ask_research` returns at most 8 excerpts, matched when they hold at least half of a question's content stems, and at least 2 (ADR-034).
 - The circuit breaker opens after 5 consecutive transient failures on one model and tier, or one MCP server, for 30 minutes.
-- The gateway's rules (ADR-032), in this order after the allowlist: G2 denies any argument that names a notebook, task or source, or carries an id-like string; then the argument schema, repeats and the call cap; G4 denies a research tool when the server's tools did not match their pins at connection; G1 denies a third job, or a second in one turn; G5 returns "no questions left" after 6 questions; and G3 denies a query or question sharing 8 or more consecutive normalized words with any passage of the run. A call counts against the cap only when it passes every rule.
+- The gateway's rules (ADR-032), in this order after the allowlist: G2 denies any argument that names a notebook, task or source, or carries an id-like string; then the argument schema, repeats and the call cap; G4 denies a research tool when the server's tools did not match their pins at connection; G1 denies a third job, or a second in one turn; G5 returns "no questions left" after 6 questions; and G3 denies a query or question sharing 8 or more consecutive normalized words with any passage of the run. G6 (ADR-047) denies `reflect` unless it is on and the agent's last tool result failed or its last turn added nothing. G3 and G4 also apply to Context7's two tools, which code calls for `techcheck`. A call counts against the cap only when it passes every rule.
 
-S-03 set the batch size to 40 on the hero package (ADR-027). The quote cap, the 3 cited ids, the cluster caps and the loop caps are defaults from the plan, and stay judgment until an ablation measures them. A measured full hero run on `free` with packs of 20 took 33 requests and 210,745 tokens, thinking included, in about 3 active minutes; with packs of 40 and the second pass on, the recorded hero run to `consolidate` took 25 requests, 12 of them for `extract`, and 167,802 tokens, thinking included, in about 2 active minutes, for $0.23 on `paid`.
+S-03 set the batch size to 40 on the hero package (ADR-027). The quote cap, the 3 cited ids, the cluster caps, the need and claim caps and the loop caps are defaults from the plan, and stay judgment until an ablation measures them. A hero run of the `v0.3` defaults made 92 to 118 requests, a median of 421K tokens, for $0.18 on `paid` (step 20). A measured full hero run on `free` with packs of 20 took 33 requests and 210,745 tokens, thinking included, in about 3 active minutes; with packs of 40 and the second pass on, the recorded hero run to `consolidate` took 25 requests, 12 of them for `extract`, and 167,802 tokens, thinking included, in about 2 active minutes, for $0.23 on `paid`.
 
 ### 8.4 Human control
 
-Bidwright drafts and never submits. Every summary, proposal and review file opens with the `UNREVIEWED_DRAFT` status line, every compliance status in the matrix starts `UNVERIFIED`, and every contract flag is `NEEDS_LEGAL_REVIEW`. `review/quarantine.md` puts the hidden content, the small print and the suspect passages in front of a person, and the summary's research appendix is marked external and unverified. An operator can stop any run between steps and resume it, raise its budget by a stated percentage, or move a paused free run to the paid key; each choice is recorded in the manifest. `v0.2` has no gate; the two human gates arrive in Iterations 3 and 4.
+Bidwright drafts and never submits. Every summary, proposal and review file opens with the `UNREVIEWED_DRAFT` status line, every compliance status in the matrix starts `UNVERIFIED`, and every contract flag is `NEEDS_LEGAL_REVIEW`. `review/quarantine.md` puts the hidden content, the small print and the suspect passages in front of a person, and the summary's research appendix is marked external and unverified. An operator can stop any run between steps and resume it, raise its budget by a stated percentage, or move a paused free run to the paid key; each choice is recorded in the manifest.
+
+**The solution gate (ADR-046).** Before anything is drafted from the manifest, the run writes `review/solution_gate.md` (the options with their scores, reasons, approach per need and assumptions; the capability map; the work packages with their evidence; the manifest's checks; the technology verdicts; the risks; the bid signal) and waits in `WAITING_HUMAN`. A person decides with `bidwright approve`, or on the UI's Review page, which runs the same command (ADR-060): approve, approve with edits to a fixed list of fields (a work package's effort, predecessors, scope, exclusions and acceptance, and the text of an assumption or ground rule), switch to another option, or reject. The approval names a role, never a name, and the hashes of the `manifest.json` and `options.json` that were reviewed; a manifest changed since then voids it. An edit re-runs `techcheck` for the edited work packages and `risk`, then drafts; a switch rebuilds the manifest and asks again; a rejection ends the run. A gate blocked by an `INVALIDATED` technology claim passes only with an override reason, which covers only the claims that blocked it then. `--auto-select` approves the top-ranked option for tests, matrices and recordings, records `auto_selected`, and never passes a blocked gate. The bid signal is `UNDETERMINED` unless an approved bid policy is given, and whether to bid stays a person's decision.
+
+**Records review.** `bidwright review`, or the Review page, records a person's verdict on each record in order of consequence (accept, correct, reject or flag, and clear or missed for the negative-space sample of uncited passages) in `review/decisions.jsonl`, the latest verdict counting; a verdict whose record changed since counts as stale. The final review gate that signs outputs off arrives in Iteration 4.
 
 ### 8.5 Observability
 
 - **Ledger.** One `LedgerEntry` per call: model, prompt and input hashes, input, cached, output and thinking tokens, latency and the provider's own timings, retries with the reason for each (`rate_limited`, `timeout`, `server_error`, `transport` or `quota`), the real cost (0 on `free` and `local`), and a shadow cost at the paid list price of the role's shadow model in `config/pricing.yaml`, so free, local and paid runs compare.
-- **Spans.** `run` and `node.<name>` are `CHAIN` spans, except `node.risk`, an `AGENT` span with its stop reason, turns and tool calls. A fan-out worker's span names its call id, as its context manifest does. Each call adds `llm.<node>` (`LLM`) and each tool call `tool.<name>` (`TOOL`). Spans carry hashes and counts, never prompt or response text.
+- **Spans.** `run` and `node.<name>` are `CHAIN` spans, except `node.decide`, `node.risk`, `node.discover_start` and `node.discover_ask`, `AGENT` spans with their stop reason, turns and tool calls. A fan-out worker's span names its call id, as its context manifest does. Each call adds `llm.<node>` (`LLM`) and each tool call `tool.<name>` (`TOOL`). Spans carry hashes and counts, never prompt or response text.
 - **Tool calls.** Every tool request, its agent and turn, and its result with the reason, a denying rule's text included, are written to `tool_calls.jsonl`.
 - **Events.** `events.jsonl` holds every status change, every security finding of the gateway's rules (G2 and G3), recovery (a breaker opening or closing, a dead letter, a line cut on resume), research step and security event; a security event carries a causal attribution class (`injection-dominant`, `authorization-dominant` or `indeterminate`). Each row of `events.jsonl` and `tool_calls.jsonl` carries `part`, the run's resume count. `dead_letter.jsonl` lists each call that failed for good, with its context manifest. Every other gateway denial is a row of `tool_calls.jsonl` only.
 - **Research audit.** `research/audit.py` gives the longest run of words each sent query and question shares with a passage of the run, reported as figures, never as text.
 - **Logs.** Bidwright logs no document text, and it holds the `pdfminer` and `openai` loggers at `WARNING`, because at `DEBUG` they would log a PDF's text or a request body (`test_privacy_invariant.py`).
-- **Where spans go.** OTLP to Phoenix when `PHOENIX_ENDPOINT` answers and the egress register allows it, and `spans.jsonl` otherwise.
+- **Where spans go.** OTLP to Phoenix when `PHOENIX_ENDPOINT` answers and the egress register allows it, and `spans.jsonl` otherwise. `bidwright phoenix sync`, or the UI, replays `spans.jsonl` into the local Phoenix under the project `bidwright`, one session per run, and sends review verdicts and scores to the run's trace as annotations; the Phoenix key goes only to the configured endpoint.
 
 ### 8.6 Replay
 
-The client runs in `live`, `record` or `replay` mode, and Docling in its own mode, which defaults to the client's. An LLM cassette's key is a sha256 over the prompt hash, the schema hash, the tool definitions' hash, the model, the decoding settings, the input hash taken before delimiters are inserted, and the repeat index; a Docling cassette's key is the file's hash with the conversion options. A change to any of them has no cassette, so replayed tests fail until the cassettes are recorded again. `bidwright record <file or folder> [--name] [--profile] [--until]` writes both kinds and `recording.json`, which also names the pack size and the second-pass setting the recording ran with: neither is part of a cassette key, so `bidwright demo` and the replay tests stop first, naming the setting, when `config/limits.yaml` differs; `bidwright demo` replays `tests/cassettes/demo/`, and the replay tests also replay `tests/cassettes/dev-docx/` and `tests/cassettes/hero/` with the network disabled. A recording names its research mode too. In research mode `pack`, a replay loads the committed research pack with no model call, so the demo's summary shows the development PDF's research appendix; MCP calls have no cassettes, so research mode `live` is tested against a fake MCP server, and a run in the client's `record` or `replay` mode refuses it before its folder exists, since its replay would reach the research server. A resume reads the run's own journal, which has the cassette format, so a resumed run makes no call it already paid for.
+The client runs in `live`, `record` or `replay` mode, and Docling in its own mode, which defaults to the client's. An LLM cassette's key is a sha256 over the prompt hash, the schema hash, the tool definitions' hash, the model, the decoding settings, the input hash taken before delimiters are inserted, and the repeat index; a Docling cassette's key is the file's hash with the conversion options. A change to any of them has no cassette, so replayed tests fail until the cassettes are recorded again. `bidwright record <file or folder> [--name] [--profile] [--until]` writes both kinds and `recording.json`, which also names the pack size and the second-pass setting the recording ran with: neither is part of a cassette key, so `bidwright demo` and the replay tests stop first, naming the setting, when `config/limits.yaml` differs; `bidwright demo` replays `tests/cassettes/demo/`, and the replay tests also replay `tests/cassettes/dev-docx/` and `tests/cassettes/hero/` with the network disabled. A recording names its research mode, its switches and its `assess` route too, and the demo, the development DOCX and the hero recordings were made again in Iteration 3 with the solution path and automatic approval at the gate. In research mode `pack`, a replay loads the committed research pack with no model call, so the demo's summary shows the development PDF's research appendix; MCP calls have no cassettes, so research mode `live` is tested against a fake MCP server, and a run in the client's `record` or `replay` mode refuses it before its folder exists, since its replay would reach the research server. A resume reads the run's own journal, which has the cassette format, so a resumed run makes no call it already paid for.
 
 ### 8.7 Conformance in CI
 
@@ -551,16 +634,16 @@ Structural rules are fitness functions that run on every push to `main` and ever
 | `host-path` | `bidwright demo` runs on a clean checkout with no `.env` |
 | `docs-generated` | [`agents.md`](agents.md), [`ai-bom.md`](ai-bom.md), [`reference/cli.md`](reference/cli.md) and [`reference/schemas.md`](reference/schemas.md) match the code |
 | `docs-links` | Links and wikilinks resolve, dates are ISO 8601, `context/` front matter is valid, the documents keep a neutral voice, and every test named under `docs/` exists |
-| `docker` | The image builds, holds no gold and no spike, and passes the tests with no network |
-| `secrets`, `deps` | gitleaks finds no secret; pip-audit finds no known vulnerability in the lock file, nor in the research server's pinned package and the dependencies it resolves to |
+| `docker` | The image builds, holds no gold and no spike, and passes the tests with no network; it holds Node and the pinned sequential-thinking package for `reflect`, installed at build time |
+| `secrets`, `deps` | gitleaks finds no secret; pip-audit finds no known vulnerability in the lock file, nor in the research server's pinned package and the dependencies it resolves to; npm audit finds none in the sequential-thinking package |
 
 ### 8.8 Configuration
 
-`config/models.yaml`, `limits.yaml`, `agents.yaml`, `thresholds.yaml`, `pricing.yaml`, `ingest.yaml`, `cues.yaml`, `zones.yaml`, `lint.yaml`, `egress.yaml` and `research.yaml` are loaded with `yaml.safe_load` and validated by Pydantic in `config.py`, so a bad value fails at start-up; `config/matrices/` holds the matrix files. `config/mcp_pins.yaml` holds the research server's pins, written by `bidwright research pin` on the host after a person reviews a new version, and `config/mcp_servers.txt` the server's pinned package for the dependency audit. A prompt's decoding block may override only `thinking`, `think` and `num_ctx`. Keys and endpoints come from `.env`, whose names `.env.example` lists, `NOTEBOOKLM_MCP_URL` among them. Seven more variables are read by code: `BIDWRIGHT_HOME` (the repository root, set in the `Dockerfile`), `BIDWRIGHT_CONFIG_DIR` (the configuration folder), `BIDWRIGHT_CLIENT_ROOT` (the folder client documents may come from, outside the repository), `BIDWRIGHT_COMMIT` (the commit the manifest records when Git is absent), `BIDWRIGHT_ENV` (`container` in the `Dockerfile`, so a run records where it ran), `HYGIENE_HASHES` (the salted name hashes the hygiene test and the pack builder check, kept out of the repository) and `LANGGRAPH_STRICT_MSGPACK` (set by the command line and the `Dockerfile`, so a checkpoint holds plain data only).
+`config/models.yaml`, `limits.yaml`, `agents.yaml`, `thresholds.yaml`, `pricing.yaml`, `ingest.yaml`, `cues.yaml`, `zones.yaml`, `lint.yaml`, `egress.yaml` and `research.yaml` are loaded with `yaml.safe_load` and validated by Pydantic in `config.py`, so a bad value fails at start-up; `config/matrices/` holds the matrix files. `--bid-policy FILE` names an approved bid policy for the bid signal (ADR-042); with none, the signal is `UNDETERMINED`. `knowledge_base/methods/cards.yaml` holds the method cards, and `methods.enabled` in `config/limits.yaml` the families switched on, none at `v0.3`. `config/mcp_pins.yaml` holds the research and documentation servers' pins, written by `bidwright research pin` on the host after a person reviews a new version, and `config/mcp_servers.txt` the server's pinned package for the dependency audit. A prompt's decoding block may override only `thinking`, `think` and `num_ctx`. Keys and endpoints come from `.env`, whose names `.env.example` lists, `NOTEBOOKLM_MCP_URL` among them. Seven more variables are read by code: `BIDWRIGHT_HOME` (the repository root, set in the `Dockerfile`), `BIDWRIGHT_CONFIG_DIR` (the configuration folder), `BIDWRIGHT_CLIENT_ROOT` (the folder client documents may come from, outside the repository), `BIDWRIGHT_COMMIT` (the commit the manifest records when Git is absent), `BIDWRIGHT_ENV` (`container` in the `Dockerfile`, so a run records where it ran), `HYGIENE_HASHES` (the salted name hashes the hygiene test and the pack builder check, kept out of the repository) and `LANGGRAPH_STRICT_MSGPACK` (set by the command line and the `Dockerfile`, so a checkpoint holds plain data only).
 
 ## 9. Architecture decisions
 
-[`DECISIONS.md`](../DECISIONS.md) holds the ADRs, with their index, and the failure modes found while building. ADR-001 to ADR-004 were taken in Iteration 0a; ADR-005 to ADR-016 record the plan's product and architecture decisions; ADR-017 to ADR-021 were proposed by the Iteration 1 design doc and accepted at its Stage 9 review; ADR-022 to ADR-025 record what the first architecture review changed; ADR-026 records the owner's decision on client documents (D-05); ADR-027 and ADR-028 record Iteration 1's spike decisions, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found after the tag, which reverses S-10 and schedules the examples' return; ADR-031 to ADR-037 were proposed by the Iteration 2 design doc and accepted after its Stage 9 review (D-07): stop and resume, the gateway's rules, the research pack schema, `ask_research`'s match threshold, the approval file, research in the run, and three components that wait for their consumers. Two research decisions followed: whether the research provider drops solicitation-like sources in research mode `live` (D-08), and the authority tier of audit and parliamentary hosts (D-09), both decided by the owner on 2026-11-05: ADR-038 records the first, and the second keeps the tiers as ADR-033 set them. [`decision-matrix.md`](decision-matrix.md) maps the choices to the architecture-options taxonomy for foundation-model agents, with the quality trade-offs each implies.
+[`DECISIONS.md`](../DECISIONS.md) holds the ADRs, with their index, and the failure modes found while building. ADR-001 to ADR-004 were taken in Iteration 0a; ADR-005 to ADR-016 record the plan's product and architecture decisions; ADR-017 to ADR-021 were proposed by the Iteration 1 design doc and accepted at its Stage 9 review; ADR-022 to ADR-025 record what the first architecture review changed; ADR-026 records the owner's decision on client documents (D-05); ADR-027 and ADR-028 record Iteration 1's spike decisions, ADR-029 the owner's rule for the free tier's daily quota, and ADR-030 the matcher's correction found after the tag, which reverses S-10 and schedules the examples' return; ADR-031 to ADR-037 were proposed by the Iteration 2 design doc and accepted after its Stage 9 review (D-07): stop and resume, the gateway's rules, the research pack schema, `ask_research`'s match threshold, the approval file, research in the run, and three components that wait for their consumers. Two research decisions followed: whether the research provider drops solicitation-like sources in research mode `live` (D-08), and the authority tier of audit and parliamentary hosts (D-09), both decided by the owner on 2026-11-05: ADR-038 records the first, and the second keeps the tiers as ADR-033 set them. ADR-039 to ADR-051 were proposed by the Iteration 3 design doc and accepted after its Stage 9 review (D-10, D-11): the solution path, material claims, the options' weighting, the bid policy, the manifest, `techcheck`, the `assess` route, the gate, `reflect`, the ablation, the `extract` examples' return, the `ui` service and the loopback API. ADR-052 to ADR-059 were taken during the build, the last four from the ladders' results; ADR-060 revamped the gate's Review page. [`decision-matrix.md`](decision-matrix.md) maps the choices to the architecture-options taxonomy for foundation-model agents, with the quality trade-offs each implies.
 
 ## 10. Quality requirements
 
@@ -568,16 +651,16 @@ Structural rules are fitness functions that run on every push to `main` and ever
 
 Each scenario is tagged with its ISO/IEC 25059 characteristic. An **invariant** must hold on every run, and code checks it. A **statistical** scenario is measured over the corpus, its seeds and repeats, with a sample size, a threshold and an action, block or warn.
 
-| ID | Kind | Characteristic | Stimulus | Required response | Measure | Runs at | Status at `v0.2` |
+| ID | Kind | Characteristic | Stimulus | Required response | Measure | Runs at | Status at `v0.3` |
 |---|---|---|---|---|---|---|---|
 | QS-1 | Invariant | Functional correctness | A model emits a quote that is not in the source | Repaired once or rejected, never accepted | Accepted quotes that are neither verbatim nor normalized: 0, block | Every run; CI on replay and in the gate | **Holds.** `test_verify.py` and `test_nodes.py`; the regression gate blocks on any such quote. |
-| QS-2 | Statistical | Functional correctness | A mandatory clause anywhere in the RFP | Captured, with exact provenance | On the hero package: at most 2 of 45 missed in the median of 5 repeats, and no rise against the committed hero baseline; block | Iteration 3 exit and release, on 5 live hero repeats | **Measurable, not met yet:** on 2026-11-04, under the corrected matcher (ADR-030), S-13's five hero runs of the shipped configuration missed a median of 5 of 45, the replayed baseline 3, and the held-out RFP none of its 22 in five repeats. Two live hero runs of the `v0.2` pipeline on 2026-11-05 missed 2 and 3 of 45. The target applies at the Iteration 3 exit. |
-| QS-3 | Statistical | Robustness | An injected instruction with a unique marker and a detectable requested action, in a document or a research result; at least 6 per RFP | Flagged or quarantined, never obeyed | The requested action in an LLM-written field or a tool-call argument: 0, block | Iteration 3 exit and release, on 5 live hero repeats; CI on replay | **Built:** `guard` removes hidden content before parsing, the corpus holds 14 traps, and the scorer and the gate count obeyed traps; research text is screened for injected instructions before a model sees it (FI-10); the repeats run at the Iteration 3 exit. |
-| QS-4 | Invariant | Security | A tool request outside an allowlist or a rule | Stopped outside the model | Unauthorized calls allowed: 0, block | Every run; CI on replay and in the gate | **Holds** for the `risk` agent's two tools and `discover`'s two research tools, under the four checks of `v0.0` and the rules G1 to G5, each with a clean control (FI-09); a server whose tools changed is refused (FI-11): `test_gateway.py`, `test_mcp_client.py`, and the scorer counts executed calls outside each agent's allowlist from `tool_calls.jsonl`. |
-| QS-5 | Statistical | Transparency | A capability the knowledge base cannot support; at least 4 seeded gaps per RFP | Marked `UNVERIFIED`, never asserted | Seeded gaps claimed: 0, block | Iteration 3 exit and release, on 5 live hero repeats | **Not built:** the knowledge base and the hero's gap seeds exist; `assess` arrives in Iteration 3. Every approach item carries the evidence class `ASSUMPTION`. |
-| QS-6 | Invariant | Intervenability, user controllability | A stop command, an exhausted budget, or a gate with no person | Halts at the next step, or waits in `WAITING_HUMAN`; output stays `UNREVIEWED_DRAFT` | Fault-injection tests | CI | **Partly holds:** the budget stops a run before its next provider attempt (`test_budget.py`), every output carries `UNREVIEWED_DRAFT` (`test_render_outputs.py`), `bidwright stop` drains a run after its current step and a research wait stops between polls, both recorded `STOPPED` (`test_supervisor.py`, `test_resume.py`, `test_discover.py`). The gates arrive in Iterations 3 and 4, so no run waits in `WAITING_HUMAN` yet. |
+| QS-2 | Statistical | Functional correctness | A mandatory clause anywhere in the RFP | Captured, with exact provenance | On the hero package: at most 2 of 45 missed in the median of 5 repeats, and no rise against the committed hero baseline; block | Iteration 3 exit and release, on 5 live hero repeats | **Passed at the Iteration 3 exit:** five live hero repeats of the `v0.3` defaults on 2026-11-07 missed a median of 1 of 45 (range 1 to 2), against the baseline's 3, and no submission hazard ([`evaluation.md`](evaluation.md)). |
+| QS-3 | Statistical | Robustness | An injected instruction with a unique marker and a detectable requested action, in a document or a research result; at least 6 per RFP | Flagged or quarantined, never obeyed | The requested action in an LLM-written field or a tool-call argument: 0, block | Iteration 3 exit and release, on 5 live hero repeats; CI on replay | **Passed at the Iteration 3 exit:** 0 of the hero's 10 traps obeyed in each of five live repeats. Outside the measurement, the `v0.3` sample run of the development PDF restated its visible trap in a `NOT_BINDING` record's statement, which the scorer counts as obeyed; it reached no summary, proposal or matrix (`DECISIONS.md`, failure modes). |
+| QS-4 | Invariant | Security | A tool request outside an allowlist or a rule | Stopped outside the model | Unauthorized calls allowed: 0, block | Every run; CI on replay and in the gate | **Holds** for `decide`'s four tools, the `risk` agent's three, `discover`'s two research tools and `reflect`, under the four checks of `v0.0` and the rules G1 to G6, each with a clean control (FI-09); a server whose tools changed is refused (FI-11): `test_gateway.py`, `test_mcp_client.py`, and the scorer counts executed calls outside each agent's allowlist from `tool_calls.jsonl`. |
+| QS-5 | Statistical | Transparency | A capability the knowledge base cannot support; at least 4 seeded gaps per RFP | Marked `UNVERIFIED`, never asserted | Seeded gaps claimed: 0, block | Iteration 3 exit and release, on 5 live hero repeats | **Passed at the Iteration 3 exit:** 0 seeded gaps claimed in each of five live hero repeats; the regression gate blocks on any. |
+| QS-6 | Invariant | Intervenability, user controllability | A stop command, an exhausted budget, or a gate with no person | Halts at the next step, or waits in `WAITING_HUMAN`; output stays `UNREVIEWED_DRAFT` | Fault-injection tests | CI | **Partly holds:** the budget stops a run before its next provider attempt (`test_budget.py`), every output carries `UNREVIEWED_DRAFT` (`test_render_outputs.py`), `bidwright stop` drains a run after its current step and a research wait stops between polls, both recorded `STOPPED` (`test_supervisor.py`, `test_resume.py`, `test_discover.py`). A run with no person at the solution gate waits in `WAITING_HUMAN` (`test_gate.py`, `test_solution_path.py`); the final review gate arrives in Iteration 4. |
 | QS-7 | Invariant | Recoverability | A provider 429, a timeout, malformed output or a crash | Retries, fails over and resumes, with no repeated spend | FI-01, FI-02 and a resume test | CI | **Holds:** FI-01 and FI-02 pass (`test_simulator.py`, `test_nodes.py`), a spent daily quota moves to the fallback without retrying, the circuit breaker moves calls off a failing model and pauses the run when none is left (`test_recovery.py`), and a stopped or killed run resumes with every answered call taken from its journal, so nothing is paid twice (`test_resume.py`). The breaker held through a day on which the primary free model returned server errors, with the fallback answering nearly every call of that day's live runs. |
-| QS-8 | Statistical | Functional correctness | The same RFP run 5 times | The requirement set and the tool path stay within tolerance | Median pairwise Jaccard over the gold clause ids each run captures: at least 0.85, warn | Iteration 3 exit and release, on 5 live hero repeats | **Measurable:** the matrix runner runs repeats; the measurement runs at the Iteration 3 exit. |
+| QS-8 | Statistical | Functional correctness | The same RFP run 5 times | The requirement set and the tool path stay within tolerance | Median pairwise Jaccard over the gold clause ids each run captures: at least 0.85, warn | Iteration 3 exit and release, on 5 live hero repeats | **Passed at the Iteration 3 exit:** median pairwise Jaccard 0.98 over five live hero repeats. |
 
 Modifiability is shown by the live-change rehearsal at release, not by a scenario.
 
@@ -593,7 +676,7 @@ A change to a model, a prompt, a schema or a tool description changes the casset
 
 ## 11. Risks and technical debt
 
-Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-Plan.md). The design's residual risks are listed in [`security.md`](security.md#residual-risks-at-v02) and under "Not covered yet" in [`governance.md`](governance.md#not-covered-yet). Technical debt and known limits at `v0.2`:
+Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-Plan.md). The design's residual risks are listed in [`security.md`](security.md#residual-risks-at-v03) and under "Not covered yet" in [`governance.md`](governance.md#not-covered-yet). Technical debt and known limits at `v0.3`:
 
 | Item | Effect | Paid down in |
 |---|---|---|
@@ -603,18 +686,23 @@ Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-
 | The Docling path removes hidden PDF text by finding each hidden run's words in the item's text, because Docling's items carry no character positions | A hidden word that repeats a visible word earlier in the same item removes the visible one instead | The pdfplumber path removes hidden characters by position; Iteration 7's render-and-compare |
 | Stored requirements keep the model's quote as the view showed it, which equals the frozen text under `IdentityView` | A masking view would store masked quotes | Iteration 5, with the masking view |
 | Every passage costs `extract` tokens, so a long package takes more calls than a cue filter would | Cost and quota per run | S-03 set packs of 40, with a quarter of the requests of packs of 10 at the same misses (ADR-027) |
-| `risk` found 2 of 3 planted risks on the development PDF and 1 of 6 on the hero package in the live runs of 2026-11-05 | Risk recall is weak | Iteration 3, measured by the RK ablation |
-| On retry, the model may omit a rejected risk instead of rewording it | A real risk can be lost to a fixable rating phrase | Iteration 3 |
+| Every risk setting of the RK ladder found at most 2 of the hero's 6 risk seeds, and the default one call at most 1; the development PDF's runs find 1 of 3 | Risk recall is weak | Not scheduled; a ladder with more risk seeds would show whether a different step helps (ADR-059) |
+| The manifest maps a median of 65% of the hero's binding requirements to work packages (36 to 69%); the rest are listed as gaps | The 100% check fails on most hero runs, and the gate shows it | Not scheduled; stated in [`evaluation.md`](evaluation.md) |
+| `assess` lowers a claim its records state in full to `PARTIALLY_SUPPORTED` over a term of the buyer's need, 3 of 10 times in the owner's spot-check | A need shows `PARTIAL` where `COVERED` was due; no gap is made to look supported | Open (`DECISIONS.md`, failure modes) |
+| `techcheck` errs toward `INSUFFICIENT_DOCS`: one false technology seed was never invalidated in 5 repeats, another only twice | A false claim can reach the gate unvalidated, where it shows as such | Not tuned (step 19) |
+| The option scores are the model's judgment; an option can score a factor on a partner or an alternative that no claim supports | A ranking can rest on assumptions; the Review page and the review file name each need answered with no claim (ADR-060) | A person decides at the gate |
+| `extract` once restated a visible trap in a `NOT_BINDING` record's statement | The marker reaches `requirements.jsonl` and the summary's JSON records | Open (`DECISIONS.md`, failure modes) |
+| The Cerebras trial's credits run until 2026-12-03 | After that, `assess` falls to Groq, then to the generator's family, flagged `SAME_FAMILY` | A paid non-Gemini key, or the owner's decision before the date |
 | G3, the outbound rule, compares words, not meaning: on its test set of 20 passages it denied every verbatim and every lightly edited copy, and let every hand-written paraphrase through | Injected text paraphrased by the model could still leave in a query; only the brief's checked topics reach `discover`'s model, which narrows the path | Stated as a limit (ADR-032); no rule on meaning is planned |
-| `discover_extract` fills its budget with the answers and excerpts first and gives the report what is left | On the development PDF's live run, 128 excerpts left room for none of the report's 68 paragraphs; items still cite excerpts only | Iteration 3, when `options` and `blueprint` first read the domain brief |
+| `discover_extract` fills its budget with the answers and excerpts first and gives the report what is left | On the development PDF's live run, 128 excerpts left room for none of the report's 68 paragraphs; items still cite excerpts only | Not scheduled; research mode `pack`, the default, is not affected |
 | Research mode `live` leaves out a source whose title or URL reads like a published solicitation (ADR-038), but not one that does not read that way, and not the job's own report | A real tender's text can still reach the extraction call through the report, or under a plain title | Stated as a limit; a licensed research source with provenance metadata would replace the pattern |
 | Audit and parliamentary hosts, such as `nao.org.uk` and `parliament.uk`, fall to authority tier 4 | Items resting on them only are dropped, which cost the hero pack five items at its first build | Kept by the owner's decision of 2026-11-05 (D-09) |
 | Research mode `live` rests on one personal, cookie-based NotebookLM login and a server whose name declares no version | A login that expires fails the research, which falls back to the pack; a new server version needs pinning again by a person | `ResearchProvider` lets a licensed source replace it |
 | A run lock on the bind-mounted `outputs/` may not hold inside Docker Desktop's containers | Two resumes of one container run could overlap | Operating rule: a container run is resumed only after its container has exited (section 7.2) |
 | A call answered just before a kill and asked again on resume counts twice in the manifest's `requests`, once in cost | The request total can overstate what was paid by one call per kill | Accepted (ADR-031) |
-| `reason` runs on Flash-Lite on `free` (ADR-003) | Approach, risk and draft quality against Flash is unmeasured | The SO comparison in Iteration 3, within the paid budget set by D-01 (CH-84) |
+| `reason` runs on Flash-Lite on `free` and `paid` (ADR-003) | Solution, risk and draft quality against Flash is unmeasured; the ladders compared steps, not models | Iteration 5's model comparison |
 | A development run takes about 17 minutes on `local`, on CPU | The local path is a privacy path, not a fast one | Iteration 6 bake-off |
-| `free` depends on one provider | No free run can finish while Gemini is down | Iteration 3's second family; the paid key on the same model |
+| `free` depends on Gemini for every role but `assess` | No free run can finish while Gemini is down | The paid key on the same model |
 | Compose needs a key even for the demo (ADR-002) | Reviewers who run Compose need a key | The condition that reverses ADR-002 |
 | Claude writes both the corpus and the prompts, under the owner's direction | Scores may overstate the system | The owner's held-out requirement list, written without the prompts in view; external stage benchmarks |
 
@@ -646,8 +734,21 @@ Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-
 | Small print | Visible text from 2 up to 6 points, kept in the text and flagged for review |
 | Generic risk | A risk that cites no passage, or whose condition and event share no content word with the passages it cites |
 | Profile | `free` (Gemini free tier, synthetic corpus only), `paid` (the same models on the paid tier) or `local` (Ollama, nothing leaves the machine) |
-| Model role | `extract` or `reason`, each mapped to a model and a fallback per profile |
-| Agent | An LLM role that calls tools in a loop; at `v0.2`, `risk` and `discover` |
+| Model role | `extract`, `reason` or `assess`, each mapped to a model and a fallback per profile; `assess` has a route of providers (ADR-045) |
+| Agent | An LLM role that calls tools in a loop; at `v0.3`, `decide`, `discover` in research mode `live`, and `risk` behind `risk_mode: agent` |
+| Need | One row of the capability map: a requirement group that holds a `BINDING` or `OPTIONAL` requirement (origin `RFP`), or a need of the domain brief (origin `DOMAIN`) |
+| Claim | A `CapabilityClaim` that `decide` drafts for a need, citing knowledge-base records and passages; every claim is material (ADR-040) |
+| Assessment | `assess`'s disposition of one claim: `SUPPORTED`, `PARTIALLY_SUPPORTED`, `UNVERIFIED`, `CONTRADICTED` or `NOT_APPLICABLE` |
+| Capability map | Each need's status, in code: `COVERED`, `PARTIAL`, `PARTNER` or `GAP` |
+| Option | One of two or three solutions `options` proposes, scored per factor; the chosen option is the one the gate approves |
+| Manifest | `manifest.json`, the solution manifest: states, workstreams, the work breakdown and its work packages, assumptions, ground rules, technology claims, benefits, win themes, PDCA and gaps, every fact with an evidence class and sources |
+| Work package | A leaf of the manifest's work breakdown, with its scope, effort, verification and predecessors |
+| Technology claim | A statement in the manifest about a library or other technology, which `techcheck` judges: `VALIDATED`, `INVALIDATED`, `INSUFFICIENT_DOCS`, `NOT_CHECKABLE` or `SKIPPED_CAP` |
+| Solution gate | `solution_gate`, where a person approves, edits, switches or rejects the manifest before drafting; its decision is `review/solution_gate.approval.yaml` |
+| Bid signal | `GO`, `CONDITIONAL_GO`, `NO_GO` or `UNDETERMINED`, from an approved bid policy's rules only |
+| `SAME_FAMILY` | The flag on an assessment the generator's model family made, when no other route was available |
+| Switch | A per-run setting that turns a step on or off or picks its mode, such as `solution` or `risk_mode` |
+| Ladder, rung, seed run | An ablation's sequence of configurations; one configuration, run with 5 repeats; a frozen finished run that every rung of a ladder starts from |
 | `ToolGateway` | The code that authorizes every tool call before it runs |
 | Cassette | A recorded response, keyed by everything that affects the call |
 | Repeat index | The number of a run within a set of identical runs, part of every cassette and cache key, so repeats never share one |
@@ -673,7 +774,7 @@ Project risks live in section 7 of [`context/Master-Plan.md`](../context/Master-
 | Funnel | The stage that lost each missed mandatory requirement: `guard`, `parse`, `extract` or `verify` |
 | Matrix | A file of rungs and repeats that `bidwright matrix run` executes for a spike or an ablation |
 | EX0, B0 | The one-call extraction baseline, and the rule-only floor with no model call |
-| Ablation | EX for extraction, SO for the solution, RK for the risk agent and PR for the proposal: each climbs from a one-call baseline to the full system, in Iterations 3 and 5, with 5 repeats per rung |
+| Ablation | EX for extraction, SO for the solution, RK for the risk register and PR for the proposal: each climbs from a one-call baseline to the full system, with 5 repeats per rung; EX, SO and RK ran in Iteration 3, and the full ladders run in Iteration 5 |
 | Live-change rehearsal | Five rehearsed small changes made at the interview, such as adding a rule or changing a threshold |
 | Reverse-if | The ADR line that states what would reverse the decision |
 | The owner | The project's sponsor and sole approver |

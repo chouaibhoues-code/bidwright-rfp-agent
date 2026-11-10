@@ -76,7 +76,7 @@ def test_every_span_of_samples_dev_arrives_with_its_ids_and_times(
         monkeypatch.setenv("PHOENIX_ENDPOINT", endpoint)
         count, url = replay_spans(DEV_SAMPLE, endpoint=endpoint)
 
-    assert count == len(expected) == 36
+    assert count == len(expected) > 0
     assert url == f"{endpoint}/v1/traces"
     assert captured.paths == ["/v1/traces"]
     assert captured.headers[0]["content-type"] == "application/x-protobuf"
