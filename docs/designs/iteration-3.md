@@ -815,6 +815,8 @@ The owner asked on 2026-11-05, after the merge of steps 13 and 17, for pages who
 
 **Tests.** None; the labels and the approval file are committed.
 
+- As built (the spot-check): `bidwright-eval spotcheck` drew 10 assessments from the five hero repeats with seed 20261107, and the owner's labels mark 7 `right` and 3 `wrong`, with a joint error of 0 in every repeat. The three wrong ones lower to `PARTIALLY_SUPPORTED` a claim their records state in full, over a term of the buyer's need; `docs/evaluation.md` and the failure log record it, and `assess.md` is unchanged.
+
 ### Step 22: Documents, reviews and the tag
 
 **Files.** Modify `docs/architecture.md`, `docs/security.md`, `docs/evaluation.md`, `docs/governance.md`, `docs/demo_script.md`, `README.md`, `DECISIONS.md`, `ASSUMPTIONS.md`, `TIMELOG.md`, `context/Master-Plan.md` (with the close-out notes and the earned-value snapshot), `context/Research-Register.md` and `samples/dev/`.

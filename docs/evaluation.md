@@ -70,6 +70,18 @@ A scorer that cannot fail shows nothing. `tests/test_scorer_selftest.py` checks 
 
 `bidwright matrix run` runs a matrix file's rungs and repeats in order, with the response cache on and the repeat index in every key; it resumes after a spent quota and stops before a run expected to pass the matrix's cost cap. Every matrix run stays on its roles' primary models, because a fallback model would change what is measured: a spent quota pauses the matrix, a call that exhausts its retries faults its run, and a run that a fallback model answered is left out of the report and run again on `--resume`. `bidwright-eval report` scores every finished run and decides each rung by the rule `evals/hypotheses.yaml` names, fixed before the first matrix run: `within_noise`, `superiority` or `improvement`, each measured against the spread of the control rung's repeats. S-03 (pack size), S-10 (the prompt's examples) and S-13 (a second extraction pass) run this way on the hero package.
 
+## The `assess` spot-check (step 21)
+
+Ten assessments drawn at random (seed 20261107) from step 20's five hero repeats carry the owner's labels in `evals/labels/assess_spotcheck.jsonl`, the check Q-04's fallback requires (CH-93). A label is `right` when the disposition follows `assess.md`'s definitions: the claim's entailment by its cited records, with the buyer's need deciding only `NOT_APPLICABLE`.
+
+| Measure | Result |
+|---|---|
+| Assessments labeled `right` | 7 of 10 (70%) |
+| Claims accepted that their records do not state | 0 of 10 |
+| Joint error of `decide` and `assess` | 0 in every repeat |
+
+The three wrong ones fail the same way. Each claim restates its cited record almost word for word, yet comes back `PARTIALLY_SUPPORTED`, with `missing` naming a term of the buyer's need that the claim never makes, such as a seven-year retention or a penetration test before go-live. The same claim and evidence, an annual independent penetration test from CAP-015, came back `SUPPORTED` in one repeat and `PARTIALLY_SUPPORTED` in another. The error only lowers a disposition: `PARTIALLY_SUPPORTED` still counts as capability evidence, so a need shows `PARTIAL` where `COVERED` was due, and no gap is made to look supported. The likely cause is rule 1 of `assess.md`, which gives the model the buyer's need with nothing limiting it to the `NOT_APPLICABLE` test. In one of the three, the need also held a clause that binds no one: extraction in that repeat gave the unchecked box's translation clause `OPTIONAL`. `assess.md` is unchanged: a revision would mean recording again every replay that holds an `assess` call, and 10 labels could not show whether it helps. Ten labels also give a wide interval, so 70% is an indication, not a rate.
+
 ## The statistical scenarios at the Iteration 3 exit (step 20)
 
 Five live repeats of the hero package on the defaults step 19 set (EX3's extraction, the manifest, `risk_mode: oneshot`, no reflection, no method cards), research mode `pack` and automatic approval, on 2026-11-07, scored against gold v4 (`evals/results/hero-repeats/`, $0.71). The first repeat ran on `free`, the others on `paid` after the free daily quota ran out.
