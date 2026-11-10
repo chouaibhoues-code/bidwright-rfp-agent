@@ -307,14 +307,22 @@ def approval_from_args(
     """The `GateApproval` the flags make (section 4.8): `reject` with `--reject`, which takes
     no other flag; `edit` with `--edit`; else `approve`. `--option` does not combine with
     `--edit`. Refused: an unknown field path, an edit file that is not a list of
-    `{field, value}`, an option `options.json` does not hold, and a blocked gate approved
-    without `--override`."""
+    `{field, value}`, edits the reviewed manifest cannot take (a low estimate above the high
+    one, a fact that does not exist, a cycle), an option `options.json` does not hold, and a
+    blocked gate approved without `--override`; a rejection or a switch to another option
+    needs none."""
     import yaml
 
-    from bidwright.graph.blueprint import edit_path_problem
+    from bidwright.graph.blueprint import EditRefused, apply_edits, edit_path_problem
     from bidwright.graph.gate import blocking, reviewed_hashes
     from bidwright.harness.supervisor import read_manifest
-    from bidwright.schemas import GateApproval, GateEdit, SolutionOptions, TechValidation
+    from bidwright.schemas import (
+        GateApproval,
+        GateEdit,
+        SolutionManifest,
+        SolutionOptions,
+        TechValidation,
+    )
 
     if args.reject is not None and (args.option or args.edit or args.override):
         raise ApprovalRefused("--reject takes no other decision flag")
@@ -341,6 +349,14 @@ def approval_from_args(
             if problem is not None:
                 raise ApprovalRefused(problem)
             edits.append(GateEdit(field=str(entry["field"]), value=entry["value"]))
+    manifest = SolutionManifest.model_validate_json(
+        (run_dir / "manifest.json").read_text(encoding="utf-8")
+    )
+    if edits:
+        try:
+            apply_edits(manifest, edits)
+        except EditRefused as exc:
+            raise ApprovalRefused(f"the edits cannot be applied: {exc}") from exc
     options = SolutionOptions.model_validate_json(
         (run_dir / "options.json").read_text(encoding="utf-8")
     )
@@ -350,7 +366,8 @@ def approval_from_args(
     rows = validations.read_text(encoding="utf-8").splitlines() if validations.is_file() else []
     blocked = blocking([TechValidation.model_validate_json(r) for r in rows if r.strip()])
     decision = "reject" if args.reject is not None else "edit" if edits else "approve"
-    if blocked and decision != "reject" and not args.override:
+    switching = bool(args.option) and args.option != manifest.option_id
+    if blocked and decision != "reject" and not switching and not args.override:
         raise ApprovalRefused(
             f"the gate is blocked by {', '.join(blocked)}, still INVALIDATED; approve it with"
             " --override REASON, or reject it"

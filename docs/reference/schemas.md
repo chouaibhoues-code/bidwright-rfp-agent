@@ -1931,6 +1931,7 @@ The stored form of `review/solution_gate.approval.yaml`, in ADR-035's format.
 | `reject_reason` | str \| None | no | None |  |
 | `auto_selected` | bool | no | False |  |
 | `edited_sha256` | str (pattern ^sha256:[0-9a-f]{64}$) \| None | no | None |  |
+| `overridden` | list[str (pattern ^TC-\d{2}$)] | no | [] |  |
 
 ## `BidTrigger`
 

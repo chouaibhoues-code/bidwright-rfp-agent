@@ -37,6 +37,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
+from bidwright.fileio import write_atomic
 from bidwright.graph.decide import NeedPlan, cut
 from bidwright.graph.nodes import (
     MALFORMED_TWICE,
@@ -948,4 +949,5 @@ def approach_view(
 def write_manifest(run_dir: Path, manifest: SolutionManifest) -> None:
     """`manifest.json`, written by this function only."""
     body = json.dumps(manifest.model_dump(mode="json"), indent=1, ensure_ascii=False) + "\n"
-    (run_dir / "manifest.json").write_text(body, encoding="utf-8", newline="\n")
+    # Whole or not at all: the gate records this file's hash in its approval.
+    write_atomic(run_dir / "manifest.json", body)

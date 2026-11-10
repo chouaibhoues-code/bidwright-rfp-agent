@@ -43,7 +43,7 @@ from pydantic import ValidationError
 
 from bidwright.config import BidPolicy
 from bidwright.fileio import write_atomic
-from bidwright.graph.blueprint import EDITABLE, apply_edits, write_manifest
+from bidwright.graph.blueprint import EDITABLE, EditRefused, apply_edits, write_manifest
 from bidwright.graph.signal import SignalInputs, compute_signal, memo, write_signal
 from bidwright.guard import PolicyBlocked
 from bidwright.schemas import (
@@ -128,15 +128,27 @@ def write_approval(run_dir: Path, approval: GateApproval) -> None:
     write_atomic(run_dir / APPROVAL_FILE, body)
 
 
+def switches(approval: GateApproval, current_option: str | None) -> bool:
+    """Whether the approval sends the run back to `blueprint` for another option: it passes
+    nothing of the manifest under review."""
+    return approval.option_id is not None and approval.option_id != current_option
+
+
 def void(
-    approval: GateApproval, run_id: str, hashes: ReviewedHashes, blocked: Sequence[str]
+    approval: GateApproval,
+    run_id: str,
+    hashes: ReviewedHashes,
+    blocked: Sequence[str],
+    current_option: str | None = None,
 ) -> str | None:
-    """Why an approval cannot be acted on, or None."""
+    """Why an approval cannot be acted on, or None. A rejection, or a switch to another option,
+    needs no override on a blocked gate: neither passes the manifest under review."""
     if approval.gate != GATE or approval.run_id != run_id:
         return f"the approval is for {approval.gate} of {approval.run_id}, not this gate"
     if approval.reviewed != hashes:
         return "manifest.json or options.json changed after it was reviewed"
-    if blocked and approval.decision != "reject" and not approval.override_reason:
+    passes = approval.decision != "reject" and not switches(approval, current_option)
+    if blocked and passes and not approval.override_reason:
         return f"the gate is blocked by {', '.join(blocked)}; approving it needs --override"
     return None
 
@@ -178,20 +190,28 @@ def solution_gate(
     if (
         stored is not None
         and stored.edited_sha256 == hashes.manifest
-        and (not blocked or stored.override_reason)
+        and set(blocked) <= set(stored.overridden)
     ):
-        return GateOutcome("draft", stored, manifest, signal)  # the edited manifest, unchanged
+        # The edited manifest, unchanged since the edit. It is read from the file whose hash
+        # matched, so a resume after a crash between that write and the checkpoint drafts the
+        # edit too. A claim blocking now that the override did not cover asks again below.
+        edited = SolutionManifest.model_validate_json(
+            (run_dir / "manifest.json").read_text(encoding="utf-8")
+        )
+        return GateOutcome("draft", stored, edited, signal)
     write_review(run_dir, run_id, inputs, signal, hashes, blocked)
     if mode == "auto":
         if blocked:
             raise PolicyBlocked(f"{BLOCKED}: technology claims INVALIDATED: {', '.join(blocked)}")
         approval = auto_approval(run_id, hashes, inputs.options, now())
     else:
-        approval = _asked(ask, run_id, hashes, blocked)
+        approval = _asked(ask, run_id, hashes, blocked, manifest)
+    if approval.override_reason and blocked:
+        approval = approval.model_copy(update={"overridden": list(blocked)})
     if approval.decision == "reject":
         write_approval(run_dir, approval)
         raise PolicyBlocked(f"{REJECTED}: {approval.reject_reason}")
-    if approval.option_id is not None and approval.option_id != manifest.option_id:
+    if switches(approval, manifest.option_id):
         write_approval(run_dir, approval)
         return GateOutcome("blueprint", approval, manifest, signal)
     if approval.decision == "edit":
@@ -207,9 +227,14 @@ def solution_gate(
 
 
 def _asked(
-    ask: Callable[[Any], Any], run_id: str, hashes: ReviewedHashes, blocked: Sequence[str]
+    ask: Callable[[Any], Any],
+    run_id: str,
+    hashes: ReviewedHashes,
+    blocked: Sequence[str],
+    manifest: SolutionManifest,
 ) -> GateApproval:
-    """Ask until an approval can be acted on: each void one asks again."""
+    """Ask until an approval can be acted on: each void one asks again, and so does an edit
+    the manifest cannot take, so a bad edit leaves the run waiting instead of ending it."""
     note: str | None = None
     while True:
         value = ask(
@@ -226,7 +251,12 @@ def _asked(
         except ValidationError as exc:
             note = f"the approval does not validate: {exc.errors()[0]['msg']}"
             continue
-        note = void(approval, run_id, hashes, blocked)
+        note = void(approval, run_id, hashes, blocked, manifest.option_id)
+        if note is None and approval.decision == "edit":
+            try:
+                apply_edits(manifest, approval.edits)
+            except EditRefused as exc:
+                note = f"the edits cannot be applied: {exc}"
         if note is None:
             return approval
 
@@ -375,6 +405,7 @@ __all__ = [
     "read_approval",
     "reviewed_hashes",
     "solution_gate",
+    "switches",
     "void",
     "write_approval",
     "write_review",

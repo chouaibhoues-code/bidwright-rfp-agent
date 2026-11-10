@@ -1961,6 +1961,9 @@ class GateApproval(Record):
     reject_reason: str | None = None
     auto_selected: bool = False
     edited_sha256: Sha256 | None = None
+    # The technology claims that blocked the gate when its override was given; the gate fills
+    # it, and a later pass after an edit covers only these (step 22's code review).
+    overridden: list[TechClaimId] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _the_decision_matches_its_fields(self) -> "GateApproval":

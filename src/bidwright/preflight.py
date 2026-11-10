@@ -235,7 +235,10 @@ def check_preconditions(
                 f" role: {hint}"
             )
     pulled: dict[str, set[str]] = {}
-    for role in plain.values() if models else []:
+    # A routed role needs no key, but when its provider's backend is present it is served by
+    # that backend, so its models must be pulled as well.
+    listed = [r for r in roles.values() if r.same_family_role is None or r.provider in backends]
+    for role in listed if models else []:
         backend = backends[role.provider]
         if not isinstance(backend, ModelLister):
             continue

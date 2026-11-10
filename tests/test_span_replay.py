@@ -73,6 +73,7 @@ def test_every_span_of_samples_dev_arrives_with_its_ids_and_times(
     expected: list[dict[str, Any]] = [json.loads(line) for line in expected_lines]
 
     with _otlp_receiver() as (endpoint, captured):
+        monkeypatch.setenv("PHOENIX_ENDPOINT", endpoint)
         count, url = replay_spans(DEV_SAMPLE, endpoint=endpoint)
 
     assert count == len(expected) == 36
@@ -113,3 +114,14 @@ def test_an_unlisted_host_is_refused_before_sending() -> None:
 def test_a_folder_without_spans_is_refused(tmp_path: Path) -> None:
     with pytest.raises(Refused, match="no spans.jsonl"):
         replay_spans(tmp_path, endpoint="http://127.0.0.1:6006")
+
+
+def test_the_phoenix_key_goes_only_to_the_configured_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Another port on an allowed host gets the spans but not the key (security review)."""
+    monkeypatch.setenv("PHOENIX_API_KEY", "test-phoenix-token")
+    monkeypatch.setenv("PHOENIX_ENDPOINT", "http://127.0.0.1:6006")
+    with _otlp_receiver() as (endpoint, captured):
+        replay_spans(DEV_SAMPLE, endpoint=endpoint)
+    assert captured.headers and "authorization" not in captured.headers[0]

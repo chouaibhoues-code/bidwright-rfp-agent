@@ -366,3 +366,85 @@ def test_the_review_file_says_what_each_option_rests_on_and_lists_the_facts(
     assert "| 1.1 | Configure | 5 to 10 | none | ASSUMPTION | none |" in review
     assert "- Assumption 1 (ASSUMPTION): A partner covers them." in review
     assert "- Ground rule 1 (RFP_SOURCE): Targets as stated." in review
+
+
+# --- step 22's code review ---------------------------------------------------------------
+
+
+def test_an_edit_the_manifest_cannot_take_asks_again_and_the_run_keeps_waiting(
+    tmp_path: Path,
+) -> None:
+    run = Run(tmp_path)
+    run.start()
+    bad = [GateEdit(field="work_packages[1.1].effort.low_days", value=12)]  # high is 10
+    again = run.resume(run.approval("edit", edits=bad))
+    note = again["__interrupt__"][0].value["note"] or ""
+    assert "the edits cannot be applied" in note and "low_days would be above high_days" in note
+    assert read_approval(tmp_path) is None, "nothing was written for the refused edit"
+    good = [GateEdit(field="work_packages[1.1].effort.low_days", value=8)]
+    done = run.resume(run.approval("edit", edits=good))
+    assert done["visits"][-1] == "draft"
+
+
+def test_a_switch_of_option_on_a_blocked_gate_needs_no_override(tmp_path: Path) -> None:
+    run = Run(tmp_path, validations=WRONG)
+    run.start()
+    again = run.resume(run.approval(option_id="OPT-2"))
+    assert "__interrupt__" in again and again["__interrupt__"][0].value["note"] is None
+    state = run.graph.get_state(run.config).values
+    assert state["visits"][-3:] == ["blueprint", "techcheck", "risk"]
+
+
+def test_an_override_covers_only_the_claims_it_was_given_for(tmp_path: Path) -> None:
+    """After an edit with an override, the gate passes on its own only while every blocking
+    claim is one the override covered; a claim invalidated since then asks again."""
+    run = Run(tmp_path, validations=WRONG)
+    run.start()
+    edits = [GateEdit(field="work_packages[1.2].effort.high_days", value=14)]
+    approval = run.approval("edit", edits=edits, override_reason="Known false positive.")
+    decided = solution_gate(
+        tmp_path, RUN_ID, run.inputs(), mode="wait", ask=lambda _: approval.model_dump(mode="json")
+    )
+    assert decided.next == "techcheck"
+    stored = read_approval(tmp_path)
+    assert stored is not None and stored.overridden == ["TC-01"]
+    # Techcheck's re-run left only TC-01 blocking: the gate passes without asking.
+    same = solution_gate(tmp_path, RUN_ID, run.inputs(), mode="wait", ask=_never)
+    assert same.next == "draft"
+    # It also invalidated TC-02, which nobody overrode: the gate asks again.
+    newly = TechValidation(claim_id="TC-02", library="pdfplumber", verdict="INVALIDATED")
+    run.validations = [*WRONG, newly]
+    asked: list[Any] = []
+
+    def ask(payload: Any) -> Any:
+        asked.append(payload)
+        return run.approval("reject", reject_reason="Not with TC-02.").model_dump(mode="json")
+
+    with pytest.raises(PolicyBlocked, match="GATE_REJECTED"):
+        solution_gate(tmp_path, RUN_ID, run.inputs(), mode="wait", ask=ask)
+    assert asked and asked[0]["blocked_by"] == ["TC-01", "TC-02"]
+
+
+def _never(payload: Any) -> Any:
+    raise AssertionError(f"the gate asked again: {payload}")
+
+
+def test_the_pass_after_an_edit_drafts_the_edited_file(tmp_path: Path) -> None:
+    """A resume after a crash between the edit's write and the checkpoint finds the approval's
+    hash on the file; the draft gets the edited manifest, not the state's."""
+    from bidwright.graph.gate import file_hash, write_approval
+
+    run = Run(tmp_path)
+    run.start()
+    inputs = run.inputs()
+    edits = [GateEdit(field="work_packages[1.2].effort.high_days", value=14)]
+    edited, _ = apply_edits(inputs.manifest, edits)
+    write_manifest(tmp_path, edited)
+    approval = run.approval("edit", edits=edits).model_copy(
+        update={"edited_sha256": file_hash(tmp_path / "manifest.json")}
+    )
+    write_approval(tmp_path, approval)
+    outcome = solution_gate(tmp_path, RUN_ID, inputs, mode="wait")  # the state's old manifest
+    assert outcome.next == "draft"
+    package = outcome.manifest.work_packages[1]
+    assert package.effort is not None and package.effort.high_days == 14

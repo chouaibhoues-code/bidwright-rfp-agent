@@ -1105,3 +1105,23 @@ def test_run_approve_runs_the_cli_through_this_interpreter_from_the_repository(
         "Bid director",
     ]
     assert seen["kwargs"]["cwd"] == HOME and seen["kwargs"]["input"] == "x: 1\n"
+
+
+def test_a_long_job_has_its_output_read_while_it_runs() -> None:
+    """A pipe nobody reads fills up and blocks the command; the job's reader drains it."""
+    import io
+
+    import app.actions as actions
+
+    text = "".join(f"line {n}\n" for n in range(20000))
+
+    class Finished:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO(text)
+
+        def poll(self) -> int | None:
+            return 0
+
+    job = actions.Job("run", ["bidwright"], None, Finished())  # type: ignore[arg-type]
+    assert job.poll() == 0
+    assert job.output == text

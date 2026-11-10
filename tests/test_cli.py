@@ -635,3 +635,25 @@ def test_spans_replay_calls_replay_spans_and_refuses_bad_endpoint(
     )
     assert code == 2
     assert "Refused:" in capsys.readouterr().err
+
+
+def test_approval_from_args_refuses_edits_the_manifest_cannot_take(tmp_path: Path) -> None:
+    import io
+
+    folder = _gate_folder(tmp_path / "run")
+    for edit, problem in (
+        ("- {field: 'work_packages[1.1].effort.low_days', value: 12}\n", "above high_days"),
+        ("- {field: 'assumptions[3].text', value: More}\n", "no such fact"),
+    ):
+        with pytest.raises(cli.ApprovalRefused, match=problem):
+            cli.approval_from_args(_approve_args("--edit", "-"), folder, io.StringIO(edit))
+
+
+def test_approval_from_args_lets_a_switch_leave_a_blocked_gate_without_an_override(
+    tmp_path: Path,
+) -> None:
+    folder = _gate_folder(tmp_path / "run", verdict="INVALIDATED")
+    switched = cli.approval_from_args(_approve_args("--option", "OPT-2"), folder)
+    assert switched.option_id == "OPT-2" and switched.override_reason is None
+    with pytest.raises(cli.ApprovalRefused, match="blocked by TC-01"):
+        cli.approval_from_args(_approve_args("--option", "OPT-1"), folder)  # the same option

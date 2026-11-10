@@ -224,3 +224,14 @@ def test_a_missing_cerebras_or_groq_key_refuses_no_run(tmp_path: Path) -> None:
         config=config,
     )
     assert preflight.data_class == "synthetic"
+
+
+def test_a_routed_role_whose_provider_is_present_needs_its_models_pulled() -> None:
+    """A routed role needs no key, but when its provider's backend is there it serves the
+    role, so a model it names and nobody pulled is refused before the run (code review)."""
+    config = load_config()
+    local = config.models.profiles["local"]
+    local["assess"] = local["assess"].model_copy(update={"fallback": "qwen3.5:1b"})
+    ollama = FakeOllama(pulled={"qwen3.5:4b", "qwen3.5:2b"})
+    with pytest.raises(Refused, match=r"ollama pull qwen3\.5:1b"):
+        _check(profile="local", backends={"ollama": ollama}, config=config)

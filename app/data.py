@@ -714,19 +714,12 @@ def run_approve(
     `build_approve_command` names the command `bidwright`, as a person would type it; this runs
     it through this interpreter from the repository, as every other page action does
     (`actions.bidwright`), so it does not depend on the PATH or the working directory."""
-    from app.actions import bidwright
+    from app.actions import bidwright, run
 
     args = list(cmd)
     if args and args[0] == "bidwright":
         args = bidwright(*args[1:])
-    return subprocess.run(  # noqa: S603 - an argument list, never a shell
-        args,
-        cwd=HOME,
-        input=stdin_text,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    return run(args, stdin_text)
 
 
 def _summarize_entries(group: str, entries: Sequence[LedgerEntry]) -> LedgerRow:

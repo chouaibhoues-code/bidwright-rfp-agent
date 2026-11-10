@@ -8,10 +8,12 @@ output.
 import os
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from bidwright.preflight import HOME
 
@@ -135,7 +137,9 @@ class LaunchRequest:
 
 @dataclass
 class Job:
-    """A long command the session started: its process, and its output once it ends."""
+    """A long command the session started: its process, and its output once it ends. A thread
+    reads the output while the command runs: a pipe nobody reads fills up, and the command then
+    blocks on its next write."""
 
     label: str
     command: list[str]
@@ -143,12 +147,25 @@ class Job:
     process: subprocess.Popen[str]
     started: float = field(default_factory=time.time)
     output: str | None = None
+    lines: list[str] = field(default_factory=list)
+    reader: threading.Thread | None = None
+
+    def __post_init__(self) -> None:
+        stream = getattr(self.process, "stdout", None)
+        if stream is not None and self.reader is None:
+            self.reader = threading.Thread(target=self._drain, args=(stream,), daemon=True)
+            self.reader.start()
+
+    def _drain(self, stream: Any) -> None:
+        for line in stream:
+            self.lines.append(line)
 
     def poll(self) -> int | None:
         code = self.process.poll()
         if code is not None and self.output is None:
-            out, _ = self.process.communicate()
-            self.output = out or ""
+            if self.reader is not None:
+                self.reader.join(timeout=10)
+            self.output = "".join(self.lines)
         return code
 
     @property

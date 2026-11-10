@@ -188,7 +188,10 @@ def replay_spans(
     records = read_span_records(run_dir)
     request = build_export_request(records)
     headers = {"Content-Type": "application/x-protobuf"}
-    if api_key := os.environ.get("PHOENIX_API_KEY", "").strip():
+    # The key goes only to the configured Phoenix: a caller naming another port on an allowed
+    # host gets the spans sent there, never the key (step 22's security review).
+    api_key = os.environ.get("PHOENIX_API_KEY", "").strip()
+    if api_key and url == resolve_traces_url(None):
         headers["Authorization"] = f"Bearer {api_key}"
     try:
         response = httpx.post(

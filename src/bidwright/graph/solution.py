@@ -76,6 +76,7 @@ from bidwright.schemas import (
     RiskGapView,
     RiskPackageView,
     SolutionManifest,
+    SolutionOption,
     SolutionOptions,
     SubmissionHazard,
     TechValidation,
@@ -401,11 +402,21 @@ def _blueprint_sources(rt: Any, state: dict[str, Any], option: Any) -> bp.Source
     )
 
 
+def blueprint_option(options: SolutionOptions, state: dict[str, Any]) -> SolutionOption | None:
+    """The option `blueprint` builds for: the one a switch at the gate names; else, for a
+    revision after `techcheck`, the one the manifest was built for, which after a switch is not
+    the top-ranked one (step 22's code review); else the top-ranked one."""
+    wanted = (state.get("gate") or {}).get("option_id")
+    built_for = (state.get("manifest") or {}).get("option_id")
+    ranked = sorted(options.options, key=lambda o: o.rank)
+    pick = wanted or built_for
+    return next((o for o in ranked if o.id == pick), ranked[0] if ranked else None)
+
+
 def blueprint(rt: Any, state: dict[str, Any]) -> dict[str, Any]:
     settled = SolutionOptions.model_validate(state["options"])
     wanted = (state.get("gate") or {}).get("option_id")
-    ranked = sorted(settled.options, key=lambda o: o.rank)
-    option = next((o for o in ranked if o.id == wanted), ranked[0] if ranked else None)
+    option = blueprint_option(settled, state)
     if option is None:
         return {"blueprint_failed": NO_OPTION}
     src = _blueprint_sources(rt, state, option)
