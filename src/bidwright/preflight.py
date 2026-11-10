@@ -254,9 +254,11 @@ def check_preconditions(
                 )
     if docling is not None and needs_docling(documents, config):
         timeout = config.ingest.docling.health_timeout_s
-        if not docling.healthy(timeout):
+        attempts = config.ingest.docling.health_attempts
+        if not any(docling.healthy(timeout) for _ in range(attempts)):
+            tries = "" if attempts == 1 else f", {attempts} times"
             raise Refused(
-                f"the Docling service at {docling.url} did not answer within {timeout:g} s:"
+                f"the Docling service at {docling.url} did not answer within {timeout:g} s{tries}:"
                 " start the Compose service docling with docker compose up -d docling, or set"
                 " DOCLING_URL to a running one"
             )

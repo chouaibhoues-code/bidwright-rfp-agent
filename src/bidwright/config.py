@@ -432,6 +432,8 @@ class DoclingConfig(Strict):
     timeout_s: float = Field(gt=0)
     retries: int = Field(ge=0)
     health_timeout_s: float = Field(gt=0)
+    # A container idle for hours can miss its first health check (failure log, 2026-11-10).
+    health_attempts: int = Field(default=2, ge=1)
     options: dict[str, Any]
 
 
