@@ -1,0 +1,25 @@
+gate: solution_gate
+run_id: 20261110T044741Z-dev-rfp-db9eeb00-free
+reviewed:
+  manifest: sha256:0af5a7dab97fd071d66adddc9cc6fa4e215f2c2738891cac10c502f184b4ddb6
+  options: sha256:4ec9b5fe5d51bd29d2802b165a245ee7d21e0ee16731408c937abc23b4f6c827
+decision: edit
+option_id: null
+approver_role: Solution lead
+decided: '2026-11-10T05:31:38.434088Z'
+edits:
+- field: work_packages[1.1].effort.high_days
+  value: 30
+- field: work_packages[1.1].scope
+  value: Configure audit records of signature events and document version history, which the supplier's
+    evidence supports. Browser signing, 72-hour reminders, 10-year storage and the student records API
+    integration have no supplier evidence yet and need confirmation.
+- field: ground_rules[1].text
+  value: Service availability is measured against the targets REQ-0010 states.
+- field: assumptions[2].text
+  value: Proposal submission is the bid team's task, outside the delivery work. The go-live date of 2027-01-11
+    is binding; the manifest shows it as a gap because it may not set delivery dates.
+override_reason: null
+reject_reason: null
+auto_selected: false
+edited_sha256: sha256:7bfada40f8631dc43085abeba21f8fd701c43bc8d7ea2c7810494a371f4a5bab
