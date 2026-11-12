@@ -10,7 +10,14 @@ from bidwright.config import RunLimits, load_config
 from bidwright.harness.budget import BudgetExceeded, RunBudget
 from bidwright.llm.client import LLMClient
 from bidwright.llm.simulator import ProviderSimulator
-from bidwright.llm.types import Message, QuotaExhausted, UnrecoverableFault
+from bidwright.llm.types import (
+    Message,
+    ProviderError,
+    QuotaExhausted,
+    Request,
+    Response,
+    UnrecoverableFault,
+)
 from bidwright.schemas import ExtractResult, LedgerEntry, RiskRegister
 from tests.llm_fakes import CALL, FakeBackend
 
@@ -78,6 +85,28 @@ def test_fi01_a_role_without_a_fallback_fails_unrecoverably() -> None:
     client = LLMClient(config, "free", {"gemini": backend}, sleep=lambda _: None, rng=lambda: 0.5)
     with pytest.raises(UnrecoverableFault):
         client.complete("reason", MESSAGES, RiskRegister, **CALL)
+
+
+class RefusingBackend(FakeBackend):
+    """Answers every call with a 4xx other than 429, as the adapters translate one."""
+
+    def call(self, request: Request) -> Response:
+        self.requests.append(request)
+        raise ProviderError("gemini 400: invalid argument")
+
+
+def test_a_4xx_other_than_429_is_not_retried_and_takes_no_fallback() -> None:
+    """A bad request or a refused key fails the same way on every attempt and on the
+    fallback model, so the client raises at once; the run records it as
+    `UNRECOVERABLE_FAULT`, as it does every `LLMError`."""
+    sleeps: list[float] = []
+    backend = RefusingBackend()
+    client = LLMClient(
+        load_config(), "free", {"gemini": backend}, sleep=sleeps.append, rng=lambda: 0.5
+    )
+    with pytest.raises(ProviderError, match="gemini 400"):
+        client.complete("extract", MESSAGES, ExtractResult, **CALL)
+    assert backend.models == ["gemini-3.5-flash-lite"] and sleeps == []
 
 
 def test_a_spent_daily_quota_moves_to_the_fallback_without_retrying() -> None:
