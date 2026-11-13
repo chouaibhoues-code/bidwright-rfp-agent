@@ -110,6 +110,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "streamlit" },
     { name = "tzdata" },
+    { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
@@ -147,6 +148,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6,<7" },
     { name = "streamlit", specifier = ">=1.40,<2" },
     { name = "tzdata", specifier = ">=2025.1" },
+    { name = "uvicorn", specifier = ">=0.30,<1" },
 ]
 
 [package.metadata.requires-dev]

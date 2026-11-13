@@ -564,6 +564,21 @@ def _solution_arguments(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
+
+
+def _loopback_only(address: str) -> str | None:
+    """The refusal of a non-loopback address outside the container: the UI has no Host check,
+    so on the host it listens on loopback only; the `ui` service binds every address inside its
+    container, published on the host's loopback (drift report 2026-11-12)."""
+    if address in LOOPBACK or os.environ.get("BIDWRIGHT_ENV") == "container":
+        return None
+    return (
+        f"{address} is not a loopback address: the UI and the API listen on 127.0.0.1 on the"
+        " host; other addresses are for the container"
+    )
+
+
 def _ui(address: str = "127.0.0.1", api: bool = False) -> int:
     """Start the Streamlit UI over `app/main.py` on port 8501. The `ui` service passes
     `--address 0.0.0.0`, since a container's loopback is not reachable through a published
@@ -876,8 +891,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "matrix":
         return _matrix(args)
     if args.command == "ui":
+        refusal = _loopback_only(args.address)
+        if refusal:
+            print(refusal, file=sys.stderr)
+            return 2
         return _ui(args.address, args.api)
     if args.command == "api":
+        refusal = _loopback_only(args.host)
+        if refusal:
+            print(refusal, file=sys.stderr)
+            return 2
         return _api(args.host)
     if args.command == "spans":
         return _spans_replay(args)

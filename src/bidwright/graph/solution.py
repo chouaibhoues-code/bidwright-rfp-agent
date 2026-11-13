@@ -69,6 +69,7 @@ from bidwright.schemas import (
     Discrepancy,
     DomainBrief,
     EvidenceAssessment,
+    ExcerptView,
     NeedDecision,
     NeedView,
     OpportunityBrief,
@@ -173,6 +174,7 @@ def decide_plan(rt: Any, state: dict[str, Any]) -> dict[str, Any]:
         _models(Requirement, state.get("requirements")),
         _domain(state),
         cap=rt.config.limits.solution.need_cap,
+        excerpts=_excerpt_views(rt),
     )
     KnowledgeIndex.build(rt.kb, rt.run_dir / INDEX_FILE)
     return {"needs": plan_dict(plan)}
@@ -195,6 +197,37 @@ def decide_sends(rt: Any, state: dict[str, Any]) -> list[Send] | str:
     ]
 
 
+def _excerpt_views(rt: Any) -> dict[str, ExcerptView]:
+    """The run's clean research excerpts by id, with their sources' titles and tiers, for the
+    `DOMAIN` needs `decide` answers: the pack `discover_load` loaded, or the run's own research
+    in research mode `live`. A pack withheld because it changed is recorded as an event (drift
+    report 2026-11-12)."""
+    config = rt.config
+    provider, note = research_provider(
+        rt.research_mode,
+        _research_record(rt),
+        packs_dir=config.research.packs_dir,
+        questions=config.research.questions,
+        patterns=_patterns(rt),
+        run_dir=rt.run_dir,
+    )
+    if note and rt.events is not None:
+        rt.events.record("research", "decide", note)
+    if provider is None:
+        return {}
+    sources = {s.id: s for s in provider.pack.sources}
+    return {
+        e.id: ExcerptView(
+            id=e.id,
+            source_title=sources[e.source_id].title,
+            tier=sources[e.source_id].tier,
+            text=e.text,
+        )
+        for e in provider.pack.excerpts
+        if not e.quarantined and e.source_id in sources
+    }
+
+
 def _research_record(rt: Any) -> ResearchRecord | None:
     path = rt.run_dir / "research.json"
     if not path.is_file():
@@ -202,14 +235,16 @@ def _research_record(rt: Any) -> ResearchRecord | None:
     return ResearchRecord.model_validate_json(path.read_text(encoding="utf-8"))
 
 
-def decide_gateway(rt: Any) -> ToolGateway:
+def decide_gateway(rt: Any, need: NeedView | None = None) -> ToolGateway:
+    """`decide`'s tools; `search_rfp` maps the need's requirement ids to the passages they
+    quote, as its description promises (drift report 2026-11-12)."""
     config, ctx = rt.config, rt.ctx
     limits = config.agents.agents["decide"].limits
     passages = list(ctx.passages.values())
     index = rt.index or PassageIndex(rt.run_dir / "search.sqlite")
     listed: list[Any] = [
         capabilities_tool(_kb_index(rt)),
-        search_tool(index),
+        search_tool(index, {r.id: r.src_ids for r in need.requirements} if need else None),
         section_tool(passages, ctx.view),
     ]
     provider, _ = research_provider(
@@ -223,7 +258,7 @@ def decide_gateway(rt: Any) -> ToolGateway:
     if provider is not None:
         listed.append(ask_tool(provider, max_excerpts=config.research.questions.max_matches))
     if rt.reflect:
-        listed.append(reflect_for(config))
+        listed.append(reflect_for(config, rt.breaker))
     context = RuleContext(
         passages=passages,
         view=ctx.view,
@@ -265,7 +300,7 @@ def decide_worker(rt: Any, state: dict[str, Any]) -> dict[str, Any]:
         outcome = decide_need(
             rt.ctx,
             need,
-            decide_gateway(rt),
+            decide_gateway(rt, need),
             limits,
             passages=state["passages"],
             records=state["records"],
@@ -347,7 +382,8 @@ def assess_join(rt: Any, state: dict[str, Any]) -> dict[str, Any]:
             rows.append(_assess_one(rt, claim, needs[claim.need_id]))
     write_assessments(rt.run_dir, rows)
     _, base = _assess_role(rt)
-    family = same_family_reason(rt.assess_route, base) if rows else None
+    called = any(a.called for a in rows)
+    family = same_family_reason(rt.assess_route, base) if called else None
     return {"assessments": [a.model_dump(mode="json") for a in rows], "assess_degraded": family}
 
 
@@ -492,7 +528,7 @@ def after_blueprint(rt: Any, state: dict[str, Any]) -> str:
 def _tech_sources(rt: Any) -> Sources:
     config = rt.config
     if rt.research_mode == "live":
-        docs = context7_docs(config, _patterns(rt), rt.events)
+        docs = context7_docs(config, _patterns(rt), rt.events, rt.breaker)
         context = RuleContext(
             passages=list(rt.ctx.passages.values()),
             view=rt.ctx.view,
@@ -507,8 +543,10 @@ def _tech_sources(rt: Any) -> Sources:
         path = library_pack_path(config.research.packs_dir)
         try:
             pack = load_library_pack(path, _patterns(rt), rt.events) if path.is_dir() else None
-        except PackRefused:
+        except PackRefused as exc:
             pack = None
+            if rt.events is not None:
+                rt.events.record("research", "techcheck", f"the library pack was refused: {exc}")
         return Sources("pack", library_pack=pack, questions=config.research.questions)
     return Sources("off")
 
@@ -536,9 +574,12 @@ def run_techcheck(rt: Any, state: dict[str, Any]) -> dict[str, Any]:
         outcome.validations = kept + [v for v in fresh.values() if v not in kept]
     write_techcheck(rt.run_dir, outcome)
     due = outcome.revision_due() and not changed
+    # A verdict call runs for each claim with documentation, on the `assess` route.
+    _, base = _assess_role(rt)
+    family = same_family_reason(rt.assess_route, base) if outcome.docs else None
     return {
         "tech_validations": [v.model_dump(mode="json") for v in outcome.validations],
-        "techcheck": {"revision_due": due},
+        "techcheck": {"revision_due": due, "degraded": family},
     }
 
 
@@ -683,7 +724,8 @@ def degraded_reasons(state: dict[str, Any]) -> list[str]:
     for key in ("decide_degraded", "assess_degraded", "options_degraded", "blueprint_failed"):
         if state.get(key):
             reasons.append(str(state[key]))
-    return [r for r in reasons if r]
+    reasons.append((state.get("techcheck") or {}).get("degraded") or "")
+    return list(dict.fromkeys(r for r in reasons if r))
 
 
 def solution_block(state: dict[str, Any]) -> dict[str, Any] | None:

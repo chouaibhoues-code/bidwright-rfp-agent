@@ -237,6 +237,8 @@ class Runtime:
     # The `assess` role's route, set once a run (ADR-045): primary, fallback or same; None on a
     # profile with no routed `assess`.
     assess_route: str | None = None
+    # The run's circuit breaker, for the MCP servers code calls: Context7 and reflect's.
+    breaker: Any = None
     # Iteration 3 (step 12): the profile, the knowledge base, the switches of section 4.11, the
     # gate's mode and the loaded bid policy with its hash.
     profile: str = "free"
@@ -794,7 +796,7 @@ def build_graph(rt: Runtime, checkpointer: Any | None = None) -> Any:
             limits = limits.model_copy(update={"reflect": True})
         listed: list[Any] = [search_tool(index, sources), date_tool(), sla_tool()]
         if rt.reflect:
-            listed.append(reflect_for(config))
+            listed.append(reflect_for(config, rt.breaker))
         gateway = ToolGateway.for_agent(
             "risk",
             allowed=config.agents.agents["risk"].tools,
@@ -1367,15 +1369,6 @@ def execute(
         if research_mode == "live"
         else []
     )
-    refused = check_run(
-        run_backends,
-        endpoint,
-        docling.host if parses else None,
-        preflight.data_class,
-        register=config.egress,
-        consent=profile == "free" and consent == CONSENT,
-        research=research_servers,
-    )
     switches = _switches(
         config,
         solution,
@@ -1384,6 +1377,19 @@ def execute(
         extract_context=extract_context,
         triage=triage,
         coverage=coverage,
+    )
+    if switches["reflect"]:
+        # The reflect server, over stdio, is checked against the register like the research
+        # servers (step 11's design; drift report 2026-11-12).
+        research_servers.append(("reflect", config.research.servers["reflect"]))
+    refused = check_run(
+        run_backends,
+        endpoint,
+        docling.host if parses else None,
+        preflight.data_class,
+        register=config.egress,
+        consent=profile == "free" and consent == CONSENT,
+        research=research_servers,
     )
     if gate not in ("wait", "auto"):
         raise Refused(f"the gate takes wait or auto, not {gate!r}")
@@ -1560,6 +1566,7 @@ def execute(
             research=config.research,
             research_mode=research_mode,
             assess_route=route,
+            breaker=breaker,
             profile=profile,
             kb=load_kb(),
             solution=switches["solution"],

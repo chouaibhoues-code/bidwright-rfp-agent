@@ -39,11 +39,21 @@ def agents_md() -> str:
     from bidwright.graph.build import Runtime, build_graph, run_prompts
     from bidwright.graph.nodes import RunContext
     from bidwright.harness.budget import RunBudget
+    from bidwright.harness.reflect import reflect_for
+    from bidwright.kb import KnowledgeIndex, load_kb
     from bidwright.llm.client import LLMClient
     from bidwright.llm.replay import CassetteStore
     from bidwright.retrieval import PassageIndex
     from bidwright.schemas import AskResult, ToolResult
-    from bidwright.tools import ask_tool, date_tool, search_tool, start_tool
+    from bidwright.tools import (
+        ask_tool,
+        capabilities_tool,
+        date_tool,
+        search_tool,
+        section_tool,
+        sla_tool,
+        start_tool,
+    )
 
     config = load_config()
     # The typed configuration the code runs with, not the raw YAML; only the fields the files
@@ -64,7 +74,8 @@ def agents_md() -> str:
         "",
         "What each LLM call in the current tag may do, from `config/agents.yaml`,"
         " `config/models.yaml` and the prompts' front matter. `ToolGateway` enforces the tool"
-        " allowlists and limits.",
+        " allowlists and the call caps; each loop enforces its turn limit and its stop when a"
+        " turn adds nothing.",
         "",
         "## Roles",
         "",
@@ -82,7 +93,17 @@ def agents_md() -> str:
         "",
         "A function declares no limits: it makes one call and one repair, fixed in the node"
         " code, and with the second pass on, `extract` makes one more call per pack, with one"
-        " format repair. An agent's limits bound its tool loop.",
+        " format repair. `blueprint`'s P01 adds a closure repair, and a P03 revision runs P02"
+        " again; `risk`'s one call adds a retry after generic risks; `techcheck`'s Context7"
+        " calls, which code makes, are capped at twice `tech_claim_cap`,"
+        f" {2 * config.limits.solution.tech_claim_cap} a run. An agent's limits bound its tool"
+        " loop.",
+        "",
+        "A default run's switches, from `config/limits.yaml`: `solution`"
+        f" `{config.limits.switches.solution}`, `risk_mode` `{config.limits.switches.risk_mode}`"
+        f" and `reflect` `{str(config.limits.switches.reflect).lower()}`. So the `risk` agent's"
+        " tools run only with `--risk-mode agent`, and `reflect` is offered only when the run's"
+        " switch turns it on.",
     ]
 
     lines += [
@@ -127,9 +148,14 @@ def agents_md() -> str:
 
     with tempfile.TemporaryDirectory() as tmp:
         index = PassageIndex.build([], Path(tmp) / "search.sqlite")
+        knowledge = KnowledgeIndex.build(load_kb(), Path(tmp) / "kb.sqlite")
         tools = [
             search_tool(index),
+            capabilities_tool(knowledge),
+            section_tool([]),
             date_tool(),
+            sla_tool(),
+            reflect_for(config),
             ask_tool(Unasked(), max_excerpts=config.research.questions.max_matches),
             start_tool(lambda args: ToolResult(status="EMPTY")),
         ]
@@ -170,9 +196,15 @@ def agents_md() -> str:
         "## Runtime graph",
         "",
         "Drawn from the compiled LangGraph graph. The dotted edges are conditional: the `Send`"
-        " fan-outs, one `extract` worker per pack and one `consolidate` worker per cluster the"
-        " model step takes; the stops that `until` and `--baseline b0` choose; the research mode's"
-        " branches after `brief`; and each live research node's fallback to `discover_load`.",
+        " fan-outs, one `extract` worker per pack, one `consolidate` worker per cluster sent to"
+        " the model, one `decide` worker per need and one `assess` worker per claim with"
+        " evidence; the stops that `until` and `--baseline b0` choose; the research mode's"
+        " branches after `brief`, and each live research node's fallback to `discover_load`;"
+        " the `solution` switch's branches, to `decide_plan` or to `approach`; `blueprint`'s"
+        " fallback to `approach`; `techcheck`'s return to `blueprint` for P03; `risk` to"
+        " `solution_gate` only when a manifest was built; and the gate's routes, to `draft`, to"
+        " `blueprint` after a switch, to `techcheck` after edits, or to the end. A seeded run"
+        " starts at `seed_load`, which the drawing leaves out.",
         "",
         "```mermaid",
         mermaid,
@@ -203,7 +235,8 @@ def _cards_table() -> list[str]:
         "Advisory method guidance in `knowledge_base/methods/cards.yaml`. A family listed in"
         " `config/limits.yaml`'s `methods` has its cards appended to its consumers' system"
         " instruction; S-12 measures each family before an ADR switches it on. A card with no"
-        " consumer is enforced in code instead.",
+        " consumer is enforced in code, or by code a later iteration builds, such as DEL-004's"
+        " handover pack in Iteration 4.",
         "",
         "| Card | Family | Consumers | Status | Inlined |",
         "|---|---|---|---|---|",
@@ -371,10 +404,15 @@ def fallback_cell(spec: dict[str, Any]) -> str:
     parts = [f"`{spec['fallback']}`"] if spec.get("fallback") else []
     other = spec.get("fallback_provider")
     if other:
-        parts.append(f"{other['provider']} `{other['model']}`")
-    if spec.get("same_family_role"):
-        flag = ", flagged SAME_FAMILY" if not spec.get("same_family") else ""
-        parts.append(f"the {spec['same_family_role']} role's model{flag} (ADR-045)")
+        return (
+            f"Routed once a run: {spec['provider']}, else {other['provider']}"
+            f" `{other['model']}`, else the {spec['same_family_role']} role's model (always on"
+            " a client run), its assessments flagged SAME_FAMILY and the run DEGRADED (ADR-045)"
+        )
+    if spec.get("same_family_role") and spec.get("same_family"):
+        parts.append("every assessment flagged SAME_FAMILY, the run not degraded (ADR-045)")
+    elif spec.get("same_family_role"):
+        parts.append(f"the {spec['same_family_role']} role's model (ADR-045)")
     return ", then ".join(parts) or "None"
 
 

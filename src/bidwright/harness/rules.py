@@ -276,7 +276,8 @@ class ReflectionGate(Rule):
     name = "G6 reflection gate"
     trigger = "`reflect`"
     description = (
-        "The agent's limits have `reflect: true`; the most recent result in this invocation of a"
+        "The run's reflect switch is on (`switches.reflect` or `--reflect`); the most recent"
+        " result in this invocation of a"
         " tool other than `reflect` was `DENIED`, `EMPTY` or `FAILED`, or the most recent turn of"
         " other tools made no progress; and fewer than 2 thoughts this invocation"
     )
@@ -295,7 +296,10 @@ class ReflectionGate(Rule):
 class CallCap(Rule):
     name = "call cap"
     trigger = "Every call but `reflect`"
-    description = "The agent's tool-call cap is not yet spent, counting from the run's start"
+    description = (
+        "The agent's tool-call cap is not yet spent: `discover`'s counts from the run's start,"
+        " `decide`'s per need, and the others per run of their node"
+    )
 
     def triggered(self, call: Call, gateway: "ToolGateway") -> bool:
         return call.request.tool != REFLECT  # a thought counts against no cap (ADR-047)

@@ -440,7 +440,9 @@ def test_p03s_plan_is_settled_and_p02_runs_again_giving_revision_1(tmp_path: Pat
 
     failing = ScriptBackend(["not json", "still not json"])
     kept = revise(context(failing), first.plan, [invalid], first.manifest, TASK.claims, SRC)
-    assert kept.failure is None and kept.manifest.revision == 0
+    # The kept revision 0 counts as revised, so techcheck does not send it back again
+    # (drift report 2026-11-12).
+    assert kept.failure is None and kept.manifest.revision == 1
     assert kept.manifest.tech_claims == first.manifest.tech_claims
     assert "the revision failed" in kept.manifest.notes[-1]
 

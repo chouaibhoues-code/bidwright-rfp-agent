@@ -596,6 +596,7 @@ def test_the_container_ui_binds_every_address_and_starts_the_api_beside_it(
     ran: list[list[str]] = []
     monkeypatch.setattr("subprocess.Popen", FakeServer)
     monkeypatch.setattr("subprocess.run", lambda cmd, **kwargs: ran.append(cmd) or DummyCompleted())
+    monkeypatch.setenv("BIDWRIGHT_ENV", "container")  # every address only inside the container
     assert cli.main(["ui", "--address", EVERY_ADDRESS, "--api"]) == 0
     assert started and "uvicorn" in started[0] and EVERY_ADDRESS in started[0]
     assert "streamlit" in ran[0] and ran[0][ran[0].index("--server.address") + 1] == EVERY_ADDRESS

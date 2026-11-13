@@ -417,8 +417,13 @@ def revise(
     outcome = _finish(ctx, settled, claims, src, manifests, previous.option_id, 1, "P02-revision")
     if outcome.failure is None:
         return outcome
-    kept = previous.model_copy(deep=True)
-    kept.notes.append(f"the revision failed ({outcome.failure}); revision 0 kept")
+    # The kept manifest counts as revised, so `techcheck` judges it once more and the gate
+    # blocks on a claim still INVALIDATED, instead of sending it back here again (drift
+    # report 2026-11-12).
+    kept = previous.model_copy(deep=True, update={"revision": 1})
+    kept.notes.append(
+        f"the revision failed ({outcome.failure}); revision 0 kept, counted as revised"
+    )
     return BlueprintOutcome(kept, plan)
 
 

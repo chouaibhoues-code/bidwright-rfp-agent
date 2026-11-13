@@ -10,13 +10,13 @@ Every model, prompt, agent control, tool, service and runtime dependency of the 
 |---|---|---|---|---|---|
 | `free` | extract | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | Google's Gemini API: prompts leave the machine, and on the free tier the provider may use them, so `free` takes only the synthetic corpus |
 | `free` | reason | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | Google's Gemini API: prompts leave the machine, and on the free tier the provider may use them, so `free` takes only the synthetic corpus |
-| `free` | assess | cerebras | `gpt-oss-120b` | groq `openai/gpt-oss-120b`, then the reason role's model, flagged SAME_FAMILY (ADR-045) | Cerebras's API: prompts leave the machine |
+| `free` | assess | cerebras | `gpt-oss-120b` | Routed once a run: cerebras, else groq `openai/gpt-oss-120b`, else the reason role's model (always on a client run), its assessments flagged SAME_FAMILY and the run DEGRADED (ADR-045) | Cerebras's API: prompts leave the machine |
 | `paid` | extract | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | Google's Gemini API under the paid key: prompts leave the machine, the paid terms do not use them to improve the service, and the egress register and the run's data class decide what may be sent (ADR-026) |
 | `paid` | reason | gemini | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` | Google's Gemini API under the paid key: prompts leave the machine, the paid terms do not use them to improve the service, and the egress register and the run's data class decide what may be sent (ADR-026) |
-| `paid` | assess | cerebras | `gpt-oss-120b` | groq `openai/gpt-oss-120b`, then the reason role's model, flagged SAME_FAMILY (ADR-045) | Cerebras's API: prompts leave the machine |
+| `paid` | assess | cerebras | `gpt-oss-120b` | Routed once a run: cerebras, else groq `openai/gpt-oss-120b`, else the reason role's model (always on a client run), its assessments flagged SAME_FAMILY and the run DEGRADED (ADR-045) | Cerebras's API: prompts leave the machine |
 | `local` | extract | ollama | `qwen3.5:4b` | `qwen3.5:2b` | Ollama on this machine: nothing leaves it |
 | `local` | reason | ollama | `qwen3.5:4b` | `qwen3.5:2b` | Ollama on this machine: nothing leaves it |
-| `local` | assess | ollama | `qwen3.5:4b` | `qwen3.5:2b`, then the reason role's model (ADR-045) | Ollama on this machine: nothing leaves it |
+| `local` | assess | ollama | `qwen3.5:4b` | `qwen3.5:2b`, then every assessment flagged SAME_FAMILY, the run not degraded (ADR-045) | Ollama on this machine: nothing leaves it |
 
 ## Prompts
 
@@ -123,3 +123,4 @@ Direct runtime dependencies, at the versions `uv.lock` pins; CI audits them with
 | `pyyaml` | 6.0.3 |
 | `streamlit` | 1.66.1 |
 | `tzdata` | 2026.6 |
+| `uvicorn` | 0.54.0 |
