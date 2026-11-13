@@ -3,17 +3,17 @@ title: Master Plan
 type: plan
 applies-to: bidwright
 related: ["[[Decision-Form]]", "[[Project-Backlog]]", "[[Research-Register]]"]
-date: 2026-11-05
+date: 2026-11-13
 status: current
 tags: [bidwright, project-management, plan, roadmap]
 ---
 
 # Master Plan
 
-> [!summary] Status on 2026-11-05
+> [!summary] Status on 2026-11-13
 > - Released: `v0.0`, Iteration 0a, the walking skeleton; `v0.0.1`, Iteration 0b, documents and review; `v0.1`, Iteration 1, on 2026-11-04, with the matcher's correction after the tag (ADR-030).
 > - Released: `v0.2`, Iteration 2, on 2026-11-05, approved by the owner with D-08 and D-09 decided; its close-out notes are in section 9.4.
-> - Iteration 3 built and measured, 2026-11-05 to 2026-11-10: steps 1 to 21 are done, the four statistical scenarios passed on five live hero repeats on 2026-11-07, the owner labeled the `assess` spot-check and decided a live gate, and the UI's gate was revamped (ADR-060). Step 22 is under way: the documents, the code and security reviews (done), the second architecture review and the drift report, run by the owner, then the tag `v0.3` on the owner's approval. The Cerebras credits run until 2026-12-03 (D-03).
+> - Iteration 3 closed on 2026-11-13: the solution path, its gate and the UI are built, the four statistical scenarios passed on five live hero repeats (on 2026-11-07, and again on 2026-11-13 after the drift report's fixes), and the second architecture review and the drift report are resolved; the close-out notes are in section 9.5. The tag `v0.3` waits for the owner's approval. The Cerebras credits run until 2026-12-03 (D-03).
 > - At each tag the owner chooses to continue, release or stop (section 2.8).
 
 This file owns the scope, the work-package register, the assignment trace, the gates, the risks, the change log, the close-out notes and the full vision with its unbuilt scope. Other facts have one owner each: the current architecture is in `docs/architecture.md`, decisions in `DECISIONS.md`, assumptions in `ASSUMPTIONS.md`, hours in `TIMELOG.md`, research in [[Research-Register]], open decisions in [[Decision-Form]], and deferred work in [[Project-Backlog]].
@@ -275,12 +275,12 @@ The WBS is held as this register. Estimates are Claude's judgment (section 2.6).
 | WP-2.2 | `brief` | 1.0 | A7 | Factors and weights copied exactly; price factor `OUT_OF_SCOPE` | Done `v0.2` |
 | WP-2.3 | MCP client, `discover`, research packs and modes | 2.5 | A7, A15; CH-02 | `pack` mode needs no login; outbound overlap rule tested | Done `v0.2` |
 | WP-2.4 | Fault-injection tests | 0.5 | A9 | Each with a clean control | Done `v0.2` |
-| WP-3.1 | `decide`, `assess`, capability map | 3.0 | A7, A15 | Different decisions for different groups in one run; `UNVERIFIED` without a prompt instruction | Planned |
-| WP-3.2 | `options`, `blueprint`, `SolutionManifest` | 3.0 | A7, A10; CH-03 | Every manifest fact sourced; 100% rule holds | Planned |
-| WP-3.3 | Full `risk` and `techcheck` | 2.0 | A7, A10 | No invented ratings; a false technology claim blocks the gate | Planned |
-| WP-3.4 | `solution_gate`, method cards, bid memo, gated `reflect` | 2.0 | A7; CH-04, CH-68 | `WAITING_HUMAN` with no human; S-12 reported | Planned |
-| WP-3.5 | Small ablation, statistical scenarios, second architecture review | 2.0 | A3, A8, A13; CH-62 | QS-2, QS-3, QS-5, QS-8 on 5 live hero repeats | Planned |
-| WP-3.6 | Streamlit Run, Review and Ops pages, first version, a loopback API over the same files, and span replay into Phoenix | 3.0 | A15; CH-94 | The pages show a run's files; the Review page reaches the gate as `bidwright approve` does; Ops totals match `ledger.jsonl`; `spans.jsonl` replays into the local Phoenix; the API answers with `status_line` `UNREVIEWED_DRAFT` and names no path (ADR-051) | Planned |
+| WP-3.1 | `decide`, `assess`, capability map | 3.0 | A7, A15 | Different decisions for different groups in one run; `UNVERIFIED` without a prompt instruction | Done `v0.3`; `decide`'s tool loop kept on the manifest path, its rung against fixed retrieval due in Iteration 5 (CH-111) |
+| WP-3.2 | `options`, `blueprint`, `SolutionManifest` | 3.0 | A7, A10; CH-03 | Every manifest fact sourced; 100% rule holds | Done `v0.3`; the 100% check fails while instruction and contract obligations count as needs (CH-108) |
+| WP-3.3 | Full `risk` and `techcheck` | 2.0 | A7, A10 | No invented ratings; a false technology claim blocks the gate | Done `v0.3`; `risk` is one call by default (ADR-059) |
+| WP-3.4 | `solution_gate`, method cards, bid memo, gated `reflect` | 2.0 | A7; CH-04, CH-68 | `WAITING_HUMAN` with no human; S-12 reported | Done `v0.3`; method cards and `reflect` built and off (ADR-055, ADR-058, ADR-059) |
+| WP-3.5 | Small ablation, statistical scenarios, second architecture review | 2.0 | A3, A8, A13; CH-62 | QS-2, QS-3, QS-5, QS-8 on 5 live hero repeats | Done `v0.3` |
+| WP-3.6 | Streamlit Run, Review and Ops pages, first version, a loopback API over the same files, and span replay into Phoenix | 3.0 | A15; CH-94 | The pages show a run's files; the Review page reaches the gate as `bidwright approve` does; Ops totals match `ledger.jsonl`; `spans.jsonl` replays into the local Phoenix; the API answers with `status_line` `UNREVIEWED_DRAFT` and names no path (ADR-051) | Done `v0.3` |
 | WP-4.1 | `plan_sections`, `pink_check`, storyboards | 2.0 | A10; CH-05 | Every factor has a section or placeholder | Planned |
 | WP-4.2 | Full `draft`, `validate`, `repair` | 3.0 | A7, A10 | Seeded invention caught; repair rolls back regressions | Planned |
 | WP-4.3 | `redteam` and the Gold review | 2.0 | A7, A15; CH-06 | Weakened sections score lower | Planned |
@@ -312,7 +312,7 @@ Each assignment item, the packages that deliver it, how it is verified (inspecti
 | A4 | Observability: token, latency and cost tracing for the run | WP-0a.8, WP-1.7 | Demonstration | `ledger.jsonl`, run totals, spans in Phoenix or `spans.jsonl` | Met |
 | A5 | `DECISIONS.md`: trade-offs, failure modes hit, and fixes | WP-0a.1, WP-0b.2 | Inspection | `DECISIONS.md` | Met |
 | A6 | A 3 to 5 minute demo of the app and its evaluation and observability output | WP-R.1 | Demonstration | The recorded video, linked in the submission message (`docs/submission.md`) | Recorded; link sent at submission |
-| A7 | A genuine agentic workflow with thoughtful prompt engineering | WP-0a.7, WP-2.3, WP-3.1, WP-4.3, WP-5.1 | Demonstration and analysis | The `risk` agent's trace, and `discover`'s on the live research runs of 2026-11-05; the ablations from Iteration 3 | Partly met: two agents, `risk` and `discover` |
+| A7 | A genuine agentic workflow with thoughtful prompt engineering | WP-0a.7, WP-2.3, WP-3.1, WP-4.3, WP-5.1 | Demonstration and analysis | `decide`'s traces on every run of the solution path, the `risk` agent's, and `discover`'s on the live research runs of 2026-11-05; the EX, SO and RK ladders of Iteration 3 | Partly met: three agents, `decide`, `risk` and `discover`; the proposal's agents arrive in Iteration 4 |
 | A8 | A real evaluation approach, not "it looked right" | WP-0a.9, WP-1.6, WP-5.1 to 5.3 | Test and analysis | Gold from specs, coverage matcher, scorer self-test | Partly met |
 | A9 | Basic MLOps and LLMOps hygiene | WP-0a.1, 0a.3, 0a.10, 0b.4, 0b.5 | Inspection and test | CI with 9 jobs, locked dependencies, pinned images, replay cassettes | Met |
 | A10 | Ingest the RFP brief and produce a structured solution summary of requirements, approach and risks | WP-0a.6 to 0a.8, then Iterations 1 to 4 | Demonstration and test | `solution_summary.md` and `.json`; `test_render_outputs.py` | Met |
@@ -717,6 +717,51 @@ Closed on 2026-11-05, with CI green on all 11 jobs at each of its commits; the t
 | Cost performance index, estimate at completion | Pending the owner's hours | Actual cost needed |
 
 Four tags still give the schedule index only; the cost index, which the owner's hours give, is where a trend would show.
+
+### 9.5 Iteration 3, `v0.3`
+
+Closed on 2026-11-13, with CI green on all 11 jobs at each of its commits; the tag `v0.3` marks the commit that adds these notes, once the owner approves it.
+
+**Planned against delivered.**
+
+| Planned | Delivered | Note |
+|---|---|---|
+| WP-3.1, `decide`, `assess`, the capability map | `decide`, one tool-using agent per need with `search_capabilities`, `search_rfp`, `read_section` and `ask_research`; `assess` on another model family, routed once a run (Cerebras, then Groq, then the generator's family, flagged `SAME_FAMILY`); the capability map in code | The owner's spot-check of 10 assessments: 7 right, no claim accepted that its records do not state, joint error 0. On the SO ladder `decide`'s loop matched fixed retrieval at 75 requests against 27; it stays because the manifest path is built on it, and Iteration 5 measures it (CH-111). Domain needs reached `decide` without their excerpts until the drift report's fix |
+| WP-3.2, `options`, `blueprint`, the manifest | One to three options scored per factor, ranked in code; `blueprint`'s plan, detail and revision calls; the solution manifest with evidence classes and its nine checks | The manifest maps a median of 65% of the hero's binding requirements to work packages, 94% within the obligation zone; Iteration 4 builds needs from the delivery zones (CH-108) |
+| WP-3.3, full `risk` and `techcheck` | The risk register over the manifest, one call by default and the agent behind `risk_mode: agent`; `techcheck` against Context7 or the committed library pack | Risk seeds found: at most 2 of 6 in any setting. The technology seeds' rule failed on two seeds, and `techcheck` was not tuned |
+| WP-3.4, the gate, method cards, the bid memo, `reflect` | `solution_gate` with its review file, approval file, edits, switch, rejection and override; the method cards' slot; the bid signal and memo; the gated `reflect` tool | S-12: no card family passed, so all stay off (ADR-055); `reflect` off after SO1-T and RK1-T (ADR-058, ADR-059); the owner decided a live gate with four edits |
+| WP-3.5, the ablation, the statistical scenarios, the second architecture review | The EX, SO and RK ladders (75 runs), S-12 and the technology seeds; QS-2, QS-3, QS-5 and QS-8 on five live hero repeats; the second architecture review (Stages 5 to 8) and the drift report | Every scenario passed on 2026-11-07 and again on 2026-11-13: median 1 of 45 missed, 0 traps obeyed, 0 seeded gaps claimed, Jaccard 0.98 |
+| WP-3.6, the UI and the API | Streamlit Run, Review and Ops pages, the loopback API, span replay into Phoenix; the gate's Review page rebuilt after a browser test (ADR-060) | ADR-051's condition removes the API at release if no program uses it |
+| Research and checks | C7-02 and C7-03 at design; Q-01, Q-09 and DR-05 read; gold v4, reviewed and hashed by the owner; V-10 | — |
+
+**Exit checks with accepted exceptions.** None. The evidence for each check is in section 7 of `docs/designs/iteration-3.md`; the measured figures are in `docs/evaluation.md`. "Every binding requirement maps to a work package or a gap" holds through the manifest's gaps, while its stricter 100% check fails, as WP-3.2's note says.
+
+**Definition of Done.** The code review at medium effort raised ten findings, nine fixed and one kept as designed; the security review found none at high or medium confidence. The second architecture review's findings were resolved with the owner, the code fixes each with a test, and its larger changes moved to the Iteration 4 and 5 designs (CH-108 to CH-116). The drift report's findings were fixed before the tag, in code and documents; the demo recording was filled again, the five hero repeats ran again and the sample was made again from a live run. `TIMELOG.md` holds the owner's rough hours, marked `UNREVIEWED_DRAFT`.
+
+**Decisions taken during the iteration.** ADR-039 to ADR-051 with the design doc (D-10, D-11); ADR-052 to ADR-060 during the build, four of them from the ladders' results. CH-92 to CH-116 in the change log, among them the owner's decisions on the second architecture review (CH-108 to CH-116).
+
+**Lessons learned.**
+- A ladder can keep a step by bundling rather than by measurement: `decide`'s loop and `assess` survive inside the manifest's rung, not on their own results, and the document now says so (CH-111).
+- A keep rule fixed in advance still met a case it could not decide: a perfect tie at margin 0 was dropped, and the rule changed after the EX results were seen (ADR-054, ADR-056), recorded as such.
+- A cache keyed by the call couples samples across matrices: the exit repeats shared their extraction with the ladders, so the release's repeats will not reuse earlier answers (CH-112).
+- A check measures the population it is given: the 100% rule counted submission instructions and contract terms that no work package answers (CH-108).
+- A human gate is only as strong as its failure paths: a failed blueprint after a person's switch would have drafted from something nobody approved, found by a design review rather than a test.
+- Wiring gaps pass unit tests: domain excerpts never reached `decide`, and Context7 ran without its breaker, until a drift report read the code against the prose.
+- A browser finds what a page test does not: the first deep link and a stale form, behind ADR-060.
+- Free first held: the ladders, repeats and recordings ran mostly on the free tier; paid spend is about $4.40 of D-01's $40.
+
+**Earned-value snapshot at `v0.3`.**
+
+| Measure | Value | Basis |
+|---|---|---|
+| Budget at completion | 71 hours to the release target (85 with Iterations 6 and 7) | Section 3, after CH-94 |
+| Planned value | 47.0 hours: 8.0 for Iteration 0a, 5.0 for 0b, 12.0 for Iteration 1, 7.0 for Iteration 2 and 15.0 for Iteration 3 | The packages due by `v0.3` |
+| Earned value | 47.0 hours | Every package due by `v0.3` passed its Exit and Verify |
+| Actual cost | 22 hours of the owner's focused time on Iterations 0a to 3, from `TIMELOG.md`'s rough hours; 12 more of planning and 2 of submission preparation sit outside the packages | `TIMELOG.md`, `UNREVIEWED_DRAFT` |
+| Schedule performance index | 1.0 | Earned value over planned value at the tag |
+| Cost performance index | 2.1 on paper, not used | The plan's hour counts the owner's and Claude's focused work together; `TIMELOG.md` counts the owner's time only, with agent runtime apart, so the index overstates efficiency and no estimate at completion is drawn from it |
+
+Five tags give the schedule index only; a cost index needs hours counted the same way as the estimates.
 
 ## 10. Full vision
 
