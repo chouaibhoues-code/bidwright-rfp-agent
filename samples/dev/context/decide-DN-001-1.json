@@ -1,1 +1,0 @@
-{"node":"decide","call_id":"DN-001-1","included_src_ids":[],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["DN-001","PX-0009"],"cards":[],"tokens_by_layer":{"rules":619,"examples":454,"evidence":60,"task":34},"budget_tokens":16000,"utilization":0.0729}

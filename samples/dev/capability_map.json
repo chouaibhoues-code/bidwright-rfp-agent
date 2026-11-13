@@ -12,23 +12,24 @@
   {
    "need_id": "RG-002",
    "origin": "RFP",
-   "text": "Electronic signing, record keeping, and integration requirements",
+   "text": "Digital signing platform requirements",
    "decision": "PROCEED_WITH_GAP",
    "status": "PARTIAL",
    "claim_ids": [
     "CL-001",
-    "CL-002"
+    "CL-002",
+    "CL-003"
    ],
    "reason": "some claims are supported, or only in part"
   },
   {
    "need_id": "RG-003",
    "origin": "RFP",
-   "text": "Service availability and severity-one incident response",
+   "text": "Service availability and incident response times",
    "decision": "PROCEED_WITH_GAP",
    "status": "GAP",
    "claim_ids": [
-    "CL-003"
+    "CL-004"
    ],
    "reason": "no claim is supported"
   },
@@ -38,16 +39,9 @@
    "text": "6 Timeline",
    "decision": "PROCEED_WITH_GAP",
    "status": "GAP",
-   "claim_ids": [],
-   "reason": "no claim is supported"
-  },
-  {
-   "need_id": "DN-001",
-   "origin": "DOMAIN",
-   "text": "FERPA-aware attribute release controls that filter PII for students with active disclosure blocks.",
-   "decision": "PROCEED_WITH_GAP",
-   "status": "GAP",
-   "claim_ids": [],
+   "claim_ids": [
+    "CL-005"
+   ],
    "reason": "no claim is supported"
   }
  ],
@@ -55,6 +49,6 @@
   "COVERED": 0,
   "PARTIAL": 1,
   "PARTNER": 0,
-  "GAP": 4
+  "GAP": 3
  }
 }

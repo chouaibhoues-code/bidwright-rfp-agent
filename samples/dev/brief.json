@@ -54,7 +54,7 @@
  "constraints": [
   {
    "id": "BI-001",
-   "text": "Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC.",
+   "text": "Proposals must be submitted through the portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC.",
    "src_ids": [
     "SRC-0015"
    ]
@@ -64,10 +64,11 @@
  "ask": [],
  "always": [],
  "topics": [
-  "cloud electronic signature services",
-  "higher education procurement"
+  "digital document workflow and verification"
  ],
  "discrepancies": [],
  "questions": [],
- "notes": []
+ "notes": [
+  "F01: topic 'cloud electronic signature service' dropped: it shares 4 or more consecutive words with the RFP"
+ ]
 }

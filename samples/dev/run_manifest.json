@@ -1,6 +1,6 @@
 {
- "run_id": "20261110T075309Z-dev-rfp-db9eeb00-free",
- "commit": "3c6cf18",
+ "run_id": "20261113T042518Z-dev-rfp-db9eeb00-free",
+ "commit": "72d5e58",
  "profile": "free",
  "models": {
   "extract": "gemini-3.5-flash-lite",
@@ -60,20 +60,20 @@
  "input_hashes": {
   "dev_rfp.pdf": "sha256:db9eeb004e718077678cddd9976b53895f9d7d009044f6b59c8a8d75213d2bd3"
  },
- "started": "2026-11-10T07:53:09.028495Z",
- "ended": "2026-11-10T07:56:30Z",
+ "started": "2026-11-13T04:25:18.063448Z",
+ "ended": "2026-11-13T04:27:51Z",
  "status": "COMPLETED",
  "status_reason": null,
  "overrides": [],
  "totals": {
-  "requests": 31,
-  "tokens_in": 70422,
-  "tokens_out": 9492,
-  "tokens_cached": 2816,
-  "tokens_thinking": 12532,
+  "requests": 32,
+  "tokens_in": 72787,
+  "tokens_out": 10037,
+  "tokens_cached": 1408,
+  "tokens_thinking": 16203,
   "cost_usd": 0.0,
-  "shadow_cost_usd": 0.07438875,
-  "active_seconds": 201.281
+  "shadow_cost_usd": 0.0838505,
+  "active_seconds": 153.203
  },
  "documents": [
   {
@@ -84,15 +84,15 @@
  ],
  "data_class": "synthetic",
  "refused_destinations": [],
- "pid": 48636,
+ "pid": 53336,
  "status_history": [
   {
-   "at": "2026-11-10T07:53:09Z",
+   "at": "2026-11-13T04:25:18Z",
    "status": "RUNNING",
    "reason": "started"
   },
   {
-   "at": "2026-11-10T07:56:30Z",
+   "at": "2026-11-13T04:27:51Z",
    "status": "COMPLETED",
    "reason": null
   }
@@ -130,11 +130,13 @@
  },
  "research": {
   "mode": "pack",
-  "pack_id": "higher-education-procurement",
-  "pack_sha256": "sha256:ac972a0099ad01a7940c9f29cfbc5a4456a22a35c16a96f750f0565224e48860",
+  "pack_id": null,
+  "pack_sha256": null,
   "jobs": 0,
   "questions": 0,
-  "notes": []
+  "notes": [
+   "no pack for this domain"
+  ]
  },
  "bid_policy_sha256": null,
  "seed": null,
@@ -148,6 +150,6 @@
   "coverage": true
  },
  "trace_ids": [
-  "0d49892405282b42ca58527a13d2aeac"
+  "1a9d46863b21c0756883fbce6ac516aa"
  ]
 }

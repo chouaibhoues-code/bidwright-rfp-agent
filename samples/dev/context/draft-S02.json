@@ -1,1 +1,1 @@
-{"node":"draft","call_id":"S02","included_src_ids":[],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["APP-001","APP-002"],"cards":[],"tokens_by_layer":{"rules":471,"examples":444,"evidence":156,"task":22},"budget_tokens":10000,"utilization":0.1093}
+{"node":"draft","call_id":"S02","included_src_ids":[],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["APP-001","APP-002"],"cards":[],"tokens_by_layer":{"rules":471,"examples":444,"evidence":171,"task":22},"budget_tokens":10000,"utilization":0.1108}

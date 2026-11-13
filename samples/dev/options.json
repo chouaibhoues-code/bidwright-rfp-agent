@@ -2,8 +2,8 @@
  "options": [
   {
    "id": "OPT-1",
-   "name": "Standard API & Migration Baseline",
-   "summary": "Provide the documented REST API for integration and record migration features, while excluding unsupported timelines, availability commitments, FERPA attribute release, and instruction handling.",
+   "name": "Standard platform approach with partner signature and excluded timelines",
+   "summary": "Provide the digital signing platform via a partner product with audit logging, and exclude the timeline, service availability commitments, and instructions to bidders as gaps.",
    "baseline": true,
    "approach": [
     {
@@ -13,10 +13,11 @@
     },
     {
      "need_id": "RG-002",
-     "delivery_mode": "OOTB",
+     "delivery_mode": "PARTNER",
      "claim_ids": [
       "CL-001",
-      "CL-002"
+      "CL-002",
+      "CL-003"
      ]
     },
     {
@@ -28,31 +29,26 @@
      "need_id": "RG-004",
      "delivery_mode": "EXCLUDED",
      "claim_ids": []
-    },
-    {
-     "need_id": "DN-001",
-     "delivery_mode": "EXCLUDED",
-     "claim_ids": []
     }
    ],
    "assumptions": [
-    "The buyer accepts standard integration and migration tools without custom availability or timeline guarantees."
+    "The buyer accepts that specific service availability commitments and timeline deadlines are excluded from the initial scope."
    ],
    "scores": [
     {
      "factor_id": "EF-01",
      "score": 2,
-     "reason": "Meets core electronic signing and record-keeping through documented APIs, but lacks specific technical breadth for FERPA controls."
+     "reason": "Meets digital signing through a partner product with audit logging, but leaves instructions and timelines unaddressed."
     },
     {
      "factor_id": "EF-02",
      "score": 0,
-     "reason": "Does not address service levels and incident response commitments."
+     "reason": "Does not address service availability and incident response targets."
     },
     {
      "factor_id": "EF-03",
      "score": 2,
-     "reason": "Meets migration and integration needs using built-in historic record migration and REST APIs."
+     "reason": "Provides historic records and documents migration capabilities with trial runs and reconciliation reports."
     }
    ],
    "needs_proof": [],
@@ -62,62 +58,58 @@
   },
   {
    "id": "OPT-2",
-   "name": "Alternative Partner-Assisted Integration",
-   "summary": "Use built-in APIs and migration features alongside a partner approach for managing timelines and custom integrations, excluding unsupported availability and FERPA controls.",
+   "name": "Alternative migration-focused approach with partner signature",
+   "summary": "Focus on robust migration and partner-based digital signing, utilizing alternative data exchanges for service levels while excluding specific delivery dates.",
    "baseline": false,
    "approach": [
     {
      "need_id": "RG-001",
-     "delivery_mode": "EXCLUDED",
+     "delivery_mode": "ALTERNATIVE",
      "claim_ids": []
     },
     {
      "need_id": "RG-002",
-     "delivery_mode": "CONFIG",
+     "delivery_mode": "PARTNER",
      "claim_ids": [
       "CL-001",
-      "CL-002"
+      "CL-002",
+      "CL-003"
      ]
     },
     {
      "need_id": "RG-003",
-     "delivery_mode": "EXCLUDED",
+     "delivery_mode": "ALTERNATIVE",
      "claim_ids": []
     },
     {
      "need_id": "RG-004",
-     "delivery_mode": "PARTNER",
-     "claim_ids": []
-    },
-    {
-     "need_id": "DN-001",
-     "delivery_mode": "ALTERNATIVE",
+     "delivery_mode": "EXCLUDED",
      "claim_ids": []
     }
    ],
    "assumptions": [
-    "A third-party implementation partner can bridge timeline and attribute release gaps."
+    "The buyer will accept alternative mechanisms for service level tracking and bidder instructions."
    ],
    "scores": [
     {
      "factor_id": "EF-01",
      "score": 2,
-     "reason": "Meets technical approach requirements via configured APIs and alternative handling for student PII."
+     "reason": "Addresses technical approach via partner signing and document migration capabilities."
     },
     {
      "factor_id": "EF-02",
-     "score": 0,
-     "reason": "Does not provide the required service level and support assurances directly."
+     "score": 1,
+     "reason": "Proposes alternative handling for service levels instead of direct contractual commitments."
     },
     {
      "factor_id": "EF-03",
      "score": 3,
-     "reason": "Exceeds baseline integration by incorporating partner-assisted timeline and migration coordination."
+     "reason": "Exceeds standard integration by emphasizing structured migration with trial runs, reconciliation reports, and final cut-over."
     }
    ],
    "needs_proof": [],
    "failed_gates": [],
-   "total": 1.75,
+   "total": 2.0,
    "rank": 1
   }
  ],

@@ -1,4 +1,4 @@
 {"id":"RG-001","member_ids":["REQ-0001"],"context_ids":[],"topic":"3 Instructions to bidders","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":[],"llm":false}
-{"id":"RG-002","member_ids":["REQ-0003","REQ-0004","REQ-0005","REQ-0006","REQ-0007","REQ-0008","REQ-0009","REQ-0010"],"context_ids":[],"topic":"Electronic signing, record keeping, and integration requirements","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":["CQ-001","CQ-002"],"llm":true}
-{"id":"RG-003","member_ids":["REQ-0011","REQ-0012"],"context_ids":[],"topic":"Service availability and severity-one incident response","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":[],"llm":true}
-{"id":"RG-004","member_ids":["REQ-0014"],"context_ids":[],"topic":"6 Timeline","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":[],"llm":false}
+{"id":"RG-002","member_ids":["REQ-0002","REQ-0003","REQ-0004","REQ-0005","REQ-0006","REQ-0007","REQ-0008","REQ-0009"],"context_ids":[],"topic":"Digital signing platform requirements","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":[],"llm":true}
+{"id":"RG-003","member_ids":["REQ-0010","REQ-0011"],"context_ids":[],"topic":"Service availability and incident response times","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":[],"llm":true}
+{"id":"RG-004","member_ids":["REQ-0013"],"context_ids":[],"topic":"6 Timeline","duplicates":[],"references":[],"discrepancy_ids":[],"question_ids":[],"llm":false}

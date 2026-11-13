@@ -1,1 +1,1 @@
-{"node":"decide","call_id":"RG-001-2","included_src_ids":["SRC-0015"],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["REQ-0001"],"cards":[],"tokens_by_layer":{"rules":619,"examples":454,"evidence":277,"task":34},"budget_tokens":16000,"utilization":0.0865}
+{"node":"decide","call_id":"RG-001-2","included_src_ids":["SRC-0015"],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["REQ-0001"],"cards":[],"tokens_by_layer":{"rules":619,"examples":454,"evidence":276,"task":34},"budget_tokens":16000,"utilization":0.0864}

@@ -1,1 +1,1 @@
-{"node":"assess","call_id":"CL-001","included_src_ids":[],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["CL-001","CAP-006"],"cards":[],"tokens_by_layer":{"rules":384,"examples":802,"evidence":252,"task":36},"budget_tokens":4000,"utilization":0.3685}
+{"node":"assess","call_id":"CL-001","included_src_ids":[],"context_src_ids":[],"terms":[],"dropped_src_ids":[],"included_record_ids":["CL-001","CAP-012"],"cards":[],"tokens_by_layer":{"rules":384,"examples":802,"evidence":252,"task":36},"budget_tokens":4000,"utilization":0.3685}

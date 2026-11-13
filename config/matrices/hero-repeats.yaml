@@ -6,8 +6,10 @@
 # models, and each run's manifest records its profile.
 name: hero-repeats
 rfp: inputs/hero
-# Moved to paid on 2026-11-07, when Google's free daily quota ran out during default-r1.
-profile: paid
+# Run again on 2026-11-13 after the drift report's fixes (decide's excerpts and requirement
+# lookup), starting on free; the step-20 runs moved to paid on 2026-11-07 when the free
+# daily quota ran out during default-r1.
+profile: free
 repeats: 5
 until: render
 max_cost_usd: 6

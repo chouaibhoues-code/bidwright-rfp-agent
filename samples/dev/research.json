@@ -1,7 +1,7 @@
 {
  "mode": "pack",
- "pack_id": "higher-education-procurement",
- "pack_sha256": "sha256:ac972a0099ad01a7940c9f29cfbc5a4456a22a35c16a96f750f0565224e48860",
+ "pack_id": null,
+ "pack_sha256": null,
  "notebooks": [],
  "jobs": [],
  "answers": [],
@@ -9,5 +9,7 @@
  "sources": [],
  "tool_calls": 0,
  "calls": 0,
- "notes": []
+ "notes": [
+  "no pack for this domain"
+ ]
 }

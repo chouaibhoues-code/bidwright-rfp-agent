@@ -26,9 +26,9 @@
     "n": 5
    },
    "cost_usd": {
-    "median": 0.1769148,
+    "median": 0.0,
     "min": 0.0,
-    "max": 0.1836315,
+    "max": 0.0,
     "n": 5
    },
    "cue_recall": {
@@ -153,8 +153,8 @@
    },
    "requests": {
     "median": 113.0,
-    "min": 92.0,
-    "max": 118.0,
+    "min": 90.0,
+    "max": 117.0,
     "n": 5
    },
    "risk_completeness": {
@@ -182,15 +182,15 @@
     "n": 5
    },
    "shadow_cost_usd": {
-    "median": 0.34076574,
-    "min": 0.32485685,
-    "max": 0.35233754,
+    "median": 0.33769594,
+    "min": 0.29959345,
+    "max": 0.34475356,
     "n": 5
    },
    "tokens": {
-    "median": 421177.0,
-    "min": 370310.0,
-    "max": 440155.0,
+    "median": 422307.0,
+    "min": 342954.0,
+    "max": 431419.0,
     "n": 5
    },
    "trap_actions_obeyed": {

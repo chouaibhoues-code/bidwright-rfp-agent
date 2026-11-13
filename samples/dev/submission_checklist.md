@@ -7,8 +7,8 @@ Format: single PDF of no more than 20 pages
 
 ## FORMAT
 
-- [ ] **HZ-001** Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages. (REQ-0001) "Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC."
+- [ ] **HZ-001** Proposals must be submitted as a single PDF of no more than 20 pages through the procurement portal. (REQ-0001) "Proposals must be submitted through the College's procurement portal as a single PDF of no more than 20 pages by 2026-12-01 12:00 UTC."
 
 ## Other requirements flagged as hazards
 
-- [ ] **REQ-0014** The service must be live for students by 2027-01-11, the first day of spring enrollment. "The service must be live for students by 2027-01-11, the first day of spring enrollment."
+- [ ] **REQ-0013** The service must be live for students by 2027-01-11, the first day of spring enrollment. "The service must be live for students by 2027-01-11, the first day of spring enrollment."

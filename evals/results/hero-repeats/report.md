@@ -20,10 +20,10 @@ Median, with the minimum and the maximum in brackets.
 | precision_high | 1 (0.974-1) |
 | f1 | 0.8182 (0.812-0.8548) |
 | first_pass_citation_error | 0 (0-0) |
-| requests | 113 (92-118) |
-| tokens | 421177 (370310-440155) |
-| cost_usd | 0.176915 (0-0.183632) |
-| shadow_cost_usd | 0.340766 (0.324857-0.352338) |
+| requests | 113 (90-117) |
+| tokens | 422307 (342954-431419) |
+| cost_usd | 0 (0-0) |
+| shadow_cost_usd | 0.337696 (0.299593-0.344754) |
 
 ## Consistency (QS-8)
 

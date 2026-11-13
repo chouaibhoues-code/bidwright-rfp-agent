@@ -2,18 +2,17 @@
  "items": [
   {
    "id": "APP-001",
-   "text": "Electronic Signing and Integration: Configure electronic signing, document retention, and student record system integration.",
+   "text": "Partner e-Signature Integration: Deploy partner e-signature capabilities and integrate with student records.",
    "requirement_ids": [
+    "REQ-0002",
     "REQ-0003",
     "REQ-0004",
     "REQ-0005",
     "REQ-0006",
-    "REQ-0007",
-    "REQ-0010",
     "REQ-0008",
     "REQ-0009"
    ],
-   "basis": "Configure electronic signing, document retention, and student record system integration.",
+   "basis": "Deploy partner e-signature capabilities and integrate with student records.",
    "evidence_class": "ASSUMPTION",
    "source_ids": [
     "SRC-0020",
@@ -21,27 +20,31 @@
     "SRC-0023",
     "SRC-0024",
     "SRC-0025",
-    "SRC-0026",
     "SRC-0027",
     "SRC-0028"
    ]
   },
   {
    "id": "APP-002",
-   "text": "Partner Implementation: Manage the live deployment timeline with the implementation partner.",
+   "text": "Migration and Alternative Delivery: Migrate historic records and establish alternative service tracking and submission mechanisms.",
    "requirement_ids": [
-    "REQ-0014"
+    "REQ-0007",
+    "REQ-0001",
+    "REQ-0010",
+    "REQ-0011"
    ],
-   "basis": "Manage the live deployment timeline with the implementation partner.",
+   "basis": "Migrate historic records and establish alternative service tracking and submission mechanisms.",
    "evidence_class": "ASSUMPTION",
    "source_ids": [
-    "SRC-0032"
+    "SRC-0015",
+    "SRC-0026",
+    "SRC-0029",
+    "SRC-0030"
    ]
   }
  ],
  "unmapped": [
-  "REQ-0001",
-  "REQ-0011"
+  "REQ-0013"
  ],
  "questions": [],
  "failure": null

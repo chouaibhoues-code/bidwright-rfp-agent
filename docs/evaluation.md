@@ -105,7 +105,7 @@ The three wrong ones fail the same way. Each claim restates its cited record alm
 
 ## The statistical scenarios at the Iteration 3 exit (step 20)
 
-Five live repeats of the hero package on the defaults step 19 set (EX3's extraction, the manifest, `risk_mode: oneshot`, no reflection, no method cards), research mode `pack` and automatic approval, on 2026-11-07, scored against gold v4 (`evals/results/hero-repeats/`, $0.71). The first repeat ran on `free`, the others on `paid` after the free daily quota ran out.
+Five live repeats of the hero package on the defaults step 19 set (EX3's extraction, the manifest, `risk_mode: oneshot`, no reflection, no method cards), research mode `pack` and automatic approval, scored against gold v4 (`evals/results/hero-repeats/`). They first ran on 2026-11-07 ($0.71: the first repeat on `free`, the others on `paid` after the free daily quota ran out), and ran again on 2026-11-13 on `free`, at $0, after the drift report's fixes gave `decide` each domain need's excerpts and its requirement-id lookup; the table and the report give the second run, and every verdict is the same in both.
 
 | Scenario | Measure | Result | Verdict |
 |---|---|---|---|
@@ -114,7 +114,7 @@ Five live repeats of the hero package on the defaults step 19 set (EX3's extract
 | QS-5 | No seeded capability gap claimed | 0 in every repeat | pass |
 | QS-8 | Median pairwise Jaccard over the captured gold clauses at least 0.85 | 0.98 | pass |
 
-No repeat missed a submission hazard or allowed an unauthorized tool call. Each repeat made 92 to 118 requests, a median of 421K tokens and $0.18 on the paid tier. The repeats share their extraction with the EX ladder: a call with the same prompt, input, model, settings and repeat index is answered from the response cache, so each repeat's extraction is EX3's repeat of the same index, and the first repeat, whose solution path matched the SO and RK ladders' first repeats, made no live call at all. The scenarios therefore rest on 5 samples of the configuration that are not independent of those ladders' samples. Two weaknesses step 19 found hold here too: the manifest maps a median of 65% of binding requirements to work packages (36-69%), and the risk step finds at most 1 of the 6 risk seeds.
+No repeat missed a submission hazard or allowed an unauthorized tool call. Each repeat made 90 to 117 requests and a median of 422,000 tokens, $0.34 at paid list prices ($0.18 a run on the paid tier on 2026-11-07). The repeats share their extraction with the EX ladder: a call with the same prompt, input, model, settings and repeat index is answered from the response cache, so each repeat's extraction is EX3's repeat of the same index, and the first repeat, whose solution path matched the SO and RK ladders' first repeats, made no live call at all. The scenarios therefore rest on 5 samples of the configuration that are not independent of those ladders' samples. Two weaknesses step 19 found hold here too: the manifest maps a median of 65% of binding requirements to work packages (36-69%), and the risk step finds at most 1 of the 6 risk seeds.
 
 ## Results of Iteration 3's ladders (step 19)
 
@@ -160,7 +160,7 @@ Four live runs of the `v0.2` pipeline on 2026-11-05, on `free`, each scored agai
 | Run | Research | Missed mandatory | Missed hazards | Recall | Precision range | F1 | Factors | Risk seeds | Requests | Shadow cost |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Development PDF (`20261105T092319Z-dev-rfp-db9eeb00-free`) | `live`: one job, waited 273 s; 3 questions | 0 of 8 | 0 of 1 | 100% | 100% | 1.00 | 4 of 4 | 2 of 3 | 17 | $0.070 |
-| Development PDF (`20261105T120916Z-dev-rfp-db9eeb00-free`, the sample in `samples/dev/`) | `pack`, `higher-education-procurement` | 0 of 8 | 0 of 1 | 100% | 100% | 1.00 | 4 of 4 | 2 of 3 | 14 | $0.054 |
+| Development PDF (`20261105T120916Z-dev-rfp-db9eeb00-free`, the `v0.2` sample) | `pack`, `higher-education-procurement` | 0 of 8 | 0 of 1 | 100% | 100% | 1.00 | 4 of 4 | 2 of 3 | 14 | $0.054 |
 | Hero package (`20261105T103210Z-hero-free`) | `pack`, `local-government-case-management` version 1 | 2 of 45 | 0 of 9 | 95% | 72% to 96% | 0.82 | 6 of 6 | 1 of 6 | 37 | $0.158 |
 | Hero package (`20261105T114609Z-hero-free`) | `pack`, version 2 | 3 of 45 | 0 of 9 | 95% | 80% to 95% | 0.87 | 6 of 6 | 1 of 6 | 34 | $0.163 |
 
