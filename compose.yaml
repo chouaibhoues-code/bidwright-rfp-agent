@@ -8,6 +8,24 @@
 # Only loopback ports are published. Keys come from .env and are never written here.
 name: bidwright
 
+# The runtime of every service that runs `bidwright run`: `app`, and `ui`, whose Run page starts
+# runs inside its own container (the second architecture review, DE-04).
+x-run-env: &run-env
+  GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env for live runs}
+  GEMINI_PAID_API_KEY: ${GEMINI_PAID_API_KEY:-}
+  # The assess role's providers (ADR-045); without either key, assess takes the reason
+  # role's model and the run is flagged SAME_FAMILY.
+  CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
+  CONTEXT7_API_KEY: ${CONTEXT7_API_KEY:-}
+  PHOENIX_ENDPOINT: http://phoenix:6006
+  PHOENIX_API_KEY: ${PHOENIX_API_KEY:-}
+  OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+  DOCLING_URL: http://docling:5001
+  # The host's NotebookLM server, for research mode live (S-11). A fixed value, so a host
+  # .env address, which names 127.0.0.1, never reaches the container.
+  NOTEBOOKLM_MCP_URL: http://host.docker.internal:8000/mcp
+
 x-image: &image
   image: bidwright:0a
   build: .
@@ -15,21 +33,7 @@ x-image: &image
 services:
   app:
     <<: *image
-    environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env for live runs}
-      GEMINI_PAID_API_KEY: ${GEMINI_PAID_API_KEY:-}
-      # The assess role's providers (ADR-045); without either key, assess takes the reason
-      # role's model and the run is flagged SAME_FAMILY.
-      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      CONTEXT7_API_KEY: ${CONTEXT7_API_KEY:-}
-      PHOENIX_ENDPOINT: http://phoenix:6006
-      PHOENIX_API_KEY: ${PHOENIX_API_KEY:-}
-      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
-      DOCLING_URL: http://docling:5001
-      # The host's NotebookLM server, for research mode live (S-11). A fixed value, so a host
-      # .env address, which names 127.0.0.1, never reaches the container.
-      NOTEBOOKLM_MCP_URL: http://host.docker.internal:8000/mcp
+    environment: *run-env
     # host.docker.internal is the host machine, so OLLAMA_HOST=http://host.docker.internal:11434
     # reaches the host's own Ollama. Docker Desktop resolves the name already; this line adds it
     # on Linux, where that Ollama must also listen beyond loopback.
@@ -50,14 +54,11 @@ services:
     profiles: [ui]
     command: ["ui", "--address", "0.0.0.0", "--api"]
     ports: ["127.0.0.1:8501:8501", "127.0.0.1:8001:8001"]
-    environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env for live runs}
-      GEMINI_PAID_API_KEY: ${GEMINI_PAID_API_KEY:-}
-      PHOENIX_ENDPOINT: http://phoenix:6006
-      PHOENIX_API_KEY: ${PHOENIX_API_KEY:-}
-      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
-      DOCLING_URL: http://docling:5001
-      NOTEBOOKLM_MCP_URL: http://host.docker.internal:8000/mcp
+    environment: *run-env
+    # host.docker.internal is the host machine, so OLLAMA_HOST=http://host.docker.internal:11434
+    # reaches the host's own Ollama. Docker Desktop resolves the name already; this line adds it
+    # on Linux, where that Ollama must also listen beyond loopback.
+    extra_hosts: ["host.docker.internal:host-gateway"]
     volumes:
       - ./inputs:/app/inputs:ro
       - ./config:/app/config:ro

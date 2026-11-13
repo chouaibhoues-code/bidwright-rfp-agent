@@ -8,6 +8,7 @@ from bidwright.graph.assess import (
     NO_EVIDENCE,
     SAME_FAMILY,
     assess_claim,
+    assessed_same_family,
     assessment_task,
     assessor_of,
     same_family_reason,
@@ -111,6 +112,19 @@ def test_a_same_family_route_flags_every_assessment_and_degrades_free_not_local(
     assert same_family_reason("same", CONFIG.models.role("free", "assess")) == SAME_FAMILY
     assert same_family_reason("primary", CONFIG.models.role("local", "assess")) is None
     assert same_family_reason("same", CONFIG.models.role("local", "assess")) is None
+
+
+def test_the_flag_marks_every_assessment_the_generators_family_made() -> None:
+    """The second architecture review (DE-03): a `local` run's `assess` is configured as the
+    generator's family, so its assessments are flagged, without degrading the run; a fallback
+    to that family on `free` is flagged too, and degrades it."""
+    local = CONFIG.models.role("local", "assess")
+    free = CONFIG.models.role("free", "assess")
+    assert assessed_same_family("primary", local)
+    assert assessed_same_family("same", free)
+    assert not assessed_same_family("primary", free)
+    assert not assessed_same_family("fallback", free)
+    assert same_family_reason("primary", local) is None
 
 
 def test_context_manifests_name_the_claim(tmp_path: Path) -> None:

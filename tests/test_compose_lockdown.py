@@ -62,14 +62,27 @@ def test_docling_is_pinned_by_digest_and_published_on_loopback_only() -> None:
         assert "docling" not in COMPOSE["services"][name].get("depends_on", [])
 
 
-def test_only_the_app_service_names_the_host_machine() -> None:
-    """host.docker.internal lets `app` reach the host's own Ollama; no other service maps it."""
+RUNNERS = ("app", "ui")  # the services that run `bidwright run`: `ui`'s Run page starts runs
+
+
+def test_only_the_services_that_run_bidwright_name_the_host_machine() -> None:
+    """host.docker.internal lets a run reach the host's own Ollama and NotebookLM server; only
+    the services that start runs map it."""
     for name, service in COMPOSE["services"].items():
         mapped = service.get("extra_hosts", [])
-        if name == "app":
-            assert mapped == ["host.docker.internal:host-gateway"]
+        if name in RUNNERS:
+            assert mapped == ["host.docker.internal:host-gateway"], name
         else:
             assert not mapped, name
+
+
+def test_every_service_that_runs_bidwright_has_the_same_runtime() -> None:
+    """The second architecture review (DE-04): a run started from the UI's Run page had no
+    Cerebras, Groq or Context7 key, so it assessed on Gemini and ended DEGRADED."""
+    app = COMPOSE["services"]["app"]["environment"]
+    assert {"CEREBRAS_API_KEY", "GROQ_API_KEY", "CONTEXT7_API_KEY"} <= set(app)
+    for name in RUNNERS:
+        assert COMPOSE["services"][name]["environment"] == app, name
 
 
 def test_ui_publishes_8501_on_loopback_only_and_mounts_results_read_only() -> None:

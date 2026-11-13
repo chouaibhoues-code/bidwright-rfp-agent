@@ -63,6 +63,8 @@ REVIEW_FILE = "review/solution_gate.md"
 APPROVAL_FILE = "review/solution_gate.approval.yaml"
 BLOCKED = "GATE_BLOCKED"
 REJECTED = "GATE_REJECTED"
+# A blueprint for the option a person switched to failed, so nothing is drafted (DE-01).
+SWITCH_FAILED = "GATE_SWITCH_FAILED"
 AUTO_ROLE = "automatic approval, for evaluation only"
 GateMode = Literal["wait", "auto"]
 Next = Literal["draft", "blueprint", "techcheck"]
@@ -397,6 +399,7 @@ __all__ = [
     "GATE",
     "REJECTED",
     "REVIEW_FILE",
+    "SWITCH_FAILED",
     "GateInputs",
     "GateOutcome",
     "auto_approval",

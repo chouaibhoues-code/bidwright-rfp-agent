@@ -81,6 +81,13 @@ def assessor_of(role: RoleConfig, prompt_ref: str) -> Assessor:
     )
 
 
+def assessed_same_family(route: str | None, role: RoleConfig | None) -> bool:
+    """Whether the generator's family made an assessment: on route `same`, and on a profile
+    whose `assess` role is configured as the same family (`local`), where nothing leaves the
+    machine (ADR-045). Every such assessment is flagged."""
+    return route == "same" or (role is not None and role.same_family)
+
+
 def same_family_reason(route: str | None, role: RoleConfig | None) -> str | None:
     """The run's `DEGRADED` reason when `assess` fell back to the generator's family: route
     `same` on a profile whose `assess` names another family. On `local`, where the same family

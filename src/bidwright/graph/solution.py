@@ -22,7 +22,13 @@ from langgraph.types import Send
 
 from bidwright.config import compile_patterns
 from bidwright.graph import blueprint as bp
-from bidwright.graph.assess import assess_claim, assessor_of, same_family_reason, write_assessments
+from bidwright.graph.assess import (
+    assess_claim,
+    assessed_same_family,
+    assessor_of,
+    same_family_reason,
+    write_assessments,
+)
 from bidwright.graph.capability import build_map, write_map
 from bidwright.graph.decide import (
     DecideOutcome,
@@ -37,11 +43,12 @@ from bidwright.graph.decide import (
     research_provider,
     write_decisions,
 )
-from bidwright.graph.gate import GateInputs, solution_gate
+from bidwright.graph.gate import SWITCH_FAILED, GateInputs, solution_gate
 from bidwright.graph.nodes import MALFORMED_TWICE, CallManifests, RiskView, write_approach
 from bidwright.graph.options import options_task, propose, settle, write_options
 from bidwright.graph.signal import SignalInputs
 from bidwright.graph.techcheck import Sources, techcheck, write_techcheck
+from bidwright.guard import PolicyBlocked
 from bidwright.harness.context import ContextManager
 from bidwright.harness.gateway import ToolGateway
 from bidwright.harness.reflect import reflect_for
@@ -316,7 +323,7 @@ def _assess_one(rt: Any, claim: CapabilityClaim, need: NeedView) -> EvidenceAsse
         need,
         rt.kb,
         assessor=assessor_of(role, prompt),
-        same_family=same_family_reason(rt.assess_route, base) is not None,
+        same_family=assessed_same_family(rt.assess_route, base),
         manifests=_manifests(rt, "assess"),
     )
     return outcome.assessment
@@ -449,6 +456,9 @@ def blueprint(rt: Any, state: dict[str, Any]) -> dict[str, Any]:
     updates: dict[str, Any] = {"techcheck": {}, "gate": {}}
     if outcome.failure is not None:
         bp.write_manifest(rt.run_dir, outcome.manifest)
+        refused = failed_switch(state, outcome.failure)
+        if refused is not None:
+            raise PolicyBlocked(refused)
         updates |= {"manifest": outcome.manifest.model_dump(mode="json")}
         return updates | {"blueprint_failed": outcome.failure}
     view = bp.approach_view(outcome.manifest, src)
@@ -459,6 +469,20 @@ def blueprint(rt: Any, state: dict[str, Any]) -> dict[str, Any]:
         "blueprint_failed": None,
         "approach": write_approach(rt.run_dir, view),
     }
+
+
+def failed_switch(state: dict[str, Any], failure: str | None) -> str | None:
+    """The run's `POLICY_BLOCKED` reason when the blueprint for the option a person switched
+    to at the gate failed: the one-call `approach` fallback would draft from something no
+    person approved, so nothing is drafted (the second architecture review, DE-01). Only a
+    switch sets the gate's `option_id`."""
+    wanted = (state.get("gate") or {}).get("option_id")
+    if failure is None or not wanted:
+        return None
+    return (
+        f"{SWITCH_FAILED}: the blueprint for {wanted}, the option chosen at the gate, failed"
+        f" ({failure}); nothing is drafted"
+    )
 
 
 def after_blueprint(rt: Any, state: dict[str, Any]) -> str:
@@ -699,6 +723,7 @@ __all__ = [
     "decide_sends",
     "decide_worker",
     "degraded_reasons",
+    "failed_switch",
     "gate",
     "options",
     "plan_of",
