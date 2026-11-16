@@ -15,7 +15,9 @@ from streamlit.testing.v1 import AppTest
 from app.data import (
     allowed_edit_fields,
     load_compliance_matrix,
+    load_manifest,
     load_run_data,
+    load_scores,
 )
 from bidwright.obs.ledger import read_ledger, totals_of
 from bidwright.preflight import HOME
@@ -437,7 +439,7 @@ def test_a_run_with_no_scores_shows_none_and_no_error(
     at = AppTest.from_file(str(OPS_PAGE)).run(timeout=15)
     assert len(at.exception) == 0
     texts = [el.value for el in at.text]
-    assert "No scores recorded for this run." in texts
+    assert any(t.startswith("No scores recorded for this run.") for t in texts)
     assert any("twice in Phoenix" in t for t in texts)
 
 
@@ -1125,3 +1127,38 @@ def test_a_long_job_has_its_output_read_while_it_runs() -> None:
     job = actions.Job("run", ["bidwright"], None, Finished())  # type: ignore[arg-type]
     assert job.poll() == 0
     assert job.output == text
+
+
+def _run_copy(tmp_path: Path, folder: Path, run_id: str) -> Path:
+    folder.mkdir(parents=True)
+    manifest = json.loads((DEV_SAMPLE / "run_manifest.json").read_text(encoding="utf-8"))
+    manifest["run_id"] = run_id
+    (folder / "run_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return folder
+
+
+def test_scores_are_found_wherever_bidwright_eval_recorded_them(tmp_path: Path) -> None:
+    """The Ops page said "No scores recorded" for the owner's gate run, scored in
+    `owner-gate/`, and for every matrix run, scored in its matrix report's `runs.csv`."""
+    results = tmp_path / "results"
+    gate = _run_copy(tmp_path, tmp_path / "out" / "20261110T044741Z-gate", "20261110T044741Z-gate")
+    kept = results / "owner-gate"
+    kept.mkdir(parents=True)
+    shutil.copy(gate / "run_manifest.json", kept / "run_manifest.json")
+    (kept / "scorecard.md").write_text("SCORECARD", encoding="utf-8")
+    found = load_scores(gate, load_manifest(gate), root=results)
+    assert found.scorecard_text == "SCORECARD" and found.source == str(kept)
+
+    repeat = _run_copy(
+        tmp_path, tmp_path / "out" / "matrices" / "hero-x" / "hero-x-r0", "hero-x-r0"
+    )
+    (results / "hero-x").mkdir()
+    (results / "hero-x" / "runs.csv").write_text(
+        "run_id,missed_mandatory_count,note\nhero-x-r1,2,\nhero-x-r0,1,\n", encoding="utf-8"
+    )
+    row = load_scores(repeat, load_manifest(repeat), root=results)
+    assert row.scores == {"run_id": "hero-x-r0", "missed_mandatory_count": "1"}
+
+    alone = _run_copy(tmp_path, tmp_path / "out" / "unscored", "unscored")
+    none = load_scores(alone, load_manifest(alone), root=results)
+    assert none.scores is None and none.scorecard_text is None and none.source is None

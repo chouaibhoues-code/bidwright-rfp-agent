@@ -97,8 +97,14 @@ def _run_sections(data: RunData) -> None:
                 st.table(scalar_rows)
         if data.scores.scorecard_text is not None:
             st.code(data.scores.scorecard_text, language=None)
+        if data.scores.source:
+            st.caption(f"From {data.scores.source}")
     else:
-        st.text("No scores recorded for this run.")
+        st.text(
+            "No scores recorded for this run. `bidwright-eval score outputs/<run>` scores a run"
+            " against its gold and writes them to evals/results/runs/<run>/; a matrix run is scored"
+            " by `bidwright-eval report <matrix>`."
+        )
 
     st.header("Phoenix span replay")
     st.text(

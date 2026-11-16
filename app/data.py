@@ -4,6 +4,7 @@ Reads a run's files under `outputs/` into `bidwright.schemas` models and reads s
 `keep_or_drop` ladder reports from `evals/results/` when they exist. Writes no files.
 """
 
+import csv
 import json
 import os
 import subprocess
@@ -88,10 +89,12 @@ class LedgerRow:
 
 @dataclass(frozen=True)
 class RunScores:
-    """Scores and scorecard text from `evals/results/runs/<run>/`, when present."""
+    """A run's scores and scorecard text, when `bidwright-eval` recorded them; `source` names the
+    file they came from."""
 
     scores: dict[str, Any] | None
     scorecard_text: str | None
+    source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -747,11 +750,19 @@ def aggregate_ledger(entries: Sequence[LedgerEntry], by: str) -> list[LedgerRow]
 
 
 def load_scores(run_dir: Path, manifest: RunManifest, root: Path | None = None) -> RunScores:
-    """Load `scores.json` and `scorecard.md` from `evals/results/runs/<run>/` when they exist."""
-    base = results_dir(root) / "runs"
-    candidates = [base / run_dir.name]
-    if manifest.run_id != run_dir.name:
-        candidates.append(base / manifest.run_id)
+    """A run's scores, wherever `bidwright-eval` recorded them: `scores.json` and `scorecard.md`
+    in `evals/results/runs/<run>/`, or in another results folder that holds the run's own
+    manifest (the owner's gate run, in `owner-gate/`); else, for a matrix run, its row of the
+    matrix report, `evals/results/<matrix>/runs.csv`."""
+    base = results_dir(root)
+    names = {run_dir.name, manifest.run_id}
+    candidates = [base / "runs" / name for name in sorted(names)]
+    if base.is_dir():
+        candidates += [
+            folder
+            for folder in sorted(p for p in base.iterdir() if p.is_dir())
+            if folder.name != "runs" and _holds_run(folder, manifest.run_id)
+        ]
     for folder in candidates:
         scores_path = folder / "scores.json"
         card_path = folder / "scorecard.md"
@@ -762,8 +773,26 @@ def load_scores(run_dir: Path, manifest: RunManifest, root: Path | None = None) 
                 else None
             )
             scorecard = card_path.read_text(encoding="utf-8") if card_path.is_file() else None
-            return RunScores(scores=scores, scorecard_text=scorecard)
+            return RunScores(scores=scores, scorecard_text=scorecard, source=str(folder))
+    table = base / run_dir.parent.name / "runs.csv"
+    if table.is_file():
+        with table.open(encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                if row.get("run_id") in names:
+                    scores = {k: v for k, v in row.items() if k and v not in ("", None)}
+                    return RunScores(scores=scores, scorecard_text=None, source=str(table))
     return RunScores(scores=None, scorecard_text=None)
+
+
+def _holds_run(folder: Path, run_id: str) -> bool:
+    """Whether a results folder holds the run manifest of `run_id`, as `owner-gate/` does."""
+    path = folder / "run_manifest.json"
+    if not path.is_file():
+        return False
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("run_id") == run_id
+    except (OSError, ValueError):
+        return False
 
 
 def _format_interval(decision: Mapping[str, Any]) -> str:
